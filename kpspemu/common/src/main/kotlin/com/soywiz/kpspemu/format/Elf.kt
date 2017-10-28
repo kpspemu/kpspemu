@@ -1,36 +1,58 @@
 package com.soywiz.kpspemu.format
 
+import com.soywiz.korio.ds.lmapOf
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.UByteArray
 
-class Elf {
-	fun read(stream: SyncStream) {
-		val header = Header(stream)
-		println(header)
+class Elf private constructor(val stream: SyncStream) {
+	companion object {
+		fun read(stream: SyncStream) = Elf(stream).apply { read() }
+	}
 
-		var programHeadersStream = stream.sliceWithSize(header.programHeaderOffset.toLong(), (header.programHeaderCount * header.programHeaderEntrySize).toLong());
-		var sectionHeadersStream = stream.sliceWithSize(header.sectionHeaderOffset.toLong(), (header.sectionHeaderCount * header.sectionHeaderEntrySize).toLong());
+	lateinit var header: Header
+	lateinit var programHeadersStream: SyncStream
+	lateinit var sectionHeadersStream: SyncStream
+	lateinit var programHeaders: List<ElfProgramHeader>
+	lateinit var sectionHeaders: List<ElfSectionHeader>
+	lateinit var sectionHeaderStringTable: ElfSectionHeader
+	lateinit var stringTableStream: SyncStream
+	lateinit var sectionHeadersByName: MutableMap<String, ElfSectionHeader>
 
-		println("test")
+	private fun read() {
+		header = Header(stream)
 
-		//this.programHeaders = StructArray<ElfProgramHeader>(ElfProgramHeader.struct, this.header.programHeaderCount).read(programHeadersStream);
-		//this.sectionHeaders = StructArray<ElfSectionHeader>(ElfSectionHeader.struct, this.header.sectionHeaderCount).read(sectionHeadersStream);
-//
-		//this.sectionHeaderStringTable = this.sectionHeaders[this.header.sectionHeaderStringTable];
-		//this.stringTableStream = this.getSectionHeaderFileStream(this.sectionHeaderStringTable);
-//
-		//this.sectionHeadersByName = {};
-		//this.sectionHeaders.forEach((sectionHeader) => {
-		//	var name = this.getStringFromStringTable(sectionHeader.nameOffset);
-		//	sectionHeader.name = name;
-		//	if (sectionHeader.type != ElfSectionHeaderType.Null) {
-		//		sectionHeader.stream = this.getSectionHeaderFileStream(sectionHeader);
-		//	}
-		//	this.sectionHeadersByName[name] = sectionHeader;
-		//});
+		programHeadersStream = stream.sliceWithSize(header.programHeaderOffset.toLong(), (header.programHeaderCount * header.programHeaderEntrySize).toLong())
+		sectionHeadersStream = stream.sliceWithSize(header.sectionHeaderOffset.toLong(), (header.sectionHeaderCount * header.sectionHeaderEntrySize).toLong())
 
+		programHeaders = (0 until header.programHeaderCount).map { ElfProgramHeader(programHeadersStream) }
+		sectionHeaders = (0 until header.sectionHeaderCount).map { ElfSectionHeader(sectionHeadersStream) }
 
+		sectionHeaderStringTable = sectionHeaders[header.sectionHeaderStringTable]
+		stringTableStream = getSectionHeaderFileStream(sectionHeaderStringTable)
+
+		sectionHeadersByName = lmapOf<String, ElfSectionHeader>()
+		for (sectionHeader in sectionHeaders) {
+			val name = this.getStringFromStringTable(sectionHeader.nameOffset)
+			sectionHeader.name = name
+			if (sectionHeader.type != ElfSectionHeaderType.Null) {
+				sectionHeader.stream = this.getSectionHeaderFileStream(sectionHeader)
+			}
+			sectionHeadersByName[name] = sectionHeader
+		}
+	}
+
+	private fun getSectionHeaderFileStream(sectionHeader: ElfSectionHeader): SyncStream {
+		//console.log('::' + sectionHeader.type + ' ; ' + sectionHeader.offset + ' ; ' + sectionHeader.size);
+		return when (sectionHeader.type) {
+			ElfSectionHeaderType.NoBits, ElfSectionHeaderType.Null -> this.stream.sliceWithSize(0, 0)
+			else -> this.stream.sliceWithSize(sectionHeader.offset.toLong(), sectionHeader.size.toLong())
+		}
+	}
+
+	private fun getStringFromStringTable(index: Int): String {
+		this.stringTableStream.position = index.toLong()
+		return this.stringTableStream.readStringz()
 	}
 
 	data class Header(
@@ -78,14 +100,14 @@ class Elf {
 			}
 		}
 
-		val hasValidMagic: Boolean get() = this.magic == "\u007FELF";
+		val hasValidMagic: Boolean get() = this.magic == "\u007FELF"
 		val hasValidMachine: Boolean get() = this.machine == ElfMachine.ALLEGREX.id
 		val hasValidType: Boolean get() = listOf(ElfType.Executable.id, ElfType.Prx.id).contains(this.type)
 
 		init {
-			if (!hasValidMagic) invalidOp("Not an ELF file");
-			if (!hasValidMachine) invalidOp("Not a PSP ELF file");
-			if (!hasValidType) invalidOp("Not a executable or a Prx but has type $type");
+			if (!hasValidMagic) invalidOp("Not an ELF file")
+			if (!hasValidMachine) invalidOp("Not a PSP ELF file")
+			if (!hasValidType) invalidOp("Not a executable or a Prx but has type $type")
 		}
 	}
 }
@@ -96,16 +118,17 @@ open class BaseEnum<T : BaseEnum.Id>(val values: Array<T>) {
 	}
 
 	val BY_ID = values.map { it.id to it }.toMap()
-	operator fun get(index: Int) = BY_ID[index]!!
+	operator fun get(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	operator fun invoke(index: Int) = this[index]
 }
 
-enum class ElfProgramHeaderType(override val id: Int) : BaseEnum.Id {
-	NoLoad(0),
-	Load(1),
-	Reloc1(0x700000A0),
-	Reloc2(0x700000A1);
-
-	companion object : BaseEnum<ElfProgramHeaderType>(values())
+data class ElfProgramHeaderType(override val id: Int) : BaseEnum.Id {
+	companion object {
+		val NoLoad = 0
+		val Load = 1
+		val Reloc1 = 0x700000A0
+		val Reloc2 = 0x700000A1
+	}
 }
 
 enum class ElfSectionHeaderType(override val id: Int) : BaseEnum.Id {
@@ -140,13 +163,13 @@ enum class ElfSectionHeaderFlags(override val id: Int) : BaseEnum.Id {
 	companion object : BaseEnum<ElfSectionHeaderFlags>(values())
 }
 
-enum class ElfProgramHeaderFlags(override val id: Int) : BaseEnum.Id {
-	Executable(0x1),
-	// Note: demo PRX's were found to be not writable
-	Writable(0x2),
-	Readable(0x4);
-
-	companion object : BaseEnum<ElfProgramHeaderFlags>(values())
+data class ElfProgramHeaderFlags(val id: Int) {
+	companion object {
+		val Executable = 0x1
+		// Note: demo PRX's were found to be not writable
+		val Writable = 0x2
+		val Readable = 0x4
+	}
 }
 
 enum class ElfType(override val id: Int) : BaseEnum.Id {
@@ -209,21 +232,19 @@ enum class ElfRelocType(override val id: Int) : BaseEnum.Id {
 	companion object : BaseEnum<ElfRelocType>(values())
 }
 
-/*
-class ElfReloc {
-	pointerAddress: number;
-	info: number;
+class ElfReloc(val pointerAddress: Int, val info: Int) {
+	val pointeeSectionHeaderBase: Int get() = (this.info ushr 16) and 0xFF
+	val pointerSectionHeaderBase: Int get() = (this.info ushr 8) and 0xFF
+	val type: ElfRelocType get() = ElfRelocType[((this.info ushr 0) and 0xFF)]
 
-	get pointeeSectionHeaderBase() { return (this.info >> 16) & 0xFF; }
-	get pointerSectionHeaderBase() { return (this.info >> 8) & 0xFF; }
-	get type() { return <ElfRelocType>((this.info >> 0) & 0xFF); }
-
-	static struct = StructClass.create<ElfReloc>(ElfReloc, [
-	{ pointerAddress: UInt32 },
-	{ info: UInt32 },
-	]);
+	companion object {
+		operator fun invoke(s: SyncStream): ElfReloc = s.run {
+			ElfReloc(
+				pointerAddress = s.readS32_le(),
+				info = s.readS32_le())
+		}
+	}
 }
-*/
 
 data class ElfProgramHeader(
 	val type: ElfProgramHeaderType,
@@ -232,19 +253,19 @@ data class ElfProgramHeader(
 	val psysicalAddress: Int,
 	val fileSize: Int,
 	val memorySize: Int,
-	val flags: ElfProgramHeaderFlags,
+	val flags: ElfProgramHeaderFlags, // ElfProgramHeaderFlags
 	val alignment: Int
 ) {
 	companion object {
 		operator fun invoke(s: SyncStream): ElfProgramHeader = s.run {
 			ElfProgramHeader(
-				type = ElfProgramHeaderType[readS32_le()],
+				type = ElfProgramHeaderType(readS32_le()),
 				offset = readS32_le(),
 				virtualAddress = readS32_le(),
 				psysicalAddress = readS32_le(),
 				fileSize = readS32_le(),
 				memorySize = readS32_le(),
-				flags = ElfProgramHeaderFlags[readS32_le()],
+				flags = ElfProgramHeaderFlags(readS32_le()),
 				alignment = readS32_le()
 			)
 		}
@@ -253,7 +274,7 @@ data class ElfProgramHeader(
 
 data class ElfSectionHeader(
 	val nameOffset: Int,
-	val name: String,
+	var name: String,
 	val type: ElfSectionHeaderType,
 	val flags: ElfSectionHeaderFlags,
 	val address: Int,

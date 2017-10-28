@@ -1,6 +1,8 @@
 package com.soywiz.kpspemu.cpu
 
-class CpuState {
+import com.soywiz.kpspemu.mem.Memory
+
+class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
 	var r0: Int; set(value) = Unit; get() = 0
 	var r1: Int = 0
 	var r2: Int = 0
@@ -37,10 +39,18 @@ class CpuState {
 	val GPR = Gpr(this)
 
 	var I: Int = 0
-	var PC: Int = 0
-	var nPC: Int = 0
+	var _PC: Int = 0
+	var _nPC: Int = 0
 	var LO: Int = 0
 	var HI: Int = 0
+
+	fun setPC(pc: Int) = jump(pc)
+	fun getPC() = _PC
+
+	fun jump(pc: Int) {
+		_PC = pc
+		_nPC = pc + 4
+	}
 
 	class Gpr(val state: CpuState) {
 		// ERROR!
@@ -87,4 +97,6 @@ class CpuState {
 			}
 		}
 	}
+
+	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
 }

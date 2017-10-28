@@ -1,11 +1,12 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.mem.DummyMemory
 import org.junit.Test
 import kotlin.test.assertEquals
 
 class CpuStateTest {
-	val s = CpuState()
+	val s = CpuState(DummyMemory())
 
 	@Test
 	fun gpr0IsAlways0() {

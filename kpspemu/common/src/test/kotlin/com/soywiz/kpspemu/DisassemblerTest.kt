@@ -5,7 +5,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class DisassemblerTest {
-	val dis = Disassembler()
+	val dis = Disassembler
 	@Test
 	fun name() {
 		assertEquals("syscall 0x206D", dis.disasm(0x08000000, i = 0x00081B4C)) // 4C 1B 08 00 // syscall 0x206D

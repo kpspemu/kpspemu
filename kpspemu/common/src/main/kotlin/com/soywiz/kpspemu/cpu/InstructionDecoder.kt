@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korio.util.extract
+import com.soywiz.korio.util.signExtend
 
 interface InstructionDecoder {
 	val Int.lsb: Int get() = this.extract(6 + 5 * 0, 5)
@@ -21,8 +22,10 @@ interface InstructionDecoder {
 	//val CpuState.IMM16: Int; get() = I.extract()
 	//val CpuState.U_IMM16: Int get() = TODO()
 
-	val CpuState.IMM16: Int; get() = TODO()
-	val CpuState.U_IMM16: Int get() = TODO()
+	val CpuState.S_IMM16: Int; get() = U_IMM16.signExtend(16)
+	val CpuState.U_IMM16: Int get() = this.I.extract(0, 16)
+	val CpuState.POS: Int get() = this.I.pos
+	val CpuState.SYSCALL: Int get() = this.I.syscall
 }
 
 /*

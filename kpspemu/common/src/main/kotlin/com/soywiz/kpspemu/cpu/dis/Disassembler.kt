@@ -4,8 +4,9 @@ import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
 import com.soywiz.kpspemu.cpu.InstructionType
+import com.soywiz.kpspemu.mem.Memory
 
-class Disassembler : InstructionDecoder {
+object Disassembler : InstructionDecoder {
 	fun gprStr(i: Int) = "r$i"
 
 	fun disasmMacro(pc: Int, i: Int): String {
@@ -32,3 +33,5 @@ class Disassembler : InstructionDecoder {
 		return "${op.name} $params"
 	}
 }
+
+fun Memory.disasm(pc: Int): String = Disassembler.disasm(pc, this.lw(pc))
