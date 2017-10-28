@@ -15,6 +15,11 @@ class InstructionTableTest {
 	@Ignore
 	fun name2() {
 		DecodingTable.dumpImpl(InstructionTable.instructions)
+	}
 
+	@Test
+	@Ignore
+	fun name3() {
+		DecodingTable.dumpInstructionList(InstructionTable.instructions)
 	}
 }

@@ -40,6 +40,7 @@ class CpuState {
 
 	var I: Int = 0
 	var PC: Int = 0
+	var nPC: Int = 0
 	var LO: Int = 0
 	var HI: Int = 0
 
