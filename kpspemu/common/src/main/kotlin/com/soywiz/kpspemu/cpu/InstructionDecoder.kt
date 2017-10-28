@@ -1,8 +1,12 @@
 package com.soywiz.kpspemu.cpu
 
+import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.signExtend
 
+// https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
+// http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
+// https://electronics.stackexchange.com/questions/28444/mips-pic32-branch-vs-branch-likely
 interface InstructionDecoder {
 	val Int.lsb: Int get() = this.extract(6 + 5 * 0, 5)
 	val Int.msb: Int get() = this.extract(6 + 5 * 1, 5)
@@ -15,32 +19,39 @@ interface InstructionDecoder {
 	val Int.rs: Int get() = this.extract(11 + 5 * 2, 5)
 	val Int.syscall: Int get() = this.extract(6, 20)
 
-	operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.next(callback)
+	operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.normal(callback)
 
-	// https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
-	fun CpuState.next(callback: CpuState.() -> Unit) {
+	fun CpuState.normal(callback: CpuState.() -> Unit) {
 		this.run(callback)
-		_PC = _nPC
-		_nPC = _PC + 4
+		advance_pc(4)
+	}
+
+	fun CpuState.none(callback: CpuState.() -> Unit) {
+		this.run(callback)
 	}
 
 	fun CpuState.branch(callback: CpuState.() -> Boolean) {
 		val result = this.run(callback)
-		_PC = _nPC
+
+		// beq
+		// if $s == $t advance_pc (offset << 2)); else advance_pc (4);
 		if (result) {
-			_nPC = _PC + S_IMM16 * 4
+			advance_pc(S_IMM16 * 4)
 		} else {
-			_nPC = _PC + 4
+			advance_pc(4)
 		}
 	}
 
 	fun CpuState.branchLikely(callback: CpuState.() -> Boolean) {
 		val result = this.run(callback)
 		if (result) {
-			_PC = _PC + S_IMM16 * 4
-			_nPC = _PC + 4
+			//println("YAY!: $S_IMM16")
+			advance_pc(S_IMM16 * 4)
 		} else {
-			_PC = _nPC
+			//println("NON!: $S_IMM16")
+			//println("-- %08X".format(_nPC))
+			//println("-- %08X".format(_PC))
+			_PC = _nPC + 4
 			_nPC = _PC + 4
 		}
 	}
@@ -58,6 +69,9 @@ interface InstructionDecoder {
 	val CpuState.U_IMM16: Int get() = IR.u_imm16
 	val CpuState.POS: Int get() = IR.pos
 	val CpuState.SYSCALL: Int get() = IR.syscall
+
+	val CpuState.U_IMM26: Int get() = IR.extract(0, 26)
+	val CpuState.JUMP_ADDRESS: Int get() = U_IMM26 * 4
 }
 
 /*

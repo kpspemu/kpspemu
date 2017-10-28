@@ -94,6 +94,8 @@ class DummyMemory : Memory(true) {
 	override fun lw(address: Int): Int = 0
 }
 
+fun Memory.trace(traceWrites: Boolean = true, traceReads: Boolean = false) = TraceMemory(this, traceWrites, traceReads)
+
 class TraceMemory(
 	val parent: Memory = Memory(),
 	val traceWrites: Boolean = true,
@@ -117,20 +119,23 @@ class TraceMemory(
 	}
 
 	override fun lb(address: Int): Int {
+		if (traceReads) println("lb(0x%08X)".format(normalized(address)))
 		val res = parent.lb(address)
-		if (traceReads) println("%d = lb(0x%08X)".format(normalized(res), address))
+		if (traceReads) println("-> %d".format(res))
 		return res
 	}
 
 	override fun lh(address: Int): Int {
+		if (traceReads) println("lh(0x%08X)".format(normalized(address)))
 		val res = parent.lh(address)
-		if (traceReads) println("%d = lh(0x%08X)".format(normalized(res), address))
+		if (traceReads) println("-> %d".format(res))
 		return res
 	}
 
 	override fun lw(address: Int): Int {
+		if (traceReads) println("lw(0x%08X)".format(normalized(address)))
 		val res = parent.lw(address)
-		if (traceReads) println("%d = lw(0x%08X)".format(normalized(res), address))
+		if (traceReads) println("-> %d".format(res))
 		return res
 	}
 }

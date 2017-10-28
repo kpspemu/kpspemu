@@ -78,5 +78,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 	override fun bgtzl(s: CpuState) = s.branchLikely { RS > 0 }
 	override fun bgezl(s: CpuState) = s.branchLikely { RS >= 0 }
 
+	override fun j(s: CpuState) = s.none {
+		_PC = _nPC
+		_nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS)
+	}
 }
 
