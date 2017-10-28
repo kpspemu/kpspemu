@@ -38,20 +38,27 @@ class CpuState {
 
 	val GPR = Gpr(this)
 
+	var I: Int = 0
+	var PC: Int = 0
+	var LO: Int = 0
+	var HI: Int = 0
+
 	class Gpr(val state: CpuState) {
-		fun ref(index: Int): KMutableProperty<Int> = state.run {
-			when (index) {
-				0 -> ::r0; 1 -> ::r1; 2 -> ::r2; 3 -> ::r3;
-				4 -> ::r4; 5 -> ::r5; 6 -> ::r6; 7 -> ::r7;
-				8 -> ::r8; 9 -> ::r9; 10 -> ::r10; 11 -> ::r11;
-				12 -> ::r12; 13 -> ::r13; 14 -> ::r14; 15 -> ::r15;
-				16 -> ::r16; 17 -> ::r17; 18 -> ::r18; 19 -> ::r19;
-				20 -> ::r20; 21 -> ::r21; 22 -> ::r22; 23 -> ::r23;
-				24 -> ::r24; 25 -> ::r25; 26 -> ::r26; 27 -> ::r27;
-				28 -> ::r28; 29 -> ::r29; 30 -> ::r30; 31 -> ::r31
-				else -> ::r0
-			}
-		}
+		// ERROR!
+
+		//fun ref(index: Int): KMutableProperty<Int> = state.run {
+		//	when (index) {
+		//		0 -> ::r0; 1 -> ::r1; 2 -> ::r2; 3 -> ::r3;
+		//		4 -> ::r4; 5 -> ::r5; 6 -> ::r6; 7 -> ::r7;
+		//		8 -> ::r8; 9 -> ::r9; 10 -> ::r10; 11 -> ::r11;
+		//		12 -> ::r12; 13 -> ::r13; 14 -> ::r14; 15 -> ::r15;
+		//		16 -> ::r16; 17 -> ::r17; 18 -> ::r18; 19 -> ::r19;
+		//		20 -> ::r20; 21 -> ::r21; 22 -> ::r22; 23 -> ::r23;
+		//		24 -> ::r24; 25 -> ::r25; 26 -> ::r26; 27 -> ::r27;
+		//		28 -> ::r28; 29 -> ::r29; 30 -> ::r30; 31 -> ::r31
+		//		else -> ::r0
+		//	}
+		//}
 
 		operator fun get(index: Int): Int = state.run {
 			when (index) {
