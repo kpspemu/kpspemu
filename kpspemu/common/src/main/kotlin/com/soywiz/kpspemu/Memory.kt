@@ -19,11 +19,13 @@ class Memory {
 
 	private val buffer = FastMemory.alloc(0x0a000000)
 
+	fun sb(address: Int, value: Int) = run { buffer[(address and MASK)] = value }
+	fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16((address and MASK), value.toShort()) }
+	fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32((address and MASK), value) }
+
 	fun lb(address: Int) = buffer[(address and MASK)]
 	fun lbu(address: Int) = buffer[(address and MASK)] and 0xFF
-
 	fun lh(address: Int) = buffer.getAlignedInt16((address and MASK) ushr 1).toInt()
 	fun lhu(address: Int) = buffer.getAlignedInt16((address and MASK) ushr 1).toInt() and 0xFFFF
-
 	fun lw(address: Int) = buffer.getAlignedInt32((address and MASK) ushr 2)
 }
