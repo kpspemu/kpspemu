@@ -1,6 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
+	ext.korVersion = "0.14.0"
 	ext.kotlinVersion = '1.2.0-beta-88'
 	ext.compilerVersion = ext.kotlinVersion
 	ext.librariesVersion = ext.kotlinVersion

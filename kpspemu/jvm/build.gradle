@@ -2,4 +2,5 @@ apply plugin: 'kotlin-platform-jvm'
 
 dependencies {
 	expectedBy project(":kpspemu-common")
+	compile "com.soywiz:korio:$korVersion"
 }
