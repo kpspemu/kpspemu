@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu
+package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korio.lang.format
 

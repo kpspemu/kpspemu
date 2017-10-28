@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.kpspemu.cpu.CpuState
 import org.junit.Test
 import kotlin.test.assertEquals
 

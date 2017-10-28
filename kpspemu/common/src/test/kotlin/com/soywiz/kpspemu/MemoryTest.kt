@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.kpspemu.mem.Memory
 import org.junit.Test
 
 class MemoryTest {

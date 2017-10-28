@@ -1,6 +1,4 @@
-package com.soywiz.kpspemu
-
-import kotlin.reflect.KMutableProperty
+package com.soywiz.kpspemu.cpu
 
 class CpuState {
 	var r0: Int; set(value) = Unit; get() = 0

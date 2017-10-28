@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu
+package com.soywiz.kpspemu.mem
 
 import com.soywiz.korio.mem.FastMemory
 
@@ -10,8 +10,8 @@ interface Memory {
 		val VIDEOMEM = MemorySegment("videomem", 0x04000000 until 0x4200000)
 		val MAINMEM = MemorySegment("mainmem", 0x08000000 until 0x0a000000)
 
-		//operator fun invoke(): Memory = com.soywiz.kpspemu.FastMemory()
-		operator fun invoke(): Memory = com.soywiz.kpspemu.SmallMemory()
+		//operator fun invoke(): Memory = com.soywiz.kpspemu.mem.FastMemory()
+		operator fun invoke(): Memory = SmallMemory()
 	}
 
 	data class MemorySegment(val name: String, val range: IntRange) {

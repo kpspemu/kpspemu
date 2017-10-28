@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu
+package com.soywiz.kpspemu.cpu
 
 open class InstructionEvaluator<T> {
 	open fun unimplemented(s: T, i: InstructionType): Unit = TODO("unimplemented: ${i.name} : " + i)

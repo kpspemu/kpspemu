@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu
+package com.soywiz.kpspemu.cpu
 
 object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDecoder {
 	override fun addu(s: CpuState) = s { RD = RS + RT }
