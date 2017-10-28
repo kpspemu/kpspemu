@@ -678,4 +678,4 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 	}
 }
 
-fun InstructionDispatcher<CpuState>.dispatch(s: CpuState) = this.dispatch(s, s._PC, s.I)
+fun InstructionDispatcher<CpuState>.dispatch(s: CpuState) = this.dispatch(s, s._PC, s.IR)

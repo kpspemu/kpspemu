@@ -66,3 +66,5 @@ open class SceModule {
 		}
 	}
 }
+
+annotation class NativeFunction(val uid: Long, val since: Int)

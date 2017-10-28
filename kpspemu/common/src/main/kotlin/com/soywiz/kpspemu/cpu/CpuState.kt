@@ -38,11 +38,12 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 
 	val GPR = Gpr(this)
 
-	var I: Int = 0
+	var IR: Int = 0
 	var _PC: Int = 0
 	var _nPC: Int = 0
 	var LO: Int = 0
 	var HI: Int = 0
+	var IC: Int = 0
 
 	fun setPC(pc: Int) = jump(pc)
 	fun getPC() = _PC

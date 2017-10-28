@@ -10,10 +10,8 @@ class CpuInterpreter(val cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun step() {
-		cpu.I = cpu.mem.lw(cpu._PC)
+		cpu.IR = cpu.mem.lw(cpu._PC)
 		if (trace) println("%08X: %s".format(cpu._PC, cpu.mem.disasm(cpu._PC)))
 		dispatcher.dispatch(cpu)
-		cpu._nPC = cpu._PC + 4
-		cpu._PC = cpu._nPC
 	}
 }

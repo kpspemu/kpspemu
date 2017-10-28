@@ -1,20 +1,33 @@
 package com.soywiz.kpspemu.mem
 
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.format
 import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.SyncStreamBase
 
-const private val MASK = 0x0FFFFFFF;
+const private val MASK = 0x0FFFFFFF
 
-interface Memory {
+val LWR_MASK = intArrayOf(0x00000000, 0xFF000000.toInt(), 0xFFFF0000.toInt(), 0xFFFFFF00.toInt())
+val LWR_SHIFT = intArrayOf(0, 8, 16, 24)
+
+val LWL_MASK = intArrayOf(0x00FFFFFF, 0x0000FFFF, 0x000000FF, 0x00000000)
+val LWL_SHIFT = intArrayOf(24, 16, 8, 0)
+
+val SWL_MASK = intArrayOf(0xFFFFFF00.toInt(), 0xFFFF0000.toInt(), 0xFF000000.toInt(), 0x00000000)
+val SWL_SHIFT = intArrayOf(24, 16, 8, 0)
+
+val SWR_MASK = intArrayOf(0x00000000, 0x000000FF, 0x0000FFFF, 0x00FFFFFF)
+val SWR_SHIFT = intArrayOf(0, 8, 16, 24)
+
+abstract class Memory protected constructor(dummy: Boolean) {
 	companion object {
 		val SCRATCHPAD = MemorySegment("scatchpad", 0x0000000 until 0x00010000)
 		val VIDEOMEM = MemorySegment("videomem", 0x04000000 until 0x4200000)
 		val MAINMEM = MemorySegment("mainmem", 0x08000000 until 0x0a000000)
 
-		//operator fun invoke(): Memory = com.soywiz.kpspemu.mem.FastMemory()
-		operator fun invoke(): Memory = SmallMemory()
+		operator fun invoke(): Memory = com.soywiz.kpspemu.mem.FastMemory()
+		//operator fun invoke(): Memory = SmallMemory()
 	}
 
 	data class MemorySegment(val name: String, val range: IntRange) {
@@ -32,27 +45,96 @@ interface Memory {
 		for (n in 0 until len) sb(dstPos + n, src[srcPos + n].toInt())
 	}
 
-	fun sb(address: Int, value: Int): Unit
-	fun sh(address: Int, value: Int): Unit
-	fun sw(address: Int, value: Int): Unit
+	fun lwl(address: Int, value: Int): Int {
+		val align = address and 3
+		val oldvalue = this.lw(address and 3.inv())
+		return ((oldvalue shl LWL_SHIFT[align]) or (value and LWL_MASK[align]))
+	}
 
-	fun lb(address: Int): Int
-	fun lbu(address: Int): Int
-	fun lh(address: Int): Int
-	fun lhu(address: Int): Int
-	fun lw(address: Int): Int
+	fun lwr(address: Int, value: Int): Int {
+		val align = address and 3
+		val oldvalue = this.lw(address and 3.inv())
+		return ((oldvalue ushr LWR_SHIFT[align]) or (value and LWR_MASK[align]))
+	}
+
+	fun swl(address: Int, value: Int): Unit {
+		val align = address and 3
+		val aadress = address and 3.inv()
+		val vwrite = (value ushr SWL_SHIFT[align]) or (this.lw(aadress) and SWL_MASK[align])
+		this.sw(aadress, vwrite)
+	}
+
+	fun swr(address: Int, value: Int): Unit {
+		val align = address and 3
+		val aadress = address and 3.inv()
+		val vwrite = (value shl SWR_SHIFT[align]) or (this.lw(aadress) and SWR_MASK[align])
+		this.sw(aadress, vwrite)
+	}
+
+	abstract fun sb(address: Int, value: Int): Unit
+	abstract fun sh(address: Int, value: Int): Unit
+	abstract fun sw(address: Int, value: Int): Unit
+
+	abstract fun lb(address: Int): Int
+	abstract fun lh(address: Int): Int
+	abstract fun lw(address: Int): Int
+
+	// Unsigned
+	fun lbu(address: Int): Int = lb(address) and 0xFF
+
+	fun lhu(address: Int): Int = lh(address) and 0xFFFF
 }
 
-class DummyMemory : Memory {
+class DummyMemory : Memory(true) {
 	override fun sb(address: Int, value: Int) = Unit
 	override fun sh(address: Int, value: Int) = Unit
 	override fun sw(address: Int, value: Int) = Unit
 	override fun lb(address: Int): Int = 0
-	override fun lbu(address: Int): Int = 0
 	override fun lh(address: Int): Int = 0
-	override fun lhu(address: Int): Int = 0
 	override fun lw(address: Int): Int = 0
 }
+
+class TraceMemory(
+	val parent: Memory = Memory(),
+	val traceWrites: Boolean = true,
+	val traceReads: Boolean = false
+) : Memory(true) {
+	fun normalized(address: Int) = address and MASK
+
+	override fun sb(address: Int, value: Int) {
+		if (traceWrites) println("sb(0x%08X) = %d".format(normalized(address), value))
+		parent.sb(address, value)
+	}
+
+	override fun sh(address: Int, value: Int) {
+		if (traceWrites) println("sh(0x%08X) = %d".format(normalized(address), value))
+		parent.sh(address, value)
+	}
+
+	override fun sw(address: Int, value: Int) {
+		if (traceWrites) println("sw(0x%08X) = %d".format(normalized(address), value))
+		parent.sw(address, value)
+	}
+
+	override fun lb(address: Int): Int {
+		val res = parent.lb(address)
+		if (traceReads) println("%d = lb(0x%08X)".format(normalized(res), address))
+		return res
+	}
+
+	override fun lh(address: Int): Int {
+		val res = parent.lh(address)
+		if (traceReads) println("%d = lh(0x%08X)".format(normalized(res), address))
+		return res
+	}
+
+	override fun lw(address: Int): Int {
+		val res = parent.lw(address)
+		if (traceReads) println("%d = lw(0x%08X)".format(normalized(res), address))
+		return res
+	}
+}
+
 
 fun Memory.openSync(): SyncStream {
 	val mem = this
@@ -73,23 +155,21 @@ fun Memory.openSync(): SyncStream {
 	})
 }
 
-class FastMemory : Memory {
+class FastMemory : Memory(true) {
 	private val buffer = FastMemory.alloc(0x0a000000)
 
 	fun index(address: Int) = address and MASK
 
 	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
-	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address), value.toShort()) }
-	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address), value) }
+	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }
+	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address) ushr 2, value) }
 
 	override fun lb(address: Int) = buffer[index(address)]
-	override fun lbu(address: Int) = buffer[index(address)] and 0xFF
 	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
-	override fun lhu(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt() and 0xFFFF
 	override fun lw(address: Int) = buffer.getAlignedInt32(index(address) ushr 2)
 }
 
-class SmallMemory : Memory {
+class SmallMemory : Memory(true) {
 	private val buffer = FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)
 
 	fun index(address: Int): Int = when {
@@ -99,12 +179,10 @@ class SmallMemory : Memory {
 	}
 
 	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
-	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address), value.toShort()) }
-	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address), value) }
+	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }
+	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address) ushr 2, value) }
 
 	override fun lb(address: Int) = buffer[index(address)]
-	override fun lbu(address: Int) = buffer[index(address)] and 0xFF
 	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
-	override fun lhu(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt() and 0xFFFF
 	override fun lw(address: Int) = buffer.getAlignedInt32(index(address) ushr 2)
 }

@@ -26,6 +26,8 @@ object Disassembler : InstructionDecoder {
 				"%a" -> "${i.pos}"
 				"%t" -> gprStr(i.rt)
 				"%C" -> "0x%04X".format(i.syscall)
+				"%I" -> "${i.u_imm16}"
+				"%i" -> "${i.s_imm16}"
 				else -> type
 			}
 		}

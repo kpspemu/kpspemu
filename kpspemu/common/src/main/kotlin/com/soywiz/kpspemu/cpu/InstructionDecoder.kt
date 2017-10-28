@@ -9,23 +9,55 @@ interface InstructionDecoder {
 
 	val Int.pos: Int get() = this.lsb
 	val Int.rd: Int get() = this.extract(11 + 5 * 0, 5)
+	val Int.s_imm16: Int get() = u_imm16.signExtend(16)
+	val Int.u_imm16: Int get() = extract(0, 16)
 	val Int.rt: Int get() = this.extract(11 + 5 * 1, 5)
 	val Int.rs: Int get() = this.extract(11 + 5 * 2, 5)
 	val Int.syscall: Int get() = this.extract(6, 20)
 
-	operator fun <T> CpuState.invoke(callback: CpuState.() -> T) = this.run(callback)
+	operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.next(callback)
 
-	var CpuState.RD: Int; get() = this.GPR[this.I.rd]; set(value) = run { this.GPR[this.I.rd] = value }
-	var CpuState.RT: Int; get() = this.GPR[this.I.rt]; set(value) = run { this.GPR[this.I.rt] = value }
-	var CpuState.RS: Int; get() = this.GPR[this.I.rs]; set(value) = run { this.GPR[this.I.rs] = value }
+	// https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
+	fun CpuState.next(callback: CpuState.() -> Unit) {
+		this.run(callback)
+		_PC = _nPC
+		_nPC = _PC + 4
+	}
+
+	fun CpuState.branch(callback: CpuState.() -> Boolean) {
+		val result = this.run(callback)
+		_PC = _nPC
+		if (result) {
+			_nPC = _PC + S_IMM16 * 4
+		} else {
+			_nPC = _PC + 4
+		}
+	}
+
+	fun CpuState.branchLikely(callback: CpuState.() -> Boolean) {
+		val result = this.run(callback)
+		if (result) {
+			_PC = _PC + S_IMM16 * 4
+			_nPC = _PC + 4
+		} else {
+			_PC = _nPC
+			_nPC = _PC + 4
+		}
+	}
+
+	var CpuState.RD: Int; get() = GPR[IR.rd]; set(value) = run { GPR[IR.rd] = value }
+	var CpuState.RT: Int; get() = GPR[IR.rt]; set(value) = run { GPR[IR.rt] = value }
+	var CpuState.RS: Int; get() = GPR[IR.rs]; set(value) = run { GPR[IR.rs] = value }
+
+	val CpuState.RS_IMM16: Int; get() = RS + S_IMM16
 
 	//val CpuState.IMM16: Int; get() = I.extract()
 	//val CpuState.U_IMM16: Int get() = TODO()
 
-	val CpuState.S_IMM16: Int; get() = U_IMM16.signExtend(16)
-	val CpuState.U_IMM16: Int get() = this.I.extract(0, 16)
-	val CpuState.POS: Int get() = this.I.pos
-	val CpuState.SYSCALL: Int get() = this.I.syscall
+	val CpuState.S_IMM16: Int; get() = IR.s_imm16
+	val CpuState.U_IMM16: Int get() = IR.u_imm16
+	val CpuState.POS: Int get() = IR.pos
+	val CpuState.SYSCALL: Int get() = IR.syscall
 }
 
 /*

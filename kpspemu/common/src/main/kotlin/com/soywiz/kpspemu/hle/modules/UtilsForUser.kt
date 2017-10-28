@@ -10,13 +10,15 @@ class UtilsForUser : SceModule() {
 		registerFunctionInt("sceKernelUtilsMt19937UInt", uid = 0x06FB8A63, since = 150, syscall = 0x20C0) { sceKernelUtilsMt19937UInt(mem, int) }
 	}
 
-	fun sceKernelUtilsMt19937UInt(memory: Memory, ctx: Int): Int {
-		println("Not implemented UtilsForUser.sceKernelUtilsMt19937UInt")
-		return MtRand(KorioNative.currentTimeMillis()).nextInt()
-	}
-
+	@NativeFunction(0xE860E75E, since = 150)
 	fun sceKernelUtilsMt19937Init(memory: Memory, ctx: Int, seed: Int): Int {
 		println("Not implemented UtilsForUser.sceKernelUtilsMt19937Init")
 		return 0
+	}
+
+	@NativeFunction(0x06FB8A63, since = 150)
+	fun sceKernelUtilsMt19937UInt(memory: Memory, ctx: Int): Int {
+		//println("Not implemented UtilsForUser.sceKernelUtilsMt19937UInt")
+		return MtRand(KorioNative.currentTimeMillis()).nextInt()
 	}
 }

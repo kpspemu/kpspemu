@@ -10,9 +10,10 @@ class PspThread(val mem: Memory, val syscalls: Syscalls) {
 	val cpu = CpuState(mem, syscalls)
 }
 
-class Emulator {
-	val syscalls = RegistrableSyscallHandler()
-	val mem = Memory()
+class Emulator(
+	val syscalls: RegistrableSyscallHandler = RegistrableSyscallHandler(),
+	val mem: Memory = Memory()
+) {
 	val mainThread = PspThread(mem, syscalls)
 	val cpu = mainThread.cpu
 	val interpreter = CpuInterpreter(cpu)
