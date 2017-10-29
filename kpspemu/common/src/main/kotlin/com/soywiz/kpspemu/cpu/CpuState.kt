@@ -1,6 +1,48 @@
 package com.soywiz.kpspemu.cpu
 
+import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.mem.Memory
+
+//class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
+//	var _R = IntArray(32)
+//
+//	val GPR = Gpr(this)
+//
+//	var IR: Int = 0
+//	var _PC: Int = 0
+//	var _nPC: Int = 0
+//	var LO: Int = 0
+//	var HI: Int = 0
+//	var IC: Int = 0
+//
+//	fun setPC(pc: Int) {
+//		_PC = pc
+//		_nPC = pc + 4
+//	}
+//
+//	fun getPC() = _PC
+//
+//	fun jump(pc: Int) {
+//		_PC = pc
+//		_nPC = pc + 4
+//	}
+//
+//	fun advance_pc(offset: Int) {
+//		_PC = _nPC
+//		_nPC += offset
+//	}
+//
+//	class Gpr(val state: CpuState) {
+//		operator fun get(index: Int): Int = state._R[index and 0x1F]
+//		operator fun set(index: Int, v: Int): Unit {
+//			if (index != 0) {
+//				state._R[index and 0x1F] = v
+//			}
+//		}
+//	}
+//
+//	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
+//}
 
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
 	var r0: Int; set(value) = Unit; get() = 0
@@ -79,8 +121,10 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		//	}
 		//}
 
+		fun hex(index: Int): String = "0x%08X".format(get(index))
+
 		operator fun get(index: Int): Int = state.run {
-			when (index) {
+			when (index and 0x1F) {
 				0 -> r0; 1 -> r1; 2 -> r2; 3 -> r3
 				4 -> r4; 5 -> r5; 6 -> r6; 7 -> r7
 				8 -> r8; 9 -> r9; 10 -> r10; 11 -> r11
@@ -94,7 +138,7 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		}
 
 		operator fun set(index: Int, v: Int): Unit = state.run {
-			when (index) {
+			when (index and 0x1F) {
 				0 -> r0 = v; 1 -> r1 = v; 2 -> r2 = v; 3 -> r3 = v
 				4 -> r4 = v; 5 -> r5 = v; 6 -> r6 = v; 7 -> r7 = v
 				8 -> r8 = v; 9 -> r9 = v; 10 -> r10 = v; 11 -> r11 = v

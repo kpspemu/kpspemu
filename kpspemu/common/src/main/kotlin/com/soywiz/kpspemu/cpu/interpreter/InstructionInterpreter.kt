@@ -18,16 +18,16 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 	override fun add(s: CpuState) = s { RD = RS + RT }
 	override fun addu(s: CpuState) = s { RD = RS + RT }
 	override fun subu(s: CpuState) = s { RD = RS - RT }
-	override fun addiu(s: CpuState) = s { RT = RS_IMM16 }
+	override fun addiu(s: CpuState) = s { RT = RS + S_IMM16 }
 	override fun divu(s: CpuState) = s { LO = RS udiv RT; HI = RS urem RT }
 
 	override fun mflo(s: CpuState) = s { RD = LO }
 	override fun mfhi(s: CpuState) = s { RD = HI }
-	override fun mfic(s: CpuState) = s { RD = IC }
+	override fun mfic(s: CpuState) = s { RT = IC }
 
-	override fun mtlo(s: CpuState) = s { LO = RD }
-	override fun mthi(s: CpuState) = s { HI = RD }
-	override fun mtic(s: CpuState) = s { IC = RD }
+	override fun mtlo(s: CpuState) = s { LO = RS }
+	override fun mthi(s: CpuState) = s { HI = RS }
+	override fun mtic(s: CpuState) = s { IC = RT }
 
 	// ALU: Bit
 	override fun or(s: CpuState) = s { RD = RS or RT }
@@ -58,9 +58,10 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 
 	// Set less
 	override fun slt(s: CpuState) = s { RD = if (IntEx.compare(RS, RT) < 0) 1 else 0 }
-
 	override fun sltu(s: CpuState) = s { RD = if (IntEx.compareUnsigned(RS, RT) < 0) 1 else 0 }
-	override fun sltiu(s: CpuState) = s { RD = if (IntEx.compareUnsigned(RS, S_IMM16) < 0) 1 else 0 }
+
+	override fun slti(s: CpuState) = s { RT = if (IntEx.compare(RS, S_IMM16) < 0) 1 else 0 }
+	override fun sltiu(s: CpuState) = s { RT = if (IntEx.compareUnsigned(RS, S_IMM16) < 0) 1 else 0 }
 
 
 	// Branch

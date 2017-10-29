@@ -1,7 +1,9 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.korim.color.RGBA
-import com.soywiz.korim.format.*
+import com.soywiz.korim.format.ImageFormats
+import com.soywiz.korim.format.registerStandard
+import com.soywiz.korim.format.writeTo
 import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.openSync
@@ -15,8 +17,6 @@ import com.soywiz.kpspemu.hle.modules.UtilsForUser
 import com.soywiz.kpspemu.hle.modules.sceCtrl
 import com.soywiz.kpspemu.hle.modules.sceDisplay
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.mem.TraceMemory
-import com.soywiz.kpspemu.mem.trace
 import org.junit.Test
 
 class EmulatorTest {
@@ -40,15 +40,59 @@ class EmulatorTest {
 			sceCtrl().registerPspModule(emu)
 			sceDisplay().registerPspModule(emu)
 
-			cpu.r29 = 0x0A000000 // stack
+			cpu.GPR[29] = 0x0A000000 // stack
 			cpu.setPC(0x08900008) // PC
 
+			var count1 = 0
+			var count2 = 0
+
 			//for (n in 0 until 196000) {
-			//for (n in 0 until 8000000) {
-			for (n in 0 until 10000000) {
-			//for (n in 0 until 800000) {
-			//for (n in 0 until 1000000) {
+			//for (n in 0 until 80000000) {
+			for (n in 0 until 20000000) {
+				//for (n in 0 until 8000000) {
+				//for (n in 0 until 10000000) {
+				//for (n in 0 until 40000000) {
+				//for (n in 0 until 800000) {
+				//for (n in 0 until 1000000) {
+				//val PC = cpu._PC
 				interpreter.step()
+
+				//if (PC == 0x089000AC) {
+				////if (PC == 0x0890009C) {
+				//	println("r2=${"%08X".format(cpu.GPR[2])}, r20=${"%08X".format(cpu.GPR[20])}")
+				//}
+//
+				//if (PC == 0x089000B0) {
+				//	println("--------------")
+				//}
+//
+				//if (PC == 0x089000C4) {
+				//	println("LO=${cpu.LO}, HI=${cpu.HI}, r2=${cpu.GPR[2]}, r3=${cpu.GPR[3]}")
+				//}
+//
+				//if (PC == 0x089000D8) {
+				//	println("r3 = ${cpu.GPR[3]}")
+				//}
+//
+				//if (PC == 0x08900168) {
+				//	println("TEST: r2(byte) = ${cpu.GPR.hex(2)}, r4(store) = ${cpu.GPR.hex(4)}, r10(read) = ${cpu.GPR.hex(10)}")
+				//}
+
+				//if (PC == 0x0890016C) {
+				//	count1++
+				//}
+//
+				//if (PC == 0x0890018C) {
+				//	count2++
+				//	println("r2=${cpu.r2}, r8=${cpu.r8}")
+				//}
+//
+				//if (PC == 0x089001A0) {
+				//	println("-------------- $count1, $count2")
+				//	count1 = 0
+				//	count2 = 0
+				//}
+
 				//println("r8: ${cpu.r8}")
 			}
 			display.address = 0x44000000
@@ -58,6 +102,7 @@ class EmulatorTest {
 			}
 			val data = mem.readBytes(display.address, 4 * 512 * 272)
 			val bmp = RGBA.decodeToBitmap32(512, 272, data)
+			bmp.transformColor { RGBA(RGBA.getR(it), RGBA.getG(it), RGBA.getB(it), 0xFF) }
 			bmp.writeTo(LocalVfs("c:/temp")["video_dump.tga"], formats = ImageFormats().registerStandard())
 			bmp.writeTo(LocalVfs("c:/temp")["video_dump.png"], formats = ImageFormats().registerStandard())
 		}

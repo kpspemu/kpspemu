@@ -9,6 +9,7 @@ class PspDisplay(val mem: Memory) {
 	var sync: Int = 0
 
 	var displayMode: Int = 0
-	var displayWidth: Int = 512
+	//var displayWidth: Int = 512
+	var displayWidth: Int = 480
 	var displayHeight: Int = 272
 }

@@ -67,7 +67,7 @@ abstract class SceModule {
 
 	protected fun registerFunctionInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Int) {
 		registerFunctionRR(name, uid, since, syscall) {
-			this.cpu.r2 = function(it)
+			this.cpu.GPR[2] = function(it)
 		}
 	}
 }

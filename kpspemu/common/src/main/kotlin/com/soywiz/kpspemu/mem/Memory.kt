@@ -81,7 +81,6 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	// Unsigned
 	fun lbu(address: Int): Int = lb(address) and 0xFF
-
 	fun lhu(address: Int): Int = lh(address) and 0xFFFF
 }
 
