@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.hle.modules.SceModule
+import com.soywiz.kpspemu.hle.SceModule
 
 class ModuleManager(val e: Emulator) {
 	val modules = LinkedHashMap<String, SceModule>()

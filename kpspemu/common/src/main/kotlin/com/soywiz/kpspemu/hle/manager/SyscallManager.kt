@@ -3,7 +3,7 @@ package com.soywiz.kpspemu.hle.manager
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.Syscalls
-import com.soywiz.kpspemu.hle.modules.NativeFunction
+import com.soywiz.kpspemu.hle.NativeFunction
 
 class SyscallManager : Syscalls {
 	var lasSyscallId = 1

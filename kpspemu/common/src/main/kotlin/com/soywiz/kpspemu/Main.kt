@@ -8,17 +8,15 @@ import com.soywiz.korge.view.image
 import com.soywiz.korge.view.texture
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.JvmStatic
-import com.soywiz.korio.crypto.Base64
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.util.OS
-import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.geom.SizeInt
 import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
-import com.soywiz.kpspemu.hle.modules.registerNativeModules
+import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.reflect.KClass
 
@@ -45,7 +43,8 @@ class KpspemuMainScene : Scene() {
 			else -> applicationVfs["samples"].jail()
 		}
 
-		val elfBytes = samplesFolder["HelloWorldPSP.elf"].readAll()
+		//val elfBytes = samplesFolder["HelloWorldPSP.elf"].readAll()
+		val elfBytes = samplesFolder["rtctest.elf"].readAll()
 
 		val emu = Emulator(mem = Memory()).apply {
 			registerNativeModules()

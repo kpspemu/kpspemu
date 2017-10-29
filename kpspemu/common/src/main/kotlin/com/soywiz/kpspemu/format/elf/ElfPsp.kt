@@ -11,7 +11,7 @@ import com.soywiz.kpspemu.cpu.GP
 import com.soywiz.kpspemu.hle.manager.MemoryManager
 import com.soywiz.kpspemu.hle.manager.ModuleManager
 import com.soywiz.kpspemu.hle.manager.SyscallManager
-import com.soywiz.kpspemu.hle.modules.NativeFunction
+import com.soywiz.kpspemu.hle.NativeFunction
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.openSync
 import kotlin.math.max
@@ -365,6 +365,7 @@ class PspElf private constructor(
 	}
 
 	private fun updateModuleFunctions(moduleImport: ElfPspModuleImport): Res1 {
+		println("Import module: ${moduleImport.name}")
 		val _module = this.moduleManager.getByName(moduleImport.name)
 		val nidsStream = this.memory.openSync().sliceWithSize(moduleImport.nidAddress, moduleImport.functionCount * 4)
 		val callStream = this.memory.openSync().sliceWithSize(moduleImport.callAddress, moduleImport.functionCount * 8)

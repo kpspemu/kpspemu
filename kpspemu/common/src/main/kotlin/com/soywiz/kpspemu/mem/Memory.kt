@@ -92,6 +92,10 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		return openSync().sliceWithSize(address, size)
 	}
 
+	fun readStringzOrNull(offset: Int): String? = when  {
+		offset == 0 -> null
+		else -> readStringz(offset)
+	}
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
 }
 

@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu
+package com.soywiz.kpspemu.generate
 
 import com.soywiz.korio.ds.lmapOf
 import com.soywiz.korio.lang.format

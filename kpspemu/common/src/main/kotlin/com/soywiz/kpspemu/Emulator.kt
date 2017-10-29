@@ -7,6 +7,7 @@ import com.soywiz.kpspemu.display.PspDisplay
 import com.soywiz.kpspemu.hle.manager.MemoryManager
 import com.soywiz.kpspemu.hle.manager.ModuleManager
 import com.soywiz.kpspemu.hle.manager.SyscallManager
+import com.soywiz.kpspemu.hle.manager.ThreadManager
 import com.soywiz.kpspemu.mem.Memory
 
 class PspThread(val mem: Memory, val syscalls: Syscalls) {
@@ -19,6 +20,7 @@ class Emulator(
 	val display: PspDisplay = PspDisplay(mem)
 ) {
 	val memoryManager = MemoryManager()
+	val threadManager = ThreadManager(this)
 	val moduleManager = ModuleManager(this)
 	val mainThread = PspThread(mem, syscalls)
 	val cpu = mainThread.cpu

@@ -134,3 +134,10 @@ allprojects {
 
 }
 
+apply plugin: 'idea'
+
+idea {
+    module {
+        excludeDirs += [file('psplibdoc'), file('docs'), file('gradle')]
+    }
+}

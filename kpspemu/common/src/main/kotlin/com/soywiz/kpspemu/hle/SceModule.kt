@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu.hle.modules
+package com.soywiz.kpspemu.hle
 
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
@@ -23,6 +23,7 @@ class RegisterReader {
 	val mem: Memory get() = cpu.mem
 	val int: Int get() = this.cpu.GPR[pos++]
 	val ptr: Ptr get() = MemPtr(mem, int)
+	val string: String? get() = mem.readStringzOrNull(int)
 }
 
 data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
@@ -37,11 +38,11 @@ class NativeFunction {
 }
 */
 
-abstract class SceModule(val name: String) {
-	protected lateinit var e: Emulator; private set
+abstract class SceModule(val name: String, val flags: Int = 0, val prxFile: String = "", val prxName: String = "") {
+	protected lateinit var emulator: Emulator; private set
 
 	fun registerPspModule(e: Emulator) {
-		this.e = e
+		this.emulator = e
 		registerModule()
 	}
 
@@ -54,10 +55,17 @@ abstract class SceModule(val name: String) {
 	fun getByNidOrNull(nid: Int): NativeFunction? = functions[nid]
 	fun getByNid(nid: Int): NativeFunction = getByNidOrNull(nid) ?: invalidOp("Can't find NID 0x%08X in %s".format(nid, name))
 
+	fun UNIMPLEMENTED(nid: Int): Nothing {
+		val func = getByNid(nid)
+		TODO("Unimplemented %s:0x%08X:%s".format(this.name, func.nid, func.name))
+	}
+
+	fun UNIMPLEMENTED(nid: Long): Nothing = UNIMPLEMENTED(nid.toInt())
+
 	protected fun registerFunctionRaw(function: NativeFunction) {
 		functions[function.nid.toInt()] = function
 		if (function.syscall >= 0) {
-			e.syscalls.register(function.syscall) { cpu, syscall ->
+			emulator.syscalls.register(function.syscall) { cpu, syscall ->
 				//println("REGISTERED SYSCALL $syscall")
 				function.function(cpu)
 			}
