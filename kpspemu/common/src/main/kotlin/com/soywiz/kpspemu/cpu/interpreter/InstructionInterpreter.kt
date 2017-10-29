@@ -4,9 +4,21 @@ import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.IntEx
 import com.soywiz.korio.util.udiv
 import com.soywiz.korio.util.urem
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.InstructionEvaluator
-import com.soywiz.kpspemu.cpu.InstructionType
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.dis.disasmMacro
+
+class CpuInterpreter(val cpu: CpuState, var trace: Boolean = false) {
+	val dispatcher = InstructionDispatcher(InstructionInterpreter)
+
+	fun step() {
+		if (trace) println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
+		dispatcher.dispatch(cpu)
+	}
+
+	fun steps(count: Int) {
+		for (n in 0 until count) step()
+	}
+}
 
 object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun unimplemented(s: CpuState, i: InstructionType): Unit = TODO("unimplemented: ${i.name} : " + i + " at ${"%08X".format(s._PC)}")
@@ -59,7 +71,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Set less
 	override fun slt(s: CpuState) = s { RD = if (IntEx.compare(RS, RT) < 0) 1 else 0 }
-
 	override fun sltu(s: CpuState) = s { RD = if (IntEx.compareUnsigned(RS, RT) < 0) 1 else 0 }
 
 	override fun slti(s: CpuState) = s { RT = if (IntEx.compare(RS, S_IMM16) < 0) 1 else 0 }
