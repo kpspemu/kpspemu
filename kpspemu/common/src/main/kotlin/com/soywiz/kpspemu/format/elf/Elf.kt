@@ -121,14 +121,17 @@ class Elf private constructor(val stream: SyncStream) {
 
 typealias ElfLoader = Elf
 
-open class BaseEnum<T : BaseEnum.Id>(val values: Array<T>) {
-	interface Id {
-		val id: Int
-	}
+interface NumericEnum {
+	val id: Int
+}
 
+interface Flags<T> : NumericEnum {
+	infix fun hasFlag(item: Flags<T>): Boolean = (id and item.id) == item.id
+}
+
+open class BaseEnum<T : NumericEnum>(val values: Array<T>) {
 	val BY_ID = values.map { it.id to it }.toMap()
-	operator fun get(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
-	operator fun invoke(index: Int) = this[index]
+	operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
 }
 
 data class ElfProgramHeaderType(override val id: Int) : Flags<ElfProgramHeaderType> {
@@ -140,7 +143,7 @@ data class ElfProgramHeaderType(override val id: Int) : Flags<ElfProgramHeaderTy
 	}
 }
 
-enum class ElfSectionHeaderType(override val id: Int) : BaseEnum.Id {
+enum class ElfSectionHeaderType(override val id: Int) : NumericEnum {
 	Null(0),
 	ProgramBits(1),
 	SYMTAB(2),
@@ -163,12 +166,6 @@ enum class ElfSectionHeaderType(override val id: Int) : BaseEnum.Id {
 	companion object : BaseEnum<ElfSectionHeaderType>(values())
 }
 
-interface Flags<T> {
-	val id: Int
-
-	infix fun hasFlag(item: Flags<T>): Boolean = (id and item.id) == item.id
-}
-
 data class ElfSectionHeaderFlags(override val id: Int) : Flags<ElfSectionHeaderFlags> {
 	companion object {
 		val None = ElfSectionHeaderFlags(0)
@@ -187,27 +184,27 @@ data class ElfProgramHeaderFlags(val id: Int) {
 	}
 }
 
-enum class ElfType(override val id: Int) : BaseEnum.Id {
+enum class ElfType(override val id: Int) : NumericEnum {
 	Executable(0x0002),
 	Prx(0xFFA0);
 
 	companion object : BaseEnum<ElfType>(values())
 }
 
-enum class ElfMachine(override val id: Int) : BaseEnum.Id {
+enum class ElfMachine(override val id: Int) : NumericEnum {
 	ALLEGREX(8);
 
 	companion object : BaseEnum<ElfMachine>(values())
 }
 
-enum class ElfPspModuleFlags(override val id: Int) : BaseEnum.Id { // ushort
+enum class ElfPspModuleFlags(override val id: Int) : NumericEnum { // ushort
 	User(0x0000),
 	Kernel(0x1000);
 
 	companion object : BaseEnum<ElfPspModuleFlags>(values())
 }
 
-enum class ElfPspLibFlags(override val id: Int) : BaseEnum.Id { // ushort
+enum class ElfPspLibFlags(override val id: Int) : NumericEnum { // ushort
 	DirectJump(0x0001),
 	Syscall(0x4000),
 	SysLib(0x8000);
@@ -215,7 +212,7 @@ enum class ElfPspLibFlags(override val id: Int) : BaseEnum.Id { // ushort
 	companion object : BaseEnum<ElfPspLibFlags>(values())
 }
 
-enum class ElfPspModuleNids(override val id: Int) : BaseEnum.Id {  // uint
+enum class ElfPspModuleNids(override val id: Int) : NumericEnum {  // uint
 	MODULE_INFO(0xF01D73A7.toInt()),
 	MODULE_BOOTSTART(0xD3744BE0.toInt()),
 	MODULE_REBOOT_BEFORE(0x2F064FA6),
@@ -228,7 +225,7 @@ enum class ElfPspModuleNids(override val id: Int) : BaseEnum.Id {  // uint
 }
 
 
-enum class ElfRelocType(override val id: Int) : BaseEnum.Id {
+enum class ElfRelocType(override val id: Int) : NumericEnum {
 	None(0),
 	Mips16(1),
 	Mips32(2),
@@ -250,7 +247,7 @@ enum class ElfRelocType(override val id: Int) : BaseEnum.Id {
 class ElfReloc(val pointerAddress: Int, val info: Int) {
 	val pointeeSectionHeaderBase: Int get() = (this.info ushr 16) and 0xFF
 	val pointerSectionHeaderBase: Int get() = (this.info ushr 8) and 0xFF
-	val type: ElfRelocType get() = ElfRelocType[((this.info ushr 0) and 0xFF)]
+	val type: ElfRelocType get() = ElfRelocType(((this.info ushr 0) and 0xFF))
 
 	companion object {
 		val SIZE = 8
@@ -309,7 +306,7 @@ data class ElfSectionHeader(
 			ElfSectionHeader(
 				nameOffset = s.readS32_le(),
 				name = "...",
-				type = ElfSectionHeaderType[s.readS32_le()],
+				type = ElfSectionHeaderType(s.readS32_le()),
 				flags = ElfSectionHeaderFlags(s.readS32_le()),
 				address = s.readS32_le(),
 				offset = s.readS32_le(),
