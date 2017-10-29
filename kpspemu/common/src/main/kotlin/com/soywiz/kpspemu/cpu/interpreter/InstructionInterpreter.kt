@@ -5,11 +5,10 @@ import com.soywiz.korio.util.IntEx
 import com.soywiz.korio.util.udiv
 import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionEvaluator
 import com.soywiz.kpspemu.cpu.InstructionType
 
-object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDecoder {
+object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun unimplemented(s: CpuState, i: InstructionType): Unit = TODO("unimplemented: ${i.name} : " + i + " at ${"%08X".format(s._PC)}")
 
 	// ALU
@@ -31,6 +30,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 
 	// ALU: Bit
 	override fun or(s: CpuState) = s { RD = RS or RT }
+
 	override fun xor(s: CpuState) = s { RD = RS xor RT }
 	override fun and(s: CpuState) = s { RD = RS and RT }
 
@@ -44,6 +44,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 
 	// Memory
 	override fun lb(s: CpuState) = s { RT = mem.lb(RS_IMM16) }
+
 	override fun lbu(s: CpuState) = s { RT = mem.lbu(RS_IMM16) }
 	override fun lh(s: CpuState) = s { RT = mem.lh(RS_IMM16) }
 	override fun lhu(s: CpuState) = s { RT = mem.lhu(RS_IMM16) }
@@ -58,6 +59,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 
 	// Set less
 	override fun slt(s: CpuState) = s { RD = if (IntEx.compare(RS, RT) < 0) 1 else 0 }
+
 	override fun sltu(s: CpuState) = s { RD = if (IntEx.compareUnsigned(RS, RT) < 0) 1 else 0 }
 
 	override fun slti(s: CpuState) = s { RT = if (IntEx.compare(RS, S_IMM16) < 0) 1 else 0 }
@@ -66,6 +68,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>(), InstructionDec
 
 	// Branch
 	override fun beq(s: CpuState) = s.branch { RS == RT }
+
 	override fun bne(s: CpuState) = s.branch { RS != RT }
 	override fun bltz(s: CpuState) = s.branch { RS < 0 }
 	override fun blez(s: CpuState) = s.branch { RS <= 0 }

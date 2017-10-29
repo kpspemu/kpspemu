@@ -9,7 +9,7 @@ class sceDisplay : SceModule() {
 	override fun registerModule() {
 		registerFunctionInt("sceDisplaySetMode", 0x0E20F177, 150, syscall = 0x213A) { sceDisplaySetMode(int, int, int) }
 		registerFunctionInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147) { sceDisplayWaitVblankStart(thread) }
-		registerFunctionInt("sceDisplaySetFrameBuf", 0x289D82FE, 150, syscall = 0x213F) { sceDisplaySetFrameBuf(ptr, int, int, int) }
+		registerFunctionInt("sceDisplaySetFrameBuf", 0x289D82FE, 150, syscall = 0x213F) { sceDisplaySetFrameBuf(int, int, int, int) }
 	}
 
 	@NativeFunction(0x0E20F177, 150)
@@ -29,10 +29,10 @@ class sceDisplay : SceModule() {
 	}
 
 	@NativeFunction(0x289D82FE, 150)
-	fun sceDisplaySetFrameBuf(address: Ptr, bufferWidth: Int, pixelFormat: Int, sync: Int): Int {
+	fun sceDisplaySetFrameBuf(address: Int, bufferWidth: Int, pixelFormat: Int, sync: Int): Int {
 		// PixelFormat
-		println("display.address: $address")
-		display.address = address.addr
+		//println("display.address: $address")
+		display.address = address
 		display.bufferWidth = bufferWidth
 		display.pixelFormat = pixelFormat
 		display.sync = sync

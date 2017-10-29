@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
-open class InstructionEvaluator<T> {
+open class InstructionEvaluator<T> : InstructionDecoder() {
 	open fun unimplemented(s: T, i: InstructionType): Unit = TODO("unimplemented: ${i.name} : " + i)
 
 	open fun add(s: T): Unit = unimplemented(s, InstructionTable.add)

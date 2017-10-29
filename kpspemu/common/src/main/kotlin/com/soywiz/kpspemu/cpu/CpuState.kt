@@ -3,47 +3,84 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.mem.Memory
 
-//class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
-//	var _R = IntArray(32)
-//
-//	val GPR = Gpr(this)
-//
-//	var IR: Int = 0
-//	var _PC: Int = 0
-//	var _nPC: Int = 0
-//	var LO: Int = 0
-//	var HI: Int = 0
-//	var IC: Int = 0
-//
-//	fun setPC(pc: Int) {
-//		_PC = pc
-//		_nPC = pc + 4
-//	}
-//
-//	fun getPC() = _PC
-//
-//	fun jump(pc: Int) {
-//		_PC = pc
-//		_nPC = pc + 4
-//	}
-//
-//	fun advance_pc(offset: Int) {
-//		_PC = _nPC
-//		_nPC += offset
-//	}
-//
-//	class Gpr(val state: CpuState) {
-//		operator fun get(index: Int): Int = state._R[index and 0x1F]
-//		operator fun set(index: Int, v: Int): Unit {
-//			if (index != 0) {
-//				state._R[index and 0x1F] = v
-//			}
-//		}
-//	}
-//
-//	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
-//}
+class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
+	var _R = IntArray(32)
 
+	var r0: Int; set(value) = Unit; get() = 0
+	var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]
+	var r2: Int; set(value) = run { _R[2] = value }; get() = _R[2]
+	var r3: Int; set(value) = run { _R[3] = value }; get() = _R[3]
+	var r4: Int; set(value) = run { _R[4] = value }; get() = _R[4]
+	var r5: Int; set(value) = run { _R[5] = value }; get() = _R[5]
+	var r6: Int; set(value) = run { _R[6] = value }; get() = _R[6]
+	var r7: Int; set(value) = run { _R[7] = value }; get() = _R[7]
+	var r8: Int; set(value) = run { _R[8] = value }; get() = _R[8]
+	var r9: Int; set(value) = run { _R[9] = value }; get() = _R[9]
+	var r10: Int; set(value) = run { _R[10] = value }; get() = _R[10]
+	var r11: Int; set(value) = run { _R[11] = value }; get() = _R[11]
+	var r12: Int; set(value) = run { _R[12] = value }; get() = _R[12]
+	var r13: Int; set(value) = run { _R[13] = value }; get() = _R[13]
+	var r14: Int; set(value) = run { _R[14] = value }; get() = _R[14]
+	var r15: Int; set(value) = run { _R[15] = value }; get() = _R[15]
+	var r16: Int; set(value) = run { _R[16] = value }; get() = _R[16]
+	var r17: Int; set(value) = run { _R[17] = value }; get() = _R[17]
+	var r18: Int; set(value) = run { _R[18] = value }; get() = _R[18]
+	var r19: Int; set(value) = run { _R[19] = value }; get() = _R[19]
+	var r20: Int; set(value) = run { _R[20] = value }; get() = _R[20]
+	var r21: Int; set(value) = run { _R[21] = value }; get() = _R[21]
+	var r22: Int; set(value) = run { _R[22] = value }; get() = _R[22]
+	var r23: Int; set(value) = run { _R[23] = value }; get() = _R[23]
+	var r24: Int; set(value) = run { _R[24] = value }; get() = _R[24]
+	var r25: Int; set(value) = run { _R[25] = value }; get() = _R[25]
+	var r26: Int; set(value) = run { _R[26] = value }; get() = _R[26]
+	var r27: Int; set(value) = run { _R[27] = value }; get() = _R[27]
+	var r28: Int; set(value) = run { _R[28] = value }; get() = _R[28]
+	var r29: Int; set(value) = run { _R[29] = value }; get() = _R[29]
+	var r30: Int; set(value) = run { _R[30] = value }; get() = _R[30]
+	var r31: Int; set(value) = run { _R[31] = value }; get() = _R[31]
+
+	val GPR = Gpr(this)
+
+	var IR: Int = 0
+	var _PC: Int = 0
+	var _nPC: Int = 0
+	var LO: Int = 0
+	var HI: Int = 0
+	var IC: Int = 0
+
+	fun setPC(pc: Int) {
+		_PC = pc
+		_nPC = pc + 4
+	}
+
+	fun getPC() = _PC
+
+	fun jump(pc: Int) {
+		_PC = pc
+		_nPC = pc + 4
+	}
+
+	fun advance_pc(offset: Int) {
+		_PC = _nPC
+		_nPC += offset
+	}
+
+	fun getGpr(index: Int): Int = _R[index and 0x1F]
+	fun setGpr(index: Int, v: Int): Unit {
+		if (index != 0) {
+			_R[index and 0x1F] = v
+		}
+	}
+
+	class Gpr(val state: CpuState) {
+		operator fun get(index: Int): Int = state.getGpr(index)
+		operator fun set(index: Int, v: Int): Unit = state.setGpr(index, v)
+	}
+
+	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
+}
+
+/*
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
 	var r0: Int; set(value) = Unit; get() = 0
 	var r1: Int = 0
@@ -104,6 +141,11 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		_nPC += offset
 	}
 
+	fun getGpr(index: Int): Int = GPR[index]
+	fun setGpr(index: Int, v: Int): Unit {
+		GPR[index] = value
+	}
+
 	class Gpr(val state: CpuState) {
 		// ERROR!
 
@@ -154,3 +196,4 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 
 	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
 }
+*/

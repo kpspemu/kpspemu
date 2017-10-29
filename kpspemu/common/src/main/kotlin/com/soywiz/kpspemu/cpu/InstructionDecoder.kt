@@ -7,30 +7,37 @@ import com.soywiz.korio.util.signExtend
 // https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
 // http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
 // https://electronics.stackexchange.com/questions/28444/mips-pic32-branch-vs-branch-likely
-interface InstructionDecoder {
-	val Int.lsb: Int get() = this.extract(6 + 5 * 0, 5)
-	val Int.msb: Int get() = this.extract(6 + 5 * 1, 5)
+open class InstructionDecoder {
+	//val Int.lsb: Int get() = this.extract(6 + 5 * 0, 5)
+	//val Int.msb: Int get() = this.extract(6 + 5 * 1, 5)
+	//val Int.pos: Int get() = this.lsb
 
-	val Int.pos: Int get() = this.lsb
-	val Int.rd: Int get() = this.extract(11 + 5 * 0, 5)
-	val Int.s_imm16: Int get() = u_imm16.signExtend(16)
-	val Int.u_imm16: Int get() = extract(0, 16)
-	val Int.rt: Int get() = this.extract(11 + 5 * 1, 5)
-	val Int.rs: Int get() = this.extract(11 + 5 * 2, 5)
-	val Int.syscall: Int get() = this.extract(6, 20)
+	//val Int.rd: Int get() = this.extract(11 + 5 * 0, 5)
+	//val Int.rt: Int get() = this.extract(11 + 5 * 1, 5)
+	//val Int.rs: Int get() = this.extract(11 + 5 * 2, 5)
 
-	operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.normal(callback)
+	inline val Int.lsb: Int get() = (this ushr 6) and 0x1F
+	inline val Int.msb: Int get() = (this ushr 11) and 0x1F
+	inline val Int.pos: Int get() = this.lsb
+	inline val Int.rd: Int get() = (this ushr 11) and 0x1F
+	inline val Int.rt: Int get() = (this ushr 16) and 0x1F
+	inline val Int.rs: Int get() = (this ushr 21) and 0x1F
+	inline val Int.syscall: Int get() = this.extract(6, 20)
+	inline val Int.s_imm16: Int get() = ((this and 0xFFFF) shl 16) shr 16
+	inline val Int.u_imm16: Int get() = this and 0xFFFF
 
-	fun CpuState.normal(callback: CpuState.() -> Unit) {
+	inline operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.normal(callback)
+
+	inline fun CpuState.normal(callback: CpuState.() -> Unit) {
 		this.run(callback)
 		advance_pc(4)
 	}
 
-	fun CpuState.none(callback: CpuState.() -> Unit) {
+	inline fun CpuState.none(callback: CpuState.() -> Unit) {
 		this.run(callback)
 	}
 
-	fun CpuState.branch(callback: CpuState.() -> Boolean) {
+	inline fun CpuState.branch(callback: CpuState.() -> Boolean) {
 		val result = this.run(callback)
 
 		// beq
@@ -42,7 +49,7 @@ interface InstructionDecoder {
 		}
 	}
 
-	fun CpuState.branchLikely(callback: CpuState.() -> Boolean) {
+	inline fun CpuState.branchLikely(callback: CpuState.() -> Boolean) {
 		val result = this.run(callback)
 		if (result) {
 			//println("YAY!: $S_IMM16")
@@ -56,22 +63,21 @@ interface InstructionDecoder {
 		}
 	}
 
-	var CpuState.RD: Int; get() = GPR[IR.rd]; set(value) = run { GPR[IR.rd] = value }
-	var CpuState.RT: Int; get() = GPR[IR.rt]; set(value) = run { GPR[IR.rt] = value }
-	var CpuState.RS: Int; get() = GPR[IR.rs]; set(value) = run { GPR[IR.rs] = value }
+	inline var CpuState.RD: Int; get() = getGpr(IR.rd); set(value) = run { setGpr(IR.rd, value) }
+	inline var CpuState.RT: Int; get() = getGpr(IR.rt); set(value) = run { setGpr(IR.rt, value) }
+	inline var CpuState.RS: Int; get() = getGpr(IR.rs); set(value) = run { setGpr(IR.rs, value) }
 
-	val CpuState.RS_IMM16: Int; get() = RS + S_IMM16
+	inline val CpuState.RS_IMM16: Int; get() = RS + S_IMM16
 
 	//val CpuState.IMM16: Int; get() = I.extract()
 	//val CpuState.U_IMM16: Int get() = TODO()
 
-	val CpuState.S_IMM16: Int; get() = IR.s_imm16
-	val CpuState.U_IMM16: Int get() = IR.u_imm16
-	val CpuState.POS: Int get() = IR.pos
-	val CpuState.SYSCALL: Int get() = IR.syscall
-
-	val CpuState.U_IMM26: Int get() = IR.extract(0, 26)
-	val CpuState.JUMP_ADDRESS: Int get() = U_IMM26 * 4
+	inline val CpuState.S_IMM16: Int; get() = IR.s_imm16
+	inline val CpuState.U_IMM16: Int get() = IR.u_imm16
+	inline val CpuState.POS: Int get() = IR.pos
+	inline val CpuState.SYSCALL: Int get() = IR.syscall
+	inline val CpuState.U_IMM26: Int get() = IR.extract(0, 26)
+	inline val CpuState.JUMP_ADDRESS: Int get() = U_IMM26 * 4
 }
 
 /*

@@ -13,4 +13,8 @@ class CpuInterpreter(val cpu: CpuState, var trace: Boolean = false) {
 		if (trace) println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
 		dispatcher.dispatch(cpu)
 	}
+
+	fun steps(count: Int) {
+		for (n in 0 until count) step()
+	}
 }

@@ -5,7 +5,7 @@ import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
 import com.soywiz.kpspemu.cpu.InstructionType
 
-object Disassembler : InstructionDecoder {
+object Disassembler : InstructionDecoder() {
 	private val PERCENT_REGEX = Regex("%\\w+")
 
 	fun gprStr(i: Int) = "r$i"
