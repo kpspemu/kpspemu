@@ -1,17 +1,21 @@
 # kpspemu
-PSP Emulator done in Kotlin Common targeting JVM and JS for now
+PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for now
 
 [![Build Status](https://travis-ci.org/kpspemu/kpspemu.svg?branch=master)](https://travis-ci.org/kpspemu/kpspemu)
+
+### Very basic online demo using Kotlin.JS:
+* https://kpspemu.github.io/kpspemu-demo/minifire (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/helloworld (interpreted)
+
+---
+
+* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- original jspepmu
 
 ### Previous works:
 * https://github.com/soywiz/pspemu (PSP Emulator done in D programming language. Interpreted.)
 * https://github.com/cspspemu/cspspemu (PSP Emulator done in C# programming language. Dynarec.)
 * https://github.com/jspspemu/jspspemu (PSP Emulator done in typescript programming language. Dynarec.)
 
-### Very basic online demo using Kotlin.JS:
-* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- original jspepmu
-* https://kpspemu.github.io/kpspemu-demo/minifire (interpreted)
-* https://kpspemu.github.io/kpspemu-demo/helloworld (interpreted)
 
 ### Current state:
 
