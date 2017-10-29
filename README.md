@@ -3,6 +3,9 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 
 [![Build Status](https://travis-ci.org/kpspemu/kpspemu.svg?branch=master)](https://travis-ci.org/kpspemu/kpspemu)
 
+![](/docs/helloworld_js.png)
+![](/docs/helloworld_jvm.png)
+
 ### Very basic online demo using Kotlin.JS:
 * https://kpspemu.github.io/kpspemu-demo/minifire (interpreted)
 * https://kpspemu.github.io/kpspemu-demo/helloworld (interpreted)
