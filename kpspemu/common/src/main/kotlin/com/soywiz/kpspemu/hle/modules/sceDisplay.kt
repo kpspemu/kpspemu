@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.PspThread
 
-class sceDisplay : SceModule() {
+class sceDisplay : SceModule("sceDisplay") {
 	val display by lazy { e.display }
 
 	override fun registerModule() {

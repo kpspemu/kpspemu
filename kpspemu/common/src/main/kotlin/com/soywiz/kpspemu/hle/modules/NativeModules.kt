@@ -1,9 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.hle.manager.ModuleManager
 
+fun Emulator.registerNativeModules() = moduleManager.registerNativeModules()
+
 fun ModuleManager.registerNativeModules() {
-	register("sceCtrl") { sceCtrl() }
-	register("sceDisplay") { sceDisplay() }
-	register("UtilsForUser") { UtilsForUser() }
+	register(sceCtrl())
+	register(sceDisplay())
+	register(UtilsForUser())
 }

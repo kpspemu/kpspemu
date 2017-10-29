@@ -2,6 +2,13 @@ package com.soywiz.kpspemu.cpu
 
 import com.soywiz.kpspemu.mem.Memory
 
+// http://www.cs.uwm.edu/classes/cs315/Bacon/Lecture/HTML/ch05s03.html
+var CpuState.K0: Int; set(value) = run { r26 = value }; get() = r26
+var CpuState.K1: Int; set(value) = run { r27 = value }; get() = r27
+var CpuState.GP: Int; set(value) = run { r28 = value }; get() = r28
+var CpuState.SP: Int; set(value) = run { r29 = value }; get() = r29
+var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
+
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
 	var _R = IntArray(32)
 

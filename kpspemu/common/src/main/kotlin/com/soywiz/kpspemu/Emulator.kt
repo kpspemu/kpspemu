@@ -5,6 +5,9 @@ import com.soywiz.kpspemu.cpu.RegistrableSyscallHandler
 import com.soywiz.kpspemu.cpu.Syscalls
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.display.PspDisplay
+import com.soywiz.kpspemu.hle.manager.MemoryManager
+import com.soywiz.kpspemu.hle.manager.ModuleManager
+import com.soywiz.kpspemu.hle.manager.SyscallManager
 import com.soywiz.kpspemu.mem.Memory
 
 class PspThread(val mem: Memory, val syscalls: Syscalls) {
@@ -16,6 +19,9 @@ class Emulator(
 	val mem: Memory = Memory(),
 	val display: PspDisplay = PspDisplay(mem)
 ) {
+	val memoryManager = MemoryManager()
+	val moduleManager = ModuleManager(this)
+	val syscallManager = SyscallManager()
 	val mainThread = PspThread(mem, syscalls)
 	val cpu = mainThread.cpu
 	val interpreter = CpuInterpreter(cpu)

@@ -1,22 +1,35 @@
 package com.soywiz.kpspemu.format.elf
 
+import com.soywiz.korio.lang.Debugger
+import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
-import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.korma.numeric.nextAlignedTo
+import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.cpu.GP
+import com.soywiz.kpspemu.hle.manager.MemoryManager
+import com.soywiz.kpspemu.hle.manager.ModuleManager
+import com.soywiz.kpspemu.hle.manager.SyscallManager
+import com.soywiz.kpspemu.hle.modules.NativeFunction
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.mem.openSync
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.reflect.KProperty
+
 
 data class ElfPspModuleInfo(
 	val moduleAtributes: Int,
 	val moduleVersion: Int,
 	val name: String,
-	val gp: Int,
+	val GP: Int,
 	val exportsStart: Int,
 	val exportsEnd: Int,
 	val importsStart: Int,
-	val importsEnd: Int
+	val importsEnd: Int,
+	var PC: Int = 0
 ) {
-	var pc: Int = 0
 
 	// http://hitmen.c02.at/files/yapspd/psp_doc/chap26.html
 	// 26.2.2.8
@@ -26,11 +39,12 @@ data class ElfPspModuleInfo(
 				moduleAtributes = readU16_le(),
 				moduleVersion = readU16_le(),
 				name = readStringz(28),
-				gp = readS32_le(),
+				GP = readS32_le(),
 				exportsStart = readS32_le(),
 				exportsEnd = readS32_le(),
 				importsStart = readS32_le(),
-				importsEnd = readS32_le()
+				importsEnd = readS32_le(),
+				PC = 0
 			)
 		}
 	}
@@ -97,18 +111,6 @@ data class ElfPspModuleInfoAtributesEnum(val id: Int) {
 	}
 }
 
-data class Instruction(val address: Int, var data: Int) {
-	var u_imm16: Int get() = data.extract(0, 16); set(value) = run { data = data.insert(value, 0, 16) }
-}
-
-class NativeFunction {
-	var name: String = ""
-	var nid: Int = 0
-	var firmwareVersion: Int = 150
-	var nativeCall: () -> Unit = {}
-	var call: (Int, CpuState) -> Unit = { a, b -> }
-}
-
 class InstructionReader(
 	private val memory: Memory
 ) {
@@ -116,23 +118,38 @@ class InstructionReader(
 	fun write(address: Int, instruction: Instruction) = memory.sw(address, instruction.data)
 }
 
-/*
-class PspElfLoader(
+fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
+
+fun Emulator.loadElfAndSetRegisters(file: SyncStream): PspElf {
+	val elf = loadElf(file)
+	cpu.setPC(elf.moduleInfo.PC)
+	cpu.GP = elf.moduleInfo.GP
+	return elf
+}
+
+
+class PspElf private constructor(
 	private var memory: Memory,
 	private var memoryManager: MemoryManager,
 	private var moduleManager: ModuleManager,
 	private var syscallManager: SyscallManager
 ) {
-	lateinit private var elfLoader: Elf
-	var moduleInfo: ElfPspModuleInfo
-	var assembler = MipsAssembler()
-	var baseAddress: Int = 0
-	var partition: _manager.MemoryPartition
-	var elfDwarfLoader: ElfDwarfLoader
+	lateinit var elf: Elf; private set
+	lateinit var moduleInfo: ElfPspModuleInfo; private set
+	lateinit var dwarf: ElfDwarf; private set
+	var baseAddress: Int = 0; private set
+
+	companion object {
+		fun loadInto(stream: SyncStream, emulator: Emulator): PspElf {
+			val loader = PspElf(emulator.mem, emulator.memoryManager, emulator.moduleManager, emulator.syscallManager)
+			loader.load(stream)
+			return loader
+		}
+	}
 
 	fun load(stream: SyncStream) {
 		//console.warn('PspElfLoader.load');
-		this.elfLoader = Elf.read(stream)
+		this.elf = Elf.read(stream)
 
 		//ElfSectionHeaderFlags.Allocate
 
@@ -142,8 +159,8 @@ class PspElfLoader(
 		this.readModuleInfo()
 		this.updateModuleImports()
 
-		this.elfDwarfLoader = ElfDwarfLoader()
-		this.elfDwarfLoader.parseElfLoader(this.elfLoader)
+		this.dwarf = ElfDwarf()
+		this.dwarf.parseElfLoader(this.elf)
 
 		//this.memory.dump(); debugger;
 
@@ -152,47 +169,44 @@ class PspElfLoader(
 		//logger.log(this.moduleInfo);
 	}
 
-	fun getSymbolAt(address: Int) {
-		return this.elfDwarfLoader.getSymbolAt(address)
-	}
+	fun getSymbolAt(address: Int) = this.dwarf.getSymbolAt(address)
 
 	private fun getSectionHeaderMemoryStream(sectionHeader: ElfSectionHeader): SyncStream {
 		return this.memory.getPointerStream(this.baseAddress + sectionHeader.address, sectionHeader.size)
 	}
 
 	private fun readModuleInfo() {
-		this.moduleInfo = ElfPspModuleInfo(this.getSectionHeaderMemoryStream(this.elfLoader.getSectionHeader(".rodata.sceModuleInfo")))
-		this.moduleInfo.pc = this.baseAddress + this.elfLoader.header.entryPoint
+		this.moduleInfo = ElfPspModuleInfo(this.getSectionHeaderMemoryStream(this.elf.getSectionHeader(".rodata.sceModuleInfo")))
+		this.moduleInfo.PC = this.baseAddress + this.elf.header.entryPoint
 	}
 
 	private fun allocateMemory() {
-		this.baseAddress = 0
+		baseAddress = 0
 
-		if (this.elfLoader.needsRelocation) {
-			this.baseAddress = this.memoryManager.userPartition.childPartitions.sortBy(partition => partition . size).reverse().first().low
-			this.baseAddress = this.baseAddress.nextAlignedTo(0x1000)
+		if (elf.needsRelocation) {
+			baseAddress = memoryManager.userPartition.childPartitions.sortedBy { it.size }.last().low.toInt()
+			baseAddress = baseAddress.nextAlignedTo(0x1000)
 			//this.baseAddress = 0x08800000 + 0x4000;
-
 		}
 
-		var lowest = 0xFFFFFFFF.toInt()
-		var highest = 0
-		for (section in this.elfLoader.sectionHeaders.filter { it.flags hasFlag ElfSectionHeaderFlags.Allocate }) {
-			lowest = min(lowest, (this.baseAddress + section.address))
-			highest = max(highest, (this.baseAddress + section.address + section.size))
+		var lowest: Long = 0xFFFFFFFF
+		var highest: Long = 0
+		for (section in this.elf.sectionHeaders.filter { it.flags hasFlag ElfSectionHeaderFlags.Allocate }) {
+			lowest = min(lowest, (this.baseAddress.toLong() + section.address))
+			highest = max(highest, (this.baseAddress.toLong() + section.address + section.size))
 		}
 
-		for (program in this.elfLoader.programHeaders) {
-			lowest = min(lowest, (this.baseAddress + program.virtualAddress))
-			highest = max(highest, (this.baseAddress + program.virtualAddress + program.memorySize))
+		for (program in this.elf.programHeaders) {
+			lowest = min(lowest, (this.baseAddress.toLong() + program.virtualAddress))
+			highest = max(highest, (this.baseAddress.toLong() + program.virtualAddress + program.memorySize))
 		}
 
-		var memorySegment = this.memoryManager.userPartition.allocateSet(highest - lowest, lowest, 'Elf')
+		var memorySegment = this.memoryManager.userPartition.allocateSet(highest - lowest, lowest, "Elf")
 	}
 
 	private fun relocateFromHeaders() {
 		var RelocProgramIndex = 0
-		for (programHeader in this.elfLoader.programHeaders) {
+		for (programHeader in this.elf.programHeaders) {
 			when (programHeader.type) {
 				ElfProgramHeaderType.Reloc1 -> {
 					println("SKIPPING Elf.ProgramHeader.TypeEnum.Reloc1!")
@@ -204,13 +218,13 @@ class PspElfLoader(
 		}
 
 		var RelocSectionIndex = 0
-		for (sectionHeader in elfLoader.sectionHeaders) {
+		for (sectionHeader in elf.sectionHeaders) {
 			//RelocOutput.WriteLine("Section Header: %d : %s".Sprintf(RelocSectionIndex++, SectionHeader.ToString()));
 			//println(sprintf('Section Header: '));
 
 			when (sectionHeader.type) {
 				ElfSectionHeaderType.Relocation -> {
-					println(sectionHeader)
+					println("sectionHeader: $sectionHeader")
 					println("Not implemented ElfSectionHeaderType.Relocation")
 				}
 
@@ -234,8 +248,8 @@ class PspElfLoader(
 			val reloc = relocs[index]
 			if (reloc.type == ElfRelocType.StopRelocation) break
 
-			val pointerBaseOffset = this.elfLoader.programHeaders[reloc.pointerSectionHeaderBase].virtualAddress
-			val pointeeBaseOffset = this.elfLoader.programHeaders[reloc.pointeeSectionHeaderBase].virtualAddress
+			val pointerBaseOffset = this.elf.programHeaders[reloc.pointerSectionHeaderBase].virtualAddress
+			val pointeeBaseOffset = this.elf.programHeaders[reloc.pointeeSectionHeaderBase].virtualAddress
 
 			// Address of data to relocate
 			val RelocatedPointerAddress = (baseAddress + reloc.pointerAddress + pointerBaseOffset)
@@ -286,7 +300,7 @@ class PspElfLoader(
 	}
 
 	private fun writeToMemory() {
-		val needsRelocate = this.elfLoader.needsRelocation
+		val needsRelocate = this.elf.needsRelocation
 
 		//var loadAddress = this.elfLoader.programHeaders[0].psysicalAddress;
 		val loadAddress = this.baseAddress
@@ -294,20 +308,20 @@ class PspElfLoader(
 		println("PspElfLoader: needsRelocate=%s, loadAddress=%08X".format(needsRelocate, loadAddress))
 		//console.log(moduleInfo);
 
-		for (programHeader in this.elfLoader.programHeaders.filter { it.type == ElfProgramHeaderType.Load }) {
+		for (programHeader in this.elf.programHeaders.filter { it.type == ElfProgramHeaderType.Load }) {
 			val fileOffset = programHeader.offset
 			val memOffset = this.baseAddress + programHeader.virtualAddress
 			val fileSize = programHeader.fileSize
 			val memSize = programHeader.memorySize
 
-			this.elfLoader.stream.sliceWithSize(fileOffset, fileSize).copyTo(this.memory.getPointerStream(memOffset, fileSize))
+			this.elf.stream.sliceWithSize(fileOffset, fileSize).copyTo(this.memory.getPointerStream(memOffset, fileSize))
 			this.memory.memset(memOffset + fileSize, 0, memSize - fileSize)
 
 			//this.getSectionHeaderMemoryStream
 			println("Program Header: " + "%08X:%08X, %08X:%08X".format(fileOffset, fileSize, memOffset, memSize))
 		}
 
-		for (sectionHeader in this.elfLoader.sectionHeaders.filter { it.flags hasFlag ElfSectionHeaderFlags.Allocate }) {
+		for (sectionHeader in this.elf.sectionHeaders.filter { it.flags hasFlag ElfSectionHeaderFlags.Allocate }) {
 			val low = loadAddress + sectionHeader.address
 
 			println("Section Header: %s LOW:%08X, SIZE:%08X".format(sectionHeader.toString(), low, sectionHeader.size))
@@ -336,7 +350,7 @@ class PspElfLoader(
 
 	private fun updateModuleImports() {
 		val moduleInfo = this.moduleInfo
-		println(moduleInfo)
+		println("updateModuleImports.moduleInfo: $moduleInfo")
 		val importsBytesSize = moduleInfo.importsEnd - moduleInfo.importsStart
 		val importsStream = this.memory.openSync().slice(moduleInfo.importsStart until moduleInfo.importsEnd)
 		val importsCount = importsBytesSize / ElfPspModuleImport.SIZE
@@ -345,53 +359,54 @@ class PspElfLoader(
 			_import.name = this.memory.readStringz(_import.nameOffset)
 			val imported = this.updateModuleFunctions(_import)
 			this.updateModuleVars(_import)
-			println("Imported: " + imported.name + " " + imported.registeredNativeFunctions.map { it.name })
+			println("Imported: ${imported.name} ${imported.registeredNativeFunctions.map { it.name }}")
 		}
 		//console.log(imports);
 	}
 
-	private fun updateModuleFunctions(moduleImport: ElfPspModuleImport): registeredNativeFunctions {
+	private fun updateModuleFunctions(moduleImport: ElfPspModuleImport): Res1 {
 		val _module = this.moduleManager.getByName(moduleImport.name)
 		val nidsStream = this.memory.openSync().sliceWithSize(moduleImport.nidAddress, moduleImport.functionCount * 4)
 		val callStream = this.memory.openSync().sliceWithSize(moduleImport.callAddress, moduleImport.functionCount * 8)
 		val registeredNativeFunctions = arrayListOf<NativeFunction>()
 		val unknownFunctions = arrayListOf<String>()
 
-		val registerN = { nid: Int, n: Int ->
-			var nfunc: NativeFunction
-			nfunc = _module.getByNid(nid)
+		val registerN: (Int, Int) -> Int = { nid: Int, n: Int ->
+			var nfunc: NativeFunction? = _module.getByNidOrNull(nid)
 
-			if (nfunc != null) {
-				unknownFunctions.add("'%s':0x%08X".format(_module.moduleName, nid))
+			if (nfunc == null) {
+				unknownFunctions.add("'%s':0x%08X".format(_module.name, nid))
 
-				nfunc = NativeFunction()
-				nfunc.name = "%s:0x%08X".format(moduleImport.name, nid)
-				nfunc.nid = nid
-				nfunc.firmwareVersion = 150
-				nfunc.nativeCall = {
-					println(_module)
-					println("updateModuleFunctions: Not implemented '" + nfunc.name + "'")
-					Debugger.enterDebugger()
-					throw (Error("updateModuleFunctions: Not implemented '" + nfunc.name + "'"))
-				}
-				nfunc.call = { context, state ->
-					nfunc.nativeCall()
-				}
+				nfunc = NativeFunction(
+					name = "%s:0x%08X".format(moduleImport.name, nid),
+					nid = nid.toLong(),
+					since = 150,
+					syscall = -1,
+					function = { state ->
+						println(_module)
+						println("updateModuleFunctions: Not implemented '${nfunc?.name}'")
+						Debugger.enterDebugger()
+						throw Error("updateModuleFunctions: Not implemented '${nfunc?.name}'")
+					}
+				)
 			}
 
 			registeredNativeFunctions.add(nfunc)
 
 			val syscallId = this.syscallManager.register(nfunc)
 			//printf("%s:%08X -> %s", moduleImport.name, nid, syscallId);
-			return syscallId
+			syscallId
 		}
 
 		for (n in 0 until moduleImport.functionCount) {
 			val nid = nidsStream.readS32_le()
 			val syscall = registerN(nid, n)
 
-			callStream.write32_le(this.assembler.assemble(0, "jr $31")[0].data)
-			callStream.write32_le(this.assembler.assemble(0, "syscall %d".format(syscall))[0].data)
+
+			//callStream.write32_le(this.assembler.assemble(0, "jr $31")[0].data)
+			//callStream.write32_le(this.assembler.assemble(0, "syscall %d".format(syscall))[0].data)
+			callStream.write32_le(0b000000_11111_00000_00000_00000_001000) // jr $31
+			callStream.write32_le(0b000000_00000000000000000000_001100 or (syscall shl 6)) // syscall <syscall>
 		}
 
 		if (unknownFunctions.size > 0) {
@@ -401,9 +416,91 @@ class PspElfLoader(
 		return Res1(name = moduleImport.name, registeredNativeFunctions = registeredNativeFunctions)
 	}
 
-	class Res1(val name: String, val registeredNativeFunctions: NativeFunction)
+	class Res1(val name: String, val registeredNativeFunctions: List<NativeFunction>)
 
 	private fun updateModuleVars(moduleImport: ElfPspModuleImport) {
 	}
+}
+
+// @TODO: Ask if we can inline this so it has the best performance possible
+class Bits(val offset: Int, val size: Int) {
+	operator fun getValue(i: Instruction, p: KProperty<*>): Int = i.data.extract(offset, size)
+	operator fun setValue(i: Instruction, p: KProperty<*>, value: Int) = run { i.data = i.data.insert(value, offset, size) }
+}
+
+data class Instruction(val address: Int, var data: Int) {
+	var u_imm16: Int by Bits(0, 16)
+	var jump_bits: Int by Bits(0, 26)
+	var jump_real: Int get() = jump_bits * 4; set(value) = run { jump_bits = value / 4 }
+
+	//var u_imm16: Int get() = data.extract(0, 16); set(value) = run { data = data.insert(value, 0, 16) }
+	//get jump_bits() { return this.extract(0, 26); } set jump_bits(value: number) { this.insert(0, 26, value); }
+	//get jump_real() { return (this.jump_bits * 4) >>> 0; } set jump_real(value: number) { this.jump_bits = (value / 4) >>> 0; }
+
+}
+
+/*
+export class Instruction {
+	constructor(public PC: number, public data: number) {
+	}
+
+	static fromMemoryAndPC(memory: Memory, PC: number) { return new Instruction(PC, memory.readInt32(PC)); }
+
+	extract(offset: number, length: number) { return BitUtils.extract(this.data, offset, length); }
+	extract_s(offset: number, length: number) { return BitUtils.extractSigned(this.data, offset, length); }
+	insert(offset: number, length: number, value: number) { this.data = BitUtils.insert(this.data, offset, length, value); }
+
+	get rd() { return this.extract(11 + 5 * 0, 5); } set rd(value: number) { this.insert(11 + 5 * 0, 5, value); }
+	get rt() { return this.extract(11 + 5 * 1, 5); } set rt(value: number) { this.insert(11 + 5 * 1, 5, value); }
+	get rs() { return this.extract(11 + 5 * 2, 5); } set rs(value: number) { this.insert(11 + 5 * 2, 5, value); }
+
+	get fd() { return this.extract(6 + 5 * 0, 5); } set fd(value: number) { this.insert(6 + 5 * 0, 5, value); }
+	get fs() { return this.extract(6 + 5 * 1, 5); } set fs(value: number) { this.insert(6 + 5 * 1, 5, value); }
+	get ft() { return this.extract(6 + 5 * 2, 5); } set ft(value: number) { this.insert(6 + 5 * 2, 5, value); }
+
+	get VD() { return this.extract(0, 7); } set VD(value: number) { this.insert(0, 7, value); }
+	get VS() { return this.extract(8, 7); } set VS(value: number) { this.insert(8, 7, value); }
+	get VT() { return this.extract(16, 7); } set VT(value: number) { this.insert(16, 7, value); }
+	get VT5_1() { return this.VT5 | (this.VT1 << 5); } set VT5_1(value: number) { this.VT5 = value; this.VT1 = (value >>> 5); }
+	get IMM14() { return this.extract_s(2, 14); } set IMM14(value: number) { this.insert(2, 14, value); }
+
+	get ONE() { return this.extract(7, 1); } set ONE(value: number) { this.insert(7, 1, value); }
+	get TWO() { return this.extract(15, 1); } set TWO(value: number) { this.insert(15, 1, value); }
+	get ONE_TWO() { return (1 + 1 * this.ONE + 2 * this.TWO); } set ONE_TWO(value: number) { this.ONE = (((value - 1) >>> 0) & 1); this.TWO = (((value - 1) >>> 1) & 1); }
+
+
+	get IMM8() { return this.extract(16, 8); } set IMM8(value: number) { this.insert(16, 8, value); }
+	get IMM5() { return this.extract(16, 5); } set IMM5(value: number) { this.insert(16, 5, value); }
+	get IMM3() { return this.extract(18, 3); } set IMM3(value: number) { this.insert(18, 3, value); }
+	get IMM7() { return this.extract(0, 7); } set IMM7(value: number) { this.insert(0, 7, value); }
+	get IMM4() { return this.extract(0, 4); } set IMM4(value: number) { this.insert(0, 4, value); }
+	get VT1() { return this.extract(0, 1); } set VT1(value: number) { this.insert(0, 1, value); }
+	get VT2() { return this.extract(0, 2); } set VT2(value: number) { this.insert(0, 2, value); }
+	get VT5() { return this.extract(16, 5); } set VT5(value: number) { this.insert(16, 5, value); }
+	get VT5_2() { return this.VT5 | (this.VT2 << 5); }
+	get IMM_HF() { return HalfFloat.toFloat(this.imm16); }
+
+	get pos() { return this.lsb; } set pos(value: number) { this.lsb = value; }
+	get size_e() { return this.msb + 1; } set size_e(value: number) { this.msb = value - 1; }
+	get size_i() { return this.msb - this.lsb + 1; } set size_i(value: number) { this.msb = this.lsb + value - 1; }
+
+	get lsb() { return this.extract(6 + 5 * 0, 5); } set lsb(value: number) { this.insert(6 + 5 * 0, 5, value); }
+	get msb() { return this.extract(6 + 5 * 1, 5); } set msb(value: number) { this.insert(6 + 5 * 1, 5, value); }
+	get c1cr() { return this.extract(6 + 5 * 1, 5); } set c1cr(value: number) { this.insert(6 + 5 * 1, 5, value); }
+
+	get syscall() { return this.extract(6, 20); } set syscall(value: number) { this.insert(6, 20, value); }
+
+	get imm16() { var res = this.u_imm16; if (res & 0x8000) res |= 0xFFFF0000; return res; } set imm16(value: number) { this.insert(0, 16, value); }
+	get u_imm16() { return this.extract(0, 16); } set u_imm16(value: number) { this.insert(0, 16, value); }
+	get u_imm26() { return this.extract(0, 26); } set u_imm26(value: number) { this.insert(0, 26, value); }
+
+	get jump_bits() { return this.extract(0, 26); } set jump_bits(value: number) { this.insert(0, 26, value); }
+	get jump_real() { return (this.jump_bits * 4) >>> 0; } set jump_real(value: number) { this.jump_bits = (value / 4) >>> 0; }
+
+	set branch_address(value:number) { this.imm16 = (value - this.PC - 4) / 4; }
+	set jump_address(value:number) { this.u_imm26 = value / 4; }
+
+	get branch_address() { return this.PC + this.imm16 * 4 + 4; }
+	get jump_address() { return this.u_imm26 * 4; }
 }
 */

@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.mem.Ptr
 
-class sceCtrl : SceModule() {
+class sceCtrl : SceModule("sceCtrl") {
 	override fun registerModule() {
 		registerFunctionInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
 	}

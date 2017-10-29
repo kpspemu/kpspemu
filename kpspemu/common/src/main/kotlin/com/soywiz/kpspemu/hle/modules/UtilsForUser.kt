@@ -3,7 +3,7 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.korma.random.MtRand
 import com.soywiz.kpspemu.mem.Memory
 
-class UtilsForUser : SceModule() {
+class UtilsForUser : SceModule("UtilsForUser") {
 	//val random = MtRand(KorioNative.currentTimeMillis())
 	val random = MtRand(0)
 

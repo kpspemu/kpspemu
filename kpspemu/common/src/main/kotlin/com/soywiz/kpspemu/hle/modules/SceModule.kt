@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.ds.lmapOf
+import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.PspThread
 import com.soywiz.kpspemu.cpu.CpuState
@@ -24,7 +25,19 @@ class RegisterReader {
 	val ptr: Ptr get() = MemPtr(mem, int)
 }
 
-abstract class SceModule {
+data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
+
+/*
+class NativeFunction {
+	var name: String = ""
+	var nid: Int = 0
+	var firmwareVersion: Int = 150
+	var nativeCall: () -> Unit = {}
+	var call: (Int, CpuState) -> Unit = { a, b -> }
+}
+*/
+
+abstract class SceModule(val name: String) {
 	protected lateinit var e: Emulator; private set
 
 	fun registerPspModule(e: Emulator) {
@@ -36,12 +49,13 @@ abstract class SceModule {
 
 	private val rr: RegisterReader = RegisterReader()
 
-	data class ModuleFunction(val name: String, val uid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
+	val functions = LinkedHashMap<Int, NativeFunction>()
 
-	val functions = lmapOf<Int, ModuleFunction>()
+	fun getByNidOrNull(nid: Int): NativeFunction? = functions[nid]
+	fun getByNid(nid: Int): NativeFunction = getByNidOrNull(nid) ?: invalidOp("Can't find NID 0x%08X in %s".format(nid, name))
 
-	protected fun registerFunctionRaw(function: ModuleFunction) {
-		functions[function.uid.toInt()] = function
+	protected fun registerFunctionRaw(function: NativeFunction) {
+		functions[function.nid.toInt()] = function
 		if (function.syscall >= 0) {
 			e.syscalls.register(function.syscall) { cpu, syscall ->
 				//println("REGISTERED SYSCALL $syscall")
@@ -51,7 +65,7 @@ abstract class SceModule {
 	}
 
 	protected fun registerFunctionRaw(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: (CpuState) -> Unit) {
-		registerFunctionRaw(ModuleFunction(name, uid, since, syscall, function))
+		registerFunctionRaw(NativeFunction(name, uid, since, syscall, function))
 	}
 
 	protected fun registerFunctionRR(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {

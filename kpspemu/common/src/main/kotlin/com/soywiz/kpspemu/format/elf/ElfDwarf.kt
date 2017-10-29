@@ -1,5 +1,14 @@
 package com.soywiz.kpspemu.format.elf
 
+class ElfDwarf {
+	fun parseElfLoader(elfLoader: Elf): Unit {
+		println("ElfDwarfLoader.parseElfLoader: Not implemented")
+	}
+	fun getSymbolAt(address: Int): Unit {
+		Unit
+	}
+}
+
 /*
 var console = logger.named('elf.dwarf');
 

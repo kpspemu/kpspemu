@@ -15,9 +15,13 @@ import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.stream.sliceWithSize
 import com.soywiz.korma.geom.SizeInt
+import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.format.elf.Elf
 import com.soywiz.kpspemu.format.elf.ElfPspModuleInfo
+import com.soywiz.kpspemu.format.elf.loadElf
+import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.hle.modules.UtilsForUser
+import com.soywiz.kpspemu.hle.modules.registerNativeModules
 import com.soywiz.kpspemu.hle.modules.sceCtrl
 import com.soywiz.kpspemu.hle.modules.sceDisplay
 import com.soywiz.kpspemu.mem.Memory
@@ -58,29 +62,17 @@ val MinifireElf by lazy {
 }
 
 class KpspemuMainScene : Scene() {
-	val elf = Elf.read(MinifireElf.openSync())
-	val emu = Emulator(mem = Memory())
+	val emu = Emulator(mem = Memory()).apply {
+		registerNativeModules()
+		loadElfAndSetRegisters(MinifireElf.openSync())
+		cpu.SP = 0x0A000000 // @TODO: hardcoded stack
+	}
 	val bmp = Bitmap32(512, 272)
 	val temp = ByteArray(512 * 272 * 4)
 	val tex by lazy { views.texture(bmp) }
 
 	suspend override fun sceneInit(sceneView: Container) {
-		emu.run {
-			// Hardcoded as first example
-			val ph = elf.programHeaders[0]
-			val programBytes = elf.stream.sliceWithSize(ph.offset.toLong(), ph.fileSize.toLong()).readAll()
-			mem.write(ph.virtualAddress, programBytes)
-			val moduleInfo = ElfPspModuleInfo(elf.sectionHeadersByName[".rodata.sceModuleInfo"]!!.stream.clone())
-			//interpreter.trace = true
-			interpreter.trace = false
-
-			UtilsForUser().registerPspModule(emu)
-			sceCtrl().registerPspModule(emu)
-			sceDisplay().registerPspModule(emu)
-
-			cpu.GPR[29] = 0x0A000000 // stack
-			cpu.setPC(0x08900008) // PC
-		}
+		emu.interpreter.trace = false
 
 		sceneView.addUpdatable {
 			emu.interpreter.steps(1000000)
