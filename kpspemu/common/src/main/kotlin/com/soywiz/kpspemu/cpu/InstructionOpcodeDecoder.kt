@@ -3,11 +3,13 @@ package com.soywiz.kpspemu.cpu
 object InstructionOpcodeDecoder {
 	private data class Result(var result: InstructionType = Instructions.add)
 
-	private val evaluator = object : InstructionEvaluator<Result>() {
+	private class ResultInstructionEvaluator : InstructionEvaluator<Result>() {
 		override fun unimplemented(s: Result, i: InstructionType) {
 			s.result = i
 		}
 	}
+
+	private val evaluator = ResultInstructionEvaluator()
 
 	private val dispatcher = InstructionDispatcher(evaluator)
 
