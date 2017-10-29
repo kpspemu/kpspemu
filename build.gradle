@@ -6,7 +6,6 @@ buildscript {
 	ext.compilerVersion = ext.kotlinVersion
 	ext.librariesVersion = ext.kotlinVersion
 	ext.eapChannel = 'http://dl.bintray.com/kotlin/kotlin-eap-1.2'
-	ext.serializationPluginVersion = '0.1'
 
 	repositories {
 		jcenter()

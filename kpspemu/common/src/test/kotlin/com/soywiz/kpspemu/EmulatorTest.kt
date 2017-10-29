@@ -18,9 +18,11 @@ import com.soywiz.kpspemu.hle.modules.sceCtrl
 import com.soywiz.kpspemu.hle.modules.sceDisplay
 import com.soywiz.kpspemu.mem.Memory
 import org.junit.Test
+import kotlin.test.Ignore
 
 class EmulatorTest {
 	@Test
+	@Ignore
 	fun name() = syncTest {
 		val elf = Elf.read(MinifireElf.openSync())
 		//val emu = Emulator(mem = Memory().trace())
@@ -48,7 +50,8 @@ class EmulatorTest {
 
 			//for (n in 0 until 196000) {
 			//for (n in 0 until 80000000) {
-			for (n in 0 until 20000000) {
+			//for (n in 0 until 20000000) {
+			for (n in 0 until 100000) {
 				//for (n in 0 until 8000000) {
 				//for (n in 0 until 10000000) {
 				//for (n in 0 until 40000000) {
@@ -95,6 +98,7 @@ class EmulatorTest {
 
 				//println("r8: ${cpu.r8}")
 			}
+			/*
 			display.address = 0x44000000
 			println("VIDEOMEM: 0x%08X".format(display.address))
 			for (n in 0 until 512 * 272) {
@@ -105,6 +109,7 @@ class EmulatorTest {
 			bmp.transformColor { RGBA(RGBA.getR(it), RGBA.getG(it), RGBA.getB(it), 0xFF) }
 			bmp.writeTo(LocalVfs("c:/temp")["video_dump.tga"], formats = ImageFormats().registerStandard())
 			bmp.writeTo(LocalVfs("c:/temp")["video_dump.png"], formats = ImageFormats().registerStandard())
+			*/
 		}
 	}
 }

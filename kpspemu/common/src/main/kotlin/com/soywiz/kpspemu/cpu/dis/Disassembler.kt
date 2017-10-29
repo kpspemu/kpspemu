@@ -4,6 +4,7 @@ import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
 import com.soywiz.kpspemu.cpu.InstructionType
+import com.soywiz.kpspemu.mem.Memory
 
 object Disassembler : InstructionDecoder() {
 	private val PERCENT_REGEX = Regex("%\\w+")
@@ -38,3 +39,7 @@ object Disassembler : InstructionDecoder() {
 		return "${op.name} $params"
 	}
 }
+
+fun Memory.disasm(pc: Int): String = Disassembler.disasm(pc, this.lw(pc))
+fun Memory.disasmMacro(pc: Int): String = Disassembler.disasmMacro(pc, this.lw(pc))
+

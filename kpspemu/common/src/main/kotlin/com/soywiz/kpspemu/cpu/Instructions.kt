@@ -2,84 +2,7 @@ package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korio.lang.format
 
-object InstructionTable {
-	const val ADDR_TYPE_NONE: Int = 0
-	const val ADDR_TYPE_REG: Int = 1
-	const val ADDR_TYPE_16: Int = 2
-	const val ADDR_TYPE_26: Int = 3
-
-	const val INSTR_TYPE_PSP: Int = 1 shl 0
-	const val INSTR_TYPE_SYSCALL: Int = 1 shl 1
-	const val INSTR_TYPE_B: Int = 1 shl 2
-	const val INSTR_TYPE_LIKELY: Int = 1 shl 3
-	const val INSTR_TYPE_JAL: Int = 1 shl 4
-	const val INSTR_TYPE_JUMP: Int = 1 shl 5
-	const val INSTR_TYPE_BREAK: Int = 1 shl 6
-
-	data class VM(val format: String) {
-		val value: Int
-		val mask: Int
-
-		init {
-			val counts = mapOf(
-				"cstw" to 1, "cstz" to 1, "csty" to 1, "cstx" to 1,
-				"absw" to 1, "absz" to 1, "absy" to 1, "absx" to 1,
-				"mskw" to 1, "mskz" to 1, "msky" to 1, "mskx" to 1,
-				"negw" to 1, "negz" to 1, "negy" to 1, "negx" to 1,
-				"one" to 1, "two" to 1, "vt1" to 1,
-				"vt2" to 2,
-				"satw" to 2, "satz" to 2, "saty" to 2, "satx" to 2,
-				"swzw" to 2, "swzz" to 2, "swzy" to 2, "swzx" to 2,
-				"imm3" to 3,
-				"imm4" to 4,
-				"fcond" to 4,
-				"c0dr" to 5, "c0cr" to 5, "c1dr" to 5, "c1cr" to 5, "imm5" to 5, "vt5" to 5,
-				"rs" to 5, "rd" to 5, "rt" to 5, "sa" to 5, "lsb" to 5, "msb" to 5, "fs" to 5, "fd" to 5, "ft" to 5,
-				"vs" to 7, "vt" to 7, "vd" to 7, "imm7" to 7,
-				"imm8" to 8,
-				"imm14" to 14,
-				"imm16" to 16,
-				"imm20" to 20,
-				"imm26" to 26
-			)
-
-			var value: Int = 0
-			var mask: Int = 0
-
-			for (item in format.split(':')) {
-				// normal chunk
-				if (Regex("^[01\\-]+$").matches(item)) {
-					for (c in item) {
-						value = value shl 1
-						mask = mask shl 1
-						if (c == '0') {
-							value = value or 0; mask = mask or 1; }
-						if (c == '1') {
-							value = value or 1; mask = mask or 1; }
-						if (c == '-') {
-							value = value or 0; mask = mask or 0; }
-					}
-				}
-				// special chunk
-				else {
-					val displacement = counts[item] ?: throw Exception("Invalid item '$item'")
-					value = value shl displacement
-					mask = mask shl displacement
-				}
-			}
-
-			this.value = value
-			this.mask = mask
-		}
-	}
-
-	//val instructions = arrayListOf<InstructionType>()
-//
-	//fun ID(name: String, vm: VM, format: String, addressType: Int, instructionType: Int) {
-	//	instructions += InstructionType(name, vm, format, addressType, instructionType)
-	//}
-	fun ID(name: String, vm: VM, format: String, addressType: Int, instructionType: Int) = InstructionType(name, vm, format, addressType, instructionType)
-
+object Instructions {
 	val add = ID("add", VM("000000:rs:rt:rd:00000:100000"), "%d, %s, %t", ADDR_TYPE_NONE, 0)
 	val addu = ID("addu", VM("000000:rs:rt:rd:00000:100001"), "%d, %s, %t", ADDR_TYPE_NONE, 0)
 	val addi = ID("addi", VM("001000:rs:rt:imm16"), "%t, %s, %i", ADDR_TYPE_NONE, 0)
@@ -342,25 +265,98 @@ object InstructionTable {
 	val instructionsByName = instructions.map { it.name to it }.toMap()
 }
 
+const val ADDR_TYPE_NONE: Int = 0
+const val ADDR_TYPE_REG: Int = 1
+const val ADDR_TYPE_16: Int = 2
+const val ADDR_TYPE_26: Int = 3
+
+const val INSTR_TYPE_PSP: Int = 1 shl 0
+const val INSTR_TYPE_SYSCALL: Int = 1 shl 1
+const val INSTR_TYPE_B: Int = 1 shl 2
+const val INSTR_TYPE_LIKELY: Int = 1 shl 3
+const val INSTR_TYPE_JAL: Int = 1 shl 4
+const val INSTR_TYPE_JUMP: Int = 1 shl 5
+const val INSTR_TYPE_BREAK: Int = 1 shl 6
+
+private fun VM(format: String) = ValueMask(format)
+private fun ID(name: String, vm: ValueMask, format: String, addressType: Int, instructionType: Int) = InstructionType(name, vm, format, addressType, instructionType)
+
+data class ValueMask(val format: String) {
+	val value: Int
+	val mask: Int
+
+	init {
+		val counts = mapOf(
+			"cstw" to 1, "cstz" to 1, "csty" to 1, "cstx" to 1,
+			"absw" to 1, "absz" to 1, "absy" to 1, "absx" to 1,
+			"mskw" to 1, "mskz" to 1, "msky" to 1, "mskx" to 1,
+			"negw" to 1, "negz" to 1, "negy" to 1, "negx" to 1,
+			"one" to 1, "two" to 1, "vt1" to 1,
+			"vt2" to 2,
+			"satw" to 2, "satz" to 2, "saty" to 2, "satx" to 2,
+			"swzw" to 2, "swzz" to 2, "swzy" to 2, "swzx" to 2,
+			"imm3" to 3,
+			"imm4" to 4,
+			"fcond" to 4,
+			"c0dr" to 5, "c0cr" to 5, "c1dr" to 5, "c1cr" to 5, "imm5" to 5, "vt5" to 5,
+			"rs" to 5, "rd" to 5, "rt" to 5, "sa" to 5, "lsb" to 5, "msb" to 5, "fs" to 5, "fd" to 5, "ft" to 5,
+			"vs" to 7, "vt" to 7, "vd" to 7, "imm7" to 7,
+			"imm8" to 8,
+			"imm14" to 14,
+			"imm16" to 16,
+			"imm20" to 20,
+			"imm26" to 26
+		)
+
+		var value: Int = 0
+		var mask: Int = 0
+
+		for (item in format.split(':')) {
+			// normal chunk
+			if (Regex("^[01\\-]+$").matches(item)) {
+				for (c in item) {
+					value = value shl 1
+					mask = mask shl 1
+					if (c == '0') {
+						value = value or 0; mask = mask or 1; }
+					if (c == '1') {
+						value = value or 1; mask = mask or 1; }
+					if (c == '-') {
+						value = value or 0; mask = mask or 0; }
+				}
+			}
+			// special chunk
+			else {
+				val displacement = counts[item] ?: throw Exception("Invalid item '$item'")
+				value = value shl displacement
+				mask = mask shl displacement
+			}
+		}
+
+		this.value = value
+		this.mask = mask
+	}
+}
+
 data class InstructionType(
 	val name: String,
-	val vm: InstructionTable.VM,
+	val vm: ValueMask,
 	val format: String,
 	val addressType: Int,
 	val instructionType: Int
 ) {
 	fun match(i32: Int) = (i32 and this.vm.mask) == (this.vm.value and this.vm.mask)
 	private fun isInstructionType(mask: Int) = (this.instructionType and mask) != 0
-	val isSyscall get() = this.isInstructionType(InstructionTable.INSTR_TYPE_SYSCALL)
-	val isBreak get() = this.isInstructionType(InstructionTable.INSTR_TYPE_BREAK)
-	val isBranch get() = this.isInstructionType(InstructionTable.INSTR_TYPE_B)
-	val isCall get() = this.isInstructionType(InstructionTable.INSTR_TYPE_JAL)
-	val isJump get() = this.isInstructionType(InstructionTable.INSTR_TYPE_JAL) || this.isInstructionType(InstructionTable.INSTR_TYPE_JUMP)
-	val isJumpNoLink get() = this.isInstructionType(InstructionTable.INSTR_TYPE_JUMP)
-	val isJal get() = this.isInstructionType(InstructionTable.INSTR_TYPE_JAL)
+	val isSyscall get() = this.isInstructionType(INSTR_TYPE_SYSCALL)
+	val isBreak get() = this.isInstructionType(INSTR_TYPE_BREAK)
+	val isBranch get() = this.isInstructionType(INSTR_TYPE_B)
+	val isCall get() = this.isInstructionType(INSTR_TYPE_JAL)
+	val isJump get() = this.isInstructionType(INSTR_TYPE_JAL) || this.isInstructionType(INSTR_TYPE_JUMP)
+	val isJumpNoLink get() = this.isInstructionType(INSTR_TYPE_JUMP)
+	val isJal get() = this.isInstructionType(INSTR_TYPE_JAL)
 	val isJumpOrBranch get() = this.isBranch || this.isJump
-	val isLikely get() = this.isInstructionType(InstructionTable.INSTR_TYPE_LIKELY)
-	val isRegister get() = this.addressType == InstructionTable.ADDR_TYPE_REG
+	val isLikely get() = this.isInstructionType(INSTR_TYPE_LIKELY)
+	val isRegister get() = this.addressType == ADDR_TYPE_REG
 	val isFixedAddressJump get() = this.isJumpOrBranch && !this.isRegister
 	val hasDelayedBranch get() = this.isJumpOrBranch
 	override fun toString() = "InstructionType('${this.name}', ${"%08X".format(this.vm.value)}, ${"%08X".format(this.vm.mask)})"

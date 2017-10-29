@@ -4,9 +4,7 @@ import com.soywiz.korio.ds.lmapOf
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.Indenter
 import com.soywiz.korio.util.quote
-import com.soywiz.kpspemu.cpu.InstructionTable
-import com.soywiz.kpspemu.cpu.InstructionType
-import com.soywiz.kpspemu.cpu.kescape
+import com.soywiz.kpspemu.cpu.*
 import org.junit.Test
 import kotlin.test.Ignore
 
@@ -14,20 +12,20 @@ class TableGeneratorScript {
 	@Test
 	@Ignore
 	fun name() {
-		val switch = TableGenerator.createSwitch(InstructionTable.instructions)
+		val switch = TableGenerator.createSwitch(Instructions.instructions)
 		println(switch)
 	}
 
 	@Test
 	@Ignore
 	fun name2() {
-		TableGenerator.dumpImpl(InstructionTable.instructions)
+		TableGenerator.dumpImpl(Instructions.instructions)
 	}
 
 	@Test
 	@Ignore
 	fun name3() {
-		TableGenerator.dumpInstructionList(InstructionTable.instructions)
+		TableGenerator.dumpInstructionList(Instructions.instructions)
 	}
 
 	class TableGenerator {
@@ -60,21 +58,21 @@ class TableGeneratorScript {
 			fun dumpInstructionList(instructions: List<InstructionType>): Unit {
 				for (i in instructions) {
 					val addressTypeStr = when (i.addressType) {
-						InstructionTable.ADDR_TYPE_NONE -> "ADDR_TYPE_NONE"
-						InstructionTable.ADDR_TYPE_REG -> "ADDR_TYPE_REG"
-						InstructionTable.ADDR_TYPE_16 -> "ADDR_TYPE_16"
-						InstructionTable.ADDR_TYPE_26 -> "ADDR_TYPE_26"
+						ADDR_TYPE_NONE -> "ADDR_TYPE_NONE"
+						ADDR_TYPE_REG -> "ADDR_TYPE_REG"
+						ADDR_TYPE_16 -> "ADDR_TYPE_16"
+						ADDR_TYPE_26 -> "ADDR_TYPE_26"
 						else -> TODO()
 					}
 
 					val itypes = arrayListOf<String>()
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_PSP) != 0) itypes += "INSTR_TYPE_PSP"
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_SYSCALL) != 0) itypes += "INSTR_TYPE_SYSCALL"
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_B) != 0) itypes += "INSTR_TYPE_B"
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_LIKELY) != 0) itypes += "INSTR_TYPE_LIKELY"
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_JAL) != 0) itypes += "INSTR_TYPE_JAL"
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_JUMP) != 0) itypes += "INSTR_TYPE_JUMP"
-					if ((i.instructionType and InstructionTable.INSTR_TYPE_BREAK) != 0) itypes += "INSTR_TYPE_BREAK"
+					if ((i.instructionType and INSTR_TYPE_PSP) != 0) itypes += "INSTR_TYPE_PSP"
+					if ((i.instructionType and INSTR_TYPE_SYSCALL) != 0) itypes += "INSTR_TYPE_SYSCALL"
+					if ((i.instructionType and INSTR_TYPE_B) != 0) itypes += "INSTR_TYPE_B"
+					if ((i.instructionType and INSTR_TYPE_LIKELY) != 0) itypes += "INSTR_TYPE_LIKELY"
+					if ((i.instructionType and INSTR_TYPE_JAL) != 0) itypes += "INSTR_TYPE_JAL"
+					if ((i.instructionType and INSTR_TYPE_JUMP) != 0) itypes += "INSTR_TYPE_JUMP"
+					if ((i.instructionType and INSTR_TYPE_BREAK) != 0) itypes += "INSTR_TYPE_BREAK"
 					if (itypes.isEmpty()) itypes += "0"
 
 					println("val ${i.name.kescape()} = ID(${i.name.quote()}, VM(${i.vm.format.quote()}), ${i.format.quote()}, $addressTypeStr, ${itypes.joinToString(" or ")})")

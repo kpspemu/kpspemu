@@ -7,17 +7,17 @@ import com.soywiz.korio.stream.*
 
 const private val MASK = 0x0FFFFFFF
 
-val LWR_MASK = intArrayOf(0x00000000, 0xFF000000.toInt(), 0xFFFF0000.toInt(), 0xFFFFFF00.toInt())
-val LWR_SHIFT = intArrayOf(0, 8, 16, 24)
+private val LWR_MASK = intArrayOf(0x00000000, 0xFF000000.toInt(), 0xFFFF0000.toInt(), 0xFFFFFF00.toInt())
+private val LWR_SHIFT = intArrayOf(0, 8, 16, 24)
 
-val LWL_MASK = intArrayOf(0x00FFFFFF, 0x0000FFFF, 0x000000FF, 0x00000000)
-val LWL_SHIFT = intArrayOf(24, 16, 8, 0)
+private val LWL_MASK = intArrayOf(0x00FFFFFF, 0x0000FFFF, 0x000000FF, 0x00000000)
+private val LWL_SHIFT = intArrayOf(24, 16, 8, 0)
 
-val SWL_MASK = intArrayOf(0xFFFFFF00.toInt(), 0xFFFF0000.toInt(), 0xFF000000.toInt(), 0x00000000)
-val SWL_SHIFT = intArrayOf(24, 16, 8, 0)
+private val SWL_MASK = intArrayOf(0xFFFFFF00.toInt(), 0xFFFF0000.toInt(), 0xFF000000.toInt(), 0x00000000)
+private val SWL_SHIFT = intArrayOf(24, 16, 8, 0)
 
-val SWR_MASK = intArrayOf(0x00000000, 0x000000FF, 0x0000FFFF, 0x00FFFFFF)
-val SWR_SHIFT = intArrayOf(0, 8, 16, 24)
+private val SWR_MASK = intArrayOf(0x00000000, 0x000000FF, 0x0000FFFF, 0x00FFFFFF)
+private val SWR_SHIFT = intArrayOf(0, 8, 16, 24)
 
 abstract class Memory protected constructor(dummy: Boolean) {
 	companion object {
