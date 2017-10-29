@@ -7,7 +7,5 @@ sourceSets {
 
 dependencies {
     expectedBy project(":kpspemu-common")
-    compile "com.soywiz:korio:$korVersion"
-    compile "com.soywiz:korim:$korVersion"
-    compile "com.soywiz:korge:$korVersion"
+    compile "com.soywiz:korge:$korgeVersion"
 }

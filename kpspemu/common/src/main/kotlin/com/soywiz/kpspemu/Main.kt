@@ -23,6 +23,8 @@ import com.soywiz.kpspemu.hle.modules.sceDisplay
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.reflect.KClass
 
+fun main(args: Array<String>) = Main.main(args)
+
 object Main {
 	@JvmStatic
 	fun main(args: Array<String>) = Korge(KpspemuModule, injector = AsyncInjector()

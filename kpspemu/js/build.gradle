@@ -7,9 +7,7 @@ sourceSets {
 
 dependencies {
     expectedBy project(":kpspemu-common")
-    compile "com.soywiz:korio-js:$korVersion"
-    compile "com.soywiz:korim-js:$korVersion"
-    compile "com.soywiz:korge-js:$korVersion"
+    compile "com.soywiz:korge-js:$korgeVersion"
 }
 
 compileKotlin2Js {
