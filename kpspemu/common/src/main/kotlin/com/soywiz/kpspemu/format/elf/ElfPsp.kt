@@ -122,8 +122,9 @@ fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
 
 fun Emulator.loadElfAndSetRegisters(file: SyncStream): PspElf {
 	val elf = loadElf(file)
-	cpu.setPC(elf.moduleInfo.PC)
-	cpu.GP = elf.moduleInfo.GP
+	startThread.state.setPC(elf.moduleInfo.PC)
+	startThread.state.GP = elf.moduleInfo.GP
+	startThread.start()
 	return elf
 }
 

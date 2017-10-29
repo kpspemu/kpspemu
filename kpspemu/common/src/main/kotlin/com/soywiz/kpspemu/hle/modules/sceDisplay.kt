@@ -1,10 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.PspThread
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.hle.PixelFormat
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.PspThread
 
-class sceDisplay : SceModule("sceDisplay") {
+class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay") {
 	val display by lazy { emulator.display }
 
 	override fun registerModule() {

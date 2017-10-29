@@ -4,7 +4,6 @@ import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.serialization.xml.readXml
 import com.soywiz.korio.util.Indenter
 import com.soywiz.korio.util.quote
-import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.kpspemu.hle.psplibdoc.LibDoc
 import com.soywiz.kpspemu.util.hexx
@@ -23,7 +22,7 @@ class ModuleStubGenerator {
 		val registerNativeModules = Indenter.gen {
 			line("fun ModuleManager.registerNativeModules() {")
 			for (library in doc.allLibraries) {
-				line("	register(${library.name}())")
+				line("	register(${library.name}(emulator))")
 			}
 			line(")}")
 		}
@@ -36,10 +35,12 @@ class ModuleStubGenerator {
 				val libraryFile = Indenter.gen {
 					line("package com.soywiz.kpspemu.hle.modules")
 					line("")
+					line("import com.soywiz.kpspemu.Emulator")
 					line("import com.soywiz.kpspemu.cpu.CpuState")
 					line("import com.soywiz.kpspemu.hle.SceModule")
 					line("")
-					line("class ${library.name} : SceModule(${library.name.quote()}, ${library.flags.hexx}, ${prx.fileName.quote()}, ${prx.name.quote()}) {")
+					line("@Suppress(\"UNUSED_PARAMETER\")")
+					line("class ${library.name}(emulator: Emulator) : SceModule(emulator, ${library.name.quote()}, ${library.flags.hexx}, ${prx.fileName.quote()}, ${prx.name.quote()}) {")
 					for (function in library.functions) {
 						line("	fun ${function.name}(cpu: CpuState): Unit = UNIMPLEMENTED(${function.nid.hexx})")
 					}

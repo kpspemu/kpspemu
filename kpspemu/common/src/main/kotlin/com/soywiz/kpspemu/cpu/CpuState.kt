@@ -1,6 +1,13 @@
 package com.soywiz.kpspemu.cpu
 
+import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.mem.Memory
+
+data class CpuBreak(val id: Int) : Exception() {
+	companion object {
+		val THREAD_EXIT_KILL = 10077
+	}
+}
 
 // http://www.cs.uwm.edu/classes/cs315/Bacon/Lecture/HTML/ch05s03.html
 var CpuState.K0: Int; set(value) = run { r26 = value }; get() = r26
@@ -10,7 +17,7 @@ var CpuState.SP: Int; set(value) = run { r29 = value }; get() = r29
 var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
 var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
-class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {
+class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
 	var _R = IntArray(32)
 
 	var r0: Int; set(value) = Unit; get() = 0

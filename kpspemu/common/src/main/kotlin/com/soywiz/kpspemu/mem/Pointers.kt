@@ -21,3 +21,14 @@ data class MemPtr(val mem: Memory, override val addr: Int) : Ptr {
 	override fun lw(offset: Int): Int = mem.lw(addr + offset)
 	override fun toString(): String = "Ptr(0x%08X)".format(addr)
 }
+
+fun Memory.ptr(addr: Int) = MemPtr(this, addr)
+
+val Ptr.isNotNull: Boolean get() = addr != 0
+val Ptr.isNull: Boolean get() = addr == 0
+
+fun Ptr.readBytes(count: Int, offset: Int = 0): ByteArray {
+	val out = ByteArray(count)
+	for (n in 0 until count) out[n] = this.lb(offset + n).toByte()
+	return out
+}

@@ -88,6 +88,11 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		for (n in 0 until size) sb(address, value)
 	}
 
+	fun copy(srcPos: Int, dstPos: Int, size: Int) {
+		// @TODO: Optimize
+		for (n in 0 until size) sb(dstPos + n, lb(srcPos + n))
+	}
+
 	fun getPointerStream(address: Int, size: Int): SyncStream {
 		return openSync().sliceWithSize(address, size)
 	}

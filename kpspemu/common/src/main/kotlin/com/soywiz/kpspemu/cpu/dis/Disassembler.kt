@@ -43,5 +43,9 @@ object Disassembler : InstructionDecoder() {
 }
 
 fun Memory.disasm(pc: Int): String = Disassembler.disasm(pc, this.lw(pc))
-fun Memory.disasmMacro(pc: Int): String = Disassembler.disasmMacro(pc, this.lw(pc))
+fun Memory.disasmMacro(pc: Int): String = try {
+	Disassembler.disasmMacro(pc, this.lw(pc))
+} catch (e: IndexOutOfBoundsException) {
+	"invalid(PC=0x%08X)".format(pc)
+}
 

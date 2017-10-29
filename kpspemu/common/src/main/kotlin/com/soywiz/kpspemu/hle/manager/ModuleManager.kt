@@ -4,12 +4,13 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.hle.SceModule
 
-class ModuleManager(val e: Emulator) {
+class ModuleManager(val emulator: Emulator) {
+	val e = emulator
 	val modules = LinkedHashMap<String, SceModule>()
 
 	fun register(module: SceModule) {
 		modules[module.name] = module
-		module.registerPspModule(e)
+		module.registerPspModule()
 	}
 
 	fun getByName(name: String): SceModule = modules[name] ?: invalidOp("Can't find module '$name'")

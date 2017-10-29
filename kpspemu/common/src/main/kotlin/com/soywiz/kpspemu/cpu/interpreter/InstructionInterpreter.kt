@@ -7,7 +7,7 @@ import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 
-class CpuInterpreter(val cpu: CpuState, var trace: Boolean = false) {
+class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun step() {
@@ -70,6 +70,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Special
 	override fun syscall(s: CpuState) = s { syscall(SYSCALL) }
+
+	override fun _break(s: CpuState) = s { throw CpuBreak(SYSCALL) }
 
 	// Set less
 	override fun slt(s: CpuState) = s { RD = if (IntEx.compare(RS, RT) < 0) 1 else 0 }

@@ -1,10 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.korma.random.MtRand
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Memory
 
-class UtilsForUser : SceModule("UtilsForUser") {
+class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser") {
 	//val random = MtRand(KorioNative.currentTimeMillis())
 	val random = MtRand(0)
 

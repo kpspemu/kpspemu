@@ -49,13 +49,12 @@ class KpspemuMainScene : Scene() {
 		val emu = Emulator(mem = Memory()).apply {
 			registerNativeModules()
 			loadElfAndSetRegisters(elfBytes.openSync())
-			cpu.SP = 0x0A000000 // @TODO: hardcoded stack
 		}
 		val bmp = Bitmap32(512, 272)
 		val tex by lazy { views.texture(bmp) }
 
-		emu.interpreter.trace = false
-		//emu.interpreter.trace = true
+		//emu.interpreter.trace = false
+		emu.startThread.interpreter.trace = true
 
 		var running = true
 

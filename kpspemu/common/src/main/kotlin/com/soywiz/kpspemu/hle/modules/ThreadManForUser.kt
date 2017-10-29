@@ -1,16 +1,38 @@
 package com.soywiz.kpspemu.hle.modules
 
-
+import com.soywiz.korio.error.invalidOp
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.isNotNull
+import com.soywiz.kpspemu.mem.readBytes
 
+@Suppress("UNUSED_PARAMETER")
+class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager") {
+	val mem by lazy { emulator.mem }
+	val threadManager by lazy { emulator.threadManager }
 
-class ThreadManForUser : SceModule("ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager") {
-	val threadManager = emulator.threadManager
+	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): Int {
+		val thread = threadManager.createThread(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
+		//println("sceKernelCreateThread: ${thread.id}")
+		return thread.id
+	}
 
-	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Int): Int {
-
-		UNIMPLEMENTED(0x446D8DE6)
+	fun sceKernelStartThread(currentThread: PspThread, threadId: Int, userDataLength: Int, userDataPtr: Ptr): Int {
+		//println("sceKernelStartThread: $threadId")
+		val thread = threadManager.threadsById[threadId] ?: invalidOp("Can't find thread $threadId")
+		if (userDataPtr.isNotNull) {
+			val localUserDataPtr = thread.putDataInStack(userDataPtr.readBytes(userDataLength))
+			thread.state.r4 = userDataLength
+			thread.state.r5 = localUserDataPtr.addr
+		} else {
+			thread.state.r4 = 0
+			thread.state.r5 = 0
+		}
+		thread.start()
+		return 0
 	}
 
 	fun sceKernelGetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x034A921F)
@@ -149,7 +171,6 @@ class ThreadManForUser : SceModule("ThreadManForUser", 0x40010011, "threadman.pr
 	fun sceKernelDeleteEventFlag(cpu: CpuState): Unit = UNIMPLEMENTED(0xEF9E4C70)
 	fun sceKernelDeleteMsgPipe(cpu: CpuState): Unit = UNIMPLEMENTED(0xF0B7DA1C)
 	fun sceKernelReceiveMbxCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xF3986382)
-	fun sceKernelStartThread(cpu: CpuState): Unit = UNIMPLEMENTED(0xF475845D)
 	fun sceKernelFreeFpl(cpu: CpuState): Unit = UNIMPLEMENTED(0xF6414A71)
 	fun sceKernelDeleteMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0xF8170FBE)
 	fun sceKernelSetVTimerTimeWide(cpu: CpuState): Unit = UNIMPLEMENTED(0xFB6425C3)
@@ -158,7 +179,9 @@ class ThreadManForUser : SceModule("ThreadManForUser", 0x40010011, "threadman.pr
 	fun sceKernelReferThreadRunStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xFFC36A14)
 
 	override fun registerModule() {
-		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(string, int, int, int, int, int) }
+		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(string, int, int, int, int, ptr) }
+		registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(thread, int, int, ptr) }
+
 		registerFunctionRaw("sceKernelGetVTimerTime", 0x034A921F, since = 150) { sceKernelGetVTimerTime(it) }
 		registerFunctionRaw("sceKernelRegisterThreadEventHandler", 0x0C106E53, since = 150) { sceKernelRegisterThreadEventHandler(it) }
 		registerFunctionRaw("sceKernelPollMbx", 0x0D81716A, since = 150) { sceKernelPollMbx(it) }
@@ -294,7 +317,6 @@ class ThreadManForUser : SceModule("ThreadManForUser", 0x40010011, "threadman.pr
 		registerFunctionRaw("sceKernelDeleteEventFlag", 0xEF9E4C70, since = 150) { sceKernelDeleteEventFlag(it) }
 		registerFunctionRaw("sceKernelDeleteMsgPipe", 0xF0B7DA1C, since = 150) { sceKernelDeleteMsgPipe(it) }
 		registerFunctionRaw("sceKernelReceiveMbxCB", 0xF3986382, since = 150) { sceKernelReceiveMbxCB(it) }
-		registerFunctionRaw("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(it) }
 		registerFunctionRaw("sceKernelFreeFpl", 0xF6414A71, since = 150) { sceKernelFreeFpl(it) }
 		registerFunctionRaw("sceKernelDeleteMutex", 0xF8170FBE, since = 150) { sceKernelDeleteMutex(it) }
 		registerFunctionRaw("sceKernelSetVTimerTimeWide", 0xFB6425C3, since = 150) { sceKernelSetVTimerTimeWide(it) }

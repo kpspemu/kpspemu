@@ -3,15 +3,16 @@ package com.soywiz.kpspemu.hle
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.PspThread
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.hle.manager.thread
 import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.Ptr
 
 class RegisterReader {
 	var pos: Int = 4
-	lateinit var e: Emulator
+	lateinit var emulator: Emulator
 	lateinit var cpu: CpuState
 
 	fun reset(cpu: CpuState) {
@@ -19,7 +20,7 @@ class RegisterReader {
 		this.pos = 4
 	}
 
-	val thread: PspThread get() = PspThread(mem, cpu.syscalls) // @TODO: FAKE!
+	val thread: PspThread get() = cpu.thread
 	val mem: Memory get() = cpu.mem
 	val int: Int get() = this.cpu.GPR[pos++]
 	val ptr: Ptr get() = MemPtr(mem, int)
@@ -38,11 +39,8 @@ class NativeFunction {
 }
 */
 
-abstract class SceModule(val name: String, val flags: Int = 0, val prxFile: String = "", val prxName: String = "") {
-	protected lateinit var emulator: Emulator; private set
-
-	fun registerPspModule(e: Emulator) {
-		this.emulator = e
+abstract class SceModule(val emulator: Emulator, val name: String, val flags: Int = 0, val prxFile: String = "", val prxName: String = "") {
+	fun registerPspModule() {
 		registerModule()
 	}
 

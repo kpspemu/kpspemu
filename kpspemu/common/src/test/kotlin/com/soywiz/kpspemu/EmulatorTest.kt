@@ -15,6 +15,7 @@ import org.junit.Test
 import kotlin.test.Ignore
 
 class EmulatorTest {
+	/*
 	@Test
 	@Ignore
 	fun name() = syncTest {
@@ -92,18 +93,18 @@ class EmulatorTest {
 
 				//println("r8: ${cpu.r8}")
 			}
-			/*
-			display.address = 0x44000000
-			println("VIDEOMEM: 0x%08X".format(display.address))
-			for (n in 0 until 512 * 272) {
-				print(mem.lw(display.address + n * 4))
-			}
-			val data = mem.readBytes(display.address, 4 * 512 * 272)
-			val bmp = RGBA.decodeToBitmap32(512, 272, data)
-			bmp.transformColor { RGBA(RGBA.getR(it), RGBA.getG(it), RGBA.getB(it), 0xFF) }
-			bmp.writeTo(LocalVfs("c:/temp")["video_dump.tga"], formats = ImageFormats().registerStandard())
-			bmp.writeTo(LocalVfs("c:/temp")["video_dump.png"], formats = ImageFormats().registerStandard())
-			*/
+
+			//display.address = 0x44000000
+			//println("VIDEOMEM: 0x%08X".format(display.address))
+			//for (n in 0 until 512 * 272) {
+			//	print(mem.lw(display.address + n * 4))
+			//}
+			//val data = mem.readBytes(display.address, 4 * 512 * 272)
+			//val bmp = RGBA.decodeToBitmap32(512, 272, data)
+			//bmp.transformColor { RGBA(RGBA.getR(it), RGBA.getG(it), RGBA.getB(it), 0xFF) }
+			//bmp.writeTo(LocalVfs("c:/temp")["video_dump.tga"], formats = ImageFormats().registerStandard())
+			//bmp.writeTo(LocalVfs("c:/temp")["video_dump.png"], formats = ImageFormats().registerStandard())
 		}
 	}
+	*/
 }

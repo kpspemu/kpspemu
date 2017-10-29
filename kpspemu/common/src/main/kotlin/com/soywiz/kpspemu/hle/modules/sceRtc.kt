@@ -1,11 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
-
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 
-
-class sceRtc : SceModule("sceRtc", 0x40010011, "rtc.prx", "sceRTC_Service") {
+@Suppress("UNUSED_PARAMETER")
+class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rtc.prx", "sceRTC_Service") {
 	fun sceRtcGetAccumulativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x011F03C1)
 	fun sceRtcGetAccumlativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x029CA3B3)
 	fun sceRtcFormatRFC3339(cpu: CpuState): Unit = UNIMPLEMENTED(0x0498FB3C)
