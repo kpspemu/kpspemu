@@ -7,7 +7,6 @@ class sceCtrl : SceModule() {
 		registerFunctionInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
 	}
 
-	@NativeFunction(0x3A622550, 150)
 	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
 		//console.log('sceCtrlPeekBufferPositive');
 		for (n in 0 until count) {

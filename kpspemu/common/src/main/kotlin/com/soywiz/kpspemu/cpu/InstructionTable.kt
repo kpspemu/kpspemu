@@ -1,9 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.ds.lmapOf
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.Indenter
-import com.soywiz.korio.util.quote
 
 object InstructionTable {
 	const val ADDR_TYPE_NONE: Int = 0

@@ -24,8 +24,9 @@ import com.soywiz.kpspemu.mem.Memory
 import kotlin.reflect.KClass
 
 object Main {
-	@JvmStatic fun main(args: Array<String>) = Korge(KpspemuModule, injector = AsyncInjector()
-		.mapPrototype(KpspemuMainScene::class) {  KpspemuMainScene() }
+	@JvmStatic
+	fun main(args: Array<String>) = Korge(KpspemuModule, injector = AsyncInjector()
+		.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene() }
 	)
 }
 

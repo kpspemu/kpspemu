@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.mem.Memory
 
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) {

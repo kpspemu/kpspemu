@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.PspThread
-import com.soywiz.kpspemu.mem.Ptr
 
 class sceDisplay : SceModule() {
 	val display by lazy { e.display }
@@ -12,7 +11,6 @@ class sceDisplay : SceModule() {
 		registerFunctionInt("sceDisplaySetFrameBuf", 0x289D82FE, 150, syscall = 0x213F) { sceDisplaySetFrameBuf(int, int, int, int) }
 	}
 
-	@NativeFunction(0x0E20F177, 150)
 	fun sceDisplaySetMode(mode: Int, width: Int, height: Int): Int {
 		//console.info(sprintf("sceDisplay.sceDisplaySetMode(mode: %d, width: %d, height: %d)", mode, width, height));
 		display.displayMode = mode;
@@ -21,14 +19,12 @@ class sceDisplay : SceModule() {
 		return 0
 	}
 
-	@NativeFunction(0x984C27E7, 150)
 	fun sceDisplayWaitVblankStart(thread: PspThread): Int {
 		//return this._waitVblankAsync(thread, AcceptCallbacks.NO);
 		//return this._waitVblankStartAsync(thread, AcceptCallbacks.NO);
 		return 0
 	}
 
-	@NativeFunction(0x289D82FE, 150)
 	fun sceDisplaySetFrameBuf(address: Int, bufferWidth: Int, pixelFormat: Int, sync: Int): Int {
 		// PixelFormat
 		//println("display.address: $address")
