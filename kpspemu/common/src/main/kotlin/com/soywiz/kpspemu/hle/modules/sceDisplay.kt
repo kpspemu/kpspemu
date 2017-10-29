@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.PspThread
+import com.soywiz.kpspemu.hle.PixelFormat
 
 class sceDisplay : SceModule("sceDisplay") {
 	val display by lazy { e.display }
@@ -30,7 +31,7 @@ class sceDisplay : SceModule("sceDisplay") {
 		//println("display.address: $address")
 		display.address = address
 		display.bufferWidth = bufferWidth
-		display.pixelFormat = pixelFormat
+		display.pixelFormat = PixelFormat(pixelFormat)
 		display.sync = sync
 		return 0
 	}

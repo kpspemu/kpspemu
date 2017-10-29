@@ -11,6 +11,7 @@ class CpuInterpreter(val cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun step() {
+		if (cpu._PC == 0) throw IllegalStateException("Trying to execute PC=0")
 		if (trace) println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
 		dispatcher.dispatch(cpu)
 	}
@@ -20,6 +21,7 @@ class CpuInterpreter(val cpu: CpuState, var trace: Boolean = false) {
 	}
 }
 
+// http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
 object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun unimplemented(s: CpuState, i: InstructionType): Unit = TODO("unimplemented: ${i.name} : " + i + " at ${"%08X".format(s._PC)}")
 
@@ -94,9 +96,10 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bgtzl(s: CpuState) = s.branchLikely { RS > 0 }
 	override fun bgezl(s: CpuState) = s.branchLikely { RS >= 0 }
 
-	override fun j(s: CpuState) = s.none {
-		_PC = _nPC
-		_nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS)
-	}
+	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
+	// $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
+	override fun jal(s: CpuState) = s.none { RA = _nPC + 4; _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
+
+	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
 }
 

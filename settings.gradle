@@ -1,19 +1,19 @@
 rootProject.name = 'kpspemu-root'
 
 include(
-		'kpspemu-common',
-		'kpspemu',
-		'kpspemu-js',
+        'kpspemu-common',
+        'kpspemu',
+        'kpspemu-js',
 
-		'dynarek-common',
-		'dynarek',
-		'dynarek-js',
+        'dynarek-common',
+        'dynarek',
+        'dynarek-js',
 )
 
 def register(String base) {
-	findProject(":$base-common")?.projectDir = file("$base/common")
-	findProject(":$base")?.projectDir = file("$base/jvm")
-	findProject(":$base-js")?.projectDir = file("$base/js")
+    findProject(":$base-common")?.projectDir = file("$base/common")
+    findProject(":$base")?.projectDir = file("$base/jvm")
+    findProject(":$base-js")?.projectDir = file("$base/js")
 }
 
 register('kpspemu')

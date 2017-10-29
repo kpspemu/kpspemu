@@ -5,8 +5,6 @@ package com.soywiz.kpspemu.hle.manager
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.util.reduceAcumulate
 import com.soywiz.kpspemu.util.splice
-import com.soywiz.kpspemu.util.ugt
-import com.soywiz.kpspemu.util.ult
 
 class MemoryManager {
 	val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()

@@ -24,6 +24,9 @@ open class InstructionDecoder {
 	inline val Int.s_imm16: Int get() = ((this and 0xFFFF) shl 16) shr 16
 	inline val Int.u_imm16: Int get() = this and 0xFFFF
 
+	inline val Int.u_imm26: Int get() = this.extract(0, 26)
+	inline val Int.jump_address: Int get() = u_imm26 * 4
+
 	inline operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.normal(callback)
 
 	inline fun CpuState.normal(callback: CpuState.() -> Unit) {
@@ -74,8 +77,8 @@ open class InstructionDecoder {
 	inline val CpuState.U_IMM16: Int get() = IR.u_imm16
 	inline val CpuState.POS: Int get() = IR.pos
 	inline val CpuState.SYSCALL: Int get() = IR.syscall
-	inline val CpuState.U_IMM26: Int get() = IR.extract(0, 26)
-	inline val CpuState.JUMP_ADDRESS: Int get() = U_IMM26 * 4
+	inline val CpuState.U_IMM26: Int get() = IR.u_imm26
+	inline val CpuState.JUMP_ADDRESS: Int get() = IR.jump_address
 }
 
 /*

@@ -1,5 +1,5 @@
 apply plugin: 'kotlin-platform-jvm'
 
 dependencies {
-	expectedBy project(":dynarek-common")
+    expectedBy project(":dynarek-common")
 }

@@ -141,7 +141,7 @@ class PspElf private constructor(
 
 	companion object {
 		fun loadInto(stream: SyncStream, emulator: Emulator): PspElf {
-			val loader = PspElf(emulator.mem, emulator.memoryManager, emulator.moduleManager, emulator.syscallManager)
+			val loader = PspElf(emulator.mem, emulator.memoryManager, emulator.moduleManager, emulator.syscalls)
 			loader.load(stream)
 			return loader
 		}

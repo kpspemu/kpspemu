@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.RegistrableSyscallHandler
 import com.soywiz.kpspemu.cpu.Syscalls
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.display.PspDisplay
@@ -15,14 +14,18 @@ class PspThread(val mem: Memory, val syscalls: Syscalls) {
 }
 
 class Emulator(
-	val syscalls: RegistrableSyscallHandler = RegistrableSyscallHandler(),
+	val syscalls: SyscallManager = SyscallManager(),
 	val mem: Memory = Memory(),
 	val display: PspDisplay = PspDisplay(mem)
 ) {
 	val memoryManager = MemoryManager()
 	val moduleManager = ModuleManager(this)
-	val syscallManager = SyscallManager()
 	val mainThread = PspThread(mem, syscalls)
 	val cpu = mainThread.cpu
 	val interpreter = CpuInterpreter(cpu)
+
+	fun frameStep() {
+		display.dispatchVsync()
+		interpreter.steps(1000000)
+	}
 }

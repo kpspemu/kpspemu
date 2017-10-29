@@ -7,5 +7,15 @@ sourceSets {
 
 dependencies {
     expectedBy project(":kpspemu-common")
+    compile "com.soywiz:korio:$korioVersion"
     compile "com.soywiz:korge:$korgeVersion"
+}
+
+task runApp(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+
+    main = 'com.soywiz.kpspemu.MainKt'
+
+    // arguments to pass to the application
+    workingDir rootProject.rootDir
 }

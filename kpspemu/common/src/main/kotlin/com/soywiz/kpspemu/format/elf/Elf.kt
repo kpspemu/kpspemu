@@ -5,6 +5,8 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.UByteArray
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.util.Flags
+import com.soywiz.kpspemu.util.NumericEnum
 
 class Elf private constructor(val stream: SyncStream) {
 	companion object {
@@ -121,14 +123,6 @@ class Elf private constructor(val stream: SyncStream) {
 
 typealias ElfLoader = Elf
 
-interface NumericEnum {
-	val id: Int
-}
-
-interface Flags<T> : NumericEnum {
-	infix fun hasFlag(item: Flags<T>): Boolean = (id and item.id) == item.id
-}
-
 data class ElfProgramHeaderType(override val id: Int) : Flags<ElfProgramHeaderType> {
 	companion object {
 		val NoLoad = ElfProgramHeaderType(0)
@@ -138,29 +132,29 @@ data class ElfProgramHeaderType(override val id: Int) : Flags<ElfProgramHeaderTy
 	}
 }
 
-enum class ElfSectionHeaderType(override val id: Int) : NumericEnum {
-	Null(0),
-	ProgramBits(1),
-	SYMTAB(2),
-	STRTAB(3),
-	RELA(4),
-	HASH(5),
-	DYNAMIC(6),
-	NOTE(7),
-	NoBits(8),
-	Relocation(9),
-	SHLIB(10),
-	DYNSYM(11),
-
-	LOPROC(0x70000000), HIPROC(0x7FFFFFFF),
-	LOUSER(0x80000000.toInt()), HIUSER(0xFFFFFFFF.toInt()),
-
-	PrxRelocation(LOPROC.id or 0xA0),
-	PrxRelocation_FW5(LOPROC.id or 0xA1);
-
+data class ElfSectionHeaderType(override val id: Int) : Flags<ElfSectionHeaderType> {
 	companion object {
-		val BY_ID = values().map { it.id to it }.toMap()
-		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+		val Null = ElfSectionHeaderType(0)
+		val ProgramBits = ElfSectionHeaderType(1)
+		val SYMTAB = ElfSectionHeaderType(2)
+		val STRTAB = ElfSectionHeaderType(3)
+		val RELA = ElfSectionHeaderType(4)
+		val HASH = ElfSectionHeaderType(5)
+		val DYNAMIC = ElfSectionHeaderType(6)
+		val NOTE = ElfSectionHeaderType(7)
+		val NoBits = ElfSectionHeaderType(8)
+		val Relocation = ElfSectionHeaderType(9)
+		val SHLIB = ElfSectionHeaderType(10)
+		val DYNSYM = ElfSectionHeaderType(11)
+
+		val LOPROC = ElfSectionHeaderType(0x70000000)
+		val HIPROC = ElfSectionHeaderType(0x7FFFFFFF)
+
+		val LOUSER = ElfSectionHeaderType(0x80000000.toInt())
+		val HIUSER = ElfSectionHeaderType(0xFFFFFFFF.toInt())
+
+		val PrxRelocation = ElfSectionHeaderType(LOPROC.id or 0xA0)
+		val PrxRelocation_FW5 = ElfSectionHeaderType(LOPROC.id or 0xA1)
 	}
 }
 
