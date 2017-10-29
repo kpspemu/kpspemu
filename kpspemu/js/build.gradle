@@ -10,10 +10,13 @@ dependencies {
     compile "com.soywiz:korge-js:$korgeVersion"
 }
 
+// Cause problems with mocha
+///*
 compileKotlin2Js {
     kotlinOptions.outputFile = "${projectDir}/web/kpspemu.js"
     kotlinOptions.sourceMap = false
 }
+//*/
 
 clean {
     delete new File("${projectDir}/web")
