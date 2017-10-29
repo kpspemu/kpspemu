@@ -1,16 +1,10 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.korim.color.RGBA
-import com.soywiz.korim.format.ImageFormats
-import com.soywiz.korim.format.registerStandard
-import com.soywiz.korim.format.writeTo
 import com.soywiz.korio.async.syncTest
-import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.stream.sliceWithSize
-import com.soywiz.korio.vfs.LocalVfs
-import com.soywiz.kpspemu.embedded.MinifireElf
+import com.soywiz.kpspemu.embedded.Samples
 import com.soywiz.kpspemu.format.elf.Elf
 import com.soywiz.kpspemu.format.elf.ElfPspModuleInfo
 import com.soywiz.kpspemu.hle.modules.UtilsForUser
@@ -24,7 +18,7 @@ class EmulatorTest {
 	@Test
 	@Ignore
 	fun name() = syncTest {
-		val elf = Elf.read(MinifireElf.openSync())
+		val elf = Elf.read(Samples.MINIFIRE_ELF.openSync())
 		//val emu = Emulator(mem = Memory().trace())
 		//val emu = Emulator(mem = Memory().trace(traceReads = true))
 		val emu = Emulator(mem = Memory())

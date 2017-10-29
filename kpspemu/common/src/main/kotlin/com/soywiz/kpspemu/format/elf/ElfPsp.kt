@@ -1,16 +1,10 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.korio.lang.Debugger
-import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
-import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.mem.openSync
-import kotlin.math.max
-import kotlin.math.min
 
 data class ElfPspModuleInfo(
 	val moduleAtributes: Int,
