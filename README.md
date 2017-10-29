@@ -9,7 +9,8 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 
 ---
 
-* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- original jspepmu
+* *REFERENCE:* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- original jspepmu
+* *REFERENCE:* http://jspspemu.com/#samples/HelloWorldPSP.elf (dynarec) <-- original jspspemu
 
 ### Previous works:
 * https://github.com/soywiz/pspemu (PSP Emulator done in D programming language. Interpreted.)
