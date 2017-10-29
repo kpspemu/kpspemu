@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.format
 import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.stream.openSync
 import com.soywiz.kpspemu.embedded.MinifireElf
+import com.soywiz.kpspemu.format.elf.Elf
 import org.junit.Test
 
 class ElfTest {

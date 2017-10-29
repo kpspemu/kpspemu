@@ -3,8 +3,7 @@ package com.soywiz.kpspemu.mem
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.mem.FastMemory
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.SyncStreamBase
+import com.soywiz.korio.stream.*
 
 const private val MASK = 0x0FFFFFFF
 
@@ -22,9 +21,11 @@ val SWR_SHIFT = intArrayOf(0, 8, 16, 24)
 
 abstract class Memory protected constructor(dummy: Boolean) {
 	companion object {
+		const val MAIN_OFFSET = 0x08000000
+
 		val SCRATCHPAD = MemorySegment("scatchpad", 0x0000000 until 0x00010000)
 		val VIDEOMEM = MemorySegment("videomem", 0x04000000 until 0x4200000)
-		val MAINMEM = MemorySegment("mainmem", 0x08000000 until 0x0a000000)
+		val MAINMEM = MemorySegment("mainmem", MAIN_OFFSET until 0x0a000000)
 
 		operator fun invoke(): Memory = com.soywiz.kpspemu.mem.FastMemory()
 		//operator fun invoke(): Memory = SmallMemory()
@@ -83,6 +84,15 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	fun lbu(address: Int): Int = lb(address) and 0xFF
 
 	fun lhu(address: Int): Int = lh(address) and 0xFFFF
+	fun memset(address: Int, value: Int, size: Int) {
+		for (n in 0 until size) sb(address, value)
+	}
+
+	fun getPointerStream(address: Int, size: Int): SyncStream {
+		return openSync().sliceWithSize(address, size)
+	}
+
+	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
 }
 
 class DummyMemory : Memory(true) {

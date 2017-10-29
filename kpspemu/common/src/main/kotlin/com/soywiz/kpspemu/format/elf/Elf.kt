@@ -1,13 +1,15 @@
-package com.soywiz.kpspemu.format
+package com.soywiz.kpspemu.format.elf
 
 import com.soywiz.korio.ds.lmapOf
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.UByteArray
+import com.soywiz.kpspemu.mem.Memory
 
 class Elf private constructor(val stream: SyncStream) {
 	companion object {
 		fun read(stream: SyncStream) = Elf(stream).apply { read() }
+		fun fromStream(stream: SyncStream): Elf = read(stream)
 	}
 
 	lateinit var header: Header
@@ -18,6 +20,8 @@ class Elf private constructor(val stream: SyncStream) {
 	lateinit var sectionHeaderStringTable: ElfSectionHeader
 	lateinit var stringTableStream: SyncStream
 	lateinit var sectionHeadersByName: MutableMap<String, ElfSectionHeader>
+
+	fun getSectionHeader(name: String) = sectionHeadersByName[name] ?: invalidOp("Can't find section header '$name'")
 
 	private fun read() {
 		header = Header(stream)
@@ -110,7 +114,11 @@ class Elf private constructor(val stream: SyncStream) {
 			if (!hasValidType) invalidOp("Not a executable or a Prx but has type $type")
 		}
 	}
+	val isPrx: Boolean get() = (this.header.type and ElfType.Prx.id) != 0
+	val needsRelocation: Boolean get() =this.isPrx || (this.header.entryPoint < Memory.MAIN_OFFSET)
 }
+
+typealias ElfLoader = Elf
 
 open class BaseEnum<T : BaseEnum.Id>(val values: Array<T>) {
 	interface Id {
@@ -122,12 +130,12 @@ open class BaseEnum<T : BaseEnum.Id>(val values: Array<T>) {
 	operator fun invoke(index: Int) = this[index]
 }
 
-data class ElfProgramHeaderType(override val id: Int) : BaseEnum.Id {
+data class ElfProgramHeaderType(override val id: Int) : Flags<ElfProgramHeaderType> {
 	companion object {
-		val NoLoad = 0
-		val Load = 1
-		val Reloc1 = 0x700000A0
-		val Reloc2 = 0x700000A1
+		val NoLoad = ElfProgramHeaderType(0)
+		val Load = ElfProgramHeaderType(1)
+		val Reloc1 = ElfProgramHeaderType(0x700000A0)
+		val Reloc2 = ElfProgramHeaderType(0x700000A1)
 	}
 }
 
@@ -154,13 +162,19 @@ enum class ElfSectionHeaderType(override val id: Int) : BaseEnum.Id {
 	companion object : BaseEnum<ElfSectionHeaderType>(values())
 }
 
-enum class ElfSectionHeaderFlags(override val id: Int) : BaseEnum.Id {
-	None(0),
-	Write(1),
-	Allocate(2),
-	Execute(4);
+interface Flags<T> {
+	val id: Int
 
-	companion object : BaseEnum<ElfSectionHeaderFlags>(values())
+	infix fun hasFlag(item: Flags<T>): Boolean = (id and item.id) == item.id
+}
+
+data class ElfSectionHeaderFlags(override val id: Int) : Flags<ElfSectionHeaderFlags> {
+	companion object {
+		val None = ElfSectionHeaderFlags(0)
+		val Write = ElfSectionHeaderFlags(1)
+		val Allocate = ElfSectionHeaderFlags(2)
+		val Execute = ElfSectionHeaderFlags(4)
+	}
 }
 
 data class ElfProgramHeaderFlags(val id: Int) {
@@ -238,6 +252,8 @@ class ElfReloc(val pointerAddress: Int, val info: Int) {
 	val type: ElfRelocType get() = ElfRelocType[((this.info ushr 0) and 0xFF)]
 
 	companion object {
+		val SIZE = 8
+
 		operator fun invoke(s: SyncStream): ElfReloc = s.run {
 			ElfReloc(
 				pointerAddress = s.readS32_le(),
@@ -293,7 +309,7 @@ data class ElfSectionHeader(
 				nameOffset = s.readS32_le(),
 				name = "...",
 				type = ElfSectionHeaderType[s.readS32_le()],
-				flags = ElfSectionHeaderFlags[s.readS32_le()],
+				flags = ElfSectionHeaderFlags(s.readS32_le()),
 				address = s.readS32_le(),
 				offset = s.readS32_le(),
 				size = s.readS32_le(),

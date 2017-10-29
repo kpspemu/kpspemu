@@ -15,8 +15,8 @@ import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.stream.sliceWithSize
 import com.soywiz.korma.geom.SizeInt
-import com.soywiz.kpspemu.format.Elf
-import com.soywiz.kpspemu.format.ElfPspModuleInfo
+import com.soywiz.kpspemu.format.elf.Elf
+import com.soywiz.kpspemu.format.elf.ElfPspModuleInfo
 import com.soywiz.kpspemu.hle.modules.UtilsForUser
 import com.soywiz.kpspemu.hle.modules.sceCtrl
 import com.soywiz.kpspemu.hle.modules.sceDisplay
