@@ -1,6 +1,8 @@
 # kpspemu
 PSP Emulator done in Kotlin Common targeting JVM and JS for now
 
+[![Build Status](https://travis-ci.org/soywiz/kpspemu.svg?branch=master)](https://travis-ci.org/soywiz/kpspemu)
+
 ### Previous works:
 * https://github.com/soywiz/pspemu (PSP Emulator done in D programming language. Interpreted.)
 * https://github.com/cspspemu/cspspemu (PSP Emulator done in C# programming language. Dynarec.)
