@@ -1,7 +1,7 @@
 # kpspemu
 PSP Emulator done in Kotlin Common targeting JVM and JS for now
 
-[![Build Status](https://travis-ci.org/soywiz/kpspemu.svg?branch=master)](https://travis-ci.org/soywiz/kpspemu)
+[![Build Status](https://travis-ci.org/kpspemu/kpspemu.svg?branch=master)](https://travis-ci.org/kpspemu/kpspemu)
 
 ### Previous works:
 * https://github.com/soywiz/pspemu (PSP Emulator done in D programming language. Interpreted.)
@@ -9,8 +9,9 @@ PSP Emulator done in Kotlin Common targeting JVM and JS for now
 * https://github.com/jspspemu/jspspemu (PSP Emulator done in typescript programming language. Dynarec.)
 
 ### Very basic online demo using Kotlin.JS:
-* https://soywiz.github.io/kpspemu-demo (interpreted)
-* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- jspepmu
+* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- original jspepmu
+* https://kpspemu.github.io/kpspemu-demo/minifire (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/helloworld (interpreted)
 
 ### Current state:
 
