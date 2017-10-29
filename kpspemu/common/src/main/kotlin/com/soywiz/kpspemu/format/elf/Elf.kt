@@ -129,11 +129,6 @@ interface Flags<T> : NumericEnum {
 	infix fun hasFlag(item: Flags<T>): Boolean = (id and item.id) == item.id
 }
 
-open class BaseEnum<T : NumericEnum>(val values: Array<T>) {
-	val BY_ID = values.map { it.id to it }.toMap()
-	operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
-}
-
 data class ElfProgramHeaderType(override val id: Int) : Flags<ElfProgramHeaderType> {
 	companion object {
 		val NoLoad = ElfProgramHeaderType(0)
@@ -163,7 +158,10 @@ enum class ElfSectionHeaderType(override val id: Int) : NumericEnum {
 	PrxRelocation(LOPROC.id or 0xA0),
 	PrxRelocation_FW5(LOPROC.id or 0xA1);
 
-	companion object : BaseEnum<ElfSectionHeaderType>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 data class ElfSectionHeaderFlags(override val id: Int) : Flags<ElfSectionHeaderFlags> {
@@ -188,20 +186,29 @@ enum class ElfType(override val id: Int) : NumericEnum {
 	Executable(0x0002),
 	Prx(0xFFA0);
 
-	companion object : BaseEnum<ElfType>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 enum class ElfMachine(override val id: Int) : NumericEnum {
 	ALLEGREX(8);
 
-	companion object : BaseEnum<ElfMachine>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 enum class ElfPspModuleFlags(override val id: Int) : NumericEnum { // ushort
 	User(0x0000),
 	Kernel(0x1000);
 
-	companion object : BaseEnum<ElfPspModuleFlags>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 enum class ElfPspLibFlags(override val id: Int) : NumericEnum { // ushort
@@ -209,7 +216,10 @@ enum class ElfPspLibFlags(override val id: Int) : NumericEnum { // ushort
 	Syscall(0x4000),
 	SysLib(0x8000);
 
-	companion object : BaseEnum<ElfPspLibFlags>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 enum class ElfPspModuleNids(override val id: Int) : NumericEnum {  // uint
@@ -221,7 +231,10 @@ enum class ElfPspModuleNids(override val id: Int) : NumericEnum {  // uint
 	MODULE_STOP(0xCEE8593C.toInt()),
 	MODULE_STOP_THREAD_PARAMETER(0xCF0CC697.toInt());
 
-	companion object : BaseEnum<ElfPspModuleNids>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 
@@ -241,7 +254,10 @@ enum class ElfRelocType(override val id: Int) : NumericEnum {
 	MipsGpRel32(12),
 	StopRelocation(0xFF);
 
-	companion object : BaseEnum<ElfRelocType>(values())
+	companion object {
+		val BY_ID = values().map { it.id to it }.toMap()
+		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+	}
 }
 
 class ElfReloc(val pointerAddress: Int, val info: Int) {
