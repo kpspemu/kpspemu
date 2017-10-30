@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.korio.async.Promise
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.*
@@ -58,6 +59,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
 
 sealed class WaitObject {
 	class TIME(val time: Long) : WaitObject()
+	class PROMISE(val promise: Promise<Unit>) : WaitObject()
 	object SLEEP : WaitObject()
 	object VBLANK : WaitObject()
 }
@@ -173,6 +175,9 @@ class PspThread internal constructor(
 
 	fun suspend(wait: WaitObject, cb: Boolean) {
 		markWaiting(wait, cb)
+		if (wait is WaitObject.PROMISE) {
+			wait.promise.then { resume() }
+		}
 		threadManager.suspend()
 	}
 }

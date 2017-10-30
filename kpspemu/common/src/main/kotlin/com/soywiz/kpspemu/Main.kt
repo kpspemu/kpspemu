@@ -46,7 +46,8 @@ class KpspemuMainScene : Scene() {
 		//val elfBytes = samplesFolder["minifire.elf"].readAll()
 		//val elfBytes = samplesFolder["HelloWorldPSP.elf"].readAll()
 		//val elfBytes = samplesFolder["rtctest.elf"].readAll()
-		val elfBytes = samplesFolder["cube.elf"].readAll()
+		val elfBytes = samplesFolder["compilerPerf.elf"].readAll()
+		//val elfBytes = samplesFolder["cube.elf"].readAll()
 
 		val emu = Emulator(mem = Memory()).apply {
 			registerNativeModules()

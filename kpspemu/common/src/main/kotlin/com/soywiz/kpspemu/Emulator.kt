@@ -2,6 +2,7 @@ package com.soywiz.kpspemu
 
 import com.soywiz.kpspemu.display.PspDisplay
 import com.soywiz.kpspemu.ge.Ge
+import com.soywiz.kpspemu.ge.Gpu
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.ptr
@@ -11,6 +12,7 @@ class Emulator(
 	val mem: Memory = Memory()
 ) {
 	val ge: Ge = Ge(this)
+	val gpu: Gpu = Gpu(this)
 	val display: PspDisplay = PspDisplay(this)
 	val memoryManager = MemoryManager(this)
 	val threadManager = ThreadManager(this)
@@ -23,6 +25,7 @@ class Emulator(
 		threadManager.vblank()
 		ge.run()
 		threadManager.step()
+		gpu.render()
 	}
 }
 
@@ -32,7 +35,9 @@ interface WithEmulator {
 
 val WithEmulator.mem: Memory get() = emulator.mem
 val WithEmulator.ge: Ge get() = emulator.ge
+val WithEmulator.gpu: Gpu get() = emulator.gpu
 val WithEmulator.memoryManager: MemoryManager get() = emulator.memoryManager
 val WithEmulator.timeManager: TimeManager get() = emulator.timeManager
+val WithEmulator.rtc: TimeManager get() = emulator.timeManager
 val WithEmulator.threadManager: ThreadManager get() = emulator.threadManager
 val WithEmulator.callbackManager: CallbackManager get() = emulator.callbackManager

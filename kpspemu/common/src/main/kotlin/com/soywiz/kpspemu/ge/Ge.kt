@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.ge
 
+import com.soywiz.korio.async.Promise
+import com.soywiz.korio.async.Signal
 import com.soywiz.korio.util.extract
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.WithEmulator
-import com.soywiz.kpspemu.callbackManager
-import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
 
@@ -12,6 +11,7 @@ class Ge(override val emulator: Emulator) : WithEmulator {
 	val state = GeState()
 	val queue = arrayListOf<GeList>()
 	val lists = ResourceList<GeList>("GeList") { GeList(this, it) }
+	val onCompleted = Signal<Unit>()
 
 	fun listEnqueue(start: Int, stall: Int, callback: GeCallback, pspGeListArgs: Int): GeList {
 		val list = lists.alloc().apply {
@@ -37,13 +37,20 @@ class Ge(override val emulator: Emulator) : WithEmulator {
 				break
 			}
 		}
+
+		//if (queue.isEmpty()) onCompleted(Unit)
+		onCompleted(Unit)
 	}
 
 	fun emitBatch(batch: GeBatch) {
-		println("BATCH: $batch")
+		gpu.batchQueue += batch
+		//println("BATCH: $batch")
 	}
 
-	fun sync(syncType: Int) {
+	fun syncAsync(syncType: Int): Promise<Unit> {
+		val deferred = Promise.Deferred<Unit>()
+		onCompleted.once { deferred.resolve(Unit) }
+		return deferred.promise
 	}
 }
 
@@ -55,22 +62,36 @@ data class GeCallback(override val id: Int) : ResourceItem {
 }
 
 class GeBatchBuilder(val ge: Ge) {
+	val state = ge.state
+	val mem = ge.mem
 	var primBatchPrimitiveType: Int = -1
 	var primitiveType: Int = -1
 	var vertexType: Int = -1
 	var vertexCount: Int = 0
+	var indexAddress: Int = 0
+	var vertexAddress: Int = 0
+	var vertexSize: Int = 0
+
+	val vertexBuffer = ByteArray(0x10000)
+	var vertexBufferPos = 0
+	val indexBuffer = ShortArray(0x10000)
+	var indexBufferPos = 0
 
 	fun reset() {
 		primBatchPrimitiveType = -1
 		primitiveType = -1
 		vertexType = -1
 		vertexCount = 0
+		vertexBufferPos = 0
+		indexBufferPos = 0
+		vertexSize = 0
 	}
 
 	fun setVertexKind(primitiveType: Int, vertexType: Int) {
 		if (this.primitiveType != primitiveType || this.vertexType != vertexType) flush()
 		this.primitiveType = primitiveType
 		this.vertexType = vertexType
+		this.vertexSize = VertexType.size(vertexType)
 	}
 
 	fun tflush() {
@@ -81,15 +102,36 @@ class GeBatchBuilder(val ge: Ge) {
 
 	fun flush() {
 		if (vertexCount > 0) {
-			ge.emitBatch(GeBatch(ge.state.clone(), primitiveType, vertexCount, vertexType))
+			ge.emitBatch(GeBatch(ge.state.clone(), primitiveType, vertexCount, vertexType, vertexBuffer.copyOf(vertexBufferPos), indexBuffer.copyOf(indexBufferPos)))
 			vertexCount = 0
+			vertexBufferPos = 0
+			indexBufferPos = 0
 		}
 	}
 
-	fun addVertices(delta: Int) {
-		this.vertexCount += delta
+	fun putVertex(address: Int) {
+		//println("putVertex: ${address.hexx}, $vertexSize")
+		// @TODO: Improve performance doing a fast copy
+		for (n in 0 until vertexSize) {
+			vertexBuffer[vertexBufferPos++] = mem.lb(address + n).toByte()
+		}
 	}
 
+	fun addIndices(size: Int, count: Int) {
+		//println("addIndices: size=$size, count=$count")
+		when (size) {
+			0 -> {
+				var vaddr = state.vertexAddress
+				for (n in 0 until count) {
+					putVertex(vaddr)
+					indexBuffer[indexBufferPos++] = vertexCount++.toShort()
+					vaddr += vertexSize
+				}
+				state.vertexAddress = vaddr
+			}
+			else -> TODO("addIndices: $size")
+		}
+	}
 }
 
 class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by ge {
@@ -100,10 +142,14 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 	var PC: Int = start
 	var completed: Boolean = false
 	val bb = GeBatchBuilder(ge)
+	var onCompleted = Signal<Unit>()
+	var phase = ListSyncKind.QUEUED
 
 	fun reset() {
 		completed = false
 		bb.reset()
+		onCompleted = Signal<Unit>()
+		phase = ListSyncKind.QUEUED
 	}
 
 	var callstackIndex = 0
@@ -120,6 +166,11 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 			step(mem.lw(PC))
 			PC += 4
 		}
+		if (isStalled) phase = ListSyncKind.STALL_REACHED
+		if (completed) {
+			phase = ListSyncKind.DRAWING_DONE
+			onCompleted(Unit)
+		}
 	}
 
 	fun step(i: Int) {
@@ -131,7 +182,7 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 				println("BEZIER")
 			}
 			Op.END -> {
-				println("END")
+				//println("END")
 				bb.flush()
 				completed = true
 			}
@@ -176,27 +227,35 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 		val vertexCount: Int = p.extract(0, 16)
 		val vertexType: Int = state.vertexType
 
-		bb.setVertexKind(primitiveType, vertexType)
-		bb.addVertices(vertexCount)
+		val hasIndices = state.vertexTypeIndex != IndexEnum.Void
 
-		println("PRIM: $p -- vertxCount=$vertexCount, primitiveType=$primitiveType, vertexType=$vertexType")
+		//println("PRIM: $p -- vertxCount=$vertexCount, primitiveType=$primitiveType, vertexType=$vertexType, vertexAddress=${state.vertexAddress.hexx}, indexAddress=${state.indexAddress.hexx}, hasIndices=$hasIndices")
+
+		bb.setVertexKind(primitiveType, vertexType)
+		bb.addIndices(state.vertexTypeIndex, vertexCount)
+
 		return PrimAction.FLUSH_PRIM
 	}
 
 	private fun finish(p: Int) {
-		println("FINISH")
+		//println("FINISH")
 		callbackManager.queueFunction1(callback.finish_func, callback.finish_arg)
 		bb.flush()
 	}
 
 	private fun signal(p: Int) {
-		println("SIGNAL")
+		//println("SIGNAL")
 		callbackManager.queueFunction1(callback.signal_func, callback.signal_arg)
 	}
 
-	fun sync(syncType: Int) {
+	fun syncAsync(syncType: Int): Promise<Unit> {
+		println("syncType:$syncType")
+		val deferred = Promise.Deferred<Unit>()
+		onCompleted.once { deferred.resolve(Unit) }
+		return deferred.promise
 	}
 }
 
 enum class PrimAction { NOTHING, FLUSH_PRIM }
 
+enum class ListSyncKind { DONE, QUEUED, DRAWING_DONE, STALL_REACHED, CANCEL_DONE }

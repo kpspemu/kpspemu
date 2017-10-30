@@ -11,6 +11,7 @@ import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.readBytes
+import com.soywiz.kpspemu.rtc
 import com.soywiz.kpspemu.threadManager
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
@@ -44,7 +45,8 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		return 0
 	}
 
-	fun sceKernelGetSystemTimeWide(): Long = Klock.millisecondsToMicroseconds(Klock.currentTimeMillis())
+	fun sceKernelGetSystemTimeWide(): Long = rtc.getTimeInMicroseconds()
+	fun sceKernelGetSystemTimeLow(): Int = rtc.getTimeInMicroseconds().toInt()
 
 	fun sceKernelCreateCallback(name: String?, func: Ptr, arg: Int): Int {
 		val callback = callbackManager.create(name ?: "callback", func, arg)
@@ -61,6 +63,7 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 			this.optionsPtr = optionsPtr
 		}.id
 	}
+
 
 	fun sceKernelGetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x034A921F)
 	fun sceKernelRegisterThreadEventHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x0C106E53)
@@ -89,7 +92,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelReferMsgPipeStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x33BE4024)
 	fun sceKernelCancelMsgPipe(cpu: CpuState): Unit = UNIMPLEMENTED(0x349B864D)
 	fun sceKernelCheckCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x349D6D6C)
-	fun sceKernelGetSystemTimeLow(cpu: CpuState): Unit = UNIMPLEMENTED(0x369ED59D)
 	fun sceKernelReferThreadEventHandlerStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x369EEB6B)
 	fun sceKernelTerminateDeleteThread(cpu: CpuState): Unit = UNIMPLEMENTED(0x383F7BCC)
 	fun sceKernelReferVplStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x39810265)
@@ -204,6 +206,7 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	override fun registerModule() {
 		// Time
 		registerFunctionLong("sceKernelGetSystemTimeWide", 0x82BC5777, since = 150) { sceKernelGetSystemTimeWide() }
+		registerFunctionInt("sceKernelGetSystemTimeLow", 0x369ED59D, since = 150) { sceKernelGetSystemTimeLow() }
 
 		// Thread
 		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(string, int, int, int, int, ptr) }
@@ -243,7 +246,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelReferMsgPipeStatus", 0x33BE4024, since = 150) { sceKernelReferMsgPipeStatus(it) }
 		registerFunctionRaw("sceKernelCancelMsgPipe", 0x349B864D, since = 150) { sceKernelCancelMsgPipe(it) }
 		registerFunctionRaw("sceKernelCheckCallback", 0x349D6D6C, since = 150) { sceKernelCheckCallback(it) }
-		registerFunctionRaw("sceKernelGetSystemTimeLow", 0x369ED59D, since = 150) { sceKernelGetSystemTimeLow(it) }
 		registerFunctionRaw("sceKernelReferThreadEventHandlerStatus", 0x369EEB6B, since = 150) { sceKernelReferThreadEventHandlerStatus(it) }
 		registerFunctionRaw("sceKernelTerminateDeleteThread", 0x383F7BCC, since = 150) { sceKernelTerminateDeleteThread(it) }
 		registerFunctionRaw("sceKernelReferVplStatus", 0x39810265, since = 150) { sceKernelReferVplStatus(it) }
