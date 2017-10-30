@@ -7,10 +7,10 @@ interface ResourceItem {
 	val id: Int
 }
 
-class ResourceList<T : ResourceItem>(val name: String, val alloc: (id: Int) -> T) {
+class ResourceList<T : ResourceItem>(val name: String, private val create: (id: Int) -> T) {
 	private val items = LinkedHashMap<Int, T>()
 	private var lastId: Int = 0
-	private val freeList = Pool<T>() { alloc(lastId++) }
+	private val freeList = Pool<T>() { create(lastId++) }
 
 	fun alloc(): T {
 		val item = freeList.alloc()
