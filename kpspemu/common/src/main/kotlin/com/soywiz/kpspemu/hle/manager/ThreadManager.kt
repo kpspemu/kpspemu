@@ -89,6 +89,7 @@ class PspThread internal constructor(
 		SP = stack.high.toInt()
 	}
 	val interpreter = CpuInterpreter(state)
+	//val interpreter = FastCpuInterpreter(state)
 
 	init {
 		updateTrace()
