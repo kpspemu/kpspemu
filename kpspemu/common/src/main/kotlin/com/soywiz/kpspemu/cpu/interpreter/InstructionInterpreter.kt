@@ -35,6 +35,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun movz(s: CpuState) = s { if (RT == 0) RD = RS }
 	override fun movn(s: CpuState) = s { if (RT != 0) RD = RS }
 
+	override fun max(s: CpuState) = s { RD = kotlin.math.max(RS, RT) }
+	override fun min(s: CpuState) = s { RD = kotlin.math.min(RS, RT) }
+
 	override fun add(s: CpuState) = s { RD = RS + RT }
 	override fun addu(s: CpuState) = s { RD = RS + RT }
 	override fun subu(s: CpuState) = s { RD = RS - RT }
@@ -92,9 +95,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun sw(s: CpuState) = s { mem.sw(RS_IMM16, RT) }
 
 	// Special
-	override fun syscall(s: CpuState) = s { syscall(SYSCALL) }
+	override fun syscall(s: CpuState) = s.preadvance { syscall(SYSCALL) }
 
-	override fun _break(s: CpuState) = s { throw CpuBreak(SYSCALL) }
+	override fun _break(s: CpuState) = s.preadvance { throw CpuBreak(SYSCALL) }
 
 	// Set less
 	override fun slt(s: CpuState) = s { RD = if (IntEx.compare(RS, RT) < 0) 1 else 0 }

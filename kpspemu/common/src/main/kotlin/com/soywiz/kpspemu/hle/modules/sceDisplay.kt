@@ -4,6 +4,7 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.hle.PixelFormat
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.hle.manager.WaitObject
 
 class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay") {
 	val display by lazy { emulator.display }
@@ -23,6 +24,8 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay") {
 	}
 
 	fun sceDisplayWaitVblankStart(thread: PspThread): Int {
+		//println("sceDisplayWaitVblankStart")
+		thread.suspend(WaitObject.VBLANK, cb = false)
 		//return this._waitVblankAsync(thread, AcceptCallbacks.NO);
 		//return this._waitVblankStartAsync(thread, AcceptCallbacks.NO);
 		return 0

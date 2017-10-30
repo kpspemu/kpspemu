@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.hle
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.thread
@@ -29,17 +30,13 @@ class RegisterReader {
 
 data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
 
-/*
-class NativeFunction {
-	var name: String = ""
-	var nid: Int = 0
-	var firmwareVersion: Int = 150
-	var nativeCall: () -> Unit = {}
-	var call: (Int, CpuState) -> Unit = { a, b -> }
-}
-*/
-
-abstract class SceModule(val emulator: Emulator, val name: String, val flags: Int = 0, val prxFile: String = "", val prxName: String = "") {
+abstract class SceModule(
+	override val emulator: Emulator,
+	val name: String,
+	val flags: Int = 0,
+	val prxFile: String = "",
+	val prxName: String = ""
+) : WithEmulator {
 	fun registerPspModule() {
 		registerModule()
 	}

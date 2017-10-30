@@ -29,6 +29,11 @@ open class InstructionDecoder {
 
 	inline operator fun CpuState.invoke(callback: CpuState.() -> Unit) = this.normal(callback)
 
+	inline fun CpuState.preadvance(callback: CpuState.() -> Unit) {
+		advance_pc(4)
+		this.run(callback)
+	}
+
 	inline fun CpuState.normal(callback: CpuState.() -> Unit) {
 		this.run(callback)
 		advance_pc(4)

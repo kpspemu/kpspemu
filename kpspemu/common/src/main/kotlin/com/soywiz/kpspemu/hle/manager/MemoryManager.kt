@@ -3,10 +3,11 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.lang.format
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.util.reduceAcumulate
 import com.soywiz.kpspemu.util.splice
 
-class MemoryManager {
+class MemoryManager(val emulator: Emulator) {
 	val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()
 
 	init {

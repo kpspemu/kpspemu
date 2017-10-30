@@ -3,27 +3,28 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.klock.Klock
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.callbackManager
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.readBytes
+import com.soywiz.kpspemu.threadManager
+import com.soywiz.kpspemu.util.millisecondsToMicroseconds
 
 @Suppress("UNUSED_PARAMETER")
 class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager") {
-	val mem by lazy { emulator.mem }
-	val threadManager by lazy { emulator.threadManager }
-
 	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): Int {
-		val thread = threadManager.createThread(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
+		val thread = threadManager.create(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
 		//println("sceKernelCreateThread: ${thread.id}")
 		return thread.id
 	}
 
 	fun sceKernelStartThread(currentThread: PspThread, threadId: Int, userDataLength: Int, userDataPtr: Ptr): Int {
 		//println("sceKernelStartThread: $threadId")
-		val thread = threadManager.threadsById[threadId] ?: invalidOp("Can't find thread $threadId")
+		val thread = threadManager.resourcesById[threadId] ?: invalidOp("Can't find thread $threadId")
 		if (userDataPtr.isNotNull) {
 			val localUserDataPtr = thread.putDataInStack(userDataPtr.readBytes(userDataLength))
 			thread.state.r4 = userDataLength
@@ -36,7 +37,17 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		return 0
 	}
 
-	fun sceKernelGetSystemTimeWide(): Long = Klock.currentTimeMillis() * 1_000_000 // microseconds
+	fun sceKernelSleepThreadCB(currentThread: PspThread): Int {
+		currentThread.suspend(WaitObject.SLEEP, cb = true)
+		return 0
+	}
+
+	fun sceKernelGetSystemTimeWide(): Long = Klock.millisecondsToMicroseconds(Klock.currentTimeMillis())
+
+	fun sceKernelCreateCallback(name: String?, func: Ptr, arg: Int): Int {
+		val callback = callbackManager.create(name ?: "callback", func, arg)
+		return callback.id
+	}
 
 	fun sceKernelGetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x034A921F)
 	fun sceKernelRegisterThreadEventHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x0C106E53)
@@ -110,7 +121,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelClearEventFlag(cpu: CpuState): Unit = UNIMPLEMENTED(0x812346E4)
 	fun sceKernelCreateMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0x8125221D)
 	fun sceKernelReferGlobalProfiler(cpu: CpuState): Unit = UNIMPLEMENTED(0x8218B4DD)
-	fun sceKernelSleepThreadCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x82826F70)
 	fun sceKernelWaitThreadEndCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x840E8133)
 	fun sceKernelDeleteMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0x86255ADA)
 	fun ThreadManForUser_8672E3D0(cpu: CpuState): Unit = UNIMPLEMENTED(0x8672E3D0)
@@ -164,7 +174,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelTryReceiveMsgPipe(cpu: CpuState): Unit = UNIMPLEMENTED(0xDF52098F)
 	fun sceKernelSysClock2USecWide(cpu: CpuState): Unit = UNIMPLEMENTED(0xE1619D7C)
 	fun sceKernelAllocateFplCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xE7282CB6)
-	fun sceKernelCreateCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xE81CAF8F)
 	fun sceKernelSendMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0xE9B3061E)
 	fun sceKernelChangeCurrentThreadAttr(cpu: CpuState): Unit = UNIMPLEMENTED(0xEA748E31)
 	fun sceKernelAllocateVplCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xEC0A693F)
@@ -181,9 +190,16 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelReferThreadRunStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xFFC36A14)
 
 	override fun registerModule() {
+		// Time
+		registerFunctionLong("sceKernelGetSystemTimeWide", 0x82BC5777, since = 150) { sceKernelGetSystemTimeWide() }
+
+		// Thread
 		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(string, int, int, int, int, ptr) }
 		registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(thread, int, int, ptr) }
-		registerFunctionLong("sceKernelGetSystemTimeWide", 0x82BC5777, since = 150) { sceKernelGetSystemTimeWide() }
+		registerFunctionInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
+
+		// Callbacks
+		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(string, ptr, int) }
 
 		registerFunctionRaw("sceKernelGetVTimerTime", 0x034A921F, since = 150) { sceKernelGetVTimerTime(it) }
 		registerFunctionRaw("sceKernelRegisterThreadEventHandler", 0x0C106E53, since = 150) { sceKernelRegisterThreadEventHandler(it) }
@@ -256,7 +272,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelClearEventFlag", 0x812346E4, since = 150) { sceKernelClearEventFlag(it) }
 		registerFunctionRaw("sceKernelCreateMbx", 0x8125221D, since = 150) { sceKernelCreateMbx(it) }
 		registerFunctionRaw("sceKernelReferGlobalProfiler", 0x8218B4DD, since = 150) { sceKernelReferGlobalProfiler(it) }
-		registerFunctionRaw("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(it) }
 		registerFunctionRaw("sceKernelWaitThreadEndCB", 0x840E8133, since = 150) { sceKernelWaitThreadEndCB(it) }
 		registerFunctionRaw("sceKernelDeleteMbx", 0x86255ADA, since = 150) { sceKernelDeleteMbx(it) }
 		registerFunctionRaw("ThreadManForUser_8672E3D0", 0x8672E3D0, since = 150) { ThreadManForUser_8672E3D0(it) }
@@ -310,7 +325,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelTryReceiveMsgPipe", 0xDF52098F, since = 150) { sceKernelTryReceiveMsgPipe(it) }
 		registerFunctionRaw("sceKernelSysClock2USecWide", 0xE1619D7C, since = 150) { sceKernelSysClock2USecWide(it) }
 		registerFunctionRaw("sceKernelAllocateFplCB", 0xE7282CB6, since = 150) { sceKernelAllocateFplCB(it) }
-		registerFunctionRaw("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(it) }
 		registerFunctionRaw("sceKernelSendMbx", 0xE9B3061E, since = 150) { sceKernelSendMbx(it) }
 		registerFunctionRaw("sceKernelChangeCurrentThreadAttr", 0xEA748E31, since = 150) { sceKernelChangeCurrentThreadAttr(it) }
 		registerFunctionRaw("sceKernelAllocateVplCB", 0xEC0A693F, since = 150) { sceKernelAllocateVplCB(it) }

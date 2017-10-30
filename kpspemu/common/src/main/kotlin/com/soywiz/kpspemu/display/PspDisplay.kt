@@ -3,10 +3,13 @@ package com.soywiz.kpspemu.display
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.color.RGBA_5551
+import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.hle.PixelFormat
-import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.threadManager
 
-class PspDisplay(val mem: Memory) {
+class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var rawDisplay: Boolean = true
 
 	var address: Int = 0x44000000
@@ -29,7 +32,7 @@ class PspDisplay(val mem: Memory) {
 		mem.read(address, temp, 0, temp.size)
 
 		val color = when (pixelFormat) {
-			//PixelFormat.RGBA_5650 -> RGBA
+		//PixelFormat.RGBA_5650 -> RGBA
 			PixelFormat.RGBA_5551 -> RGBA_5551
 			else -> RGBA
 		}

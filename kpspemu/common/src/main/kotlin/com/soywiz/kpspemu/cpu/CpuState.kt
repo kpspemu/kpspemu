@@ -5,7 +5,8 @@ import com.soywiz.kpspemu.mem.Memory
 
 data class CpuBreak(val id: Int) : Exception() {
 	companion object {
-		val THREAD_EXIT_KILL = 10077
+		val THREAD_WAIT = 10001
+		val THREAD_EXIT_KILL = 10002
 	}
 }
 

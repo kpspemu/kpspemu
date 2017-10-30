@@ -2,57 +2,83 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
-import com.soywiz.korio.util.Pool
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuBreak
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.RA
 import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
-import com.soywiz.kpspemu.mem
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.ptr
 
-class ThreadManager(val emulator: Emulator) {
-	val memoryManager get() = emulator.memoryManager
-	var lastId: Int = 0
-	val freeIds = Pool { lastId++ }
-	val threadsById = LinkedHashMap<Int, PspThread>()
-
-	fun createThread(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
+class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
+	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
 		val stack = memoryManager.userPartition.allocateHigh(stackSize, "${name}_stack")
-		val thread = PspThread(this, freeIds.alloc(), name, entryPoint, stack, initPriority, attributes, optionPtr)
-		threadsById[thread.id] = thread
-		return thread
+		return PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
+	}
+
+	fun suspend() {
+		throw CpuBreak(CpuBreak.THREAD_WAIT)
+	}
+
+	fun vblank() {
+		for (t in resourcesById.values.filter { it.waitObject is WaitObject.VBLANK }) {
+			t.resume()
+			//println("RESUMED WAITING THREAD!")
+		}
 	}
 
 	fun step() {
-		val availableThreads = threadsById.values.filter { it.running }.sortedBy { it.priority }
-		for (t in availableThreads) {
-			t.step()
+		val now: Long = timeManager.getTimeInMicroseconds()
+
+		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+			val time = (t.waitObject as WaitObject.TIME).time
+			if (now >= time) {
+				t.resume()
+			}
 		}
+
+		val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
+		for (t in availableThreads) {
+			t.step(now)
+		}
+	}
+
+	val traces = hashMapOf<String, Boolean>()
+
+	fun trace(name: String, trace: Boolean = true) {
+		if (trace) {
+			traces[name] = true
+		} else {
+			traces.remove(name)
+		}
+		tryGetByName(name)?.updateTrace()
 	}
 }
 
-class PspThreadQueue {
-
+sealed class WaitObject {
+	class TIME(val time: Long) : WaitObject()
+	object SLEEP : WaitObject()
+	object VBLANK : WaitObject()
 }
 
 class PspThread internal constructor(
-	val manager: ThreadManager,
-	val id: Int,
-	val name: String,
+	val threadManager: ThreadManager,
+	id: Int,
+	name: String,
 	val entryPoint: Int,
 	val stack: MemoryPartition,
 	val initPriority: Int,
 	val attributes: Int,
 	val optionPtr: Ptr
-) : WithEmulator {
-	enum class Phase { Stopped, Running, Waiting, Deleted, }
+) : Resource(threadManager, id, name), WithEmulator {
+	enum class Phase { STOPPED, RUNNING, WAITING, DELETED }
 
-	var phase: Phase = Phase.Stopped
-	val running: Boolean get() = phase == Phase.Running
+	var acceptingCallbacks: Boolean = false
+	var waitObject: WaitObject? = null
+
+	var phase: Phase = Phase.STOPPED
+	val running: Boolean get() = phase == Phase.RUNNING
 	var priority: Int = initPriority
 	override val emulator get() = manager.emulator
 	val state = CpuState(emulator.mem, emulator.syscalls).apply {
@@ -61,6 +87,14 @@ class PspThread internal constructor(
 		SP = stack.high.toInt()
 	}
 	val interpreter = CpuInterpreter(state)
+
+	init {
+		updateTrace()
+	}
+
+	fun updateTrace() {
+		interpreter.trace = threadManager.traces[name] == true
+	}
 
 	init {
 		//val ptr = putWordInStack(0b000000_00000000000000000000_001101 or (77 shl 6)) // break 77
@@ -91,17 +125,23 @@ class PspThread internal constructor(
 	}
 
 	fun start() {
-		phase = Phase.Running
+		resume()
+	}
+
+	fun resume() {
+		phase = Phase.RUNNING
+		waitObject = null
+		acceptingCallbacks = false
 	}
 
 	fun stop() {
-		phase = Phase.Stopped
+		phase = Phase.STOPPED
 	}
 
 	fun delete() {
-		phase = Phase.Deleted
+		phase = Phase.DELETED
 		manager.freeIds.free(id)
-		manager.threadsById.remove(id)
+		manager.resourcesById.remove(id)
 	}
 
 	fun exitAndKill() {
@@ -109,7 +149,7 @@ class PspThread internal constructor(
 		delete()
 	}
 
-	fun step() {
+	fun step(now: Long) {
 		try {
 			interpreter.steps(1_000_000)
 		} catch (e: CpuBreak) {
@@ -118,9 +158,22 @@ class PspThread internal constructor(
 					println("BREAK: THREAD_EXIT_KILL")
 					exitAndKill()
 				}
+				CpuBreak.THREAD_WAIT -> {
+				}
 				else -> throw e
 			}
 		}
+	}
+
+	fun markWaiting(wait: WaitObject, cb: Boolean) {
+		this.waitObject = wait
+		this.phase = Phase.WAITING
+		this.acceptingCallbacks = cb
+	}
+
+	fun suspend(wait: WaitObject, cb: Boolean) {
+		markWaiting(wait, cb)
+		threadManager.suspend()
 	}
 }
 
