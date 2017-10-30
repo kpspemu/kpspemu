@@ -16,6 +16,8 @@ import kotlin.math.floor
 import kotlin.math.round
 
 // This was discarded because both JVM and JS devirtualize and inline pretty well already
+// It can boost things a bit, but not that much. So to keep things simpler, we do not use this for now at least
+// Maybe in native that can't devirtualize at runtime we should investigate this again.
 
 /*
 @Suppress("RemoveRedundantCallsOfConversionMethods")

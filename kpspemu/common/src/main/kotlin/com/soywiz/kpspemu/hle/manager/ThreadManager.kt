@@ -154,6 +154,7 @@ class PspThread internal constructor(
 
 	fun step(now: Long) {
 		try {
+			//interpreter.steps(1_000_000)
 			interpreter.steps(1_000_000)
 		} catch (e: CpuBreak) {
 			when (e.id) {
