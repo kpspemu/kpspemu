@@ -63,14 +63,14 @@ class KpspemuMainScene : Scene() {
 				if (running) {
 					try {
 						frameStep()
-
-						if (display.rawDisplay) {
-							display.decodeToBitmap32(bmp)
-							tex.update(bmp)
-						}
 					} catch (e: Throwable) {
 						e.printStackTrace()
 						running = false
+					}
+
+					if (display.rawDisplay) {
+						display.decodeToBitmap32(bmp)
+						tex.update(bmp)
 					}
 				}
 			}

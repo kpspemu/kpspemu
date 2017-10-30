@@ -10,6 +10,11 @@ interface Ptr {
 	fun lb(offset: Int): Int
 	fun lh(offset: Int): Int
 	fun lw(offset: Int): Int
+
+	fun sdw(offset: Int, value: Long): Unit {
+		sw(offset + 0, (value ushr 0).toInt())
+		sw(offset + 4, (value ushr 32).toInt())
+	}
 }
 
 data class MemPtr(val mem: Memory, override val addr: Int) : Ptr {

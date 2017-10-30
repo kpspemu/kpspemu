@@ -1,11 +1,20 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.klock.Klock
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.mem.Ptr
 
 @Suppress("UNUSED_PARAMETER")
 class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rtc.prx", "sceRTC_Service") {
+	fun sceRtcGetCurrentTick(ptr: Ptr): Int {
+		ptr.sdw(0, Klock.currentTimeMillis() * 1_000_000) // microseconds
+		return 0
+	}
+
+	fun sceRtcGetTickResolution(): Int = 1000000
+
 	fun sceRtcGetAccumulativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x011F03C1)
 	fun sceRtcGetAccumlativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x029CA3B3)
 	fun sceRtcFormatRFC3339(cpu: CpuState): Unit = UNIMPLEMENTED(0x0498FB3C)
@@ -20,7 +29,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcConvertUtcToLocalTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x34885E0D)
 	fun sceRtcGetDosTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x36075567)
 	fun sceRtcSetTime_t(cpu: CpuState): Unit = UNIMPLEMENTED(0x3A807CC8)
-	fun sceRtcGetCurrentTick(cpu: CpuState): Unit = UNIMPLEMENTED(0x3F7AD767)
 	fun sceRtcIsLeapYear(cpu: CpuState): Unit = UNIMPLEMENTED(0x42307A17)
 	fun sceRtcTickAddYears(cpu: CpuState): Unit = UNIMPLEMENTED(0x42842C77)
 	fun sceRtcTickAddTicks(cpu: CpuState): Unit = UNIMPLEMENTED(0x44F45E05)
@@ -39,7 +47,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcCompareTick(cpu: CpuState): Unit = UNIMPLEMENTED(0x9ED0AE87)
 	fun sceRtc_A93CF7D8(cpu: CpuState): Unit = UNIMPLEMENTED(0xA93CF7D8)
 	fun sceRtc_C2DDBEB5(cpu: CpuState): Unit = UNIMPLEMENTED(0xC2DDBEB5)
-	fun sceRtcGetTickResolution(cpu: CpuState): Unit = UNIMPLEMENTED(0xC41C2853)
 	fun sceRtcFormatRFC2822(cpu: CpuState): Unit = UNIMPLEMENTED(0xC663B3B9)
 	fun sceRtcTickAddWeeks(cpu: CpuState): Unit = UNIMPLEMENTED(0xCF3A2CA8)
 	fun sceRtcGetWin32FileTime(cpu: CpuState): Unit = UNIMPLEMENTED(0xCF561893)
@@ -55,6 +62,9 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcRegisterCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xFB3B18CD)
 
 	override fun registerModule() {
+		registerFunctionInt("sceRtcGetCurrentTick", 0x3F7AD767, since = 150) { sceRtcGetCurrentTick(ptr) }
+		registerFunctionInt("sceRtcGetTickResolution", 0xC41C2853, since = 150) { sceRtcGetTickResolution() }
+
 		registerFunctionRaw("sceRtcGetAccumulativeTime", 0x011F03C1, since = 150) { sceRtcGetAccumulativeTime(it) }
 		registerFunctionRaw("sceRtcGetAccumlativeTime", 0x029CA3B3, since = 150) { sceRtcGetAccumlativeTime(it) }
 		registerFunctionRaw("sceRtcFormatRFC3339", 0x0498FB3C, since = 150) { sceRtcFormatRFC3339(it) }
@@ -69,7 +79,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtcConvertUtcToLocalTime", 0x34885E0D, since = 150) { sceRtcConvertUtcToLocalTime(it) }
 		registerFunctionRaw("sceRtcGetDosTime", 0x36075567, since = 150) { sceRtcGetDosTime(it) }
 		registerFunctionRaw("sceRtcSetTime_t", 0x3A807CC8, since = 150) { sceRtcSetTime_t(it) }
-		registerFunctionRaw("sceRtcGetCurrentTick", 0x3F7AD767, since = 150) { sceRtcGetCurrentTick(it) }
 		registerFunctionRaw("sceRtcIsLeapYear", 0x42307A17, since = 150) { sceRtcIsLeapYear(it) }
 		registerFunctionRaw("sceRtcTickAddYears", 0x42842C77, since = 150) { sceRtcTickAddYears(it) }
 		registerFunctionRaw("sceRtcTickAddTicks", 0x44F45E05, since = 150) { sceRtcTickAddTicks(it) }
@@ -88,7 +97,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtcCompareTick", 0x9ED0AE87, since = 150) { sceRtcCompareTick(it) }
 		registerFunctionRaw("sceRtc_A93CF7D8", 0xA93CF7D8, since = 150) { sceRtc_A93CF7D8(it) }
 		registerFunctionRaw("sceRtc_C2DDBEB5", 0xC2DDBEB5, since = 150) { sceRtc_C2DDBEB5(it) }
-		registerFunctionRaw("sceRtcGetTickResolution", 0xC41C2853, since = 150) { sceRtcGetTickResolution(it) }
 		registerFunctionRaw("sceRtcFormatRFC2822", 0xC663B3B9, since = 150) { sceRtcFormatRFC2822(it) }
 		registerFunctionRaw("sceRtcTickAddWeeks", 0xCF3A2CA8, since = 150) { sceRtcTickAddWeeks(it) }
 		registerFunctionRaw("sceRtcGetWin32FileTime", 0xCF561893, since = 150) { sceRtcGetWin32FileTime(it) }

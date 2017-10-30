@@ -111,7 +111,7 @@ class PspThread internal constructor(
 
 	fun step() {
 		try {
-			interpreter.steps(10000)
+			interpreter.steps(1_000_000)
 		} catch (e: CpuBreak) {
 			when (e.id) {
 				CpuBreak.THREAD_EXIT_KILL -> {

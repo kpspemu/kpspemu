@@ -87,7 +87,15 @@ abstract class SceModule(val emulator: Emulator, val name: String, val flags: In
 
 	protected fun registerFunctionInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Int) {
 		registerFunctionRR(name, uid, since, syscall) {
-			this.cpu.GPR[2] = function(it)
+			this.cpu.r2 = function(it)
+		}
+	}
+
+	protected fun registerFunctionLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Long) {
+		registerFunctionRR(name, uid, since, syscall) {
+			val ret = function(it)
+			this.cpu.r2 = (ret ushr 0).toInt()
+			this.cpu.r3 = (ret ushr 32).toInt()
 		}
 	}
 }

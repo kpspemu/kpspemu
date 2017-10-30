@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.klock.Klock
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
@@ -34,6 +35,8 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		thread.start()
 		return 0
 	}
+
+	fun sceKernelGetSystemTimeWide(): Long = Klock.currentTimeMillis() * 1_000_000 // microseconds
 
 	fun sceKernelGetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x034A921F)
 	fun sceKernelRegisterThreadEventHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x0C106E53)
@@ -108,7 +111,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelCreateMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0x8125221D)
 	fun sceKernelReferGlobalProfiler(cpu: CpuState): Unit = UNIMPLEMENTED(0x8218B4DD)
 	fun sceKernelSleepThreadCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x82826F70)
-	fun sceKernelGetSystemTimeWide(cpu: CpuState): Unit = UNIMPLEMENTED(0x82BC5777)
 	fun sceKernelWaitThreadEndCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x840E8133)
 	fun sceKernelDeleteMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0x86255ADA)
 	fun ThreadManForUser_8672E3D0(cpu: CpuState): Unit = UNIMPLEMENTED(0x8672E3D0)
@@ -181,6 +183,7 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	override fun registerModule() {
 		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(string, int, int, int, int, ptr) }
 		registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(thread, int, int, ptr) }
+		registerFunctionLong("sceKernelGetSystemTimeWide", 0x82BC5777, since = 150) { sceKernelGetSystemTimeWide() }
 
 		registerFunctionRaw("sceKernelGetVTimerTime", 0x034A921F, since = 150) { sceKernelGetVTimerTime(it) }
 		registerFunctionRaw("sceKernelRegisterThreadEventHandler", 0x0C106E53, since = 150) { sceKernelRegisterThreadEventHandler(it) }
@@ -254,7 +257,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelCreateMbx", 0x8125221D, since = 150) { sceKernelCreateMbx(it) }
 		registerFunctionRaw("sceKernelReferGlobalProfiler", 0x8218B4DD, since = 150) { sceKernelReferGlobalProfiler(it) }
 		registerFunctionRaw("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(it) }
-		registerFunctionRaw("sceKernelGetSystemTimeWide", 0x82BC5777, since = 150) { sceKernelGetSystemTimeWide(it) }
 		registerFunctionRaw("sceKernelWaitThreadEndCB", 0x840E8133, since = 150) { sceKernelWaitThreadEndCB(it) }
 		registerFunctionRaw("sceKernelDeleteMbx", 0x86255ADA, since = 150) { sceKernelDeleteMbx(it) }
 		registerFunctionRaw("ThreadManForUser_8672E3D0", 0x8672E3D0, since = 150) { ThreadManForUser_8672E3D0(it) }
