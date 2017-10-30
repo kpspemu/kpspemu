@@ -1,10 +1,14 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.*
+import com.soywiz.korio.util.extract
+import com.soywiz.korio.util.insert
+import com.soywiz.korio.util.udiv
+import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.util.BitUtils
+import com.soywiz.kpspemu.util.compareToUnsigned
 import com.soywiz.kpspemu.util.imul32_64
 import com.soywiz.kpspemu.util.umul32_64
 import kotlin.math.ceil
@@ -14,14 +18,19 @@ import kotlin.math.round
 class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
-	fun step() {
-		if (cpu._PC == 0) throw IllegalStateException("Trying to execute PC=0")
-		if (trace) println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
-		dispatcher.dispatch(cpu)
+	fun steps(count: Int) {
+		val dispatcher = this.dispatcher
+		val cpu = this.cpu
+		val trace = this.trace
+		for (n in 0 until count) {
+			if (cpu._PC == 0) throw IllegalStateException("Trying to execute PC=0")
+			if (trace) tracePC()
+			dispatcher.dispatch(cpu)
+		}
 	}
 
-	fun steps(count: Int) {
-		for (n in 0 until count) step()
+	private fun tracePC() {
+		println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
 	}
 }
 
@@ -113,12 +122,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun _break(s: CpuState) = s.preadvance { throw CpuBreak(SYSCALL) }
 
 	// Set less
-	override fun slt(s: CpuState) = s { RD = if (IntEx.compare(RS, RT) < 0) 1 else 0 }
+	override fun slt(s: CpuState) = s { RD = if (RS < RT) 1 else 0 }
 
-	override fun sltu(s: CpuState) = s { RD = if (IntEx.compareUnsigned(RS, RT) < 0) 1 else 0 }
+	override fun sltu(s: CpuState) = s { RD = if (RS.compareToUnsigned(RT) < 0) 1 else 0 }
 
-	override fun slti(s: CpuState) = s { RT = if (IntEx.compare(RS, S_IMM16) < 0) 1 else 0 }
-	override fun sltiu(s: CpuState) = s { RT = if (IntEx.compareUnsigned(RS, S_IMM16) < 0) 1 else 0 }
+	override fun slti(s: CpuState) = s { RT = if (RS < S_IMM16) 1 else 0 }
+	override fun sltiu(s: CpuState) = s { RT = if (RS.compareToUnsigned(S_IMM16) < 0) 1 else 0 }
 
 
 	// Branch
@@ -140,9 +149,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
 
-	// $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
-	override fun jal(s: CpuState) = s.none { RA = _nPC + 4; j(s) }
-
+	override fun jal(s: CpuState) = s.none { RA = _nPC + 4; j(s) } // $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
 	override fun jalr(s: CpuState) = s.none { RA = _nPC + 4; jr(s) }
 
 	// Float
@@ -150,10 +157,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	override fun mtc1(s: CpuState) = s { FS_I = RT }
 	override fun cvt_s_w(s: CpuState) = s { FD = FS_I.toFloat() }
-	override fun cvt_w_s(s: CpuState) = s {
-		// @TODO: _cvt_w_s_impl, fcr31_rm: 0:rint, 1:cast, 2:ceil, 3:floor
-		FD_I = FS.toInt()
-	}
+	override fun cvt_w_s(s: CpuState) = s { FD_I = FS.toInt() } // @TODO: _cvt_w_s_impl, fcr31_rm: 0:rint, 1:cast, 2:ceil, 3:floor
 
 	override fun trunc_w_s(s: CpuState) = s { FD_I = FS.toInt() }
 	override fun round_w_s(s: CpuState) = s { FD_I = round(FS).toInt() }

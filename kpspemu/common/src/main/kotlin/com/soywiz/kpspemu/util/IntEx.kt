@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.util
 
+import com.soywiz.korio.util.IntEx
 import kotlin.math.abs
 
 fun imul32_64(a: Int, b: Int, result: IntArray = IntArray(2)): IntArray {
@@ -102,3 +103,5 @@ object BitUtils {
 			((v and 0x000000FF) shl 24)
 		)
 }
+
+fun Int.compareToUnsigned(that: Int) = IntEx.compareUnsigned(this, that)

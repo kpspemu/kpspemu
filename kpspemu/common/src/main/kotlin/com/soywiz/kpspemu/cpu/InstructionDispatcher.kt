@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korio.lang.format
 
+@Suppress("RemoveRedundantCallsOfConversionMethods", "LiftReturnOrAssignment", "RedundantUnitReturnType")
 class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 	fun dispatch(s: T, pc: Int, i: Int): Unit {
 		when ((i and 0xFC000000.toInt())) {
