@@ -8,7 +8,7 @@ class Gpu(override val emulator: Emulator) : WithEmulator {
 
 	fun render() {
 		if (batchQueue.isNotEmpty()) {
-			println("Render: $batchQueue")
+			emulator.gpuRenderer.render(batchQueue.toList())
 			batchQueue.clear()
 		}
 	}

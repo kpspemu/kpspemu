@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
+import com.soywiz.korio.JvmField
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.mem.Memory
 

@@ -21,11 +21,17 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	fun steps(count: Int) {
 		val dispatcher = this.dispatcher
 		val cpu = this.cpu
+		val mem = cpu.mem
 		val trace = this.trace
+		//val fast = (mem as FastMemory).buffer
 		for (n in 0 until count) {
-			if (cpu._PC == 0) throw IllegalStateException("Trying to execute PC=0")
+			val PC = cpu._PC
+			//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
 			if (trace) tracePC()
-			dispatcher.dispatch(cpu)
+			val IR = mem.lw(PC)
+			//val IR = fast.getAlignedInt32((PC ushr 2) and Memory.MASK)
+			cpu.IR = IR
+			dispatcher.dispatch(cpu, PC, IR)
 		}
 	}
 

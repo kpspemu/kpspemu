@@ -48,6 +48,10 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		for (n in 0 until len) sb(dstPos + n, src[srcPos + n].toInt())
 	}
 
+	fun write(dstPos: Int, src: IntArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
+		for (n in 0 until len) sw(dstPos + n * 4, src[srcPos + n].toInt())
+	}
+
 	fun lwl(address: Int, value: Int): Int {
 		val align = address and 3
 		val oldvalue = this.lw(address and 3.inv())
@@ -182,9 +186,11 @@ fun Memory.openSync(): SyncStream {
 }
 
 class FastMemory : Memory(true) {
-	private val buffer = FastMemory.alloc(0x0a000000)
+	val buffer = FastMemory.alloc(0x0a000000)
+	private inline fun index(address: Int) = address and MASK
 
-	fun index(address: Int) = address and MASK
+	//val buffer = FastMemory.alloc(0x10000000)
+	//private inline fun index(address: Int) = address and 0x0fffffff
 
 	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
 	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }

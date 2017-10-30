@@ -7,9 +7,10 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.hle.PixelFormat
 import com.soywiz.kpspemu.mem
-import com.soywiz.kpspemu.threadManager
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
+	val bmp = Bitmap32(512, 272)
+
 	var rawDisplay: Boolean = true
 
 	var address: Int = 0x44000000
