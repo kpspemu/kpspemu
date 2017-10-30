@@ -62,6 +62,13 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	var HI: Int = 0
 	var IC: Int = 0
 
+	var HI_LO: Long
+		get() = (HI.toLong() shl 32) or (LO.toLong() and 0xFFFFFFFF)
+		set(value) {
+			HI = (value ushr 32).toInt()
+			LO = (value ushr 0).toInt()
+		}
+
 	fun setPC(pc: Int) {
 		_PC = pc
 		_nPC = pc + 4
