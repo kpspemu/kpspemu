@@ -10,4 +10,4 @@ fun String.parseInt(): Int = when {
 
 val String.quoted: String get() = this.quote()
 
-val Int.hexx: String get() = "0x%08X".format(this)
+val Int.hex: String get() = "0x%08X".format(this)

@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.IntEx
-import com.soywiz.korio.util.udiv
-import com.soywiz.korio.util.urem
+import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
+import com.soywiz.kpspemu.util.BitUtils
 import com.soywiz.kpspemu.util.imul32_64
 import com.soywiz.kpspemu.util.umul32_64
 import kotlin.math.ceil
@@ -37,6 +36,17 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	override fun movz(s: CpuState) = s { if (RT == 0) RD = RS }
 	override fun movn(s: CpuState) = s { if (RT != 0) RD = RS }
+
+	override fun ext(s: CpuState) = s { RT = RS.extract(POS, SIZE_E) }
+	override fun ins(s: CpuState) = s { RT = RT.insert(RS, POS, SIZE_I) }
+
+	override fun clz(s: CpuState) = s { RD = BitUtils.clz(RS) }
+	override fun clo(s: CpuState) = s { RD = BitUtils.clo(RS) }
+	override fun seb(s: CpuState) = s { RD = BitUtils.seb(RT) }
+	override fun seh(s: CpuState) = s { RD = BitUtils.seh(RT) }
+
+	override fun wsbh(s: CpuState) = s { RD = BitUtils.wsbh(RT) }
+	override fun wsbw(s: CpuState) = s { RD = BitUtils.wsbw(RT) }
 
 	override fun max(s: CpuState) = s { RD = kotlin.math.max(RS, RT) }
 	override fun min(s: CpuState) = s { RD = kotlin.math.min(RS, RT) }

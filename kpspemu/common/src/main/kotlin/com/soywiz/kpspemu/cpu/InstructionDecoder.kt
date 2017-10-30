@@ -16,7 +16,10 @@ open class InstructionDecoder {
 
 	inline val Int.lsb: Int get() = (this ushr 6) and 0x1F
 	inline val Int.msb: Int get() = (this ushr 11) and 0x1F
-	inline val Int.pos: Int get() = this.lsb
+	inline val Int.pos: Int get() = lsb
+
+	inline val Int.size_e: Int get() = msb + 1
+	inline val Int.size_i: Int get() = msb - lsb + 1
 
 	inline val Int.rd: Int get() = (this ushr 11) and 0x1F
 	inline val Int.rt: Int get() = (this ushr 16) and 0x1F
@@ -95,6 +98,8 @@ open class InstructionDecoder {
 	inline val CpuState.S_IMM16: Int; get() = IR.s_imm16
 	inline val CpuState.U_IMM16: Int get() = IR.u_imm16
 	inline val CpuState.POS: Int get() = IR.pos
+	inline val CpuState.SIZE_E: Int get() = IR.size_e
+	inline val CpuState.SIZE_I: Int get() = IR.size_i
 	inline val CpuState.SYSCALL: Int get() = IR.syscall
 	inline val CpuState.U_IMM26: Int get() = IR.u_imm26
 	inline val CpuState.JUMP_ADDRESS: Int get() = IR.jump_address

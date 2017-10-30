@@ -25,8 +25,8 @@ fun imul32_64(a: Int, b: Int, result: IntArray = IntArray(2)): IntArray {
 	umul32_64(abs(a), abs(b), result)
 
 	if (doNegate) {
-		result[0] = result [0].inv()
-		result[1] = result [1].inv()
+		result[0] = result[0].inv()
+		result[1] = result[1].inv()
 		result[0] = (result[0] + 1) or 0
 		if (result[0] == 0) result[1] = (result[1] + 1) or 0
 	}
@@ -35,7 +35,7 @@ fun imul32_64(a: Int, b: Int, result: IntArray = IntArray(2)): IntArray {
 }
 
 fun umul32_64(a: Int, b: Int, result: IntArray = IntArray(2)): IntArray {
-	if (a ult  32767 && b ult  65536) {
+	if (a ult 32767 && b ult 65536) {
 		result[0] = a * b
 		result[1] = if (result[0] < 0) -1 else 0
 		return result
@@ -60,3 +60,45 @@ fun umul32_64(a: Int, b: Int, result: IntArray = IntArray(2)): IntArray {
 }
 
 val Int.unsigned: Long get() = this.toLong() and 0xFFFFFFFF
+
+object BitUtils {
+	fun mask(value: Int): Int = (1 shl value) - 1
+	fun bitrev32(x: Int): Int {
+		var v = x
+		v = ((v ushr 1) and 0x55555555) or ((v and 0x55555555) shl 1); // swap odd and even bits
+		v = ((v ushr 2) and 0x33333333) or ((v and 0x33333333) shl 2); // swap consecutive pairs
+		v = ((v ushr 4) and 0x0F0F0F0F) or ((v and 0x0F0F0F0F) shl 4); // swap nibbles ... 
+		v = ((v ushr 8) and 0x00FF00FF) or ((v and 0x00FF00FF) shl 8); // swap bytes
+		v = ((v ushr 16) and 0x0000FFFF) or ((v and 0x0000FFFF) shl 16); // swap 2-byte long pairs
+		return v;
+	}
+
+	fun rotr(value: Int, offset: Int): Int = (value ushr offset) or (value shl (32 - offset))
+
+	fun clz32(x: Int): Int {
+		var v = x
+		if (v == 0) return 32;
+		var result = 0;
+		// Binary search.
+		if ((v and 0xFFFF0000.toInt()) == 0) run { v = v shl 16; result += 16; }
+		if ((v and 0xFF000000.toInt()) == 0) run { v = v shl 8; result += 8; }
+		if ((v and 0xF0000000.toInt()) == 0) run { v = v shl 4; result += 4; }
+		if ((v and 0xC0000000.toInt()) == 0) run { v = v shl 2; result += 2; }
+		if ((v and 0x80000000.toInt()) == 0) run { v = v shl 1; result += 1; }
+		return result;
+	}
+
+	fun clo(x: Int): Int = clz32(x.inv())
+	fun clz(x: Int): Int = clz32(x)
+	fun seb(x: Int): Int = (x shl 24) shr 24
+	fun seh(x: Int): Int = (x shl 16) shr 16
+
+	fun wsbh(v: Int): Int = ((v and 0xFF00FF00.toInt()) ushr 8) or ((v and 0x00FF00FF) shl 8)
+
+	fun wsbw(v: Int): Int = (
+		((v and 0xFF000000.toInt()) ushr 24) or
+			((v and 0x00FF0000) ushr 8) or
+			((v and 0x0000FF00) shl 8) or
+			((v and 0x000000FF) shl 24)
+		)
+}

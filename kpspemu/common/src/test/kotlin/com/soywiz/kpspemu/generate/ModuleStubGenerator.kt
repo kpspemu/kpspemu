@@ -6,7 +6,7 @@ import com.soywiz.korio.util.Indenter
 import com.soywiz.korio.util.quote
 import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.kpspemu.hle.psplibdoc.LibDoc
-import com.soywiz.kpspemu.util.hexx
+import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.quoted
 import org.junit.Test
 import kotlin.test.Ignore
@@ -40,14 +40,14 @@ class ModuleStubGenerator {
 					line("import com.soywiz.kpspemu.hle.SceModule")
 					line("")
 					line("@Suppress(\"UNUSED_PARAMETER\")")
-					line("class ${library.name}(emulator: Emulator) : SceModule(emulator, ${library.name.quote()}, ${library.flags.hexx}, ${prx.fileName.quote()}, ${prx.name.quote()}) {")
+					line("class ${library.name}(emulator: Emulator) : SceModule(emulator, ${library.name.quote()}, ${library.flags.hex}, ${prx.fileName.quote()}, ${prx.name.quote()}) {")
 					for (function in library.functions) {
-						line("	fun ${function.name}(cpu: CpuState): Unit = UNIMPLEMENTED(${function.nid.hexx})")
+						line("	fun ${function.name}(cpu: CpuState): Unit = UNIMPLEMENTED(${function.nid.hex})")
 					}
 					line("")
 					line("	override fun registerModule() {")
 					for (function in library.functions) {
-						line("		registerFunctionRaw(${function.name.quoted}, ${function.nid.hexx}, since = 150) { ${function.name}(it) }")
+						line("		registerFunctionRaw(${function.name.quoted}, ${function.nid.hex}, since = 150) { ${function.name}(it) }")
 					}
 					line("	}")
 					line("}")

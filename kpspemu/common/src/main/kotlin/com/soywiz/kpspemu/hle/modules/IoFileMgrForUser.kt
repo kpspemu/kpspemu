@@ -4,11 +4,17 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.mem.Ptr
 
 
 class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUser", 0x40010011, "iofilemgr.prx", "sceIOFileManager") {
 	fun sceIoOpen(filename: String?, flags: Int, mode: Int): Int {
 		println("WIP: sceIoOpen: $filename, $flags, $mode")
+		return 0
+	}
+
+	fun sceIoWrite(fileId: Int, ptr: Ptr, size: Int): Int {
+		println("WIP: sceIoWrite: $fileId, $ptr, $size")
 		return 0
 	}
 
@@ -20,7 +26,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	fun sceIoLseek(cpu: CpuState): Unit = UNIMPLEMENTED(0x27EB27B8)
 	fun sceIoPollAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x3251EA56)
 	fun sceIoWaitAsyncCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x35DBD746)
-	fun sceIoWrite(cpu: CpuState): Unit = UNIMPLEMENTED(0x42EC03AC)
 	fun sceIoDevctl(cpu: CpuState): Unit = UNIMPLEMENTED(0x54F5FB11)
 	fun sceIoChdir(cpu: CpuState): Unit = UNIMPLEMENTED(0x55F4717D)
 	fun sceIoGetFdList(cpu: CpuState): Unit = UNIMPLEMENTED(0x5C2BE2CC)
@@ -52,6 +57,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	override fun registerModule() {
 		registerFunctionInt("sceIoOpen", 0x109F50BC, since = 150) { sceIoOpen(string, int, int) }
+		registerFunctionInt("sceIoWrite", 0x42EC03AC, since = 150) { sceIoWrite(int, ptr, int) }
 
 		registerFunctionRaw("sceIoMkdir", 0x06A70004, since = 150) { sceIoMkdir(it) }
 		registerFunctionRaw("sceIoGetDevType", 0x08BD7374, since = 150) { sceIoGetDevType(it) }
@@ -61,7 +67,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionRaw("sceIoLseek", 0x27EB27B8, since = 150) { sceIoLseek(it) }
 		registerFunctionRaw("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(it) }
 		registerFunctionRaw("sceIoWaitAsyncCB", 0x35DBD746, since = 150) { sceIoWaitAsyncCB(it) }
-		registerFunctionRaw("sceIoWrite", 0x42EC03AC, since = 150) { sceIoWrite(it) }
 		registerFunctionRaw("sceIoDevctl", 0x54F5FB11, since = 150) { sceIoDevctl(it) }
 		registerFunctionRaw("sceIoChdir", 0x55F4717D, since = 150) { sceIoChdir(it) }
 		registerFunctionRaw("sceIoGetFdList", 0x5C2BE2CC, since = 150) { sceIoGetFdList(it) }
