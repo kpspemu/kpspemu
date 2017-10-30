@@ -17,9 +17,15 @@ open class InstructionDecoder {
 	inline val Int.lsb: Int get() = (this ushr 6) and 0x1F
 	inline val Int.msb: Int get() = (this ushr 11) and 0x1F
 	inline val Int.pos: Int get() = this.lsb
+
 	inline val Int.rd: Int get() = (this ushr 11) and 0x1F
 	inline val Int.rt: Int get() = (this ushr 16) and 0x1F
 	inline val Int.rs: Int get() = (this ushr 21) and 0x1F
+
+	inline val Int.fd: Int get() = (this ushr 6) and 0x1F
+	inline val Int.fs: Int get() = (this ushr 11) and 0x1F
+	inline val Int.ft: Int get() = (this ushr 16) and 0x1F
+
 	inline val Int.syscall: Int get() = this.extract(6, 20)
 	inline val Int.s_imm16: Int get() = ((this and 0xFFFF) shl 16) shr 16
 	inline val Int.u_imm16: Int get() = this and 0xFFFF
@@ -72,6 +78,14 @@ open class InstructionDecoder {
 	inline var CpuState.RD: Int; get() = getGpr(IR.rd); set(value) = run { setGpr(IR.rd, value) }
 	inline var CpuState.RT: Int; get() = getGpr(IR.rt); set(value) = run { setGpr(IR.rt, value) }
 	inline var CpuState.RS: Int; get() = getGpr(IR.rs); set(value) = run { setGpr(IR.rs, value) }
+
+	inline var CpuState.FD: Float; get() = getFpr(IR.fd); set(value) = run { setFpr(IR.fd, value) }
+	inline var CpuState.FT: Float; get() = getFpr(IR.ft); set(value) = run { setFpr(IR.ft, value) }
+	inline var CpuState.FS: Float; get() = getFpr(IR.fs); set(value) = run { setFpr(IR.fs, value) }
+
+	inline var CpuState.FD_I: Int; get() = getFprI(IR.fd); set(value) = run { setFprI(IR.fd, value) }
+	inline var CpuState.FT_I: Int; get() = getFprI(IR.ft); set(value) = run { setFprI(IR.ft, value) }
+	inline var CpuState.FS_I: Int; get() = getFprI(IR.fs); set(value) = run { setFprI(IR.fs, value) }
 
 	inline val CpuState.RS_IMM16: Int; get() = RS + S_IMM16
 

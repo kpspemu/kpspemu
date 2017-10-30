@@ -1,7 +1,7 @@
 apply plugin: 'kotlin-platform-js'
 
 sourceSets {
-    main.resources.srcDirs += ['../common/src/main/resources']
+    main.resources.srcDirs += ['../common/src/main/resources', '../../samples']
     test.resources.srcDirs += ['../common/src/test/resources']
 }
 

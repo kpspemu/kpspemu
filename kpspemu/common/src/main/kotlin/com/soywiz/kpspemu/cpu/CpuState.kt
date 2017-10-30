@@ -55,6 +55,8 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	var r31: Int; set(value) = run { _R[31] = value }; get() = _R[31]
 
 	val GPR = Gpr(this)
+	val FPR = FloatArray(32) { 0f }
+	val FPR_I = FprI(this)
 
 	var IR: Int = 0
 	var _PC: Int = 0
@@ -94,9 +96,20 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		}
 	}
 
+	fun getFpr(index: Int): Float = FPR[index and 0x1F]
+	fun setFpr(index: Int, v: Float): Unit = run { FPR[index and 0x1F] = v }
+
+	fun getFprI(index: Int): Int = FPR[index and 0x1F].toBits()
+	fun setFprI(index: Int, v: Int): Unit = run { FPR[index and 0x1F] = Float.fromBits(v) }
+
 	class Gpr(val state: CpuState) {
 		operator fun get(index: Int): Int = state.getGpr(index)
 		operator fun set(index: Int, v: Int): Unit = state.setGpr(index, v)
+	}
+
+	class FprI(val state: CpuState) {
+		operator fun get(index: Int): Int = state.getFprI(index)
+		operator fun set(index: Int, v: Int): Unit = state.setFprI(index, v)
 	}
 
 	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)

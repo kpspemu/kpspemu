@@ -5,7 +5,8 @@ import com.soywiz.korio.lang.format
 import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.stream.*
 
-const private val MASK = 0x0FFFFFFF
+const private val MEMORY_MASK = 0x0FFFFFFF
+const private val MASK = MEMORY_MASK
 
 private val LWR_MASK = intArrayOf(0x00000000, 0xFF000000.toInt(), 0xFFFF0000.toInt(), 0xFFFFFF00.toInt())
 private val LWR_SHIFT = intArrayOf(0, 8, 16, 24)
@@ -21,6 +22,7 @@ private val SWR_SHIFT = intArrayOf(0, 8, 16, 24)
 
 abstract class Memory protected constructor(dummy: Boolean) {
 	companion object {
+		val MASK = MEMORY_MASK
 		const val MAIN_OFFSET = 0x08000000
 
 		val SCRATCHPAD = MemorySegment("scatchpad", 0x0000000 until 0x00010000)

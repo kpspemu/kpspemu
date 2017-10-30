@@ -12,6 +12,8 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.threadManager
+import com.soywiz.kpspemu.util.ResourceItem
+import com.soywiz.kpspemu.util.ResourceList
 import com.soywiz.kpspemu.util.millisecondsToMicroseconds
 
 @Suppress("UNUSED_PARAMETER")
@@ -47,6 +49,17 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelCreateCallback(name: String?, func: Ptr, arg: Int): Int {
 		val callback = callbackManager.create(name ?: "callback", func, arg)
 		return callback.id
+	}
+
+	val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }
+
+	fun sceKernelCreateEventFlag(name: String?, attributes: Int, bitPattern: Int, optionsPtr: Ptr): Int {
+		return eventFlags.alloc().apply {
+			this.name = name ?: "eventFlag"
+			this.attributes = attributes
+			this.bitPattern = bitPattern
+			this.optionsPtr = optionsPtr
+		}.id
 	}
 
 	fun sceKernelGetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x034A921F)
@@ -91,7 +104,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun _sceKernelExitThread(cpu: CpuState): Unit = UNIMPLEMENTED(0x532A522E)
 	fun sceKernelSetVTimerHandlerWide(cpu: CpuState): Unit = UNIMPLEMENTED(0x53B00E9A)
 	fun sceKernelSetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x542AD630)
-	fun sceKernelCreateEventFlag(cpu: CpuState): Unit = UNIMPLEMENTED(0x55C20A00)
 	fun sceKernelCreateVpl(cpu: CpuState): Unit = UNIMPLEMENTED(0x56C039B5)
 	fun sceKernelGetThreadmanIdType(cpu: CpuState): Unit = UNIMPLEMENTED(0x57CF62DD)
 	fun sceKernelPollSema(cpu: CpuState): Unit = UNIMPLEMENTED(0x58B1F937)
@@ -201,6 +213,9 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(string, ptr, int) }
 
+		// EventFlags
+		registerFunctionInt("sceKernelCreateEventFlag", 0x55C20A00, since = 150) { sceKernelCreateEventFlag(string, int, int, ptr) }
+
 		registerFunctionRaw("sceKernelGetVTimerTime", 0x034A921F, since = 150) { sceKernelGetVTimerTime(it) }
 		registerFunctionRaw("sceKernelRegisterThreadEventHandler", 0x0C106E53, since = 150) { sceKernelRegisterThreadEventHandler(it) }
 		registerFunctionRaw("sceKernelPollMbx", 0x0D81716A, since = 150) { sceKernelPollMbx(it) }
@@ -242,7 +257,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("_sceKernelExitThread", 0x532A522E, since = 150) { _sceKernelExitThread(it) }
 		registerFunctionRaw("sceKernelSetVTimerHandlerWide", 0x53B00E9A, since = 150) { sceKernelSetVTimerHandlerWide(it) }
 		registerFunctionRaw("sceKernelSetVTimerTime", 0x542AD630, since = 150) { sceKernelSetVTimerTime(it) }
-		registerFunctionRaw("sceKernelCreateEventFlag", 0x55C20A00, since = 150) { sceKernelCreateEventFlag(it) }
 		registerFunctionRaw("sceKernelCreateVpl", 0x56C039B5, since = 150) { sceKernelCreateVpl(it) }
 		registerFunctionRaw("sceKernelGetThreadmanIdType", 0x57CF62DD, since = 150) { sceKernelGetThreadmanIdType(it) }
 		registerFunctionRaw("sceKernelPollSema", 0x58B1F937, since = 150) { sceKernelPollSema(it) }
@@ -340,4 +354,11 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelCancelWakeupThread", 0xFCCFAD26, since = 150) { sceKernelCancelWakeupThread(it) }
 		registerFunctionRaw("sceKernelReferThreadRunStatus", 0xFFC36A14, since = 150) { sceKernelReferThreadRunStatus(it) }
 	}
+}
+
+data class PspEventFlag(override val id: Int) : ResourceItem {
+	var name: String = ""
+	var attributes: Int = 0
+	var bitPattern: Int = 0
+	var optionsPtr: Ptr? = null
 }

@@ -8,6 +8,9 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.util.imul32_64
 import com.soywiz.kpspemu.util.umul32_64
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.round
 
 class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
@@ -94,6 +97,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun sh(s: CpuState) = s { mem.sh(RS_IMM16, RT) }
 	override fun sw(s: CpuState) = s { mem.sw(RS_IMM16, RT) }
 
+	override fun lwc1(s: CpuState) = s { FT_I = mem.lw(RS_IMM16) }
+	override fun swc1(s: CpuState) = s { mem.sw(RS_IMM16, FT_I) }
+
 	// Special
 	override fun syscall(s: CpuState) = s.preadvance { syscall(SYSCALL) }
 
@@ -125,9 +131,34 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bgezl(s: CpuState) = s.branchLikely { RS >= 0 }
 
 	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
-	// $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
-	override fun jal(s: CpuState) = s.none { RA = _nPC + 4; _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
-
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
+
+	// $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
+	override fun jal(s: CpuState) = s.none { RA = _nPC + 4; j(s) }
+
+	override fun jalr(s: CpuState) = s.none { RA = _nPC + 4; jr(s) }
+
+	// Float
+	override fun mfc1(s: CpuState) = s { RT = FS_I }
+	override fun mtc1(s: CpuState) = s { FS_I = RT }
+	override fun cvt_s_w(s: CpuState) = s { FD = FS_I.toFloat() }
+	override fun cvt_w_s(s: CpuState) = s {
+		// @TODO: _cvt_w_s_impl, fcr31_rm: 0:rint, 1:cast, 2:ceil, 3:floor
+		FD_I = FS.toInt()
+	}
+
+	override fun trunc_w_s(s: CpuState) = s { FD_I = FS.toInt() }
+	override fun round_w_s(s: CpuState) = s { FD_I = round(FS).toInt() }
+	override fun ceil_w_s(s: CpuState) = s { FD_I = ceil(FS).toInt() }
+	override fun floor_w_s(s: CpuState) = s { FD_I = floor(FS).toInt() }
+
+	override fun mov_s(s: CpuState) = s { FD = FS }
+	override fun add_s(s: CpuState) = s { FD = FS + FT }
+	override fun sub_s(s: CpuState) = s { FD = FS - FT }
+	override fun mul_s(s: CpuState) = s { FD = FS * FT }
+	override fun div_s(s: CpuState) = s { FD = FS / FT }
+	override fun neg_s(s: CpuState) = s { FD = -FS }
+	override fun abs_s(s: CpuState) = s { FD = kotlin.math.abs(FS) }
+	override fun sqrt_s(s: CpuState) = s { FD = kotlin.math.sqrt(FS) }
 }
 

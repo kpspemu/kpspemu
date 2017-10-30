@@ -5,6 +5,10 @@ import com.soywiz.kpspemu.mem.Ptr
 
 class CallbackManager(emulator: Emulator) : Manager<PspCallback>(emulator) {
 	fun create(name: String, func: Ptr, arg: Int): PspCallback = PspCallback(this, allocId(), name, func, arg)
+
+	fun queueFunction1(funcPC: Int, funcARG: Int) {
+		// @TODO: Implement this!
+	}
 }
 
 class PspCallback(
