@@ -4,7 +4,10 @@ import com.soywiz.korio.async.Promise
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.*
-import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.CpuBreakException
+import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.cpu.RA
+import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.ptr
@@ -53,6 +56,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
 			traces.remove(name)
 		}
 		tryGetByName(name)?.updateTrace()
+	}
+
+	fun stopAllThreads() {
+		for (t in resourcesById.values.toList()) {
+			t.exitAndKill()
+		}
+		throw CpuBreakException(CpuBreakException.THREAD_EXIT_KILL)
 	}
 }
 
@@ -163,9 +173,6 @@ class PspThread internal constructor(
 					exitAndKill()
 				}
 				CpuBreakException.THREAD_WAIT -> {
-				}
-				CpuBreakException.EXIT_GAME -> {
-					throw ExitGameException()
 				}
 				else -> throw e
 			}

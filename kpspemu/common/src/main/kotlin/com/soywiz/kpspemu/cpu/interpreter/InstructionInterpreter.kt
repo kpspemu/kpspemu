@@ -205,23 +205,23 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	private inline fun CpuState._cu(callback: CpuState.() -> Boolean) = run { fcr31_cc = if (FS.isNaN() || FT.isNaN()) true else callback() }
 	private inline fun CpuState._co(callback: CpuState.() -> Boolean) = run { fcr31_cc = if (FS.isNaN() || FT.isNaN()) false else callback() }
 
-	override fun c_f_s(s: CpuState)   = s._co { false }
-	override fun c_un_s(s: CpuState)  = s._cu { false }
-	override fun c_eq_s(s: CpuState)  = s._co { FS == FT }
+	override fun c_f_s(s: CpuState) = s._co { false }
+	override fun c_un_s(s: CpuState) = s._cu { false }
+	override fun c_eq_s(s: CpuState) = s._co { FS == FT }
 	override fun c_ueq_s(s: CpuState) = s._cu { FS == FT }
 	override fun c_olt_s(s: CpuState) = s._co { FS < FT }
-	override fun c_ult_s(s: CpuState) = s._cu { FS < FT  }
+	override fun c_ult_s(s: CpuState) = s._cu { FS < FT }
 	override fun c_ole_s(s: CpuState) = s._co { FS <= FT }
 	override fun c_ule_s(s: CpuState) = s._cu { FS <= FT }
 
-	override fun c_sf_s(s: CpuState)   = s._co { false }
+	override fun c_sf_s(s: CpuState) = s._co { false }
 	override fun c_ngle_s(s: CpuState) = s._cu { false }
-	override fun c_seq_s(s: CpuState)  = s._co { FS == FT }
-	override fun c_ngl_s(s: CpuState)  = s._cu { FS == FT }
-	override fun c_lt_s(s: CpuState)   = s._co { FS < FT }
-	override fun c_nge_s(s: CpuState)  = s._cu { FS < FT  }
-	override fun c_le_s(s: CpuState)   = s._co { FS <= FT }
-	override fun c_ngt_s(s: CpuState)  = s._cu { FS <= FT }
+	override fun c_seq_s(s: CpuState) = s._co { FS == FT }
+	override fun c_ngl_s(s: CpuState) = s._cu { FS == FT }
+	override fun c_lt_s(s: CpuState) = s._co { FS < FT }
+	override fun c_nge_s(s: CpuState) = s._cu { FS < FT }
+	override fun c_le_s(s: CpuState) = s._co { FS <= FT }
+	override fun c_ngt_s(s: CpuState) = s._cu { FS <= FT }
 
 	// Missing
 

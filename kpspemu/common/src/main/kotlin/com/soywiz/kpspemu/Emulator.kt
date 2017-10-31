@@ -15,6 +15,7 @@ class Emulator(
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	var output = StringBuilder()
 	val ge: Ge = Ge(this)
 	val gpu: Gpu = Gpu(this)
 	val display: PspDisplay = PspDisplay(this)

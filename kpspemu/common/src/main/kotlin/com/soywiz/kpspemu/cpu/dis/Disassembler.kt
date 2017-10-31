@@ -1,10 +1,13 @@
 package com.soywiz.kpspemu.cpu.dis
 
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
+import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
 import com.soywiz.kpspemu.cpu.InstructionType
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.util.hex
 
 object Disassembler : InstructionDecoder() {
 	private val PERCENT_REGEX = Regex("%\\w+")
@@ -47,5 +50,9 @@ fun Memory.disasmMacro(pc: Int): String = try {
 	Disassembler.disasmMacro(pc, this.lw(pc))
 } catch (e: IndexOutOfBoundsException) {
 	"invalid(PC=0x%08X)".format(pc)
+}
+
+fun Memory.printInstructionAt(address: Int) {
+	Console.error(address.hex + " : " + disasmMacro(address))
 }
 

@@ -9,7 +9,7 @@ class SyscallManager : Syscalls {
 	var lasSyscallId = 1
 
 	fun unhandled(state: CpuState, id: Int) {
-		println("%08X: Called syscall: ### %04X".format(state.getPC(), id))
+		println("%08X: Called syscall: ### %04X".format(state.PC, id))
 	}
 
 	val syscallToFunc = LinkedHashMap<Int, (CpuState, Int) -> Unit>()

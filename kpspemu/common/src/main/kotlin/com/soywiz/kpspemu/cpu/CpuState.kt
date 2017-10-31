@@ -3,13 +3,10 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.mem.Memory
 
-class ExitGameException : Exception()
-
 data class CpuBreakException(val id: Int) : Exception() {
 	companion object {
 		val THREAD_WAIT = 10001
 		val THREAD_EXIT_KILL = 10002
-		val EXIT_GAME = 10003
 	}
 }
 
@@ -71,6 +68,8 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	var HI: Int = 0
 	var IC: Int = 0
 
+	val PC: Int get() = _PC
+
 	var HI_LO: Long
 		get() = (HI.toLong() shl 32) or (LO.toLong() and 0xFFFFFFFF)
 		set(value) {
@@ -82,8 +81,6 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		_PC = pc
 		_nPC = pc + 4
 	}
-
-	fun getPC() = _PC
 
 	fun jump(pc: Int) {
 		_PC = pc

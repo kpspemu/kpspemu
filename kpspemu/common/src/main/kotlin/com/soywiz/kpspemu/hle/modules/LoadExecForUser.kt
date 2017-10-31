@@ -1,14 +1,21 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.lang.Console
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.ExitGameException
+import com.soywiz.kpspemu.cpu.RA
+import com.soywiz.kpspemu.cpu.dis.printInstructionAt
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.threadManager
 
 class LoadExecForUser(emulator: Emulator) : SceModule(emulator, "LoadExecForUser", 0x40010011, "loadexec_02g.prx", "sceLoadExec") {
-	fun sceKernelExitGame(cpu: CpuState): Unit {
-		println("sceKernelExitGame")
-		throw ExitGameException()
+	fun sceKernelExitGame(currentThread: PspThread): Unit {
+		Console.error("sceKernelExitGame: '${currentThread.name}'")
+		mem.printInstructionAt(currentThread.state.PC)
+		mem.printInstructionAt(currentThread.state.RA)
+		threadManager.stopAllThreads()
 	}
 
 	fun sceKernelExitGameWithStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x2AC9954B)
@@ -26,8 +33,8 @@ class LoadExecForUser(emulator: Emulator) : SceModule(emulator, "LoadExecForUser
 
 	override fun registerModule() {
 		registerFunctionInt("sceKernelRegisterExitCallback", 0x4AC57943, since = 150) { sceKernelRegisterExitCallback(int) }
+		registerFunctionVoid("sceKernelExitGame", 0x05572A5F, since = 150) { sceKernelExitGame(thread) }
 
-		registerFunctionRaw("sceKernelExitGame", 0x05572A5F, since = 150) { sceKernelExitGame(it) }
 		registerFunctionRaw("sceKernelExitGameWithStatus", 0x2AC9954B, since = 150) { sceKernelExitGameWithStatus(it) }
 		registerFunctionRaw("LoadExecForUser_362A956B", 0x362A956B, since = 150) { LoadExecForUser_362A956B(it) }
 		registerFunctionRaw("LoadExecForUser_8ADA38D3", 0x8ADA38D3, since = 150) { LoadExecForUser_8ADA38D3(it) }

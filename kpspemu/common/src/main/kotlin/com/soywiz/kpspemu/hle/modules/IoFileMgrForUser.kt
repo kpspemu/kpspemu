@@ -1,11 +1,14 @@
 package com.soywiz.kpspemu.hle.modules
 
 
+import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.toString
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.util.toInt
 
 
@@ -29,15 +32,13 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	fun sceIoDevctl(deviceName: String?, command: Int, inputPointer: Ptr, inputLength: Int, outputPointer: Ptr, outputLength: Int): Int {
-		println("WIP: sceIoDevctl: $deviceName, $command, $inputPointer, $inputLength, $outputPointer, $outputLength")
-
 		when (deviceName) {
-			"kemulator:" -> {
+			"kemulator:", "emulator:" -> {
 				when (command) {
 					EMULATOR_DEVCTL__IS_EMULATOR -> return 0 // Yes, we are in an emulator!
 					EMULATOR_DEVCTL__GET_HAS_DISPLAY -> { outputPointer.sw(0, display.exposeDisplay.toInt()); return 0; }
 					EMULATOR_DEVCTL__SEND_OUTPUT -> {
-						println("EMULATOR_DEVCTL__SEND_OUTPUT")
+						emulator.output.append(inputPointer.readBytes(inputLength).toString(UTF8))
 						return 0
 					}
 					EMULATOR_DEVCTL__SEND_CTRLDATA -> {
@@ -48,9 +49,15 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 						println("EMULATOR_DEVCTL__EMIT_SCREENSHOT")
 						return 0
 					}
+					else -> {
+						println("Unhandled emulator command $command")
+						return -1
+					}
 				}
 			}
 		}
+
+		println("WIP: sceIoDevctl: $deviceName, $command, $inputPointer, $inputLength, $outputPointer, $outputLength")
 
 		return -1
 	}
