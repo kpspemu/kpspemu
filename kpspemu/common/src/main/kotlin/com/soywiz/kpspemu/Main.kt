@@ -1,5 +1,8 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.korag.AG
+import com.soywiz.korag.geom.Matrix4
+import com.soywiz.korag.shader.*
 import com.soywiz.korge.Korge
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.scene.Module
@@ -13,6 +16,7 @@ import com.soywiz.korim.color.Colors
 import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.lang.use
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.vfs.applicationVfs
@@ -55,16 +59,63 @@ class KpspemuMainScene : Scene(), WithEmulator {
 
 		val tempBmp = Bitmap32(512, 272)
 
+		val u_modelViewProjMatrix = Uniform("u_modelViewProjMatrix", VarType.Mat4)
+
+		//val a_Tex = Attribute("a_Tex", VarType.Float2, normalized = false)
+		val a_Tex = Attribute("a_Tex", VarType.Float2, normalized = false)
+		val a_Col = Attribute("a_Col", VarType.Byte4, normalized = false)
+		val a_Pos = Attribute("a_Pos", VarType.Float3, normalized = false)
+
+		val layout = VertexLayout(a_Tex.inactived(), a_Col.inactived(), a_Pos)
+
+		val program = Program(
+			vertex = VertexShader {
+				//SET(out, vec4(a_Pos, 0f.lit, 1f.lit) * u_ProjMat)
+				SET(out, u_modelViewProjMatrix * vec4(a_Pos, 1f.lit))
+				//SET(out, vec4(a_Pos, 1f.lit))
+			},
+			fragment = FragmentShader {
+				out set vec4(1f.lit, 0f.lit, 0f.lit, 1f.lit)
+			},
+			name = "PROGRAM_DEBUG"
+		)
+
+		//data class DrawState(val program: Program, )
+
+		val modelViewProjMatrix = Matrix4()
+		val projMatrix = Matrix4().setToIdentity()
+		val viewMatrix = Matrix4().setToIdentity()
+		val worldMatrix = Matrix4().setToIdentity()
+		val uniforms = mapOf(u_modelViewProjMatrix to modelViewProjMatrix)
+
 		override fun render(ctx: RenderContext, m: Matrix2d) {
 			if (batchesQueue.isNotEmpty()) {
 				try {
 					val ag = ctx.ag
 					ag.renderToBitmap(tempBmp) {
-						ag.clear(Colors.RED) // @TODO: Remove this
+						ag.clear(Colors.BLUE) // @TODO: Remove this
 
 						for (batches in batchesQueue) {
 							for (batch in batches) {
-								println(batch)
+								val ib = ag.createIndexBuffer().use { ib ->
+									ag.createVertexBuffer().use { vb ->
+										ib.upload(batch.indices)
+										vb.upload(batch.vertices)
+
+										if (batch.vertexCount > 10) {
+											batch.state.getProjMatrix(projMatrix)
+											batch.state.getViewMatrix(viewMatrix)
+											batch.state.getWorldMatrix(worldMatrix)
+
+											modelViewProjMatrix.setToIdentity()
+											modelViewProjMatrix.setToMultiply(modelViewProjMatrix, projMatrix)
+											modelViewProjMatrix.setToMultiply(modelViewProjMatrix, viewMatrix)
+											modelViewProjMatrix.setToMultiply(modelViewProjMatrix, worldMatrix)
+
+											ag.draw(vb, program, AG.DrawType.TRIANGLES, layout, batch.vertexCount, indices = ib, uniforms = uniforms)
+										}
+									}
+								}
 							}
 						}
 					}
@@ -102,19 +153,19 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		var running = true
 
 		sceneView.addUpdatable {
-				if (running) {
-					try {
-						emulator.frameStep()
-					} catch (e: Throwable) {
-						e.printStackTrace()
-						running = false
-					}
-
-					if (display.rawDisplay) {
-						display.decodeToBitmap32(display.bmp)
-						tex.update(display.bmp)
-					}
+			if (running) {
+				try {
+					emulator.frameStep()
+				} catch (e: Throwable) {
+					e.printStackTrace()
+					running = false
 				}
+
+				if (display.rawDisplay) {
+					display.decodeToBitmap32(display.bmp)
+					tex.update(display.bmp)
+				}
+			}
 
 
 		}

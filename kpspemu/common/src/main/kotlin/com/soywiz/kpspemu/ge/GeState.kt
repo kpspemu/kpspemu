@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.ge
 
+import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.util.extract
 
@@ -16,7 +17,7 @@ class GeState {
 		set(value) = run { data[Op.OFFSETADDR] = (data[Op.OFFSETADDR] and 0xFF000000.toInt()) or ((value ushr 8) and 0x00FFFFFF) }
 		get() = data[Op.OFFSETADDR] shl 8
 
-	fun writeInt(key: Int, offset: Int, value: Int): Unit = run { data[offset + data[key]] = value }
+	fun writeInt(key: Int, offset: Int, value: Int): Unit = run { data[offset + data[key]++] = value }
 
 	fun setTo(other: GeState) {
 		other.data.copyRangeTo(0, this.data, 0, STATE_NWORDS)
@@ -45,6 +46,33 @@ class GeState {
 
 	fun getAddressRelativeToBaseOffset(address: Int) = (baseAddress or address) + baseOffset
 	fun setAddressRelativeToBaseOffset(address: Int) = (address and 0x00FFFFFF) - baseOffset
+	fun getProjMatrix(out: Matrix4) = getMatrix4x4(Op.MAT_PROJ, out)
+	fun getViewMatrix(out: Matrix4) = getMatrix4x3(Op.MAT_VIEW, out)
+	fun getWorldMatrix(out: Matrix4) = getMatrix4x3(Op.MAT_WORLD, out)
+
+	private fun getFloat(key: Int) = Float.fromBits(data[key] shl 8)
+
+	fun getMatrix4x4(register: Int, out: Matrix4) {
+		for (n in 0 until 16) {
+			out.data[n] = getFloat(register + n)
+		}
+	}
+
+	fun getMatrix4x3(register: Int, out: Matrix4) {
+		var m = 0
+		var n = 0
+		for (y in 0 until 4) {
+			for (x in 0 until 3) {
+				out.data[n + x] = getFloat(register + m)
+				m++
+			}
+			n += 4
+		}
+		out.data[3] = 0f
+		out.data[7] = 0f
+		out.data[11] = 0f
+		out.data[15] = 1f
+	}
 }
 
 object VertexType {
@@ -64,11 +92,19 @@ object VertexType {
 
 	fun size(v: Int): Int {
 		var out = 0
-		val components = if (transform2D(v)) 2 else 3
-		out += COLOR_SIZES[color(v)]
-		out += NUMERIC_SIZES[normal(v)] * components
-		out += NUMERIC_SIZES[position(v)] * components
-		out += NUMERIC_SIZES[weight(v)] * components * weightCount(v)
+		val transform2D = transform2D(v)
+		val color = color(v)
+		val components = if (transform2D) 2 else 3
+		val normal = normal(v)
+		val position = position(v)
+		val weight = weight(v)
+		val weightCount = weightCount(v)
+		val texture = texture(v)
+		out += COLOR_SIZES[color]
+		out += NUMERIC_SIZES[normal] * components
+		out += NUMERIC_SIZES[position] * components
+		out += NUMERIC_SIZES[texture] * 2
+		out += NUMERIC_SIZES[weight] * weightCount
 		return out
 	}
 }

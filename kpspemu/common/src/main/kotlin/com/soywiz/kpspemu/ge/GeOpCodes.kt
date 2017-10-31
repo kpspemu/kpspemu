@@ -262,9 +262,9 @@ object GeOpCodes {
 	val DUMMY = 0xFF
 
 	// Rest of the struct
-	val MAT_TEXTURE = 256 + 16 * 1
-	val MAT_PROJ = 256 + 16 * 2
-	val MAT_VIEW = 256 + 16 * 3
-	val MAT_WORLD = 256 + 16 * 4
-	val MAT_BONES = 256 + 16 * 5
+	val MAT_TEXTURE = 256 + 16 * 1 // 4x4
+	val MAT_PROJ = 256 + 16 * 2 // 4x4
+	val MAT_VIEW = 256 + 16 * 3 // 4x3
+	val MAT_WORLD = 256 + 16 * 4 // 4x3
+	val MAT_BONES = 256 + 16 * 5 // 4x3 * 8
 }

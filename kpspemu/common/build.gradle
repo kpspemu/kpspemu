@@ -1,6 +1,7 @@
 apply plugin: 'kotlin-platform-common'
 
 dependencies {
+    compile "com.soywiz:korag-common:$koragVersion"
     compile "com.soywiz:korio-common:$korioVersion"
     compile "com.soywiz:korge-common:$korgeVersion"
 }
