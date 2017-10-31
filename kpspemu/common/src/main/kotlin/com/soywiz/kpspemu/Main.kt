@@ -118,6 +118,11 @@ class KpspemuMainScene : Scene(), WithEmulator {
 										indexBuffer.upload(batch.indices)
 										vertexBuffer.upload(batch.vertices)
 
+										//println("----------------")
+										//println("indices: ${batch.indices.toList()}")
+										//println("vertices: ${batch.vertices.toList()}")
+										//println("matrix: ${batch.modelViewProjMatrix}")
+
 										val pl = getProgramLayout(batch.state)
 										ag.draw(
 											type = batch.primType.toAg(),

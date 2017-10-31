@@ -89,35 +89,48 @@ class VertexType(var v: Int = 0) {
 	val hasPosition: Boolean get() = position != NumericEnum.VOID
 	val hasWeight: Boolean get() = weight != NumericEnum.VOID
 
+	val components: Int get() = if (transform2D) 2 else 3
+
+	val colorComponentSize: Int get() = color.nbytes
+	val normalComponentSize: Int get() = normal.nbytes
+	val positionComponentSize: Int get() = position.nbytes
+	val textureComponentSize: Int get() = texture.nbytes
+	val weightComponentSize: Int get() = weight.nbytes
+
+	val colorSize: Int get() = color.nbytes
+	val normalSize: Int get() = normal.nbytes * components
+	val positionSize: Int get() = position.nbytes * components
+	val textureSize: Int get() = texture.nbytes * 2 // @TODO: texture components must be 2 or 3
+	val weightSize: Int get() = weight.nbytes * weightCount
+
+	val colorOffset: Int get() = offsetOf(Attribute.COLOR)
+	val normalOffset: Int get() = offsetOf(Attribute.NORMAL)
+	val positionOffset: Int get() = offsetOf(Attribute.POSITION)
+	val textureOffset: Int get() = offsetOf(Attribute.TEXTURE)
+	val weightOffset: Int get() = offsetOf(Attribute.WEIGHTS)
+
 	fun offsetOf(attribute: Attribute): Int {
 		var out = 0
-		val color = color
-		val components = if (transform2D) 2 else 3
-		val normal = normal
-		val position = position
-		val weight = weight
-		val weightCount = weightCount
-		val texture = texture
 
 		out = out.safeNextAlignedTo(color.nbytes)
 		if (attribute == Attribute.COLOR) return out
-		out += color.nbytes
+		out += colorSize
 
 		out = out.safeNextAlignedTo(normal.nbytes)
 		if (attribute == Attribute.NORMAL) return out
-		out += normal.nbytes * components
+		out += normalSize
 
 		out = out.safeNextAlignedTo(position.nbytes)
 		if (attribute == Attribute.POSITION) return out
-		out += position.nbytes * components
+		out += positionSize
 
 		out = out.safeNextAlignedTo(texture.nbytes)
 		if (attribute == Attribute.TEXTURE) return out
-		out += texture.nbytes * 2
+		out += textureSize
 
 		out = out.safeNextAlignedTo(weight.nbytes)
 		if (attribute == Attribute.WEIGHTS) return out
-		out += weight.nbytes * weightCount
+		out += weightSize
 
 		return out
 	}

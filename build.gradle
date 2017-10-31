@@ -3,7 +3,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 buildscript {
     //ext.korioVersion = "0.15.0"
     //ext.korioVersion = "0.15.1-SNAPSHOT"
-    ext.koragVersion = "0.15.6-SNAPSHOT"
+    ext.koragVersion = "0.15.6"
     ext.korioVersion = "0.15.1"
     ext.korgeVersion = "0.15.6"
     ext.kotlinVersion = '1.2.0-beta-88'

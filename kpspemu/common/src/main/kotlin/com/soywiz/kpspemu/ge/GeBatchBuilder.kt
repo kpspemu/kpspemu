@@ -14,7 +14,7 @@ class GeBatchBuilder(val ge: Ge) {
 	var vertexAddress: Int = 0
 	var vertexSize: Int = 0
 
-	val vertexBuffer = ByteArray(0x10000)
+	val vertexBuffer = ByteArray(0x10000 * 16)
 	var vertexBufferPos = 0
 	val indexBuffer = ShortArray(0x10000)
 	var indexBufferPos = 0
@@ -61,10 +61,18 @@ class GeBatchBuilder(val ge: Ge) {
 		indexBuffer[indexBufferPos++] = index.toShort()
 	}
 
-	private fun putGenVertex(TLpos: Int, BRpos: Int, gx: Int, gy: Int) {
+	private fun putGenVertex(TLpos: Int, BRpos: Int, gx: Boolean, gy: Boolean) {
 		vertexBuffer.copyRangeTo(TLpos, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
 
+		if (vertexType.hasPosition) {
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.positionOffset + vertexType.positionComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.positionComponentSize * 0, vertexType.positionComponentSize)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.positionOffset + vertexType.positionComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.positionComponentSize * 1, vertexType.positionComponentSize)
+		}
 
+		if (vertexType.hasTexture) {
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.textureOffset + vertexType.textureComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.textureComponentSize * 0, vertexType.textureComponentSize)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.textureOffset + vertexType.textureComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.textureComponentSize * 1, vertexType.textureComponentSize)
+		}
 
 		vertexBufferPos += vertexSize
 		vertexCount++
@@ -111,8 +119,8 @@ class GeBatchBuilder(val ge: Ge) {
 					val BRpos = vertexBufferPos
 					putVertex(vaddr); vaddr += vertexSize // BR
 
-					putGenVertex(TLpos, BRpos, 0, 1)
-					putGenVertex(TLpos, BRpos, 1, 0)
+					putGenVertex(TLpos, BRpos, false, true)
+					putGenVertex(TLpos, BRpos, true, false)
 				}
 				state.vertexAddress = vaddr
 			}
