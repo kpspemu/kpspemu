@@ -65,13 +65,13 @@ class GeBatchBuilder(val ge: Ge) {
 		vertexBuffer.copyRangeTo(TLpos, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.positionOffset + vertexType.positionComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.positionComponentSize * 0, vertexType.positionComponentSize)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.positionOffset + vertexType.positionComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.positionComponentSize * 1, vertexType.positionComponentSize)
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.positionOffset + vertexType.posComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.posComponentSize * 0, vertexType.posComponentSize)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.positionOffset + vertexType.posComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.posComponentSize * 1, vertexType.posComponentSize)
 		}
 
 		if (vertexType.hasTexture) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.textureOffset + vertexType.textureComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.textureComponentSize * 0, vertexType.textureComponentSize)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.textureOffset + vertexType.textureComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.textureComponentSize * 1, vertexType.textureComponentSize)
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.textureOffset + vertexType.texComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.texComponentSize * 0, vertexType.texComponentSize)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.textureOffset + vertexType.texComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.texComponentSize * 1, vertexType.texComponentSize)
 		}
 
 		vertexBufferPos += vertexSize

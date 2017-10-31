@@ -17,6 +17,7 @@ import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.use
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.util.hexString
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.SizeInt
@@ -24,6 +25,7 @@ import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.util.hex
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) = Main.main(args)
@@ -75,9 +77,9 @@ class KpspemuMainScene : Scene(), WithEmulator {
 			val COLORS = listOf(VarType.VOID, VarType.VOID, VarType.VOID, VarType.VOID, VarType.SHORT(1), VarType.SHORT(1), VarType.SHORT(1), VarType.Byte4)
 
 			//val a_Tex = Attribute("a_Tex", VarType.Float2, normalized = false)
-			val a_Tex = if (vtype.hasTexture) Attribute("a_Tex", COUNT2[vtype.texture.id], normalized = false) else null
+			val a_Tex = if (vtype.hasTexture) Attribute("a_Tex", COUNT2[vtype.tex.id], normalized = false) else null
 			val a_Col = if (vtype.hasColor) Attribute("a_Col", COLORS[vtype.color.id], normalized = false) else null
-			val a_Pos = Attribute("a_Pos", COUNT3[vtype.position.id], normalized = false)
+			val a_Pos = Attribute("a_Pos", COUNT3[vtype.pos.id], normalized = false)
 
 			val v_Col = Varying("v_Col", VarType.Byte4)
 
@@ -118,10 +120,11 @@ class KpspemuMainScene : Scene(), WithEmulator {
 										indexBuffer.upload(batch.indices)
 										vertexBuffer.upload(batch.vertices)
 
-										//println("----------------")
-										//println("indices: ${batch.indices.toList()}")
-										//println("vertices: ${batch.vertices.toList()}")
-										//println("matrix: ${batch.modelViewProjMatrix}")
+										println("----------------")
+										println("indices: ${batch.indices.toList()}")
+										println("vertexType: ${batch.state.vertexType.hex}")
+										println("vertices: ${batch.vertices.hexString}")
+										println("matrix: ${batch.modelViewProjMatrix}")
 
 										val pl = getProgramLayout(batch.state)
 										ag.draw(
