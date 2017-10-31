@@ -12,8 +12,8 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		for (n in 0 until count) {
 			sceCtrlDataPtr.sw(pos + 0, 0) // timestamp
 			sceCtrlDataPtr.sw(pos + 4, PspButtons.cross) // buttons // @TODO: forced button!
-			sceCtrlDataPtr.sb(pos + 8, 0) // lx
-			sceCtrlDataPtr.sb(pos + 9, 0) // ly
+			sceCtrlDataPtr.sb(pos + 8, 128) // lx
+			sceCtrlDataPtr.sb(pos + 9, 128) // ly
 			pos += 16
 		}
 		//return waitAsync(1).then(v => count);

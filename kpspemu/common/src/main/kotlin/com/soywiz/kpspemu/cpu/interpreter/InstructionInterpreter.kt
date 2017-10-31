@@ -80,6 +80,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun mult(s: CpuState) = s { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
 	override fun multu(s: CpuState) = s { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
 
+	override fun madd(s: CpuState) = s { HI_LO += RS.toLong() * RT.toLong() }
+
 	override fun mflo(s: CpuState) = s { RD = LO }
 	override fun mfhi(s: CpuState) = s { RD = HI }
 	override fun mfic(s: CpuState) = s { RT = IC }
@@ -184,7 +186,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	override fun rotr(s: CpuState) = unimplemented(s, Instructions.rotr)
 	override fun rotrv(s: CpuState) = unimplemented(s, Instructions.rotrv)
-	override fun madd(s: CpuState) = unimplemented(s, Instructions.madd)
 	override fun maddu(s: CpuState) = unimplemented(s, Instructions.maddu)
 	override fun msub(s: CpuState) = unimplemented(s, Instructions.msub)
 	override fun msubu(s: CpuState) = unimplemented(s, Instructions.msubu)

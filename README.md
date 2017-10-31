@@ -22,7 +22,8 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 
 ### Youtube Coding Video Blog
 
-* Vertex Decoder [[Part 1](https://www.youtube.com/edit?o=U&video_id=-a6Igq_XiPc)] [[Part 2](https://www.youtube.com/watch?v=TZzSfTxDjTo)]
+* Vertex Decoder [[Part 1](https://youtu.be/-a6Igq_XiPc)] [[Part 2](https://youtu.be/TZzSfTxDjTo)]
+* [Fix Ortho Sample (madd ins + sceCtrl)](https://youtu.be/REF_wFJE85c) 
 
 ### Current state:
 Right now, this is just a proof of concept. It just runs a very small demo in interpreted mode.
