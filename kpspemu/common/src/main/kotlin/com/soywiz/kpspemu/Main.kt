@@ -211,6 +211,7 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		val keys = BooleanArray(256)
 
 		fun updateKey(keyCode: Int, pressed: Boolean) {
+			println("updateKey: $keyCode, $pressed")
 			keys[keyCode and 0xFF] = pressed
 			when (keyCode) {
 				10 -> controller.updateButton(PspCtrlButtons.start, pressed) // return

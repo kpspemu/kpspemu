@@ -22,6 +22,8 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	var _R = IntArray(32)
 	var _F = com.soywiz.korio.mem.FastMemory.alloc(32 * 4)
 
+	var fcr31_cc: Boolean = false
+
 	var r0: Int; set(value) = Unit; get() = 0
 	var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]
 	var r2: Int; set(value) = run { _R[2] = value }; get() = _R[2]

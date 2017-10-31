@@ -154,6 +154,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bgtzl(s: CpuState) = s.branchLikely { RS > 0 }
 	override fun bgezl(s: CpuState) = s.branchLikely { RS >= 0 }
 
+	override fun bc1f(s: CpuState) = s.branch { fcr31_cc }
+	override fun bc1t(s: CpuState) = s.branch { !fcr31_cc }
+	override fun bc1fl(s: CpuState) = s.branchLikely { fcr31_cc }
+	override fun bc1tl(s: CpuState) = s.branchLikely { !fcr31_cc }
+
 	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
 
@@ -181,6 +186,27 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun abs_s(s: CpuState) = s { FD = kotlin.math.abs(FS) }
 	override fun sqrt_s(s: CpuState) = s { FD = kotlin.math.sqrt(FS) }
 
+	private inline fun CpuState._cu(callback: CpuState.() -> Boolean) = run { fcr31_cc = if (FS.isNaN() || FT.isNaN()) true else callback() }
+	private inline fun CpuState._co(callback: CpuState.() -> Boolean) = run { fcr31_cc = if (FS.isNaN() || FT.isNaN()) false else callback() }
+
+	override fun c_f_s(s: CpuState)   = s._co { false }
+	override fun c_un_s(s: CpuState)  = s._cu { false }
+	override fun c_eq_s(s: CpuState)  = s._co { FS == FT }
+	override fun c_ueq_s(s: CpuState) = s._cu { FS == FT }
+	override fun c_olt_s(s: CpuState) = s._co { FS < FT }
+	override fun c_ult_s(s: CpuState) = s._cu { FS < FT  }
+	override fun c_ole_s(s: CpuState) = s._co { FS <= FT }
+	override fun c_ule_s(s: CpuState) = s._cu { FS <= FT }
+
+	override fun c_sf_s(s: CpuState)   = s._co { false }
+	override fun c_ngle_s(s: CpuState) = s._cu { false }
+	override fun c_seq_s(s: CpuState)  = s._co { FS == FT }
+	override fun c_ngl_s(s: CpuState)  = s._cu { FS == FT }
+	override fun c_lt_s(s: CpuState)   = s._co { FS < FT }
+	override fun c_nge_s(s: CpuState)  = s._cu { FS < FT  }
+	override fun c_le_s(s: CpuState)   = s._co { FS <= FT }
+	override fun c_ngt_s(s: CpuState)  = s._cu { FS <= FT }
+
 	// Missing
 	override fun bitrev(s: CpuState) = unimplemented(s, Instructions.bitrev)
 
@@ -193,10 +219,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bgezall(s: CpuState) = unimplemented(s, Instructions.bgezall)
 	override fun bltzal(s: CpuState) = unimplemented(s, Instructions.bltzal)
 	override fun bltzall(s: CpuState) = unimplemented(s, Instructions.bltzall)
-	override fun bc1f(s: CpuState) = unimplemented(s, Instructions.bc1f)
-	override fun bc1t(s: CpuState) = unimplemented(s, Instructions.bc1t)
-	override fun bc1fl(s: CpuState) = unimplemented(s, Instructions.bc1fl)
-	override fun bc1tl(s: CpuState) = unimplemented(s, Instructions.bc1tl)
 	override fun lwl(s: CpuState) = unimplemented(s, Instructions.lwl)
 	override fun lwr(s: CpuState) = unimplemented(s, Instructions.lwr)
 	override fun swl(s: CpuState) = unimplemented(s, Instructions.swl)
@@ -205,22 +227,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun sc(s: CpuState) = unimplemented(s, Instructions.sc)
 	override fun cfc1(s: CpuState) = unimplemented(s, Instructions.cfc1)
 	override fun ctc1(s: CpuState) = unimplemented(s, Instructions.ctc1)
-	override fun c_f_s(s: CpuState) = unimplemented(s, Instructions.c_f_s)
-	override fun c_un_s(s: CpuState) = unimplemented(s, Instructions.c_un_s)
-	override fun c_eq_s(s: CpuState) = unimplemented(s, Instructions.c_eq_s)
-	override fun c_ueq_s(s: CpuState) = unimplemented(s, Instructions.c_ueq_s)
-	override fun c_olt_s(s: CpuState) = unimplemented(s, Instructions.c_olt_s)
-	override fun c_ult_s(s: CpuState) = unimplemented(s, Instructions.c_ult_s)
-	override fun c_ole_s(s: CpuState) = unimplemented(s, Instructions.c_ole_s)
-	override fun c_ule_s(s: CpuState) = unimplemented(s, Instructions.c_ule_s)
-	override fun c_sf_s(s: CpuState) = unimplemented(s, Instructions.c_sf_s)
-	override fun c_ngle_s(s: CpuState) = unimplemented(s, Instructions.c_ngle_s)
-	override fun c_seq_s(s: CpuState) = unimplemented(s, Instructions.c_seq_s)
-	override fun c_ngl_s(s: CpuState) = unimplemented(s, Instructions.c_ngl_s)
-	override fun c_lt_s(s: CpuState) = unimplemented(s, Instructions.c_lt_s)
-	override fun c_nge_s(s: CpuState) = unimplemented(s, Instructions.c_nge_s)
-	override fun c_le_s(s: CpuState) = unimplemented(s, Instructions.c_le_s)
-	override fun c_ngt_s(s: CpuState) = unimplemented(s, Instructions.c_ngt_s)
+
+
 	override fun cache(s: CpuState) = unimplemented(s, Instructions.cache)
 	override fun sync(s: CpuState) = unimplemented(s, Instructions.sync)
 	override fun dbreak(s: CpuState) = unimplemented(s, Instructions.dbreak)
