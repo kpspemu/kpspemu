@@ -20,9 +20,11 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 * https://github.com/cspspemu/cspspemu (PSP Emulator done in C# programming language. Dynarec.)
 * https://github.com/jspspemu/jspspemu (PSP Emulator done in typescript programming language. Dynarec.)
 
+### Youtube Coding Video Blog
+
+* Vertex Decoder [[Part 1](https://www.youtube.com/edit?o=U&video_id=-a6Igq_XiPc)] [[Part 2](https://www.youtube.com/watch?v=TZzSfTxDjTo)]
 
 ### Current state:
-
 Right now, this is just a proof of concept. It just runs a very small demo in interpreted mode.
 
 The aim is to create a portable emulator that can run fast in JVM, JS, Android, C++ targets (using libjit).
@@ -32,3 +34,4 @@ will generate JS code, JVM bytecode and relevant native code for each supported 
 
 The rest of the code is kotlin common and uses [korge](https://github.com/korlibs/korge) and all
 the [korlibs](https://github.com/korlibs/korlibs) libraries to do accelerated portable rendering.  
+
