@@ -52,6 +52,10 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		for (n in 0 until len) sw(dstPos + n * 4, src[srcPos + n].toInt())
 	}
 
+	fun read(srcPos: Int, dst: IntArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
+		for (n in 0 until len) dst[dstPos + n] = lw(srcPos + n * 4)
+	}
+
 	fun lwl(address: Int, value: Int): Int {
 		val align = address and 3
 		val oldvalue = this.lw(address and 3.inv())

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.ge
 import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.util.extract
+import com.soywiz.kpspemu.util.safeNextAlignedTo
 
 class GeState {
 	companion object {
@@ -32,23 +33,12 @@ class GeState {
 		set(value) = run { data[Op.VADDR] = setAddressRelativeToBaseOffset(data[Op.VADDR]) }
 		get() = getAddressRelativeToBaseOffset(data[Op.VADDR])
 	val indexAddress: Int get() = getAddressRelativeToBaseOffset(data[Op.IADDR])
-	//val vertexAddress: Int get() = data[Op.VADDR]
-	val vertexTypeTexture: Int get() = VertexType.texture(vertexType)
-	val vertexTypeColor: Int get() = VertexType.color(vertexType)
-	val vertexTypeNormal: Int get() = VertexType.normal(vertexType)
-	val vertexTypePosition: Int get() = VertexType.position(vertexType)
-	val vertexTypeWeight: Int get() = VertexType.weight(vertexType)
-	val vertexTypeIndex: Int get() = VertexType.index(vertexType)
-	val vertexTypeWeightCount: Int get() = VertexType.weightCount(vertexType)
-	val vertexTypeMorphCount: Int get() = VertexType.morphingVertexCount(vertexType)
-	val vertexTransform2D: Boolean get() = VertexType.transform2D(vertexType)
-	val vertexSize: Int get() = VertexType.size(vertexType)
 
 	fun getAddressRelativeToBaseOffset(address: Int) = (baseAddress or address) + baseOffset
 	fun setAddressRelativeToBaseOffset(address: Int) = (address and 0x00FFFFFF) - baseOffset
-	fun getProjMatrix(out: Matrix4) = getMatrix4x4(Op.MAT_PROJ, out)
-	fun getViewMatrix(out: Matrix4) = getMatrix4x3(Op.MAT_VIEW, out)
-	fun getWorldMatrix(out: Matrix4) = getMatrix4x3(Op.MAT_WORLD, out)
+	fun getProjMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x4(Op.MAT_PROJ, out) }
+	fun getViewMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x3(Op.MAT_VIEW, out) }
+	fun getWorldMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x3(Op.MAT_WORLD, out) }
 
 	private fun getFloat(key: Int) = Float.fromBits(data[key] shl 8)
 
@@ -75,60 +65,117 @@ class GeState {
 	}
 }
 
-object VertexType {
-	val COLOR_SIZES = intArrayOf(0, 0, 0, 0, 2, 2, 2, 4)
-	val INDEX_SIZES = intArrayOf(0, 1, 2)
-	val NUMERIC_SIZES = intArrayOf(0, 1, 2, 4)
+class VertexType(var v: Int = 0) {
+	fun init(state: GeState) = this.apply {
+		v = state.vertexType
+	}
 
-	fun texture(v: Int) = v.extract(0, 2)
-	fun color(v: Int) = v.extract(2, 3)
-	fun normal(v: Int) = v.extract(5, 2)
-	fun position(v: Int) = v.extract(7, 2)
-	fun weight(v: Int) = v.extract(9, 2)
-	fun index(v: Int) = v.extract(11, 2)
-	fun weightCount(v: Int) = v.extract(14, 3)
-	fun morphingVertexCount(v: Int) = v.extract(18, 2)
-	fun transform2D(v: Int) = v.extract(23, 1) != 0
+	enum class Attribute(val index: Int) { COLOR(0), NORMAL(1), POSITION(2), TEXTURE(3), WEIGHTS(4), END(5) }
 
-	fun size(v: Int): Int {
+	val texture: NumericEnum get() = NumericEnum(v.extract(0, 2))
+	val color: ColorEnum get() = ColorEnum(v.extract(2, 3))
+	val normal: NumericEnum get() = NumericEnum(v.extract(5, 2))
+	val position: NumericEnum get() = NumericEnum(v.extract(7, 2))
+	val weight: NumericEnum get() = NumericEnum(v.extract(9, 2))
+	val index: IndexEnum get() = IndexEnum(v.extract(11, 2))
+	val weightCount: Int get() = v.extract(14, 3)
+	val morphingVertexCount: Int get() = v.extract(18, 2)
+	val transform2D: Boolean get() = v.extract(23, 1) != 0
+
+	val hasIndices: Boolean get() = index != IndexEnum.VOID
+	val hasTexture: Boolean get() = texture != NumericEnum.VOID
+	val hasColor: Boolean get() = color != ColorEnum.VOID
+	val hasNormal: Boolean get() = normal != NumericEnum.VOID
+	val hasPosition: Boolean get() = position != NumericEnum.VOID
+	val hasWeight: Boolean get() = weight != NumericEnum.VOID
+
+	fun offsetOf(attribute: Attribute): Int {
 		var out = 0
-		val transform2D = transform2D(v)
-		val color = color(v)
+		val color = color
 		val components = if (transform2D) 2 else 3
-		val normal = normal(v)
-		val position = position(v)
-		val weight = weight(v)
-		val weightCount = weightCount(v)
-		val texture = texture(v)
-		out += COLOR_SIZES[color]
-		out += NUMERIC_SIZES[normal] * components
-		out += NUMERIC_SIZES[position] * components
-		out += NUMERIC_SIZES[texture] * 2
-		out += NUMERIC_SIZES[weight] * weightCount
+		val normal = normal
+		val position = position
+		val weight = weight
+		val weightCount = weightCount
+		val texture = texture
+
+		out = out.safeNextAlignedTo(color.nbytes)
+		if (attribute == Attribute.COLOR) return out
+		out += color.nbytes
+
+		out = out.safeNextAlignedTo(normal.nbytes)
+		if (attribute == Attribute.NORMAL) return out
+		out += normal.nbytes * components
+
+		out = out.safeNextAlignedTo(position.nbytes)
+		if (attribute == Attribute.POSITION) return out
+		out += position.nbytes * components
+
+		out = out.safeNextAlignedTo(texture.nbytes)
+		if (attribute == Attribute.TEXTURE) return out
+		out += texture.nbytes * 2
+
+		out = out.safeNextAlignedTo(weight.nbytes)
+		if (attribute == Attribute.WEIGHTS) return out
+		out += weight.nbytes * weightCount
+
 		return out
+	}
+
+	fun size(): Int = offsetOf(Attribute.END)
+}
+
+enum class IndexEnum(val id: Int, val nbytes: Int) {
+	VOID(0, 0),
+	BYTE(1, 1),
+	SHORT(2, 2);
+
+	companion object {
+		val values = values()
+		operator fun invoke(id: Int) = values[id]
 	}
 }
 
-object IndexEnum {
-	val Void = 0
-	val Byte = 1
-	val Short = 2
+enum class NumericEnum(val id: Int, val nbytes: Int) {
+	VOID(0, 0),
+	BYTE(1, 1),
+	SHORT(2, 2),
+	FLOAT(3, 4);
+
+	companion object {
+		val values = values()
+		operator fun invoke(id: Int) = values[id]
+	}
 }
 
-object NumericEnum {
-	val Void = 0
-	val Byte = 1
-	val Short = 2
-	val Float = 3
+enum class ColorEnum(val id: Int, val nbytes: Int) {
+	VOID(0, 0),
+	INVALID1(1, 0),
+	INVALID2(2, 0),
+	INVALID3(3, 0),
+	COLOR5650(4, 2),
+	COLOR5551(5, 2),
+	COLOR4444(6, 2),
+	COLOR8888(7, 4);
+
+	companion object {
+		val values = values()
+		operator fun invoke(id: Int) = values[id]
+	}
 }
 
-object ColorEnum {
-	val Void = 0
-	val Invalid1 = 1
-	val Invalid2 = 2
-	val Invalid3 = 3
-	val Color5650 = 4
-	val Color5551 = 5
-	val Color4444 = 6
-	val Color8888 = 7
+enum class PrimitiveType(val id: Int) {
+	POINTS(0),
+	LINES(1),
+	LINE_STRIP(2),
+	TRIANGLES(3),
+	TRIANGLE_STRIP(4),
+	TRIANGLE_FAN(5),
+	SPRITES(6);
+
+	companion object {
+		val values = values()
+		operator fun invoke(id: Int): PrimitiveType = values[id]
+	}
 }
+

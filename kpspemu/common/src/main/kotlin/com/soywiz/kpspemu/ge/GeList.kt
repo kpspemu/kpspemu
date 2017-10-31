@@ -97,17 +97,10 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 	}
 
 	private fun prim(p: Int): PrimAction {
-		val primitiveType = p.extract(16, 3)
+		val primitiveType = PrimitiveType(p.extract(16, 3))
 		val vertexCount: Int = p.extract(0, 16)
-		val vertexType: Int = state.vertexType
-
-		val hasIndices = state.vertexTypeIndex != IndexEnum.Void
-
-		//println("PRIM: $p -- vertxCount=$vertexCount, primitiveType=$primitiveType, vertexType=$vertexType, vertexAddress=${state.vertexAddress.hexx}, indexAddress=${state.indexAddress.hexx}, hasIndices=$hasIndices")
-
-		bb.setVertexKind(primitiveType, vertexType)
-		bb.addIndices(state.vertexTypeIndex, vertexCount)
-
+		bb.setVertexKind(primitiveType, state)
+		bb.addIndices(vertexCount)
 		return PrimAction.FLUSH_PRIM
 	}
 

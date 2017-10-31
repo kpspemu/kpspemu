@@ -105,3 +105,8 @@ object BitUtils {
 }
 
 fun Int.compareToUnsigned(that: Int) = IntEx.compareUnsigned(this, that)
+
+fun Int.safeNextAlignedTo(align: Int) = when {
+	(align == 0) || (this % align == 0) -> this
+	else -> (((this / align) + 1) * align)
+}
