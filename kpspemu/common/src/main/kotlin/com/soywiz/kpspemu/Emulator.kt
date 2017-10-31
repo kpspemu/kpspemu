@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.kpspemu.ctrl.PspController
 import com.soywiz.kpspemu.display.PspDisplay
 import com.soywiz.kpspemu.ge.DummyGpuRenderer
 import com.soywiz.kpspemu.ge.Ge
@@ -22,6 +23,7 @@ class Emulator(
 	val moduleManager = ModuleManager(this)
 	val callbackManager = CallbackManager(this)
 	val timeManager = TimeManager(this)
+	val controller = PspController(this)
 	val startThread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
 
 	fun frameStep() {
@@ -39,6 +41,7 @@ interface WithEmulator {
 val WithEmulator.mem: Memory get() = emulator.mem
 val WithEmulator.ge: Ge get() = emulator.ge
 val WithEmulator.gpu: Gpu get() = emulator.gpu
+val WithEmulator.controller: PspController get() = emulator.controller
 val WithEmulator.display: PspDisplay get() = emulator.display
 val WithEmulator.memoryManager: MemoryManager get() = emulator.memoryManager
 val WithEmulator.timeManager: TimeManager get() = emulator.timeManager

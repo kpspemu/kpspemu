@@ -3,13 +3,12 @@ package com.soywiz.kpspemu
 import com.soywiz.korag.AG
 import com.soywiz.korag.shader.*
 import com.soywiz.korge.Korge
+import com.soywiz.korge.input.onKeyDown
+import com.soywiz.korge.input.onKeyUp
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.scene.Module
 import com.soywiz.korge.scene.Scene
-import com.soywiz.korge.view.Container
-import com.soywiz.korge.view.View
-import com.soywiz.korge.view.image
-import com.soywiz.korge.view.texture
+import com.soywiz.korge.view.*
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.inject.AsyncInjector
@@ -19,6 +18,7 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.SizeInt
+import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.registerNativeModules
@@ -159,8 +159,13 @@ class KpspemuMainScene : Scene(), WithEmulator {
 					batchesQueue.clear()
 				}
 			}
+
+			//ctx.batch.drawQuad(scene.tex, m = m, blendFactors = AG.Blending.NONE)
+			ctx.ag.drawBmp(display.bmp)
 		}
 	}
+
+	val tex by lazy { views.texture(display.bmp) }
 
 	suspend override fun sceneInit(sceneView: Container) {
 		val samplesFolder = when {
@@ -184,7 +189,6 @@ class KpspemuMainScene : Scene(), WithEmulator {
 			//threadManager.trace("_start")
 			//threadManager.trace("user_main")
 		}
-		val tex by lazy { views.texture(display.bmp) }
 
 		var running = true
 
@@ -199,13 +203,42 @@ class KpspemuMainScene : Scene(), WithEmulator {
 
 				if (display.rawDisplay) {
 					display.decodeToBitmap32(display.bmp)
-					tex.update(display.bmp)
+					//tex.update(display.bmp)
 				}
 			}
 		}
 
+		val keys = BooleanArray(256)
+
+		fun updateKey(keyCode: Int, pressed: Boolean) {
+			keys[keyCode and 0xFF] = pressed
+			when (keyCode) {
+				10 -> controller.updateButton(PspCtrlButtons.start, pressed) // return
+				32 -> controller.updateButton(PspCtrlButtons.select, pressed) // space
+				87 -> controller.updateButton(PspCtrlButtons.triangle, pressed) // W
+				65 -> controller.updateButton(PspCtrlButtons.square, pressed) // A
+				83 -> controller.updateButton(PspCtrlButtons.cross, pressed) // S
+				68 -> controller.updateButton(PspCtrlButtons.circle, pressed) // D
+				81 -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed) // Q
+				69 -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed) // E
+				37 -> controller.updateButton(PspCtrlButtons.left, pressed) // LEFT
+				38 -> controller.updateButton(PspCtrlButtons.up, pressed) // UP
+				39 -> controller.updateButton(PspCtrlButtons.right, pressed) // RIGHT
+				40 -> controller.updateButton(PspCtrlButtons.down, pressed) // DOWN
+				in 73..76 -> Unit // IJKL (analog)
+				else -> println("Unhandled($pressed): $keyCode")
+			}
+
+			controller.updateAnalog(
+				x = when { keys[74] -> -1f; keys[76] -> +1f; else -> 0f; },
+				y = when { keys[73] -> +1f; keys[75] -> -1f; else -> 0f; }
+			)
+		}
+
+		sceneView.onKeyDown { updateKey(it.keyCode, true) }
+		sceneView.onKeyUp { updateKey(it.keyCode, false) }
+
 		sceneView += renderView
-		sceneView += views.image(tex)
 	}
 }
 

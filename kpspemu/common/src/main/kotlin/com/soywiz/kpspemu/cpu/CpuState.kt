@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.JvmField
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.mem.Memory
 
@@ -21,6 +20,7 @@ var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
 	var _R = IntArray(32)
+	var _F = com.soywiz.korio.mem.FastMemory.alloc(32 * 4)
 
 	var r0: Int; set(value) = Unit; get() = 0
 	var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]
@@ -56,8 +56,8 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	var r31: Int; set(value) = run { _R[31] = value }; get() = _R[31]
 
 	val GPR = Gpr(this)
-	val FPR = FloatArray(32) { 0f }
-	val FPR_I = FprI(this)
+	//val FPR = FloatArray(32) { 0f }
+	//val FPR_I = FprI(this)
 
 	var IR: Int = 0
 	var _PC: Int = 0
@@ -97,11 +97,10 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		}
 	}
 
-	fun getFpr(index: Int): Float = FPR[index and 0x1F]
-	fun setFpr(index: Int, v: Float): Unit = run { FPR[index and 0x1F] = v }
-
-	fun getFprI(index: Int): Int = FPR[index and 0x1F].toBits()
-	fun setFprI(index: Int, v: Int): Unit = run { FPR[index and 0x1F] = Float.fromBits(v) }
+	fun getFpr(index: Int): Float = _F.getAlignedFloat32(index)
+	fun setFpr(index: Int, v: Float): Unit = run { _F.setAlignedFloat32(index, v) }
+	fun getFprI(index: Int): Int = _F.getAlignedInt32(index)
+	fun setFprI(index: Int, v: Int): Unit = run { _F.setAlignedInt32(index, v) }
 
 	class Gpr(val state: CpuState) {
 		operator fun get(index: Int): Int = state.getGpr(index)

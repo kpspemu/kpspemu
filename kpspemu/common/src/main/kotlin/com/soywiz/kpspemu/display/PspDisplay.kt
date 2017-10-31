@@ -34,7 +34,6 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		when (pixelFormat) {
 			PixelFormat.RGBA_8888 -> { // Optimized!
 				mem.read(address, bmpData)
-				for (n in 0 until bmpData.size) bmpData[n] = (bmpData[n] and 0x00FFFFFF) or 0xFF000000.toInt()
 			}
 			else -> {
 				mem.read(address, temp, 0, temp.size)
@@ -47,7 +46,6 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 				color.decodeToBitmap32(out, temp)
 				//RGBA_4444.decodeToBitmap32(out, temp)
 				//RGBA.decodeToBitmap32(out, temp)
-				for (n in 0 until bmpData.size) bmpData[n] = (bmpData[n] and 0x00FFFFFF) or 0xFF000000.toInt()
 			}
 		}
 	}
