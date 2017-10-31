@@ -25,7 +25,7 @@ class RegisterReader {
 	val mem: Memory get() = cpu.mem
 	val int: Int get() = this.cpu.GPR[pos++]
 	val ptr: Ptr get() = MemPtr(mem, int)
-	val string: String? get() = mem.readStringzOrNull(int)
+	val str: String? get() = mem.readStringzOrNull(int)
 }
 
 data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)

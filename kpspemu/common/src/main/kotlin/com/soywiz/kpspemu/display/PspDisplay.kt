@@ -9,6 +9,8 @@ import com.soywiz.kpspemu.hle.PixelFormat
 import com.soywiz.kpspemu.mem
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
+	var exposeDisplay = true
+
 	val bmp = Bitmap32(512, 272)
 
 	var rawDisplay: Boolean = true

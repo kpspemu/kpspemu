@@ -1,9 +1,11 @@
 package com.soywiz.kpspemu.mem
 
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.stream.*
+import com.soywiz.kpspemu.util.hex
 
 const private val MEMORY_MASK = 0x0FFFFFFF
 const private val MASK = MEMORY_MASK
@@ -200,7 +202,7 @@ class FastMemory : Memory(true) {
 
 	override fun lb(address: Int) = buffer[index(address)]
 	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
-	override fun lw(address: Int) = buffer.getAlignedInt32(index(address) ushr 2)
+	override fun lw(address: Int): Int = buffer.getAlignedInt32(index(address) ushr 2)
 
 	override fun copy(srcPos: Int, dstPos: Int, size: Int) {
 		FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)

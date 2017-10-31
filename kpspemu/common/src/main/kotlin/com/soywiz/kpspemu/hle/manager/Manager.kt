@@ -8,6 +8,7 @@ open class Manager<T : Resource>(override val emulator: Emulator) : WithEmulator
 	internal var lastId: Int = 0
 	internal val freeIds = Pool { lastId++ }
 	internal val resourcesById = LinkedHashMap<Int, T>()
+	val resourcesCount: Int get() = resourcesById.size
 
 	internal fun allocId(): Int = freeIds.alloc()
 	fun tryGetByName(name: String): T? = resourcesById.values.firstOrNull { it.name == name }

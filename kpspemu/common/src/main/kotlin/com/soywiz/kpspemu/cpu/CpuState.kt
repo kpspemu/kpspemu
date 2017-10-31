@@ -3,10 +3,13 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.mem.Memory
 
-data class CpuBreak(val id: Int) : Exception() {
+class ExitGameException : Exception()
+
+data class CpuBreakException(val id: Int) : Exception() {
 	companion object {
 		val THREAD_WAIT = 10001
 		val THREAD_EXIT_KILL = 10002
+		val EXIT_GAME = 10003
 	}
 }
 

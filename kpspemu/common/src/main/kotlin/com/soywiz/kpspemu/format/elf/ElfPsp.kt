@@ -14,6 +14,7 @@ import com.soywiz.kpspemu.hle.manager.SyscallManager
 import com.soywiz.kpspemu.hle.NativeFunction
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.openSync
+import com.soywiz.kpspemu.util.hex
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KProperty
@@ -122,8 +123,10 @@ fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
 
 fun Emulator.loadElfAndSetRegisters(file: SyncStream): PspElf {
 	val elf = loadElf(file)
-	startThread.state.setPC(elf.moduleInfo.PC)
-	startThread.state.GP = elf.moduleInfo.GP
+	val state = startThread.state
+	state.setPC(elf.moduleInfo.PC)
+	state.GP = elf.moduleInfo.GP
+	//println("GP=${state.GP.hex}, PC=${state._PC.hex}")
 	startThread.start()
 	return elf
 }

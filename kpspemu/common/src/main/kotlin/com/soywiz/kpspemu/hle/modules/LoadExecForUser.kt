@@ -2,10 +2,15 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.cpu.ExitGameException
 import com.soywiz.kpspemu.hle.SceModule
 
 class LoadExecForUser(emulator: Emulator) : SceModule(emulator, "LoadExecForUser", 0x40010011, "loadexec_02g.prx", "sceLoadExec") {
-	fun sceKernelExitGame(cpu: CpuState): Unit = UNIMPLEMENTED(0x05572A5F)
+	fun sceKernelExitGame(cpu: CpuState): Unit {
+		println("sceKernelExitGame")
+		throw ExitGameException()
+	}
+
 	fun sceKernelExitGameWithStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x2AC9954B)
 	fun LoadExecForUser_362A956B(cpu: CpuState): Unit = UNIMPLEMENTED(0x362A956B)
 

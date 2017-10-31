@@ -63,7 +63,7 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 
 
 	override fun registerModule() {
-		registerFunctionInt("sceKernelAllocPartitionMemory", 0x237DBD4F, since = 150) { sceKernelAllocPartitionMemory(int, string, int, int, int) }
+		registerFunctionInt("sceKernelAllocPartitionMemory", 0x237DBD4F, since = 150) { sceKernelAllocPartitionMemory(int, str, int, int, int) }
 		registerFunctionInt("sceKernelGetBlockHeadAddr", 0x9D9A5BA1, since = 150) { sceKernelGetBlockHeadAddr(int) }
 
 		registerFunctionRaw("SysMemUserForUser_057E7380", 0x057E7380, since = 150) { SysMemUserForUser_057E7380(it) }

@@ -4,22 +4,21 @@ import com.soywiz.korio.async.Promise
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.*
-import com.soywiz.kpspemu.cpu.CpuBreak
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.RA
-import com.soywiz.kpspemu.cpu.SP
+import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.ptr
 
 class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
+	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
+
 	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
 		val stack = memoryManager.userPartition.allocateHigh(stackSize, "${name}_stack")
 		return PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
 	}
 
 	fun suspend() {
-		throw CpuBreak(CpuBreak.THREAD_WAIT)
+		throw CpuBreakException(CpuBreakException.THREAD_WAIT)
 	}
 
 	fun vblank() {
@@ -81,6 +80,7 @@ class PspThread internal constructor(
 
 	var phase: Phase = Phase.STOPPED
 	val running: Boolean get() = phase == Phase.RUNNING
+	val waiting: Boolean get() = waitObject != null
 	var priority: Int = initPriority
 	override val emulator get() = manager.emulator
 	val state = CpuState(emulator.mem, emulator.syscalls).apply {
@@ -102,7 +102,7 @@ class PspThread internal constructor(
 	init {
 		//val ptr = putWordInStack(0b000000_00000000000000000000_001101 or (77 shl 6)) // break 77
 		state.RA = putWordsInStack(
-			0b000000_00000000000000000000_001101 or (CpuBreak.THREAD_EXIT_KILL shl 6), // break 77
+			0b000000_00000000000000000000_001101 or (CpuBreakException.THREAD_EXIT_KILL shl 6), // break 77
 			0b000000_00000000000000000000_000000, // nop
 			0b000000_00000000000000000000_000000, // nop
 			0b000000_00000000000000000000_000000  // nop
@@ -156,13 +156,16 @@ class PspThread internal constructor(
 		try {
 			//interpreter.steps(1_000_000)
 			interpreter.steps(1_000_000)
-		} catch (e: CpuBreak) {
+		} catch (e: CpuBreakException) {
 			when (e.id) {
-				CpuBreak.THREAD_EXIT_KILL -> {
+				CpuBreakException.THREAD_EXIT_KILL -> {
 					println("BREAK: THREAD_EXIT_KILL")
 					exitAndKill()
 				}
-				CpuBreak.THREAD_WAIT -> {
+				CpuBreakException.THREAD_WAIT -> {
+				}
+				CpuBreakException.EXIT_GAME -> {
+					throw ExitGameException()
 				}
 				else -> throw e
 			}

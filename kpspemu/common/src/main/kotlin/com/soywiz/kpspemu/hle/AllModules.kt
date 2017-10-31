@@ -19,4 +19,5 @@ fun ModuleManager.registerNativeModules() {
 	register(sceDisplay(emulator))
 	register(UtilsForUser(emulator))
 	register(scePower(emulator))
+	register(sceNetInet(emulator))
 }

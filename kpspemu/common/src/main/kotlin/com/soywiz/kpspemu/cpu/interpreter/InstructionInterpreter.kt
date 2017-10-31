@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
@@ -7,10 +8,7 @@ import com.soywiz.korio.util.udiv
 import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
-import com.soywiz.kpspemu.util.BitUtils
-import com.soywiz.kpspemu.util.compareToUnsigned
-import com.soywiz.kpspemu.util.imul32_64
-import com.soywiz.kpspemu.util.umul32_64
+import com.soywiz.kpspemu.util.*
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.round
@@ -23,15 +21,23 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 		val cpu = this.cpu
 		val mem = cpu.mem
 		val trace = this.trace
+		var sPC = 0
 		//val fast = (mem as FastMemory).buffer
-		for (n in 0 until count) {
-			val PC = cpu._PC
-			//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
-			if (trace) tracePC()
-			val IR = mem.lw(PC)
-			//val IR = fast.getAlignedInt32((PC ushr 2) and Memory.MASK)
-			cpu.IR = IR
-			dispatcher.dispatch(cpu, PC, IR)
+		try {
+			for (n in 0 until count) {
+				sPC = cpu._PC
+				//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
+				if (trace) tracePC()
+				val IR = mem.lw(sPC)
+				//val IR = fast.getAlignedInt32((PC ushr 2) and Memory.MASK)
+				cpu.IR = IR
+				dispatcher.dispatch(cpu, sPC, IR)
+			}
+		} catch (e: Throwable) {
+			if (e !is CpuBreakException) {
+				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
+			}
+			throw e
 		}
 	}
 
@@ -81,6 +87,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun multu(s: CpuState) = s { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
 
 	override fun madd(s: CpuState) = s { HI_LO += RS.toLong() * RT.toLong() }
+	override fun maddu(s: CpuState) = s { HI_LO += RS.unsigned * RT.unsigned }
+
+	override fun msub(s: CpuState) = s { HI_LO -= RS.toLong() * RT.toLong() }
+	override fun msubu(s: CpuState) = s { HI_LO -= RS.unsigned * RT.unsigned }
+
 
 	override fun mflo(s: CpuState) = s { RD = LO }
 	override fun mfhi(s: CpuState) = s { RD = HI }
@@ -109,6 +120,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun srav(s: CpuState) = s { RD = RT shr (RS and 0b11111) }
 	override fun srlv(s: CpuState) = s { RD = RT ushr (RS and 0b11111) }
 
+	override fun bitrev(s: CpuState) = s { RD = BitUtils.bitrev32(RT) }
+
+	override fun rotr(s: CpuState) = s { RD = BitUtils.rotr(RT, POS) }
+	override fun rotrv(s: CpuState) = s { RD = BitUtils.rotr(RT, RS) }
+
 	// Memory
 	override fun lb(s: CpuState) = s { RT = mem.lb(RS_IMM16) }
 
@@ -127,7 +143,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	// Special
 	override fun syscall(s: CpuState) = s.preadvance { syscall(SYSCALL) }
 
-	override fun _break(s: CpuState) = s.preadvance { throw CpuBreak(SYSCALL) }
+	override fun _break(s: CpuState) = s.preadvance { throw CpuBreakException(SYSCALL) }
 
 	// Set less
 	override fun slt(s: CpuState) = s { RD = if (RS < RT) 1 else 0 }
@@ -208,13 +224,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun c_ngt_s(s: CpuState)  = s._cu { FS <= FT }
 
 	// Missing
-	override fun bitrev(s: CpuState) = unimplemented(s, Instructions.bitrev)
 
-	override fun rotr(s: CpuState) = unimplemented(s, Instructions.rotr)
-	override fun rotrv(s: CpuState) = unimplemented(s, Instructions.rotrv)
-	override fun maddu(s: CpuState) = unimplemented(s, Instructions.maddu)
-	override fun msub(s: CpuState) = unimplemented(s, Instructions.msub)
-	override fun msubu(s: CpuState) = unimplemented(s, Instructions.msubu)
 	override fun bgezal(s: CpuState) = unimplemented(s, Instructions.bgezal)
 	override fun bgezall(s: CpuState) = unimplemented(s, Instructions.bgezall)
 	override fun bltzal(s: CpuState) = unimplemented(s, Instructions.bltzal)
