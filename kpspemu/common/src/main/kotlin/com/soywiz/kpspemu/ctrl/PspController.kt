@@ -17,9 +17,11 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 		}
 	}
 
+	private fun fixFloat(v: Float): Int = ((v.clamp(-1f, 1f) * 127) + 128).toInt()
+
 	fun updateAnalog(x: Float, y: Float) {
-		this.lx = ((x.clamp(-1f, 1f) * 127) + 128).toInt()
-		this.ly = ((y.clamp(-1f, 1f) * 127) + 128).toInt()
+		this.lx = fixFloat(x)
+		this.ly = fixFloat(y)
 		//println("Update analog: ($x, $y) - ($lx, $ly)")
 	}
 }

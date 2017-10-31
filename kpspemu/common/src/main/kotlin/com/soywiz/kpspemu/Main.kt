@@ -35,7 +35,8 @@ object Main {
 }
 
 object KpspemuModule : Module() {
-	override val clearEachFrame: Boolean = false
+	//override val clearEachFrame: Boolean = false
+	override val clearEachFrame: Boolean = true
 	override val mainScene: KClass<out Scene> = KpspemuMainScene::class
 	override val title: String = "kpspemu"
 	override val size: SizeInt get() = SizeInt(480, 272)
@@ -160,8 +161,8 @@ class KpspemuMainScene : Scene(), WithEmulator {
 				}
 			}
 
-			//ctx.batch.drawQuad(scene.tex, m = m, blendFactors = AG.Blending.NONE)
-			ctx.ag.drawBmp(display.bmp)
+			ctx.batch.drawQuad(scene.tex, m = m, blendFactors = AG.Blending.NONE, filtering = false)
+			//ctx.ag.drawBmp(display.bmp)
 		}
 	}
 
@@ -203,7 +204,7 @@ class KpspemuMainScene : Scene(), WithEmulator {
 
 				if (display.rawDisplay) {
 					display.decodeToBitmap32(display.bmp)
-					//tex.update(display.bmp)
+					tex.update(display.bmp)
 				}
 			}
 		}
@@ -211,7 +212,7 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		val keys = BooleanArray(256)
 
 		fun updateKey(keyCode: Int, pressed: Boolean) {
-			println("updateKey: $keyCode, $pressed")
+			//println("updateKey: $keyCode, $pressed")
 			keys[keyCode and 0xFF] = pressed
 			when (keyCode) {
 				10 -> controller.updateButton(PspCtrlButtons.start, pressed) // return
