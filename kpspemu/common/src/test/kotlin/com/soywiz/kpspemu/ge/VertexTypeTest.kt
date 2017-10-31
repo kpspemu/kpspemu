@@ -15,7 +15,7 @@ class VertexTypeTest {
 	@Test
 	fun testClearVertexType() {
 		assertEquals(
-			"VertexType(color=COLOR8888, normal=VOID, pos=SHORT, tex=VOID, weight=VOID, size=8)",
+			"VertexType(color=COLOR8888, normal=VOID, pos=SHORT, tex=VOID, weight=VOID, size=12)",
 			VertexType(0x0080011C).toString()
 		)
 	}

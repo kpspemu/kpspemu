@@ -7,9 +7,9 @@ import com.soywiz.korim.color.RGB_565
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.util.extract
-import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.safeNextAlignedTo
+import kotlin.math.max
 
 class GeState {
 	companion object {
@@ -76,7 +76,7 @@ class VertexType(var v: Int = 0) {
 		this.v = v
 	}
 
-	enum class Attribute(val index: Int) { COLOR(0), NORMAL(1), POSITION(2), TEXTURE(3), WEIGHTS(4), END(5) }
+	enum class Attribute(val index: Int) { WEIGHTS(0), TEXTURE(1), COLOR(2), NORMAL(3), POSITION(4), END(5) }
 
 	val tex: NumericEnum get() = NumericEnum(v.extract(0, 2))
 	val color: ColorEnum get() = ColorEnum(v.extract(2, 3))
@@ -95,17 +95,12 @@ class VertexType(var v: Int = 0) {
 	val hasPosition: Boolean get() = pos != NumericEnum.VOID
 	val hasWeight: Boolean get() = weight != NumericEnum.VOID
 
-	val components: Int get() = if (transform2D) 2 else 3
+	//val components: Int get() = if (transform2D) 2 else 3
+	val components: Int get() = 3
 
 	val posComponents: Int get() = components // @TODO: Verify this
 	val normalComponents: Int get() = components // @TODO: Verify this
 	val texComponents: Int get() = 2 // @TODO: texture components must be 2 or 3
-
-	val colorComponentSize: Int get() = color.nbytes
-	val normalComponentSize: Int get() = normal.nbytes
-	val posComponentSize: Int get() = pos.nbytes
-	val texComponentSize: Int get() = tex.nbytes
-	val weightComponentSize: Int get() = weight.nbytes
 
 	val colorSize: Int get() = color.nbytes
 	val normalSize: Int get() = normal.nbytes * normalComponents
@@ -122,6 +117,14 @@ class VertexType(var v: Int = 0) {
 	fun offsetOf(attribute: Attribute): Int {
 		var out = 0
 
+		out = out.safeNextAlignedTo(weight.nbytes)
+		if (attribute == Attribute.WEIGHTS) return out
+		out += weightSize
+
+		out = out.safeNextAlignedTo(tex.nbytes)
+		if (attribute == Attribute.TEXTURE) return out
+		out += textureSize
+
 		out = out.safeNextAlignedTo(color.nbytes)
 		if (attribute == Attribute.COLOR) return out
 		out += colorSize
@@ -134,13 +137,7 @@ class VertexType(var v: Int = 0) {
 		if (attribute == Attribute.POSITION) return out
 		out += positionSize
 
-		out = out.safeNextAlignedTo(tex.nbytes)
-		if (attribute == Attribute.TEXTURE) return out
-		out += textureSize
-
-		out = out.safeNextAlignedTo(weight.nbytes)
-		if (attribute == Attribute.WEIGHTS) return out
-		out += weightSize
+		out = out.safeNextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), color.nbytes), normal.nbytes), pos.nbytes))
 
 		return out
 	}
@@ -217,20 +214,22 @@ class VertexReader {
 	}
 
 	fun readOne(s: SyncStream, type: VertexType, out: VertexRaw = VertexRaw()): VertexRaw {
-		s.safeSkipToAlign(type.colorComponentSize)
-		out.color = s.readColorType(type.color)
+		s.safeSkipToAlign(type.weight.nbytes)
+		s.readNumericType(type.weightComponents, type.weight, out.weights, normalized = true)
 
-		s.safeSkipToAlign(type.normalComponents)
-		s.readNumericType(type.normalComponents, type.normal, out.normal, normalized = false)
-
-		s.safeSkipToAlign(type.posComponentSize)
-		s.readNumericType(type.posComponents, type.pos, out.pos, normalized = false)
-
-		s.safeSkipToAlign(type.texComponentSize)
+		s.safeSkipToAlign(type.tex.nbytes)
 		s.readNumericType(type.texComponents, type.tex, out.tex, normalized = true)
 
-		s.safeSkipToAlign(type.weightComponentSize)
-		s.readNumericType(type.weightComponents, type.weight, out.weights, normalized = true)
+		s.safeSkipToAlign(type.color.nbytes)
+		out.color = s.readColorType(type.color)
+
+		s.safeSkipToAlign(type.normal.nbytes)
+		s.readNumericType(type.normalComponents, type.normal, out.normal, normalized = false)
+
+		s.safeSkipToAlign(type.pos.nbytes)
+		s.readNumericType(type.posComponents, type.pos, out.pos, normalized = false)
+
+		s.safeSkipToAlign(max(max(max(max(type.weight.nbytes, type.tex.nbytes), type.color.nbytes), type.normal.nbytes), type.pos.nbytes))
 
 		return out
 	}

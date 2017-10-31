@@ -62,16 +62,16 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	private fun putGenVertex(TLpos: Int, BRpos: Int, gx: Boolean, gy: Boolean) {
-		vertexBuffer.copyRangeTo(TLpos, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
+		vertexBuffer.copyRangeTo(BRpos, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.positionOffset + vertexType.posComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.posComponentSize * 0, vertexType.posComponentSize)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.positionOffset + vertexType.posComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.posComponentSize * 1, vertexType.posComponentSize)
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.positionOffset + vertexType.pos.nbytes * 0, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.pos.nbytes * 0, vertexType.pos.nbytes)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.positionOffset + vertexType.pos.nbytes * 1, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.pos.nbytes * 1, vertexType.pos.nbytes)
 		}
 
 		if (vertexType.hasTexture) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.textureOffset + vertexType.texComponentSize * 0, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.texComponentSize * 0, vertexType.texComponentSize)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.textureOffset + vertexType.texComponentSize * 1, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.texComponentSize * 1, vertexType.texComponentSize)
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.textureOffset + vertexType.tex.nbytes * 0, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.tex.nbytes * 0, vertexType.tex.nbytes)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.textureOffset + vertexType.tex.nbytes * 1, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.tex.nbytes * 1, vertexType.tex.nbytes)
 		}
 
 		vertexBufferPos += vertexSize
@@ -87,15 +87,15 @@ class GeBatchBuilder(val ge: Ge) {
 					PrimitiveType.SPRITES -> {
 						var m = 0
 						for (n in 0 until count / 2) {
-							// 0..2
-							// 3..1
+							// 0..3
+							// 2..1
 
 							putIndex(m + 0)
-							putIndex(m + 2)
 							putIndex(m + 3)
+							putIndex(m + 2)
 
-							putIndex(m + 3)
 							putIndex(m + 2)
+							putIndex(m + 3)
 							putIndex(m + 1)
 
 							m += 4
@@ -113,7 +113,7 @@ class GeBatchBuilder(val ge: Ge) {
 		when (primitiveType) {
 			PrimitiveType.SPRITES -> {
 				var vaddr = state.vertexAddress
-				for (n in 0 until count) {
+				for (n in 0 until count / 2) {
 					val TLpos = vertexBufferPos
 					putVertex(vaddr); vaddr += vertexSize // TL
 					val BRpos = vertexBufferPos
