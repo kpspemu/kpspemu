@@ -38,21 +38,21 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		val end get() = range.endInclusive + 1
 	}
 
-	fun read(srcPos: Int, dst: ByteArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
-		for (n in 0 until len) dst[dstPos + n] = this.lb(srcPos + n).toByte()
-	}
-
 	fun readBytes(srcPos: Int, count: Int): ByteArray = ByteArray(count).apply { read(srcPos, this, 0, count) }
 
 	fun write(dstPos: Int, src: ByteArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
 		for (n in 0 until len) sb(dstPos + n, src[srcPos + n].toInt())
 	}
 
+	open fun read(srcPos: Int, dst: ByteArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
+		for (n in 0 until len) dst[dstPos + n] = this.lb(srcPos + n).toByte()
+	}
+
 	fun write(dstPos: Int, src: IntArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
 		for (n in 0 until len) sw(dstPos + n * 4, src[srcPos + n].toInt())
 	}
 
-	fun read(srcPos: Int, dst: IntArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
+	open fun read(srcPos: Int, dst: IntArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
 		for (n in 0 until len) dst[dstPos + n] = lw(srcPos + n * 4)
 	}
 
@@ -98,19 +98,17 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		for (n in 0 until size) sb(address, value)
 	}
 
-	fun copy(srcPos: Int, dstPos: Int, size: Int) {
-		// @TODO: Optimize
-		for (n in 0 until size) sb(dstPos + n, lb(srcPos + n))
-	}
+	open fun copy(srcPos: Int, dstPos: Int, size: Int) = run { for (n in 0 until size) sb(dstPos + n, lb(srcPos + n)) }
 
 	fun getPointerStream(address: Int, size: Int): SyncStream {
 		return openSync().sliceWithSize(address, size)
 	}
 
-	fun readStringzOrNull(offset: Int): String? = when  {
+	fun readStringzOrNull(offset: Int): String? = when {
 		offset == 0 -> null
 		else -> readStringz(offset)
 	}
+
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
 }
 
@@ -203,6 +201,21 @@ class FastMemory : Memory(true) {
 	override fun lb(address: Int) = buffer[index(address)]
 	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
 	override fun lw(address: Int) = buffer.getAlignedInt32(index(address) ushr 2)
+
+	override fun copy(srcPos: Int, dstPos: Int, size: Int) {
+		FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)
+	}
+
+	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit {
+		// @TODO: Expose relevant functions to make this faster
+		val rsrcPos = index(srcPos)
+		for (n in 0 until len) dst[dstPos + n] = buffer[rsrcPos + n].toByte()
+	}
+
+	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit {
+		val rsrcPos = index(srcPos) ushr 2
+		for (n in 0 until len) dst[dstPos + n] = buffer.getAlignedInt32(rsrcPos + n)
+	}
 }
 
 class SmallMemory : Memory(true) {

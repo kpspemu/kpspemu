@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.util.hexString
 import com.soywiz.korio.util.quote
 
 fun String.parseInt(): Int = when {
@@ -11,3 +12,4 @@ fun String.parseInt(): Int = when {
 val String.quoted: String get() = this.quote()
 
 val Int.hex: String get() = "0x%08X".format(this)
+val ByteArray.hex: String get() = this.hexString

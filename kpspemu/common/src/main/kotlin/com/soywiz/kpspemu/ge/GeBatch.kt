@@ -15,7 +15,9 @@ data class GeBatch(
 
 	init {
 		if (vtype.transform2D) {
-			modelViewProjMatrix.setToOrtho(0f, 480f, 272f, 0f, 0f, (-0xFFFF).toFloat())
+			//modelViewProjMatrix.setToOrtho(0f, 480f, 272f, 0f, 0f, (-0xFFFF).toFloat())
+			modelViewProjMatrix.setToOrtho(0f, 272f, 480f, 0f, 0f, (-0xFFFF).toFloat())
+			//modelViewProjMatrix.setToIdentity()
 		} else {
 			modelViewProjMatrix.setToIdentity()
 			modelViewProjMatrix.setToMultiply(modelViewProjMatrix, state.getProjMatrix(tempMatrix))

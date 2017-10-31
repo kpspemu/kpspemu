@@ -79,7 +79,7 @@ class VertexType(var v: Int = 0) {
 	enum class Attribute(val index: Int) { WEIGHTS(0), TEXTURE(1), COLOR(2), NORMAL(3), POSITION(4), END(5) }
 
 	val tex: NumericEnum get() = NumericEnum(v.extract(0, 2))
-	val color: ColorEnum get() = ColorEnum(v.extract(2, 3))
+	val col: ColorEnum get() = ColorEnum(v.extract(2, 3))
 	val normal: NumericEnum get() = NumericEnum(v.extract(5, 2))
 	val pos: NumericEnum get() = NumericEnum(v.extract(7, 2))
 	val weight: NumericEnum get() = NumericEnum(v.extract(9, 2))
@@ -90,7 +90,7 @@ class VertexType(var v: Int = 0) {
 
 	val hasIndices: Boolean get() = index != IndexEnum.VOID
 	val hasTexture: Boolean get() = tex != NumericEnum.VOID
-	val hasColor: Boolean get() = color != ColorEnum.VOID
+	val hasColor: Boolean get() = col != ColorEnum.VOID
 	val hasNormal: Boolean get() = normal != NumericEnum.VOID
 	val hasPosition: Boolean get() = pos != NumericEnum.VOID
 	val hasWeight: Boolean get() = weight != NumericEnum.VOID
@@ -102,16 +102,16 @@ class VertexType(var v: Int = 0) {
 	val normalComponents: Int get() = components // @TODO: Verify this
 	val texComponents: Int get() = 2 // @TODO: texture components must be 2 or 3
 
-	val colorSize: Int get() = color.nbytes
+	val colorSize: Int get() = col.nbytes
 	val normalSize: Int get() = normal.nbytes * normalComponents
 	val positionSize: Int get() = pos.nbytes * posComponents
 	val textureSize: Int get() = tex.nbytes * texComponents
 	val weightSize: Int get() = weight.nbytes * weightComponents
 
-	val colorOffset: Int get() = offsetOf(Attribute.COLOR)
+	val colOffset: Int get() = offsetOf(Attribute.COLOR)
 	val normalOffset: Int get() = offsetOf(Attribute.NORMAL)
-	val positionOffset: Int get() = offsetOf(Attribute.POSITION)
-	val textureOffset: Int get() = offsetOf(Attribute.TEXTURE)
+	val posOffset: Int get() = offsetOf(Attribute.POSITION)
+	val texOffset: Int get() = offsetOf(Attribute.TEXTURE)
 	val weightOffset: Int get() = offsetOf(Attribute.WEIGHTS)
 
 	fun offsetOf(attribute: Attribute): Int {
@@ -125,7 +125,7 @@ class VertexType(var v: Int = 0) {
 		if (attribute == Attribute.TEXTURE) return out
 		out += textureSize
 
-		out = out.safeNextAlignedTo(color.nbytes)
+		out = out.safeNextAlignedTo(col.nbytes)
 		if (attribute == Attribute.COLOR) return out
 		out += colorSize
 
@@ -137,7 +137,7 @@ class VertexType(var v: Int = 0) {
 		if (attribute == Attribute.POSITION) return out
 		out += positionSize
 
-		out = out.safeNextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), color.nbytes), normal.nbytes), pos.nbytes))
+		out = out.safeNextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), col.nbytes), normal.nbytes), pos.nbytes))
 
 		return out
 	}
@@ -146,7 +146,7 @@ class VertexType(var v: Int = 0) {
 
 	override fun toString(): String {
 		val parts = arrayListOf<String>()
-		parts += "color=$color"
+		parts += "color=$col"
 		parts += "normal=$normal"
 		parts += "pos=$pos"
 		parts += "tex=$tex"
@@ -220,8 +220,8 @@ class VertexReader {
 		s.safeSkipToAlign(type.tex.nbytes)
 		s.readNumericType(type.texComponents, type.tex, out.tex, normalized = true)
 
-		s.safeSkipToAlign(type.color.nbytes)
-		out.color = s.readColorType(type.color)
+		s.safeSkipToAlign(type.col.nbytes)
+		out.color = s.readColorType(type.col)
 
 		s.safeSkipToAlign(type.normal.nbytes)
 		s.readNumericType(type.normalComponents, type.normal, out.normal, normalized = false)
@@ -229,7 +229,7 @@ class VertexReader {
 		s.safeSkipToAlign(type.pos.nbytes)
 		s.readNumericType(type.posComponents, type.pos, out.pos, normalized = false)
 
-		s.safeSkipToAlign(max(max(max(max(type.weight.nbytes, type.tex.nbytes), type.color.nbytes), type.normal.nbytes), type.pos.nbytes))
+		s.safeSkipToAlign(max(max(max(max(type.weight.nbytes, type.tex.nbytes), type.col.nbytes), type.normal.nbytes), type.pos.nbytes))
 
 		return out
 	}

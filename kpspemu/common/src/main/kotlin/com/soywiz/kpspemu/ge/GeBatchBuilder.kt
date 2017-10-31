@@ -10,8 +10,6 @@ class GeBatchBuilder(val ge: Ge) {
 	var primitiveType: PrimitiveType? = null
 	var vertexType: VertexType = VertexType(-1)
 	var vertexCount: Int = 0
-	var indexAddress: Int = 0
-	var vertexAddress: Int = 0
 	var vertexSize: Int = 0
 
 	val vertexBuffer = ByteArray(0x10000 * 16)
@@ -42,8 +40,8 @@ class GeBatchBuilder(val ge: Ge) {
 	fun tsync() = Unit
 
 	fun flush() {
-		if (vertexCount > 0) {
-			ge.emitBatch(GeBatch(ge.state.clone(), primitiveType ?: PrimitiveType.TRIANGLES, vertexCount, vertexBuffer.copyOf(vertexBufferPos), indexBuffer.copyOf(indexBufferPos)))
+		if (indexBufferPos > 0) {
+			ge.emitBatch(GeBatch(ge.state.clone(), primitiveType ?: PrimitiveType.TRIANGLES, indexBufferPos, vertexBuffer.copyOf(vertexBufferPos), indexBuffer.copyOf(indexBufferPos)))
 			vertexCount = 0
 			vertexBufferPos = 0
 			indexBufferPos = 0
@@ -65,17 +63,20 @@ class GeBatchBuilder(val ge: Ge) {
 		vertexBuffer.copyRangeTo(BRpos, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.positionOffset + vertexType.pos.nbytes * 0, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.pos.nbytes * 0, vertexType.pos.nbytes)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.positionOffset + vertexType.pos.nbytes * 1, vertexBuffer, vertexBufferPos + vertexType.positionOffset + vertexType.pos.nbytes * 1, vertexType.pos.nbytes)
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.posOffset + vertexType.pos.nbytes * 0, vertexBuffer, vertexBufferPos + vertexType.posOffset + vertexType.pos.nbytes * 0, vertexType.pos.nbytes)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.posOffset + vertexType.pos.nbytes * 1, vertexBuffer, vertexBufferPos + vertexType.posOffset + vertexType.pos.nbytes * 1, vertexType.pos.nbytes)
 		}
 
 		if (vertexType.hasTexture) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.textureOffset + vertexType.tex.nbytes * 0, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.tex.nbytes * 0, vertexType.tex.nbytes)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.textureOffset + vertexType.tex.nbytes * 1, vertexBuffer, vertexBufferPos + vertexType.textureOffset + vertexType.tex.nbytes * 1, vertexType.tex.nbytes)
+			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + vertexType.texOffset + vertexType.tex.nbytes * 0, vertexBuffer, vertexBufferPos + vertexType.texOffset + vertexType.tex.nbytes * 0, vertexType.tex.nbytes)
+			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + vertexType.texOffset + vertexType.tex.nbytes * 1, vertexBuffer, vertexBufferPos + vertexType.texOffset + vertexType.tex.nbytes * 1, vertexType.tex.nbytes)
 		}
 
+		// Copy color
+		vertexBuffer.copyRangeTo(BRpos + vertexType.colOffset, vertexBuffer, TLpos + vertexType.colOffset, vertexType.col.nbytes)
+
 		vertexBufferPos += vertexSize
-		vertexCount++
+		vertexCount += 2
 	}
 
 	fun addIndices(count: Int) {

@@ -77,14 +77,20 @@ class VertexReaderTest {
 
 	@Test
 	fun testClearFastVerticesAfterExpansion() {
-		val vertices = Hex.decode("000000000000000000003f5b33445500e0011001000000d23344550000001001000000d233445500e0010000000000d2")
+		val vertices = Hex.decode("334455000000000000003f5b33445500e0011001000000d23344550000001001000000d233445500e0010000000000d2")
 		val s = vertices.openSync()
 		val vtype = VertexType(0x0080011C)
 		val reader = VertexReader()
 		fun readOne() = reader.readOne(s, vtype).toString()
 		val numberOfVertices = s.length / vtype.size()
 
-		println(numberOfVertices)
-		for (n in 0 until numberOfVertices) println(readOne())
+		//println(numberOfVertices)
+		//for (n in 0 until numberOfVertices) println(readOne())
+
+		assertEquals(4, numberOfVertices)
+		assertEquals("VertexRaw(0x00554433, normal=[0.0, 0.0, 0.0], pos=[0.0, 0.0, 0.0], tex=[0.0, 0.0, 0.0], weights=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])", readOne())
+		assertEquals("VertexRaw(0x00554433, normal=[0.0, 0.0, 0.0], pos=[480.0, 272.0, 0.0], tex=[0.0, 0.0, 0.0], weights=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])", readOne())
+		assertEquals("VertexRaw(0x00554433, normal=[0.0, 0.0, 0.0], pos=[0.0, 272.0, 0.0], tex=[0.0, 0.0, 0.0], weights=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])", readOne())
+		assertEquals("VertexRaw(0x00554433, normal=[0.0, 0.0, 0.0], pos=[480.0, 0.0, 0.0], tex=[0.0, 0.0, 0.0], weights=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])", readOne())
 	}
 }

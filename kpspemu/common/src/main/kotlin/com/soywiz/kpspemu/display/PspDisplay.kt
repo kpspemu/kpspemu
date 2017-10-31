@@ -29,19 +29,26 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	private val temp = ByteArray(512 * 272 * 4)
 
 	fun decodeToBitmap32(out: Bitmap32) {
-		//println(pixelFormat)
-		mem.read(address, temp, 0, temp.size)
-
-		val color = when (pixelFormat) {
-		//PixelFormat.RGBA_5650 -> RGBA
-			PixelFormat.RGBA_5551 -> RGBA_5551
-			else -> RGBA
-		}
-
-		color.decodeToBitmap32(out, temp)
-		//RGBA_4444.decodeToBitmap32(out, temp)
-		//RGBA.decodeToBitmap32(out, temp)
 		val bmpData = out.data
-		for (n in 0 until bmpData.size) bmpData[n] = (bmpData[n] and 0x00FFFFFF) or 0xFF000000.toInt()
+
+		when (pixelFormat) {
+			PixelFormat.RGBA_8888 -> { // Optimized!
+				mem.read(address, bmpData)
+				for (n in 0 until bmpData.size) bmpData[n] = (bmpData[n] and 0x00FFFFFF) or 0xFF000000.toInt()
+			}
+			else -> {
+				mem.read(address, temp, 0, temp.size)
+				val color = when (pixelFormat) {
+				//PixelFormat.RGBA_5650 -> RGBA
+					PixelFormat.RGBA_5551 -> RGBA_5551
+					else -> RGBA
+				}
+
+				color.decodeToBitmap32(out, temp)
+				//RGBA_4444.decodeToBitmap32(out, temp)
+				//RGBA.decodeToBitmap32(out, temp)
+				for (n in 0 until bmpData.size) bmpData[n] = (bmpData[n] and 0x00FFFFFF) or 0xFF000000.toInt()
+			}
+		}
 	}
 }
