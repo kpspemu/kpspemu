@@ -197,10 +197,11 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val exeFile = samplesFolder["lines.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
 		val exeFile = samplesFolder["cube.iso"]
+		//val exeFile = samplesFolder["cwd.elf"]
 
 		val renderView = KorgeRenderer(this)
 
-		emulator = Emulator(mem = Memory(), gpuRenderer = renderView).apply {
+		emulator = Emulator(coroutineContext, mem = Memory(), gpuRenderer = renderView).apply {
 			registerNativeModules()
 			loadExecutableAndStart(exeFile)
 			//threadManager.trace("_start")

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.display
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.color.RGBA_5551
+import com.soywiz.korio.async.Signal
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.hle.PixelFormat
@@ -25,7 +26,10 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var displayWidth: Int = 480
 	var displayHeight: Int = 272
 
+	val onVsync = Signal<Unit>()
+
 	fun dispatchVsync() {
+		onVsync(Unit)
 	}
 
 	private val temp = ByteArray(512 * 272 * 4)

@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.util.extract
 import com.soywiz.kpspemu.WithEmulator
@@ -115,10 +114,15 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 		callbackManager.queueFunction1(callback.signal_func, callback.signal_arg)
 	}
 
-	fun syncAsync(syncType: Int): Promise<Unit> {
-		println("syncType:$syncType")
-		val deferred = Promise.Deferred<Unit>()
-		onCompleted.once { deferred.resolve(Unit) }
-		return deferred.promise
+	fun sync(syncType: Int) {
+		//println("syncType:$syncType")
+		run()
 	}
+
+	//fun syncAsync(syncType: Int): Promise<Unit> {
+	//	//println("syncType:$syncType")
+	//	val deferred = Promise.Deferred<Unit>()
+	//	onCompleted.once { deferred.resolve(Unit) }
+	//	return deferred.promise
+	//}
 }

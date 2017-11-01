@@ -3,6 +3,7 @@ package com.soywiz.kpspemu
 import KpspTests
 import MyAssert
 import com.soywiz.korio.async.syncTest
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
@@ -45,7 +46,7 @@ class IntegrationTests {
 	//@Test fun testCpuBranch2() = testFile("cpu/cpu_alu/cpu_branch2")
 
 	suspend fun testFile(elf: SyncStream, expected: String, ignores: List<String>, processor: (String) -> String = { it }) {
-		val emulator = Emulator()
+		val emulator = Emulator(getCoroutineContext())
 		emulator.display.exposeDisplay = false
 		emulator.registerNativeModules()
 		val info = emulator.loadElfAndSetRegisters(elf)

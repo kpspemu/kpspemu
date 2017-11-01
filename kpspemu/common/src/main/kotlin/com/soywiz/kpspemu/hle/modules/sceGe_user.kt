@@ -39,16 +39,18 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		return 0
 	}
 
-	fun sceGeListSync(thread: PspThread, displayListId: Int, syncType: Int): Int {
+	fun sceGeListSync(displayListId: Int, syncType: Int): Int {
 		//println("WIP: sceGeListSync")
 		val displayList = ge.lists[displayListId]
-		thread.suspend(WaitObject.PROMISE(displayList.syncAsync(syncType)), cb = false)
+		//thread.suspend(WaitObject.PROMISE(displayList.syncAsync(syncType)), cb = false)
+		displayList.sync(syncType)
 		return 0
 	}
 
-	fun sceGeDrawSync(thread: PspThread, syncType: Int): Int {
+	fun sceGeDrawSync(syncType: Int): Int {
 		//println("WIP: sceGeDrawSync")
-		thread.suspend(WaitObject.PROMISE(ge.syncAsync(syncType)), cb = false)
+		//thread.suspend(WaitObject.PROMISE(ge.syncAsync(syncType)), cb = false)
+		ge.sync(syncType)
 		return 0
 	}
 
@@ -68,10 +70,10 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		registerFunctionInt("sceGeEdramGetAddr", 0xE47E40E4, since = 150) { sceGeEdramGetAddr() }
 		registerFunctionInt("sceGeSetCallback", 0xA4FC06A4, since = 150) { sceGeSetCallback(ptr) }
 		registerFunctionInt("sceGeUnsetCallback", 0x05DB22CE, since = 150) { sceGeUnsetCallback(int) }
-		registerFunctionInt("sceGeListEnQueue", 0xAB49E76A, since = 150) { sceGeListEnQueue(ptr, ptr, int, ptr) }
-		registerFunctionInt("sceGeListSync", 0x03444EB4, since = 150) { sceGeListSync(thread, int, int) }
 		registerFunctionInt("sceGeListUpdateStallAddr", 0xE0D68148, since = 150) { sceGeListUpdateStallAddr(int, ptr) }
-		registerFunctionInt("sceGeDrawSync", 0xB287BD61, since = 150) { sceGeDrawSync(thread, int) }
+		registerFunctionInt("sceGeListEnQueue", 0xAB49E76A, since = 150) { sceGeListEnQueue(ptr, ptr, int, ptr) }
+		registerFunctionInt("sceGeListSync", 0x03444EB4, since = 150) { sceGeListSync(int, int) }
+		registerFunctionInt("sceGeDrawSync", 0xB287BD61, since = 150) { sceGeDrawSync(int) }
 
 		registerFunctionRaw("sceGeRestoreContext", 0x0BF608FB, since = 150) { sceGeRestoreContext(it) }
 		registerFunctionRaw("sceGeListEnQueueHead", 0x1C0D95A6, since = 150) { sceGeListEnQueueHead(it) }

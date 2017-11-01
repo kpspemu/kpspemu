@@ -1,16 +1,28 @@
 package com.soywiz.kpspemu.hle
 
+import com.soywiz.korio.async.Promise
+import com.soywiz.korio.async.eventLoop
+import com.soywiz.korio.async.go
+import com.soywiz.korio.coroutine.Continuation
+import com.soywiz.korio.coroutine.korioStartCoroutine
+import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kpspemu.coroutineContext
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.hle.manager.thread
 import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.threadManager
 import com.soywiz.kpspemu.util.PspLogger
+import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.experimental.startCoroutine
 
 class RegisterReader {
 	var pos: Int = 4
@@ -96,6 +108,32 @@ abstract class SceModule(
 			val ret = function(it)
 			this.cpu.r2 = (ret ushr 0).toInt()
 			this.cpu.r3 = (ret ushr 32).toInt()
+		}
+	}
+
+	protected fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean, function: suspend RegisterReader.(CpuState) -> Int) {
+		registerFunctionRR(name, uid, since, syscall) {
+			val mfunction: suspend (RegisterReader) -> Int = { function(it, it.cpu) }
+			var completed = false
+			mfunction.startCoroutine(this, object : Continuation<Int> {
+				override val context: CoroutineContext = coroutineContext
+
+				override fun resume(value: Int) {
+					cpu.r2 = value
+					completed = true
+					it.thread.resume()
+				}
+
+				override fun resumeWithException(exception: Throwable) {
+					exception.printStackTrace()
+					throw exception
+				}
+			})
+
+			if (!completed) {
+				it.thread.markWaiting(WaitObject.PROMISE(Promise()), cb = cb)
+				threadManager.suspend()
+			}
 		}
 	}
 }

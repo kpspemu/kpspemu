@@ -10,8 +10,10 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.ptr
 import com.soywiz.kpspemu.util.hex
+import kotlin.coroutines.experimental.CoroutineContext
 
 class Emulator(
+	val coroutineContext: CoroutineContext,
 	val syscalls: SyscallManager = SyscallManager(),
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
@@ -22,6 +24,7 @@ class Emulator(
 	val ge: Ge = Ge(this)
 	val gpu: Gpu = Gpu(this)
 	val display: PspDisplay = PspDisplay(this)
+	val deviceManager = DeviceManager(this)
 	val memoryManager = MemoryManager(this)
 	val threadManager = ThreadManager(this)
 	val moduleManager = ModuleManager(this)
@@ -34,8 +37,9 @@ class Emulator(
 
 	fun frameStep() {
 		threadManager.vblank()
-		ge.run()
+		display.dispatchVsync()
 		threadManager.step()
+		ge.run()
 		gpu.render()
 	}
 
@@ -52,7 +56,9 @@ val WithEmulator.mem: Memory get() = emulator.mem
 val WithEmulator.ge: Ge get() = emulator.ge
 val WithEmulator.gpu: Gpu get() = emulator.gpu
 val WithEmulator.controller: PspController get() = emulator.controller
+val WithEmulator.coroutineContext: CoroutineContext get() = emulator.coroutineContext
 val WithEmulator.display: PspDisplay get() = emulator.display
+val WithEmulator.deviceManager: DeviceManager get() = emulator.deviceManager
 val WithEmulator.memoryManager: MemoryManager get() = emulator.memoryManager
 val WithEmulator.timeManager: TimeManager get() = emulator.timeManager
 val WithEmulator.rtc: TimeManager get() = emulator.timeManager

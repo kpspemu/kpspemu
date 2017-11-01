@@ -2,8 +2,10 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
-import com.soywiz.korio.util.extract
-import com.soywiz.kpspemu.*
+import com.soywiz.korio.async.waitOne
+import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kpspemu.gpu
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
 
@@ -47,11 +49,19 @@ class Ge(override val emulator: Emulator) : WithEmulator {
 		//println("BATCH: $batch")
 	}
 
-	fun syncAsync(syncType: Int): Promise<Unit> {
-		val deferred = Promise.Deferred<Unit>()
-		onCompleted.once { deferred.resolve(Unit) }
-		return deferred.promise
+	fun sync(syncType: Int) {
+		run()
 	}
+
+	//suspend fun sync(syncType: Int) {
+	//	onCompleted.waitOne()
+	//}
+//
+	//fun syncAsync(syncType: Int): Promise<Unit> {
+	//	val deferred = Promise.Deferred<Unit>()
+	//	onCompleted.once { deferred.resolve(Unit) }
+	//	return deferred.promise
+	//}
 }
 
 data class GeCallback(override val id: Int) : ResourceItem {

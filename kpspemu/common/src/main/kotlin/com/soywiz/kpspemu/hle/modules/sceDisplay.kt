@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.async.waitOne
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.hle.PixelFormat
 import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.hle.manager.WaitObject
 
 @Suppress("UNUSED_PARAMETER")
 class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010011, "display_02g.prx", "sceDisplay_Service") {
@@ -19,26 +18,17 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return 0
 	}
 
-	fun _sceDisplayWaitVblankStart(thread: PspThread, cb: Boolean): Int {
-		//println("sceDisplayWaitVblankStart")
-		thread.suspend(WaitObject.VBLANK, cb = cb)
-		//return this._waitVblankAsync(thread, AcceptCallbacks.NO);
-		//return this._waitVblankStartAsync(thread, AcceptCallbacks.NO);
+	suspend fun sceDisplayWaitVblankStart(): Int {
+		//thread.suspend(WaitObject.VBLANK, cb = cb)
+		display.onVsync.waitOne()
 		return 0
 	}
 
-	fun sceDisplayWaitVblankStart(thread: PspThread): Int = _sceDisplayWaitVblankStart(thread, cb = false)
-	fun sceDisplayWaitVblankStartCB(thread: PspThread): Int = _sceDisplayWaitVblankStart(thread, cb = true)
-
-	fun _sceDisplayWaitVblank(thread: PspThread, cb: Boolean): Int {
-		//println("sceDisplayWaitVblankStart")
-		thread.suspend(WaitObject.VBLANK, cb = cb)
-		//return this._waitVblankAsync(thread, AcceptCallbacks.NO);
-		//return this._waitVblankStartAsync(thread, AcceptCallbacks.NO);
+	suspend fun sceDisplayWaitVblank(): Int {
+		//thread.suspend(WaitObject.VBLANK, cb = cb)
+		//display.onVsync.waitOne()
 		return 0
 	}
-	fun sceDisplayWaitVblank(thread: PspThread): Int = _sceDisplayWaitVblank(thread, cb = false)
-	fun sceDisplayWaitVblankCB(thread: PspThread): Int = _sceDisplayWaitVblank(thread, cb = true)
 
 	fun sceDisplaySetFrameBuf(address: Int, bufferWidth: Int, pixelFormat: Int, sync: Int): Int {
 		// PixelFormat
@@ -73,10 +63,10 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 	override fun registerModule() {
 		registerFunctionInt("sceDisplaySetMode", 0x0E20F177, 150, syscall = 0x213A) { sceDisplaySetMode(int, int, int) }
 		registerFunctionInt("sceDisplaySetFrameBuf", 0x289D82FE, 150, syscall = 0x213F) { sceDisplaySetFrameBuf(int, int, int, int) }
-		registerFunctionInt("sceDisplayWaitVblank", 0x36CDFADE, since = 150) { sceDisplayWaitVblank(thread) }
-		registerFunctionInt("sceDisplayWaitVblankCB", 0x8EB9EC49, since = 150) { sceDisplayWaitVblankCB(thread) }
-		registerFunctionInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147) { sceDisplayWaitVblankStart(thread) }
-		registerFunctionInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150) { sceDisplayWaitVblankStartCB(thread) }
+		registerFunctionSuspendInt("sceDisplayWaitVblank", 0x36CDFADE, since = 150, cb = false) { sceDisplayWaitVblank() }
+		registerFunctionSuspendInt("sceDisplayWaitVblankCB", 0x8EB9EC49, since = 150, cb = true) { sceDisplayWaitVblank() }
+		registerFunctionSuspendInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147, cb = false) { sceDisplayWaitVblankStart() }
+		registerFunctionSuspendInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150, cb = true) { sceDisplayWaitVblankStart() }
 
 		registerFunctionRaw("sceDisplayIsVsync", 0x21038913, since = 150) { sceDisplayIsVsync(it) }
 		registerFunctionRaw("sceDisplayGetAccumulatedHcount", 0x210EAB3A, since = 150) { sceDisplayGetAccumulatedHcount(it) }
