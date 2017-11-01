@@ -7,8 +7,8 @@ import com.soywiz.korim.color.RGB_565
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.util.extract
+import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.util.hex
-import com.soywiz.kpspemu.util.safeNextAlignedTo
 import kotlin.math.max
 
 class GeState {
@@ -117,27 +117,27 @@ class VertexType(var v: Int = 0) {
 	fun offsetOf(attribute: Attribute): Int {
 		var out = 0
 
-		out = out.safeNextAlignedTo(weight.nbytes)
+		out = out.nextAlignedTo(weight.nbytes)
 		if (attribute == Attribute.WEIGHTS) return out
 		out += weightSize
 
-		out = out.safeNextAlignedTo(tex.nbytes)
+		out = out.nextAlignedTo(tex.nbytes)
 		if (attribute == Attribute.TEXTURE) return out
 		out += textureSize
 
-		out = out.safeNextAlignedTo(col.nbytes)
+		out = out.nextAlignedTo(col.nbytes)
 		if (attribute == Attribute.COLOR) return out
 		out += colorSize
 
-		out = out.safeNextAlignedTo(normal.nbytes)
+		out = out.nextAlignedTo(normal.nbytes)
 		if (attribute == Attribute.NORMAL) return out
 		out += normalSize
 
-		out = out.safeNextAlignedTo(pos.nbytes)
+		out = out.nextAlignedTo(pos.nbytes)
 		if (attribute == Attribute.POSITION) return out
 		out += positionSize
 
-		out = out.safeNextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), col.nbytes), normal.nbytes), pos.nbytes))
+		out = out.nextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), col.nbytes), normal.nbytes), pos.nbytes))
 
 		return out
 	}

@@ -130,7 +130,6 @@ fun Emulator.loadElfAndSetRegisters(file: SyncStream): PspElf {
 	return elf
 }
 
-
 class PspElf private constructor(
 	private var memory: Memory,
 	private var memoryManager: MemoryManager,

@@ -209,14 +209,12 @@ class FastMemory : Memory(true) {
 	}
 
 	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit {
-		// @TODO: Expose relevant functions to make this faster
-		val rsrcPos = index(srcPos)
-		for (n in 0 until len) dst[dstPos + n] = buffer[rsrcPos + n].toByte()
+		buffer.getArrayInt8(srcPos, dst, dstPos, len)
 	}
 
 	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit {
 		val rsrcPos = index(srcPos) ushr 2
-		for (n in 0 until len) dst[dstPos + n] = buffer.getAlignedInt32(rsrcPos + n)
+		buffer.getAlignedArrayInt32(rsrcPos, dst, dstPos, len)
 	}
 }
 

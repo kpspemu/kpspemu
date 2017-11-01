@@ -8,21 +8,29 @@ import com.soywiz.korge.input.onKeyUp
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.scene.Module
 import com.soywiz.korge.scene.Scene
-import com.soywiz.korge.view.*
+import com.soywiz.korge.view.Container
+import com.soywiz.korge.view.View
+import com.soywiz.korge.view.texture
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.JvmStatic
+import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.vfs.IsoVfs
+import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.SizeInt
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
+import com.soywiz.kpspemu.format.Pbp
+import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.util.asVfsFile
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) = Main.main(args)
@@ -175,24 +183,26 @@ class KpspemuMainScene : Scene(), WithEmulator {
 			else -> applicationVfs["samples"].jail()
 		}
 
-		//val elfBytes = samplesFolder["minifire.elf"].readAll()
-		//val elfBytes = samplesFolder["HelloWorldPSP.elf"].readAll()
-		//val elfBytes = samplesFolder["rtctest.elf"].readAll()
-		val elfBytes = samplesFolder["compilerPerf.elf"].readAll()
-		//val elfBytes = samplesFolder["cube.elf"].readAll()
-		//val elfBytes = samplesFolder["ortho.elf"].readAll()
-		//val elfBytes = samplesFolder["mytest.elf"].readAll()
-		//val elfBytes = samplesFolder["counter.elf"].readAll()
-		//val elfBytes = samplesFolder["controller.elf"].readAll()
-		//val elfBytes = samplesFolder["fputest.elf"].readAll()
-		//val elfBytes = samplesFolder["lines.elf"].readAll()
-		//val elfBytes = samplesFolder["polyphonic.elf"].readAll()
+		//val exeFile = samplesFolder["minifire.elf"]
+		//val exeFile = samplesFolder["HelloWorldPSP.elf"]
+		//val exeFile = samplesFolder["rtctest.elf"]
+		//val exeFile = samplesFolder["compilerPerf.elf"]
+		//val exeFile = samplesFolder["cube.elf"]
+		//val exeFile = samplesFolder["ortho.elf"]
+		//val exeFile = samplesFolder["mytest.elf"]
+		//val exeFile = samplesFolder["counter.elf"]
+		//val exeFile = samplesFolder["controller.elf"]
+		//val exeFile = samplesFolder["fputest.elf"]
+		//val exeFile = samplesFolder["lines.elf"]
+		//val exeFile = samplesFolder["lines.pbp"]
+		//val exeFile = samplesFolder["polyphonic.elf"]
+		val exeFile = samplesFolder["cube.iso"]
 
 		val renderView = KorgeRenderer(this)
 
 		emulator = Emulator(mem = Memory(), gpuRenderer = renderView).apply {
 			registerNativeModules()
-			loadElfAndSetRegisters(elfBytes.openSync())
+			loadExecutableAndStart(exeFile)
 			//threadManager.trace("_start")
 			//threadManager.trace("user_main")
 		}
@@ -266,5 +276,21 @@ private fun PrimitiveType.toAg(): AG.DrawType = when (this) {
 	PrimitiveType.SPRITES -> {
 		//invalidOp("Can't handle sprite primitives")
 		AG.DrawType.TRIANGLES
+	}
+}
+
+suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
+	when (file.extensionLC) {
+		"pbp" -> return loadExecutableAndStart(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
+		"elf", "prx", "bin" -> return loadElfAndSetRegisters(file.readAll().openSync())
+		"iso" -> {
+			val iso = IsoVfs(file)
+			val paramSfo = iso["PSP_GAME/PARAM.SFO"]
+			val bootBin = iso["PSP_GAME/SYSDIR/BOOT.BIN"]
+			return loadExecutableAndStart(bootBin)
+		}
+		else -> {
+			invalidOp("Don't know how to load executable file $file")
+		}
 	}
 }
