@@ -23,6 +23,7 @@ var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
 	var _R = IntArray(32)
 	var _F = com.soywiz.korio.mem.FastMemory.alloc(32 * 4)
+	val _VFPR = com.soywiz.korio.mem.FastMemory.alloc(128 * 4)
 
 	var fcr0: Int = 0x00003351
 	var fcr25: Int = 0
@@ -120,6 +121,12 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	fun setFpr(index: Int, v: Float): Unit = run { _F.setAlignedFloat32(index, v) }
 	fun getFprI(index: Int): Int = _F.getAlignedInt32(index)
 	fun setFprI(index: Int, v: Int): Unit = run { _F.setAlignedInt32(index, v) }
+
+	fun setVfpr(index: Int, value: Float) = _VFPR.setAlignedFloat32(index, value)
+	fun getVfpr(index: Int): Float = _VFPR.getAlignedFloat32(index)
+
+	fun setVfprI(index: Int, value: Int) = _VFPR.setAlignedInt32(index, value)
+	fun getVfprI(index: Int): Int = _VFPR.getAlignedInt32(index)
 
 	class Gpr(val state: CpuState) {
 		operator fun get(index: Int): Int = state.getGpr(index)

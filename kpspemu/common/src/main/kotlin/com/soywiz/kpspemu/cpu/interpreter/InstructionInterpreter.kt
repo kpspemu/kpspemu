@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
 import com.soywiz.korio.lang.Console
+import com.soywiz.korio.lang.Debugger
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
@@ -9,6 +10,7 @@ import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.util.*
+import kotlin.math.sqrt
 
 class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
@@ -263,6 +265,10 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		}
 	}
 
+	override fun vmzero(s: CpuState) = s { setMatrix(getMatrixRegsVD(IR.vd)) { c, r, _ -> 0f } }
+	override fun lvl_q(s: CpuState) = unimplemented(s, Instructions.lvl_q)
+	override fun lvr_q(s: CpuState) = unimplemented(s, Instructions.lvr_q)
+
 	// Missing
 
 	override fun ll(s: CpuState) = unimplemented(s, Instructions.ll)
@@ -286,8 +292,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun mtvc(s: CpuState) = unimplemented(s, Instructions.mtvc)
 	override fun lv_s(s: CpuState) = unimplemented(s, Instructions.lv_s)
 	override fun lv_q(s: CpuState) = unimplemented(s, Instructions.lv_q)
-	override fun lvl_q(s: CpuState) = unimplemented(s, Instructions.lvl_q)
-	override fun lvr_q(s: CpuState) = unimplemented(s, Instructions.lvr_q)
 	override fun sv_q(s: CpuState) = unimplemented(s, Instructions.sv_q)
 	override fun vdot(s: CpuState) = unimplemented(s, Instructions.vdot)
 	override fun vscl(s: CpuState) = unimplemented(s, Instructions.vscl)
@@ -339,7 +343,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vmidt(s: CpuState) = unimplemented(s, Instructions.vmidt)
 	override fun viim(s: CpuState) = unimplemented(s, Instructions.viim)
 	override fun vmmov(s: CpuState) = unimplemented(s, Instructions.vmmov)
-	override fun vmzero(s: CpuState) = unimplemented(s, Instructions.vmzero)
 	override fun vmone(s: CpuState) = unimplemented(s, Instructions.vmone)
 	override fun vnop(s: CpuState) = unimplemented(s, Instructions.vnop)
 	override fun vsync(s: CpuState) = unimplemented(s, Instructions.vsync)
@@ -397,5 +400,54 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bvt(s: CpuState) = unimplemented(s, Instructions.bvt)
 	override fun bvfl(s: CpuState) = unimplemented(s, Instructions.bvfl)
 	override fun bvtl(s: CpuState) = unimplemented(s, Instructions.bvtl)
+
+	// Vectorial utilities
+
+	object VectorSize { val Single = 1; val Pair = 2; val Triple = 3; val Quad = 4; }
+	object MatrixSize { val M_2x2 = 2; val M_3x3 = 3;val M_4x4 = 4; }
+
+	// VFPU
+	fun getMatrixRegs(matrixReg: Int, N: Int): IntArray {
+		val mtx = (matrixReg ushr 2) and 7
+		val col = matrixReg and 3
+
+		var row = 0
+		var side = 0
+
+		when (N) {
+			MatrixSize.M_2x2 -> {row = (matrixReg ushr 5) and 2; side = 2; }
+			MatrixSize.M_3x3 -> {row = (matrixReg ushr 6) and 1; side = 3; }
+			MatrixSize.M_4x4 -> {row = (matrixReg ushr 5) and 2; side = 4; }
+			else -> Debugger.enterDebugger()
+		}
+
+		val transpose = ((matrixReg ushr 5) and 1) != 0
+
+		val regs = IntArray(side * side)
+		for (i in 0 until side) {
+			for (j  in 0 until side) {
+				var index = mtx * 4
+				if (transpose) {
+					index += ((row + i) and 3) + ((col + j) and 3) * 32
+				} else {
+					index += ((col + j) and 3) + ((row + i) and 3) * 32
+				}
+				regs[j * side + i] = index
+			}
+		}
+		return regs
+	}
+
+	fun getMatrixRegsVD(IR: Int) = getMatrixRegs(IR.vd, IR.one_two)
+
+	fun CpuState.setMatrix(leftList: IntArray, generator: (column: Int, row: Int, index: Int) -> Float) {
+		val side = sqrt(leftList.size.toDouble()).toInt()
+		var n = 0
+		for (i in 0 until side) {
+			for (j in 0 until side) {
+				setVfpr(leftList[n++], generator(j, i, n))
+			}
+		}
+	}
 }
 

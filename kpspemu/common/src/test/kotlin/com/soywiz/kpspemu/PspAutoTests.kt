@@ -78,6 +78,8 @@ class PspAutoTests {
 		"Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^"
 	))
 
+	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
+
 	//@Test fun testFpuFpu() = testFile("cpu/fpu/fpu")
 	//@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
 	//@Test fun testCpuBranch2() = testFile("cpu/cpu_alu/cpu_branch2")
