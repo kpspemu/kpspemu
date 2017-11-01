@@ -1,14 +1,11 @@
 package com.soywiz.kpspemu.hle
 
 import com.soywiz.korio.async.Promise
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.async.go
 import com.soywiz.korio.coroutine.Continuation
-import com.soywiz.korio.coroutine.korioStartCoroutine
-import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.coroutineContext
@@ -37,6 +34,12 @@ class RegisterReader {
 	val thread: PspThread get() = cpu.thread
 	val mem: Memory get() = cpu.mem
 	val int: Int get() = this.cpu.GPR[pos++]
+	val long: Long get() {
+		pos = pos.nextAlignedTo(2) // Ensure register alignment
+		val low = this.cpu.GPR[pos++]
+		val high = this.cpu.GPR[pos++]
+		return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
+	}
 	val ptr: Ptr get() = MemPtr(mem, int)
 	val str: String? get() = mem.readStringzOrNull(int)
 }
@@ -120,6 +123,33 @@ abstract class SceModule(
 
 				override fun resume(value: Int) {
 					cpu.r2 = value
+					completed = true
+					it.thread.resume()
+				}
+
+				override fun resumeWithException(exception: Throwable) {
+					exception.printStackTrace()
+					throw exception
+				}
+			})
+
+			if (!completed) {
+				it.thread.markWaiting(WaitObject.PROMISE(Promise()), cb = cb)
+				threadManager.suspend()
+			}
+		}
+	}
+
+	protected fun registerFunctionSuspendLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Long) {
+		registerFunctionRR(name, uid, since, syscall) {
+			val mfunction: suspend (RegisterReader) -> Long = { function(it, it.cpu) }
+			var completed = false
+			mfunction.startCoroutine(this, object : Continuation<Long> {
+				override val context: CoroutineContext = coroutineContext
+
+				override fun resume(value: Long) {
+					cpu.r3 = (value ushr 0).toInt() // @TODO: Verify
+					cpu.r2 = (value ushr 32).toInt() // @TODO: Verify
 					completed = true
 					it.thread.resume()
 				}

@@ -1,22 +1,41 @@
 package com.soywiz.kpspemu.hle.modules
 
 
+import com.soywiz.korio.async.sleep
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.mem.Ptr
 
 
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
+	object AudioFormat {
+		val Stereo = 0x00
+		val Mono = 0x10
+	}
+
+	fun sceAudioChReserve(channelId: Int, sampleCount: Int, audioFormat: Int): Int {
+		logger.info("WIP: sceAudioChReserve")
+		return 0
+	}
+
+	suspend fun sceAudioOutputPannedBlocking(channelId: Int, leftVolume: Int, rightVolume: Int, ptr: Ptr): Int {
+		logger.info("WIP: sceAudioOutputPannedBlocking")
+		getCoroutineContext().sleep(10)
+		return 0
+	}
+
+	fun sceAudioChReserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EC81C55)
+
 	fun sceAudioOutput2Reserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x01562BA3)
 	fun sceAudioInputBlocking(cpu: CpuState): Unit = UNIMPLEMENTED(0x086E5895)
 	fun sceAudioOutputBlocking(cpu: CpuState): Unit = UNIMPLEMENTED(0x136CAF51)
-	fun sceAudioOutputPannedBlocking(cpu: CpuState): Unit = UNIMPLEMENTED(0x13F592BC)
 	fun sceAudioOutput2OutputBlocking(cpu: CpuState): Unit = UNIMPLEMENTED(0x2D53F36E)
 	fun sceAudioSRCChReserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x38553111)
 	fun sceAudioOneshotOutput(cpu: CpuState): Unit = UNIMPLEMENTED(0x41EFADE7)
 	fun sceAudioOutput2Release(cpu: CpuState): Unit = UNIMPLEMENTED(0x43196845)
 	fun sceAudioSRCChRelease(cpu: CpuState): Unit = UNIMPLEMENTED(0x5C37C0AE)
-	fun sceAudioChReserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EC81C55)
 	fun sceAudioOutput2ChangeLength(cpu: CpuState): Unit = UNIMPLEMENTED(0x63F2889C)
 	fun sceAudioOutput2GetRestSample(cpu: CpuState): Unit = UNIMPLEMENTED(0x647CEF33)
 	fun sceAudioInput(cpu: CpuState): Unit = UNIMPLEMENTED(0x6D4BEC68)
@@ -37,16 +56,17 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 
 
 	override fun registerModule() {
+		registerFunctionInt("sceAudioChReserve", 0x5EC81C55, since = 150) { sceAudioChReserve(int, int, int) }
+		registerFunctionSuspendInt("sceAudioOutputPannedBlocking", 0x13F592BC, since = 150) { sceAudioOutputPannedBlocking(int, int, int, ptr) }
+
 		registerFunctionRaw("sceAudioOutput2Reserve", 0x01562BA3, since = 150) { sceAudioOutput2Reserve(it) }
 		registerFunctionRaw("sceAudioInputBlocking", 0x086E5895, since = 150) { sceAudioInputBlocking(it) }
 		registerFunctionRaw("sceAudioOutputBlocking", 0x136CAF51, since = 150) { sceAudioOutputBlocking(it) }
-		registerFunctionRaw("sceAudioOutputPannedBlocking", 0x13F592BC, since = 150) { sceAudioOutputPannedBlocking(it) }
 		registerFunctionRaw("sceAudioOutput2OutputBlocking", 0x2D53F36E, since = 150) { sceAudioOutput2OutputBlocking(it) }
 		registerFunctionRaw("sceAudioSRCChReserve", 0x38553111, since = 150) { sceAudioSRCChReserve(it) }
 		registerFunctionRaw("sceAudioOneshotOutput", 0x41EFADE7, since = 150) { sceAudioOneshotOutput(it) }
 		registerFunctionRaw("sceAudioOutput2Release", 0x43196845, since = 150) { sceAudioOutput2Release(it) }
 		registerFunctionRaw("sceAudioSRCChRelease", 0x5C37C0AE, since = 150) { sceAudioSRCChRelease(it) }
-		registerFunctionRaw("sceAudioChReserve", 0x5EC81C55, since = 150) { sceAudioChReserve(it) }
 		registerFunctionRaw("sceAudioOutput2ChangeLength", 0x63F2889C, since = 150) { sceAudioOutput2ChangeLength(it) }
 		registerFunctionRaw("sceAudioOutput2GetRestSample", 0x647CEF33, since = 150) { sceAudioOutput2GetRestSample(it) }
 		registerFunctionRaw("sceAudioInput", 0x6D4BEC68, since = 150) { sceAudioInput(it) }

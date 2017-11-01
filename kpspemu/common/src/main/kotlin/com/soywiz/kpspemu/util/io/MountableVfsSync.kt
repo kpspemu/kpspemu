@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu.util
+package com.soywiz.kpspemu.util.io
 
 import com.soywiz.korio.FileNotFoundException
 import com.soywiz.korio.vfs.Vfs

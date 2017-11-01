@@ -4,6 +4,7 @@ import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
+import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuBreakException
 import com.soywiz.kpspemu.cpu.CpuState
@@ -126,19 +127,19 @@ class PspThread internal constructor(
 	}
 
 	fun putDataInStack(bytes: ByteArray): Ptr {
-		state.SP -= bytes.size
+		state.SP -= bytes.size.nextAlignedTo(16)
 		mem.write(state.SP, bytes)
 		return mem.ptr(state.SP)
 	}
 
 	fun putWordInStack(word: Int): Ptr {
-		state.SP -= 4
+		state.SP -= 4.nextAlignedTo(16)
 		mem.sw(state.SP, word)
 		return mem.ptr(state.SP)
 	}
 
 	fun putWordsInStack(vararg words: Int): Ptr {
-		state.SP -= words.size * 4
+		state.SP -= (words.size * 4).nextAlignedTo(16)
 		for (n in 0 until words.size) mem.sw(state.SP + n * 4, words[n])
 		return mem.ptr(state.SP)
 	}

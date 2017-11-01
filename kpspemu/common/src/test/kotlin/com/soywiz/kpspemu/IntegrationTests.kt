@@ -49,7 +49,7 @@ class IntegrationTests {
 		val emulator = Emulator(getCoroutineContext())
 		emulator.display.exposeDisplay = false
 		emulator.registerNativeModules()
-		val info = emulator.loadElfAndSetRegisters(elf)
+		val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
 
 		if (TRACE) {
 			emulator.threadManager.trace("user_main", trace = true)

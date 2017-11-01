@@ -1,8 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
 
+import com.soywiz.korio.FileNotFoundException
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
 import com.soywiz.korio.lang.use
 import com.soywiz.korio.stream.AsyncStream
@@ -14,7 +16,9 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.deviceManager
 import com.soywiz.kpspemu.display
+import com.soywiz.kpspemu.fileManager
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.error.SceKernelErrors
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
@@ -34,15 +38,10 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		const val EMULATOR_DEVCTL__EMIT_SCREENSHOT = 0x00000020
 	}
 
-	class FileDescriptor(override val id: Int) : ResourceItem {
-		lateinit var file: VfsFile
-		lateinit var stream: AsyncStream
-	}
-
-	val fileDescriptors = ResourceList<FileDescriptor>("FileDescriptor") { FileDescriptor(it) }
+	val fileDescriptors get() = emulator.fileManager.fileDescriptors
 
 	private fun _resolve(path: String): VfsFile {
-		val resolved = deviceManager.resolve(path)
+		val resolved = fileManager.resolve(path)
 		logger.error { "resolved:$resolved" }
 		return resolved
 	}
@@ -80,16 +79,22 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoOpen(fileName: String?, flags: Int, mode: Int): Int {
 		logger.error("WIP: sceIoOpen: $fileName, $flags, $mode")
-		val file = fileDescriptors.alloc()
-		file.file = resolve(fileName)
-		val flags2 = when {
-			(flags and FileOpenFlags.Truncate) != 0 -> VfsOpenMode.CREATE_OR_TRUNCATE
-			(flags and FileOpenFlags.Create) != 0 -> VfsOpenMode.CREATE
-			(flags and FileOpenFlags.Write) != 0 -> VfsOpenMode.WRITE
-			else -> VfsOpenMode.READ
+		try {
+			val file = fileDescriptors.alloc()
+			file.file = resolve(fileName)
+			val flags2 = when {
+				(flags and FileOpenFlags.Truncate) != 0 -> VfsOpenMode.CREATE_OR_TRUNCATE
+				(flags and FileOpenFlags.Create) != 0 -> VfsOpenMode.CREATE
+				(flags and FileOpenFlags.Write) != 0 -> VfsOpenMode.WRITE
+				else -> VfsOpenMode.READ
+			}
+			file.stream = file.file.open(flags2)
+			return file.id
+		} catch (e: Throwable) {
+			println("Error openingfile: $fileName")
+			e.printStackTrace()
+			return SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND
 		}
-		file.stream = file.file.open(flags2)
-		return file.id
 	}
 
 	class SceIoStat(
@@ -167,6 +172,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoWrite(fileId: Int, ptr: Ptr, size: Int): Int {
 		logger.error("WIP: sceIoWrite: $fileId, $ptr, $size")
+		//println("----> " + ptr.readBytes(size).toString(UTF8))
+
+		val stream = fileDescriptors[fileId].stream
+		val bytes = ptr.readBytes(size)
+		stream.write(bytes)
+
 		return 0
 	}
 
@@ -273,7 +284,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		// Files
 		registerFunctionSuspendInt("sceIoOpen", 0x109F50BC, since = 150) { sceIoOpen(str, int, int) }
 		registerFunctionSuspendInt("sceIoLseek32", 0x68963324, since = 150) { sceIoLseek32(int, int, int) }
-		//registerFunctionSuspendLong("sceIoLseek", 0x27EB27B8, since = 150) { sceIoLseek(int, long, int) }
+		registerFunctionSuspendLong("sceIoLseek", 0x27EB27B8, since = 150) { sceIoLseek(int, long, int) }
 		registerFunctionSuspendInt("sceIoWrite", 0x42EC03AC, since = 150) { sceIoWrite(int, ptr, int) }
 		registerFunctionSuspendInt("sceIoRead", 0x6A638D83, since = 150) { sceIoRead(int, ptr, int) }
 		registerFunctionSuspendInt("sceIoClose", 0x810C4BC3, since = 150) { sceIoClose(int) }

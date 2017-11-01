@@ -31,7 +31,7 @@ class Emulator(
 	val callbackManager = CallbackManager(this)
 	val timeManager = TimeManager(this)
 	val controller = PspController(this)
-	val startThread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
+	val fileManager = FileManager(this)
 
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
 
@@ -45,6 +45,10 @@ class Emulator(
 
 	fun invalidateIcache(ptr: Int, size: Int) {
 		logger.trace { "invalidateIcache(${ptr.hex}, $size)" }
+	}
+
+	fun invalidateDcache(ptr: Int, size: Int) {
+		logger.trace { "invalidateDcache()" }
 	}
 }
 
@@ -61,6 +65,7 @@ val WithEmulator.display: PspDisplay get() = emulator.display
 val WithEmulator.deviceManager: DeviceManager get() = emulator.deviceManager
 val WithEmulator.memoryManager: MemoryManager get() = emulator.memoryManager
 val WithEmulator.timeManager: TimeManager get() = emulator.timeManager
+val WithEmulator.fileManager: FileManager get() = emulator.fileManager
 val WithEmulator.rtc: TimeManager get() = emulator.timeManager
 val WithEmulator.threadManager: ThreadManager get() = emulator.threadManager
 val WithEmulator.callbackManager: CallbackManager get() = emulator.callbackManager

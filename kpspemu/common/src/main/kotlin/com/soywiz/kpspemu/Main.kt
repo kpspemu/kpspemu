@@ -30,8 +30,8 @@ import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.asVfsFile
-import com.soywiz.kpspemu.util.setAlpha
+import com.soywiz.kpspemu.util.*
+import com.soywiz.kpspemu.util.io.ZipVfs2
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) = Main.main(args)
@@ -55,6 +55,8 @@ class KpspemuMainScene : Scene(), WithEmulator {
 	lateinit override var emulator: Emulator
 
 	class KorgeRenderer(val scene: KpspemuMainScene) : View(scene.views), GpuRenderer, WithEmulator {
+		val logger = PspLogger("KorgeRenderer")
+
 		override val emulator: Emulator get() = scene.emulator
 		val batchesQueue = arrayListOf<List<GeBatch>>()
 
@@ -130,7 +132,10 @@ class KpspemuMainScene : Scene(), WithEmulator {
 						ag.drawBmp(tempBmp)
 						//ag.clear(Colors.BLUE) // @TODO: Remove this
 
+						//println(batchesQueue)
+						//println(batchesQueue.size)
 						for (batches in batchesQueue) {
+							//println(batches.size)
 							for (batch in batches) {
 								if (indexBuffer == null) indexBuffer = ag.createIndexBuffer()
 								if (vertexBuffer == null) vertexBuffer = ag.createVertexBuffer()
@@ -138,15 +143,19 @@ class KpspemuMainScene : Scene(), WithEmulator {
 								indexBuffer!!.upload(batch.indices)
 								vertexBuffer!!.upload(batch.vertices)
 
-								//println("----------------")
-								//println("indices: ${batch.indices.toList()}")
-								//println("primitive: ${batch.primType.toAg()}")
-								//println("vertexCount: ${batch.vertexCount}")
-								//println("vertexType: ${batch.state.vertexType.hex}")
-								//println("vertices: ${batch.vertices.hex}")
-								//println("matrix: ${batch.modelViewProjMatrix}")
-								//val vr = VertexReader()
-								//println(vr.read(batch.vtype, batch.vertices.size / batch.vtype.size(), batch.vertices.openSync()))
+								//logger.level = PspLogLevel.TRACE
+								logger.trace { "----------------" }
+								logger.trace { "indices: ${batch.indices.toList()}" }
+								logger.trace { "primitive: ${batch.primType.toAg()}" }
+								logger.trace { "vertexCount: ${batch.vertexCount}" }
+								logger.trace { "vertexType: ${batch.state.vertexType.hex}" }
+								logger.trace { "vertices: ${batch.vertices.hex}" }
+								logger.trace { "matrix: ${batch.modelViewProjMatrix}" }
+
+								logger.trace {
+									val vr = VertexReader()
+									"" + vr.read(batch.vtype, batch.vertices.size / batch.vtype.size(), batch.vertices.openSync())
+								}
 
 								val pl = getProgramLayout(batch.state)
 								ag.draw(
@@ -204,10 +213,15 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val exeFile = samplesFolder["lines.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
 		//val exeFile = samplesFolder["cube.iso"]
+		val exeFile = samplesFolder["lights.pbp"]
 		//val exeFile = samplesFolder["cwd.elf"]
 		//val exeFile = samplesFolder["nehetutorial03.pbp"]
+		//val exeFile = samplesFolder["polyphonic.elf"]
+		//val exeFile = samplesFolder["text.elf"]
 		//val exeFile = samplesFolder["cavestory.iso"]
-		val exeFile = samplesFolder["TrigWars.iso"]
+		//val exeFile = samplesFolder["cavestory.zip"]
+		//val exeFile = samplesFolder["TrigWars.iso"]
+		//val exeFile = samplesFolder["TrigWars.zip"]
 
 		val renderView = KorgeRenderer(this)
 
@@ -287,10 +301,14 @@ private fun PrimitiveType.toAg(): AG.DrawType = when (this) {
 
 suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 	when (file.extensionLC) {
-		"pbp" -> return loadExecutableAndStart(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
 		"elf", "prx", "bin" -> return loadElfAndSetRegisters(file.readAll().openSync())
-		"iso" -> {
-			val iso = IsoVfs(file)
+		"pbp" -> return loadExecutableAndStart(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
+		"iso", "zip" -> {
+			val iso = when (file.extensionLC) {
+				"iso" -> IsoVfs(file)
+				"zip" -> ZipVfs2(file.open(), file)
+				else -> invalidOp("UNEXPECTED")
+			}
 			val paramSfo = iso["PSP_GAME/PARAM.SFO"]
 
 			val files = listOf(
@@ -299,13 +317,15 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 				iso["EBOOT.PBP"]
 			)
 
-			for (file in files) {
-				if (file.exists()) {
-					if (file.parent.path.isEmpty()) {
-						deviceManager.currentDirectory = "ms0:/PSP/GAME/app"
-						deviceManager.mount(deviceManager.currentDirectory, iso)
+			for (f in files) {
+				if (f.exists()) {
+					if (f.parent.path.isEmpty()) {
+						fileManager.currentDirectory = "umd0:/"
+						deviceManager.mount(fileManager.currentDirectory, iso)
+						deviceManager.mount("game0:/", iso)
+						deviceManager.mount("umd0:/", iso)
 					}
-					return loadExecutableAndStart(file)
+					return loadExecutableAndStart(f)
 				}
 			}
 			invalidOp("Can't find any possible executalbe in ISO ($files)")

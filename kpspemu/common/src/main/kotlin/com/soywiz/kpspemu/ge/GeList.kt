@@ -1,13 +1,20 @@
 package com.soywiz.kpspemu.ge
 
+import com.soywiz.korge.log.Logger
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.util.extract
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.callbackManager
 import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.util.PspLogLevel
+import com.soywiz.kpspemu.util.PspLogger
 import com.soywiz.kpspemu.util.ResourceItem
+import com.soywiz.kpspemu.util.hex
 
 class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by ge {
+	val logger = PspLogger("GeList")
+
 	var start: Int = 0
 	var stall: Int = 0
 	var callback: GeCallback = GeCallback(-1)
@@ -34,10 +41,13 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 
 	fun run() {
 		val mem = this.mem
+		PC = PC and Memory.MASK
+		stall = stall and Memory.MASK
 		//println("GeList[$id].run: completed=$completed, PC=${PC.hexx}, stall=${stall.hexx}")
 		while (!completed && !isStalled) {
-			step(mem.lw(PC))
+			val cPC = PC
 			PC += 4
+			step(cPC, mem.lw(cPC))
 		}
 		if (isStalled) phase = ListSyncKind.STALL_REACHED
 		if (completed) {
@@ -46,9 +56,11 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 		}
 	}
 
-	fun step(i: Int) {
+	fun step(cPC: Int, i: Int) {
 		val op: Int = i ushr 24
 		val p: Int = i and 0xFFFFFF
+		//logger.level = PspLogLevel.TRACE
+		logger.trace { "GE: ${cPC.hex}-${stall.hex}: ${op.hex}" }
 		when (op) {
 			Op.PRIM -> prim(p)
 			Op.BEZIER -> {
@@ -59,29 +71,32 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 				bb.flush()
 				completed = true
 			}
-			Op.TFLUSH -> bb.tflush()
+			Op.TFLUSH -> {
+				bb.tflush()
+				bb.flush()
+			}
 			Op.TSYNC -> bb.tsync()
 			Op.NOP -> {
-				println("NOP")
+				//println("GE: NOP")
+				Unit
 			}
 			Op.DUMMY -> {
-				println("DUMMY")
+				//println("GE: DUMMY")
+				Unit
 			}
 			Op.JUMP, Op.CALL -> {
 				if (op == Op.CALL) {
-					callstack[callstackIndex++] = PC + 4
+					callstack[callstackIndex++] = PC
 					callstack[callstackIndex++] = (state.baseOffset ushr 2)
 				}
-				PC = state.baseAddress + p and 0b11.inv()
+				PC = (state.baseAddress + p and 0b11.inv()) and Memory.MASK
 			}
 			Op.RET -> {
 				TODO("RET")
 			}
 			Op.FINISH -> finish(p)
 			Op.SIGNAL -> signal(p)
-			Op.BASE, Op.IADDR, Op.VADDR, Op.OFFSETADDR -> {
-				// Do not invalidate prim
-			}
+			Op.BASE, Op.IADDR, Op.VADDR, Op.OFFSETADDR -> Unit // Do not invalidate prim
 			Op.PROJMATRIXDATA -> state.writeInt(Op.PROJMATRIXNUMBER, Op.MAT_PROJ, p)
 			Op.VIEWMATRIXDATA -> state.writeInt(Op.VIEWMATRIXNUMBER, Op.MAT_VIEW, p)
 			Op.WORLDMATRIXDATA -> state.writeInt(Op.WORLDMATRIXNUMBER, Op.MAT_WORLD, p)
@@ -98,6 +113,7 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 	private fun prim(p: Int): PrimAction {
 		val primitiveType = PrimitiveType(p.extract(16, 3))
 		val vertexCount: Int = p.extract(0, 16)
+		//println("PRIM: $primitiveType, $vertexCount")
 		bb.setVertexKind(primitiveType, state)
 		bb.addIndices(vertexCount)
 		return PrimAction.FLUSH_PRIM

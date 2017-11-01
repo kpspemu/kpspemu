@@ -5,6 +5,9 @@ import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.util.clamp
 
 class PspController(override val emulator: Emulator) : WithEmulator {
+	var samplingCycle: Int = 0
+	var samplingMode: Int = 0
+
 	var buttons: Int = 0
 	var lx: Int = 128
 	var ly: Int = 128

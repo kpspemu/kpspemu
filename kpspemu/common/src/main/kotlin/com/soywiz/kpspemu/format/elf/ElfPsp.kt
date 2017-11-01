@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.format.elf
 
 import com.soywiz.korio.lang.Debugger
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.lang.toByteArray
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
@@ -14,6 +15,7 @@ import com.soywiz.kpspemu.hle.manager.ModuleManager
 import com.soywiz.kpspemu.hle.manager.SyscallManager
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.openSync
+import com.soywiz.kpspemu.mem.ptr
 import com.soywiz.kpspemu.util.PspLogger
 import kotlin.math.max
 import kotlin.math.min
@@ -120,13 +122,23 @@ class InstructionReader(
 
 fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
 
-fun Emulator.loadElfAndSetRegisters(file: SyncStream): PspElf {
+fun Emulator.loadElfAndSetRegisters(file: SyncStream, path: String = "ms0:/PSP/GAME/EBOOT.PBP"): PspElf {
 	val elf = loadElf(file)
-	val state = startThread.state
+	val thread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
+
+	val argv = listOf<Int>(
+		thread.putDataInStack(path.toByteArray() + byteArrayOf(0)).addr
+	)
+	val argvp = thread.putWordsInStack(*argv.toIntArray())
+
+	thread.state.r4 = argv.size
+	thread.state.r5 = argvp.addr
+
+	val state = thread.state
 	state.setPC(elf.moduleInfo.PC)
 	state.GP = elf.moduleInfo.GP
 	//println("GP=${state.GP.hex}, PC=${state._PC.hex}")
-	startThread.start()
+	thread.start()
 	return elf
 }
 

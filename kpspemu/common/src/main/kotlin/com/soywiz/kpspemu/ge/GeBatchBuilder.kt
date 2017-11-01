@@ -18,6 +18,8 @@ class GeBatchBuilder(val ge: Ge) {
 	var indexBufferPos = 0
 
 	fun reset() {
+		//println("reset")
+		flush()
 		primBatchPrimitiveType = -1
 		primitiveType = null
 		vertexType.v = -1
@@ -40,6 +42,7 @@ class GeBatchBuilder(val ge: Ge) {
 	fun tsync() = Unit
 
 	fun flush() {
+		//println("flush: $indexBufferPos")
 		if (indexBufferPos > 0) {
 			ge.emitBatch(GeBatch(ge.state.clone(), primitiveType ?: PrimitiveType.TRIANGLES, indexBufferPos, vertexBuffer.copyOf(vertexBufferPos), indexBuffer.copyOf(indexBufferPos)))
 			vertexCount = 0
@@ -80,7 +83,6 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	fun addIndices(count: Int) {
-
 		//println("addIndices: size=$size, count=$count")
 		when (vertexType.index) {
 			IndexEnum.VOID -> {

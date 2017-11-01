@@ -26,12 +26,12 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 	}
 
 	fun sceCtrlSetSamplingCycle(samplingCycle: Int): Int {
-		println("TODO: sceCtrlSetSamplingCycle")
+		controller.samplingCycle = samplingCycle
 		return 0
 	}
 
 	fun sceCtrlSetSamplingMode(samplingMode: Int): Int {
-		println("TODO: sceCtrlSetSamplingMode")
+		controller.samplingMode = samplingMode
 		return 0
 	}
 

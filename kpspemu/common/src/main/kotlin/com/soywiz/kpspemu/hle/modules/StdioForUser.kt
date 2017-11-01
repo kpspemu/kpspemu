@@ -1,16 +1,44 @@
 package com.soywiz.kpspemu.hle.modules
 
 
+import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.toString
+import com.soywiz.korio.stream.AsyncStream
+import com.soywiz.korio.stream.AsyncStreamBase
+import com.soywiz.korio.stream.toAsyncStream
+import com.soywiz.korio.util.readByteArray
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.FileDescriptor
+import com.soywiz.kpspemu.util.asVfsFile
 
 
 @Suppress("UNUSED_PARAMETER")
 class StdioForUser(emulator: Emulator) : SceModule(emulator, "StdioForUser", 0x40010011, "iofilemgr.prx", "sceIOFileManager") {
-	fun sceKernelStdin(): Int = 1
-	fun sceKernelStdout(): Int = 2
-	fun sceKernelStderr(): Int = 3
+	val fileDescriptors get() = emulator.fileManager.fileDescriptors
+
+	class StdioStream(val id: Int) : AsyncStreamBase() {
+		suspend override fun close() = Unit
+		suspend override fun getLength(): Long = 0L
+		suspend override fun setLength(value: Long) = Unit
+
+		suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
+			TODO("Not implemented StdioStream.read")
+		}
+
+		suspend override fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {
+			print(buffer.readByteArray(offset, len).toString(UTF8))
+		}
+	}
+
+	private var stdin: FileDescriptor = fileDescriptors.alloc().apply { stream = StdioStream(1).toAsyncStream(); file = stream.asVfsFile("/dev/stdin") }
+	private var stdout: FileDescriptor = fileDescriptors.alloc().apply { stream = StdioStream(2).toAsyncStream(); file = stream.asVfsFile("/dev/stdout") }
+	private var stderr: FileDescriptor = fileDescriptors.alloc().apply { stream = StdioStream(3).toAsyncStream(); file = stream.asVfsFile("/dev/stderr") }
+
+	fun sceKernelStdin(): Int = stdin.id
+	fun sceKernelStdout(): Int = stdout.id
+	fun sceKernelStderr(): Int = stderr.id
 
 	fun sceKernelStdioLseek(cpu: CpuState): Unit = UNIMPLEMENTED(0x0CBB0571)
 	fun sceKernelStdioRead(cpu: CpuState): Unit = UNIMPLEMENTED(0x3054D478)
