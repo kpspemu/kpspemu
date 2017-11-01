@@ -11,7 +11,7 @@ object PspLoggerManager {
 	fun setLevel(name: String, level: PspLogLevel) = getLogger(name).apply { this.level = level }
 }
 
-enum class PspLogLevel(val index: Int) { NONE(0), ERROR(1), WARN(2), INFO(3), TRACE(4) }
+enum class PspLogLevel(val index: Int) { NONE(0), FATAL(1), ERROR(2), WARN(3), INFO(4), TRACE(5) }
 
 class PspLogger internal constructor(val name: String, val dummy: Boolean) {
 	companion object {
@@ -41,11 +41,13 @@ class PspLogger internal constructor(val name: String, val dummy: Boolean) {
 		}
 	}
 
+	fun fatal(msg: String) = log(PspLogLevel.FATAL) { msg }
 	fun error(msg: String) = log(PspLogLevel.ERROR) { msg }
 	fun warn(msg: String) = log(PspLogLevel.WARN) { msg }
 	fun info(msg: String) = log(PspLogLevel.INFO) { msg }
 	fun trace(msg: String) = log(PspLogLevel.TRACE) { msg }
 
+	inline fun fatal(msg: () -> String) = log(PspLogLevel.FATAL, msg)
 	inline fun error(msg: () -> String) = log(PspLogLevel.ERROR, msg)
 	inline fun warn(msg: () -> String) = log(PspLogLevel.WARN, msg)
 	inline fun info(msg: () -> String) = log(PspLogLevel.INFO, msg)

@@ -13,7 +13,7 @@ import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.quote
 import org.junit.Test
 
-class PspAutoTests {
+class IntegrationTests {
 	val TRACE = false
 
 	suspend fun testFile(elf: SyncStream, expected: String, ignores: List<String>, processor: (String) -> String = { it }) {
@@ -40,7 +40,7 @@ class PspAutoTests {
 			}
 		} catch (e: Throwable) {
 			Console.error("Partial output generated:")
-			Console.error(emulator.output.toString())
+			Console.error("'" + emulator.output.toString() + "'")
 			throw e
 		}
 
@@ -86,6 +86,8 @@ class PspAutoTests {
 	))
 
 	@Test fun testRtc() = testFile("rtc/rtc")
+
+	//@Test fun testThreadsK0() = testFile("threads/k0/k0")
 
 	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 

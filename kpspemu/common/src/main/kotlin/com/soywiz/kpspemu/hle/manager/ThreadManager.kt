@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.async.Promise
+import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
 import com.soywiz.kpspemu.*
@@ -13,7 +14,7 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.ptr
 import com.soywiz.kpspemu.util.PspLogger
 
-class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
+class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator) {
 	val threads get() = resourcesById.values
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
 
@@ -85,6 +86,7 @@ class PspThread internal constructor(
 	val attributes: Int,
 	val optionPtr: Ptr
 ) : Resource(threadManager, id, name), WithEmulator {
+	val onEnd = Signal<Unit>()
 	val logger = PspLogger("PspThread")
 
 	enum class Phase { STOPPED, RUNNING, WAITING, DELETED }
@@ -152,10 +154,14 @@ class PspThread internal constructor(
 	}
 
 	fun stop() {
-		phase = Phase.STOPPED
+		if (phase != Phase.STOPPED) {
+			phase = Phase.STOPPED
+			onEnd(Unit)
+		}
 	}
 
 	fun delete() {
+		stop()
 		phase = Phase.DELETED
 		manager.freeIds.free(id)
 		manager.resourcesById.remove(id)
