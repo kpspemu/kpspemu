@@ -54,8 +54,15 @@ class PspAutoTests {
 	@Test fun testIcache() = testFile("cpu/icache/icache")
 
 	@Test fun testFpu() = testFile("cpu/fpu/fpu") {
-		it.replace("mul.s 0.296558 * 62.000000, CAST_1 = 18.386576", "mul.s 0.296558 * 62.000000, CAST_1 = 18.386574")
+		it
+			.replace("mul.s 0.296558 * 62.000000, CAST_1 = 18.386576", "mul.s 0.296558 * 62.000000, CAST_1 = 18.386574")
 			.replace("mul.s 0.296558 * 62.000000, FLOOR_3 = 18.386576", "mul.s 0.296558 * 62.000000, FLOOR_3 = 18.386574")
+	}
+
+	@Test fun testFcr() = testFile("cpu/fpu/fcr") {
+		it
+			.replace("Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 00000000", "Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 0000300c")
+			.replace("Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 00000000", "Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 00001004")
 	}
 
 

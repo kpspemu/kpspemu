@@ -9,9 +9,6 @@ import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.util.*
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.round
 
 class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
@@ -206,17 +203,20 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun ceil_w_s(s: CpuState) = s { FD_I = MathFloat.ceil(FS) }
 	override fun floor_w_s(s: CpuState) = s { FD_I = MathFloat.floor(FS) }
 
-	override fun mov_s(s: CpuState) = s { FD = FS }
-	override fun add_s(s: CpuState) = s { FD = FS + FT }
-	override fun sub_s(s: CpuState) = s { FD = FS - FT }
-	override fun mul_s(s: CpuState) = s {
-		FD = FS * FT
-		if (fcr31_fs && MathFloat.isAlmostZero(FD)) FD = 0f
+	inline fun CpuState.checkNan(callback: CpuState.() -> Unit) = this.normal {
+		callback()
+		if (FD.isNaN()) fcr31 = fcr31 or 0x00010040
+		if (FD.isInfinite()) fcr31 = fcr31 or 0x00005014
 	}
-	override fun div_s(s: CpuState) = s { FD = FS / FT }
-	override fun neg_s(s: CpuState) = s { FD = -FS }
-	override fun abs_s(s: CpuState) = s { FD = kotlin.math.abs(FS) }
-	override fun sqrt_s(s: CpuState) = s { FD = kotlin.math.sqrt(FS) }
+
+	override fun mov_s(s: CpuState) = s.checkNan { FD = FS }
+	override fun add_s(s: CpuState) = s.checkNan { FD = FS + FT }
+	override fun sub_s(s: CpuState) = s.checkNan { FD = FS - FT }
+	override fun mul_s(s: CpuState) = s.checkNan { FD = FS * FT; if (fcr31_fs && FD.isAlmostZero()) FD = 0f }
+	override fun div_s(s: CpuState) = s.checkNan { FD = FS / FT }
+	override fun neg_s(s: CpuState) = s.checkNan { FD = -FS }
+	override fun abs_s(s: CpuState) = s.checkNan { FD = kotlin.math.abs(FS) }
+	override fun sqrt_s(s: CpuState) = s.checkNan { FD = kotlin.math.sqrt(FS) }
 
 	private inline fun CpuState._cu(callback: CpuState.() -> Boolean) = this { fcr31_cc = if (FS.isNaN() || FT.isNaN()) true else callback() }
 	private inline fun CpuState._co(callback: CpuState.() -> Boolean) = this { fcr31_cc = if (FS.isNaN() || FT.isNaN()) false else callback() }
@@ -239,8 +239,23 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun c_le_s(s: CpuState) = s._co { FS <= FT }
 	override fun c_ngt_s(s: CpuState) = s._cu { FS <= FT }
 
-	override fun cfc1(s: CpuState) = s { when (IR.rd) { 0 -> RT = fcr0; 31 -> RT = fcr31 } }
-	override fun ctc1(s: CpuState) = s { when (IR.rd) { 31 -> fcr31 = RT; } }
+	override fun cfc1(s: CpuState) = s {
+		when (IR.rd) {
+			0 -> RT = fcr0
+			25 -> RT = fcr25
+			26 -> RT = fcr26
+			27 -> RT = fcr27
+			28 -> RT = fcr28
+			31 -> RT = fcr31
+			else -> RT = -1
+		}
+	}
+
+	override fun ctc1(s: CpuState) = s {
+		when (IR.rd) {
+			31 -> updateFCR31(RT)
+		}
+	}
 
 	// Missing
 

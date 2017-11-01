@@ -24,14 +24,22 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 	var _R = IntArray(32)
 	var _F = com.soywiz.korio.mem.FastMemory.alloc(32 * 4)
 
-	var fcr0: Int = 0
-	var fcr31: Int = 0
+	var fcr0: Int = 0x00003351
+	var fcr25: Int = 0
+	var fcr26: Int = 0
+	var fcr27: Int = 0
+	var fcr28: Int = 0
+	var fcr31: Int = 0x00000e00
+
+	fun updateFCR31(value: Int) {
+		fcr31 = value and 0x0183FFFF
+	}
 
 	var fcr31_rm: Int set(value) = run { fcr31 = fcr31.insert(value, 0, 2) }; get() = fcr31.extract(0, 2)
 	var fcr31_2_21: Int set(value) = run { fcr31 = fcr31.insert(value, 2, 21) }; get() = fcr31.extract(2, 21)
-	var fcr31_25_7: Int set(value) = run { fcr31 = fcr31.insert(value, 25, 7) }; get() = fcr31.extract(25, 7)
 	var fcr31_cc: Boolean set(value) = run { fcr31 = fcr31.insert(value, 23) }; get() = fcr31.extract(23)
 	var fcr31_fs: Boolean set(value) = run { fcr31 = fcr31.insert(value, 24) }; get() = fcr31.extract(24)
+	var fcr31_25_7: Int set(value) = run { fcr31 = fcr31.insert(value, 25, 7) }; get() = fcr31.extract(25, 7)
 
 	var r0: Int; set(value) = Unit; get() = 0
 	var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]

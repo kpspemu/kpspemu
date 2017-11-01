@@ -51,6 +51,6 @@ object MathFloat {
 		if (value.isNanOrInfinite()) return handleCastInfinite(value)
 		return kotlin.math.ceil(value).toInt()
 	}
-
-	fun isAlmostZero(v: Float): Boolean = abs(v) <= 1e-19
 }
+
+fun Float.isAlmostZero(): Boolean = abs(this) <= 1e-19
