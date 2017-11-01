@@ -16,7 +16,7 @@ import com.soywiz.kpspemu.threadManager
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
 
-@Suppress("UNUSED_PARAMETER")
+@Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate")
 class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager") {
 	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): Int {
 		val thread = threadManager.create(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
@@ -40,10 +40,13 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		return 0
 	}
 
-	fun sceKernelSleepThreadCB(currentThread: PspThread): Int {
-		currentThread.suspend(WaitObject.SLEEP, cb = true)
+	fun _sceKernelSleepThread(currentThread: PspThread, cb: Boolean): Int {
+		currentThread.suspend(WaitObject.SLEEP, cb = cb)
 		return 0
 	}
+
+	fun sceKernelSleepThread(currentThread: PspThread): Int = _sceKernelSleepThread(currentThread, cb = false)
+	fun sceKernelSleepThreadCB(currentThread: PspThread): Int = _sceKernelSleepThread(currentThread, cb = true)
 
 	fun sceKernelGetThreadCurrentPriority(thread: PspThread): Int = thread.priority
 
@@ -108,7 +111,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelGetThreadExitStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x3B183E26)
 	fun sceKernelSignalSema(cpu: CpuState): Unit = UNIMPLEMENTED(0x3F53E640)
 	fun sceKernelWaitEventFlag(cpu: CpuState): Unit = UNIMPLEMENTED(0x402FCF22)
-
 	fun sceKernelReferLwMutexStatusByID(cpu: CpuState): Unit = UNIMPLEMENTED(0x4C145944)
 	fun sceKernelWaitSema(cpu: CpuState): Unit = UNIMPLEMENTED(0x4E3A1105)
 	fun sceKernelGetThreadStackFreeSize(cpu: CpuState): Unit = UNIMPLEMENTED(0x52089CA1)
@@ -217,8 +219,9 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		// Thread
 		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(str, int, int, int, int, ptr) }
 		registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(thread, int, int, ptr) }
-		registerFunctionInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
 		registerFunctionInt("sceKernelGetThreadCurrentPriority", 0x94AA61EE, since = 150) { sceKernelGetThreadCurrentPriority(thread) }
+		registerFunctionInt("sceKernelSleepThread", 0x9ACE131E, since = 150) { sceKernelSleepThread(thread) }
+		registerFunctionInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
 		registerFunctionInt("sceKernelDelayThreadCB", 0x68DA9E36, since = 150) { sceKernelDelayThreadCB(thread, int) }
 		registerFunctionInt("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(thread, int) }
 
@@ -308,7 +311,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelRotateThreadReadyQueue", 0x912354A7, since = 150) { sceKernelRotateThreadReadyQueue(it) }
 		registerFunctionRaw("sceKernelGetThreadmanIdList", 0x94416130, since = 150) { sceKernelGetThreadmanIdList(it) }
 		registerFunctionRaw("sceKernelSuspendThread", 0x9944F31F, since = 150) { sceKernelSuspendThread(it) }
-		registerFunctionRaw("sceKernelSleepThread", 0x9ACE131E, since = 150) { sceKernelSleepThread(it) }
 		registerFunctionRaw("sceKernelDeleteThread", 0x9FA03CD3, since = 150) { sceKernelDeleteThread(it) }
 		registerFunctionRaw("sceKernelReferEventFlagStatus", 0xA66B0120, since = 150) { sceKernelReferEventFlagStatus(it) }
 		registerFunctionRaw("sceKernelCancelFpl", 0xA8AA591F, since = 150) { sceKernelCancelFpl(it) }
