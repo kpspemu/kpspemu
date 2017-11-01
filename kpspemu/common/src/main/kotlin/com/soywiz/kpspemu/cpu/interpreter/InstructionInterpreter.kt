@@ -130,6 +130,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun lhu(s: CpuState) = s { RT = mem.lhu(RS_IMM16) }
 	override fun lw(s: CpuState) = s { RT = mem.lw(RS_IMM16) }
 
+	override fun lwl(s: CpuState) = s { RT = mem.lwl(RS_IMM16, RT) }
+	override fun lwr(s: CpuState) = s { RT = mem.lwr(RS_IMM16, RT) }
+
+	override fun swl(s: CpuState) = s { mem.swl(RS_IMM16, RT) }
+	override fun swr(s: CpuState) = s { mem.swr(RS_IMM16, RT) }
+
 	override fun sb(s: CpuState) = s { mem.sb(RS_IMM16, RT) }
 	override fun sh(s: CpuState) = s { mem.sh(RS_IMM16, RT) }
 	override fun sw(s: CpuState) = s { mem.sw(RS_IMM16, RT) }
@@ -259,10 +265,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Missing
 
-	override fun lwl(s: CpuState) = unimplemented(s, Instructions.lwl)
-	override fun lwr(s: CpuState) = unimplemented(s, Instructions.lwr)
-	override fun swl(s: CpuState) = unimplemented(s, Instructions.swl)
-	override fun swr(s: CpuState) = unimplemented(s, Instructions.swr)
 	override fun ll(s: CpuState) = unimplemented(s, Instructions.ll)
 	override fun sc(s: CpuState) = unimplemented(s, Instructions.sc)
 

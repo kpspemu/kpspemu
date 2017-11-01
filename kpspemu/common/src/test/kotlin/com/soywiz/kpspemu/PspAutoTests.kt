@@ -66,6 +66,8 @@ class PspAutoTests {
 
 	@Test fun testIcache() = testFile("cpu/icache/icache")
 
+	@Test fun testLsu() = testFile("cpu/lsu/lsu")
+
 	@Test fun testFpu() = testFile("cpu/fpu/fpu", ignores = listOf(
 		"mul.s 0.296558 * 62.000000, CAST_1 = 18.38657^",
 		"mul.s 0.296558 * 62.000000, FLOOR_3 = 18.38657^"
