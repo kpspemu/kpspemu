@@ -11,6 +11,7 @@ import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.util.hex
 import kotlin.math.max
 
+// struct PspGeContext { unsigned int context[512] }
 class GeState {
 	companion object {
 		const val STATE_NWORDS = 512

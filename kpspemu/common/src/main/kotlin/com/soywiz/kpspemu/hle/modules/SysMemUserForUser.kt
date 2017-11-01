@@ -40,6 +40,10 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 		return partition.part.low.toInt()
 	}
 
+	fun sceKernelMaxFreeMemSize(): Int {
+		return memoryManager.userPartition.getMaxContiguousFreeMemoryInt()
+	}
+
 	fun SysMemUserForUser_057E7380(cpu: CpuState): Unit = UNIMPLEMENTED(0x057E7380)
 	fun sceKernelPrintf(cpu: CpuState): Unit = UNIMPLEMENTED(0x13A5ABEF)
 	fun sceKernelQueryMemoryInfo(cpu: CpuState): Unit = UNIMPLEMENTED(0x2A3E5280)
@@ -49,7 +53,6 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 	fun SysMemUserForUser_50F61D8A(cpu: CpuState): Unit = UNIMPLEMENTED(0x50F61D8A)
 	fun sceKernelSetCompiledSdkVersion(cpu: CpuState): Unit = UNIMPLEMENTED(0x7591C7DB)
 	fun SysMemUserForUser_91DE343C(cpu: CpuState): Unit = UNIMPLEMENTED(0x91DE343C)
-	fun sceKernelMaxFreeMemSize(cpu: CpuState): Unit = UNIMPLEMENTED(0xA291F107)
 	fun SysMemUserForUser_A6848DF8(cpu: CpuState): Unit = UNIMPLEMENTED(0xA6848DF8)
 	fun SysMemUserForUser_ACBD88CA(cpu: CpuState): Unit = UNIMPLEMENTED(0xACBD88CA)
 	fun sceKernelFreePartitionMemory(cpu: CpuState): Unit = UNIMPLEMENTED(0xB6D61D02)
@@ -65,6 +68,7 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 	override fun registerModule() {
 		registerFunctionInt("sceKernelAllocPartitionMemory", 0x237DBD4F, since = 150) { sceKernelAllocPartitionMemory(int, str, int, int, int) }
 		registerFunctionInt("sceKernelGetBlockHeadAddr", 0x9D9A5BA1, since = 150) { sceKernelGetBlockHeadAddr(int) }
+		registerFunctionInt("sceKernelMaxFreeMemSize", 0xA291F107, since = 150) { sceKernelMaxFreeMemSize() }
 
 		registerFunctionRaw("SysMemUserForUser_057E7380", 0x057E7380, since = 150) { SysMemUserForUser_057E7380(it) }
 		registerFunctionRaw("sceKernelPrintf", 0x13A5ABEF, since = 150) { sceKernelPrintf(it) }
@@ -75,7 +79,6 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 		registerFunctionRaw("SysMemUserForUser_50F61D8A", 0x50F61D8A, since = 150) { SysMemUserForUser_50F61D8A(it) }
 		registerFunctionRaw("sceKernelSetCompiledSdkVersion", 0x7591C7DB, since = 150) { sceKernelSetCompiledSdkVersion(it) }
 		registerFunctionRaw("SysMemUserForUser_91DE343C", 0x91DE343C, since = 150) { SysMemUserForUser_91DE343C(it) }
-		registerFunctionRaw("sceKernelMaxFreeMemSize", 0xA291F107, since = 150) { sceKernelMaxFreeMemSize(it) }
 		registerFunctionRaw("SysMemUserForUser_A6848DF8", 0xA6848DF8, since = 150) { SysMemUserForUser_A6848DF8(it) }
 		registerFunctionRaw("SysMemUserForUser_ACBD88CA", 0xACBD88CA, since = 150) { SysMemUserForUser_ACBD88CA(it) }
 		registerFunctionRaw("sceKernelFreePartitionMemory", 0xB6D61D02, since = 150) { sceKernelFreePartitionMemory(it) }

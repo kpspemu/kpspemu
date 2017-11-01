@@ -31,6 +31,7 @@ import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.asVfsFile
+import com.soywiz.kpspemu.util.setAlpha
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) = Main.main(args)
@@ -169,6 +170,12 @@ class KpspemuMainScene : Scene(), WithEmulator {
 				}
 			}
 
+			if (display.rawDisplay) {
+				display.decodeToBitmap32(display.bmp)
+				display.bmp.setAlpha(0xFF)
+				scene.tex.update(display.bmp)
+			}
+
 			ctx.batch.drawQuad(scene.tex, m = m, blendFactors = AG.Blending.NONE, filtering = false)
 			//ctx.ag.drawBmp(display.bmp)
 		}
@@ -196,8 +203,10 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val exeFile = samplesFolder["lines.elf"]
 		//val exeFile = samplesFolder["lines.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
-		val exeFile = samplesFolder["cube.iso"]
+		//val exeFile = samplesFolder["cube.iso"]
 		//val exeFile = samplesFolder["cwd.elf"]
+		//val exeFile = samplesFolder["nehetutorial03.pbp"]
+		val exeFile = samplesFolder["cavestory.iso"]
 
 		val renderView = KorgeRenderer(this)
 
@@ -218,11 +227,6 @@ class KpspemuMainScene : Scene(), WithEmulator {
 				} catch (e: Throwable) {
 					e.printStackTrace()
 					running = false
-				}
-
-				if (display.rawDisplay) {
-					display.decodeToBitmap32(display.bmp)
-					tex.update(display.bmp)
 				}
 			} else {
 				if (!ended) {
@@ -287,8 +291,19 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 		"iso" -> {
 			val iso = IsoVfs(file)
 			val paramSfo = iso["PSP_GAME/PARAM.SFO"]
-			val bootBin = iso["PSP_GAME/SYSDIR/BOOT.BIN"]
-			return loadExecutableAndStart(bootBin)
+			val file1 = iso["PSP_GAME/SYSDIR/BOOT.BIN"]
+			// Normal ISO
+			if (file1.exists()) {
+				return loadExecutableAndStart(file1)
+			}
+			// ISO as normal package
+			val file2 = iso["EBOOT.PBP"]
+			if (file2.exists()) {
+				deviceManager.currentDirectory = "ms0:/PSP/GAME/app"
+				deviceManager.mount(deviceManager.currentDirectory, iso)
+				return loadExecutableAndStart(file2)
+			}
+			invalidOp("Can't find any possible executalbe in ISO")
 		}
 		else -> {
 			invalidOp("Don't know how to load executable file $file")

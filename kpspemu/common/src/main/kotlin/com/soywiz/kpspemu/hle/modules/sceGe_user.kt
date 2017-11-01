@@ -4,9 +4,8 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.ge
 import com.soywiz.kpspemu.ge.GeCallback
+import com.soywiz.kpspemu.ge.GeState
 import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.util.ResourceList
 
@@ -35,7 +34,9 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 
 	fun sceGeListUpdateStallAddr(displayListId: Int, stall: Ptr): Int {
 		//println("WIP: sceGeListUpdateStallAddr")
-		ge.lists[displayListId].stall = stall.addr
+		val list = ge.lists[displayListId]
+		list.stall = stall.addr
+		list.run()
 		return 0
 	}
 
@@ -54,10 +55,18 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		return 0
 	}
 
-	fun sceGeRestoreContext(cpu: CpuState): Unit = UNIMPLEMENTED(0x0BF608FB)
+	fun sceGeSaveContext(ptr: Ptr): Int {
+		for (n in 0 until GeState.STATE_NWORDS) ptr.sw(n * 4, ge.state.data[n])
+		return 0
+	}
+
+	fun sceGeRestoreContext(ptr: Ptr): Int {
+		for (n in 0 until GeState.STATE_NWORDS) ge.state.data[n] = ptr.lw(n * 4)
+		return 0
+	}
+
 	fun sceGeListEnQueueHead(cpu: CpuState): Unit = UNIMPLEMENTED(0x1C0D95A6)
 	fun sceGeEdramGetSize(cpu: CpuState): Unit = UNIMPLEMENTED(0x1F6752AD)
-	fun sceGeSaveContext(cpu: CpuState): Unit = UNIMPLEMENTED(0x438A385A)
 	fun sceGeContinue(cpu: CpuState): Unit = UNIMPLEMENTED(0x4C06E472)
 	fun sceGeGetMtx(cpu: CpuState): Unit = UNIMPLEMENTED(0x57C8945B)
 	fun sceGeListDeQueue(cpu: CpuState): Unit = UNIMPLEMENTED(0x5FB86AB0)
@@ -67,18 +76,26 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 	fun sceGeGetStack(cpu: CpuState): Unit = UNIMPLEMENTED(0xE66CB92E)
 
 	override fun registerModule() {
+		// Address
 		registerFunctionInt("sceGeEdramGetAddr", 0xE47E40E4, since = 150) { sceGeEdramGetAddr() }
-		registerFunctionInt("sceGeSetCallback", 0xA4FC06A4, since = 150) { sceGeSetCallback(ptr) }
-		registerFunctionInt("sceGeUnsetCallback", 0x05DB22CE, since = 150) { sceGeUnsetCallback(int) }
+
+		// Lists & Sync
 		registerFunctionInt("sceGeListUpdateStallAddr", 0xE0D68148, since = 150) { sceGeListUpdateStallAddr(int, ptr) }
 		registerFunctionInt("sceGeListEnQueue", 0xAB49E76A, since = 150) { sceGeListEnQueue(ptr, ptr, int, ptr) }
 		registerFunctionInt("sceGeListSync", 0x03444EB4, since = 150) { sceGeListSync(int, int) }
 		registerFunctionInt("sceGeDrawSync", 0xB287BD61, since = 150) { sceGeDrawSync(int) }
 
-		registerFunctionRaw("sceGeRestoreContext", 0x0BF608FB, since = 150) { sceGeRestoreContext(it) }
+		// Callbacks
+		registerFunctionInt("sceGeSetCallback", 0xA4FC06A4, since = 150) { sceGeSetCallback(ptr) }
+		registerFunctionInt("sceGeUnsetCallback", 0x05DB22CE, since = 150) { sceGeUnsetCallback(int) }
+
+		// Context
+		registerFunctionInt("sceGeSaveContext", 0x438A385A, since = 150) { sceGeSaveContext(ptr) }
+		registerFunctionInt("sceGeRestoreContext", 0x0BF608FB, since = 150) { sceGeRestoreContext(ptr) }
+
+		// Unimplemented
 		registerFunctionRaw("sceGeListEnQueueHead", 0x1C0D95A6, since = 150) { sceGeListEnQueueHead(it) }
 		registerFunctionRaw("sceGeEdramGetSize", 0x1F6752AD, since = 150) { sceGeEdramGetSize(it) }
-		registerFunctionRaw("sceGeSaveContext", 0x438A385A, since = 150) { sceGeSaveContext(it) }
 		registerFunctionRaw("sceGeContinue", 0x4C06E472, since = 150) { sceGeContinue(it) }
 		registerFunctionRaw("sceGeGetMtx", 0x57C8945B, since = 150) { sceGeGetMtx(it) }
 		registerFunctionRaw("sceGeListDeQueue", 0x5FB86AB0, since = 150) { sceGeListDeQueue(it) }

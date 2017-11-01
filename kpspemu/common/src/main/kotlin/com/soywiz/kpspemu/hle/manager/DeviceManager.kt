@@ -1,22 +1,39 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.korio.vfs.MemoryVfs
+import com.soywiz.korio.vfs.PathInfo
 import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korio.vfs.VfsUtil
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.util.MountableSync
+import com.soywiz.kpspemu.util.MountableVfsSync
 
 class DeviceManager(val emulator: Emulator) {
-	val devicesToVfs = LinkedHashMap<String, VfsFile>()
+	var currentDirectory = "ms0:/PSP/GAME/app"
+	val dummy = MemoryVfs()
+	val root = MountableVfsSync {
+		mount("fatms0", dummy)
+		mount("ms0", dummy)
+		mount("mscmhc0", dummy)
 
-	/*
-		fileManager.mount('fatms0', msvfs);
-		fileManager.mount('ms0', msvfs);
-		fileManager.mount('mscmhc0', msvfs);
+		mount("host0", dummy)
+		mount("flash0", dummy)
+		mount("emulator", dummy)
+		mount("kemulator", dummy)
 
-		fileManager.mount('host0', new MemoryVfs());
-		fileManager.mount('flash0', new UriVfs('data/flash0'));
-		fileManager.mount('emulator', this.emulatorVfs);
-		fileManager.mount('kemulator', this.emulatorVfs);
+		mount("disc0", dummy)
+		mount("umd0", dummy)
+	}
+	val mountable = root.vfs as MountableSync
 
-		fileManager.mount('disc0', mount);
-		fileManager.mount('umd0', mount);
-	 */
+	//val devicesToVfs = LinkedHashMap<String, VfsFile>()
+
+	fun mount(name: String, vfs: VfsFile) {
+		mountable.mount(name, vfs)
+		//devicesToVfs[name] = vfs
+	}
+
+	fun resolve(path: String): VfsFile {
+		return root[VfsUtil.combine(currentDirectory, path)]
+	}
 }

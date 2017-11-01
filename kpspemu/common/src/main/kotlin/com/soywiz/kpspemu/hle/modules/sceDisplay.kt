@@ -40,7 +40,6 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return 0
 	}
 
-
 	fun sceDisplayIsVsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x21038913)
 	fun sceDisplayGetAccumulatedHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x210EAB3A)
 	fun sceDisplayGetBrightness(cpu: CpuState): Unit = UNIMPLEMENTED(0x31C4BAA8)

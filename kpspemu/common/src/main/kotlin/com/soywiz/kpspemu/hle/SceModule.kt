@@ -111,7 +111,7 @@ abstract class SceModule(
 		}
 	}
 
-	protected fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean, function: suspend RegisterReader.(CpuState) -> Int) {
+	protected fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
 		registerFunctionRR(name, uid, since, syscall) {
 			val mfunction: suspend (RegisterReader) -> Int = { function(it, it.cpu) }
 			var completed = false

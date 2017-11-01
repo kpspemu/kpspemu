@@ -42,6 +42,10 @@ fun Memory.ptr(addr: Int) = MemPtr(this, addr)
 val Ptr.isNotNull: Boolean get() = addr != 0
 val Ptr.isNull: Boolean get() = addr == 0
 
+fun Ptr.writeBytes(bytes: ByteArray, offset: Int = 0, size: Int = bytes.size - offset) {
+	for (n in 0 until size) this.sb(n, bytes[offset + n].toInt())
+}
+
 fun Ptr.readBytes(count: Int, offset: Int = 0): ByteArray {
 	val out = ByteArray(count)
 	for (n in 0 until count) out[n] = this.lb(offset + n).toByte()
