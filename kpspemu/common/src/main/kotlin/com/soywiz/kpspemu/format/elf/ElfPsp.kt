@@ -191,7 +191,7 @@ class PspElf private constructor(
 
 		if (elf.needsRelocation) {
 			baseAddress = memoryManager.userPartition.childPartitions.sortedBy { it.size }.last().low.toInt()
-			baseAddress = baseAddress.nextAlignedTo(0x1000)
+			baseAddress = baseAddress.nextAlignedTo(0x1000) + 0x4000
 			//this.baseAddress = 0x08800000 + 0x4000;
 		}
 

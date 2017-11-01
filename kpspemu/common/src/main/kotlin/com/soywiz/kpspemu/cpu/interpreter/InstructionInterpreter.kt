@@ -162,6 +162,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun blez(s: CpuState) = s.branch { RS <= 0 }
 	override fun bgtz(s: CpuState) = s.branch { RS > 0 }
 	override fun bgez(s: CpuState) = s.branch { RS >= 0 }
+	override fun bgezal(s: CpuState) = s.branch { RA = _nPC + 4; RS >= 0 }
+	override fun bltzal(s: CpuState) = s.branch { RA = _nPC + 4; RS < 0 }
 
 	override fun beql(s: CpuState) = s.branchLikely { RS == RT }
 	override fun bnel(s: CpuState) = s.branchLikely { RS != RT }
@@ -169,6 +171,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun blezl(s: CpuState) = s.branchLikely { RS <= 0 }
 	override fun bgtzl(s: CpuState) = s.branchLikely { RS > 0 }
 	override fun bgezl(s: CpuState) = s.branchLikely { RS >= 0 }
+	override fun bgezall(s: CpuState) = s.branchLikely { RA = _nPC + 4; RS >= 0 }
+	override fun bltzall(s: CpuState) = s.branchLikely { RA = _nPC + 4; RS < 0 }
+
 
 	override fun bc1f(s: CpuState) = s.branch { fcr31_cc }
 	override fun bc1t(s: CpuState) = s.branch { !fcr31_cc }
@@ -178,8 +183,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
 
-	override fun jal(s: CpuState) = s.none { RA = _nPC + 4; j(s) } // $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
-	override fun jalr(s: CpuState) = s.none { RA = _nPC + 4; jr(s) }
+	override fun jal(s: CpuState) = s.none { j(s); RA = _PC + 4; } // $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
+	override fun jalr(s: CpuState) = s.none { jr(s); RD = _PC + 4; }
 
 	// Float
 	override fun mfc1(s: CpuState) = s { RT = FS_I }
@@ -225,10 +230,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Missing
 
-	override fun bgezal(s: CpuState) = unimplemented(s, Instructions.bgezal)
-	override fun bgezall(s: CpuState) = unimplemented(s, Instructions.bgezall)
-	override fun bltzal(s: CpuState) = unimplemented(s, Instructions.bltzal)
-	override fun bltzall(s: CpuState) = unimplemented(s, Instructions.bltzall)
 	override fun lwl(s: CpuState) = unimplemented(s, Instructions.lwl)
 	override fun lwr(s: CpuState) = unimplemented(s, Instructions.lwr)
 	override fun swl(s: CpuState) = unimplemented(s, Instructions.swl)

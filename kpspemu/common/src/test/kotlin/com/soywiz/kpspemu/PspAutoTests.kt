@@ -29,13 +29,8 @@ class PspAutoTests {
 		)
 	}
 
-	@Test
-	fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
-
-	//@Test
-	//fun testFpuFpu() = testFile("cpu/fpu/fpu")
-
-	//@Test
-	//fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
+	@Test fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
+	//@Test fun testFpuFpu() = testFile("cpu/fpu/fpu")
+	@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
 
 }
