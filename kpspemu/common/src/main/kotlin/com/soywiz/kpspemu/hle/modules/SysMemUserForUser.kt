@@ -21,7 +21,7 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 	val partitions = ResourceList("Partition") { Partition(it) }
 
 	fun sceKernelAllocPartitionMemory(partitionId: Int, name: String?, anchor: Int, size: Int, address: Int): Int {
-		println("WIP: sceKernelAllocPartitionMemory($partitionId, $name, $anchor, $size, ${address.hex})")
+		logger.info("WIP: sceKernelAllocPartitionMemory($partitionId, $name, $anchor, $size, ${address.hex})")
 		try {
 			val parentPartition = memoryManager.memoryPartitionsUid[partitionId] ?: invalidOp("Invalid partition $partitionId")
 			val allocatedPartition = parentPartition.allocate(size.toDouble(), MemoryAnchor(anchor), address.toDouble(), name ?: "block")

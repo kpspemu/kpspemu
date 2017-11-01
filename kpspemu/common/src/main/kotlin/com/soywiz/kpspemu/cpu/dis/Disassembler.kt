@@ -2,7 +2,6 @@ package com.soywiz.kpspemu.cpu.dis
 
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
-import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
 import com.soywiz.kpspemu.cpu.InstructionType
@@ -52,7 +51,7 @@ fun Memory.disasmMacro(pc: Int): String = try {
 	"invalid(PC=0x%08X)".format(pc)
 }
 
-fun Memory.printInstructionAt(address: Int) {
-	Console.error(address.hex + " : " + disasmMacro(address))
-}
+fun Memory.getPrintInstructionAt(address: Int): String = address.hex + " : " + disasmMacro(address)
+fun Memory.printInstructionAt(address: Int) = Console.error(getPrintInstructionAt(address))
+
 

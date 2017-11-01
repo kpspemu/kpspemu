@@ -10,6 +10,7 @@ import com.soywiz.kpspemu.hle.manager.thread
 import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.util.PspLogger
 
 class RegisterReader {
 	var pos: Int = 4
@@ -37,6 +38,8 @@ abstract class SceModule(
 	val prxFile: String = "",
 	val prxName: String = ""
 ) : WithEmulator {
+	val logger = PspLogger("SceModule.$name")
+
 	fun registerPspModule() {
 		registerModule()
 	}

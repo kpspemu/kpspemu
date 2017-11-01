@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.korio.util.IntEx
+import com.soywiz.korio.util.extract
 import kotlin.math.abs
 
 fun imul32_64(a: Int, b: Int, result: IntArray = IntArray(2)): IntArray {
@@ -115,3 +116,5 @@ infix fun Int.ult(that: Int) = IntEx.compareUnsigned(this, that) < 0
 infix fun Int.ule(that: Int) = IntEx.compareUnsigned(this, that) <= 0
 infix fun Int.ugt(that: Int) = IntEx.compareUnsigned(this, that) > 0
 infix fun Int.uge(that: Int) = IntEx.compareUnsigned(this, that) >= 0
+
+fun Int.extractBool(offset: Int) = this.extract(offset, 1) != 0

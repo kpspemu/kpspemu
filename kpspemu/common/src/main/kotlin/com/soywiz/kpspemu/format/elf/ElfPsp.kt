@@ -14,8 +14,7 @@ import com.soywiz.kpspemu.hle.manager.ModuleManager
 import com.soywiz.kpspemu.hle.manager.SyscallManager
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.openSync
-import com.soywiz.kpspemu.util.Logger
-import com.soywiz.kpspemu.util.LoggerManager
+import com.soywiz.kpspemu.util.PspLogger
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KProperty
@@ -138,7 +137,7 @@ class PspElf private constructor(
 	private var moduleManager: ModuleManager,
 	private var syscallManager: SyscallManager
 ) {
-	private val logger = Logger("ElfPsp")
+	private val logger = PspLogger("ElfPsp")
 
 	lateinit var elf: Elf; private set
 	lateinit var moduleInfo: ElfPspModuleInfo; private set
@@ -390,7 +389,7 @@ class PspElf private constructor(
 					since = 150,
 					syscall = -1,
 					function = { state ->
-						logger.error(_module)
+						logger.error("$_module")
 						logger.error("updateModuleFunctions: Not implemented '${nfunc?.name}'")
 						Debugger.enterDebugger()
 						throw Error("updateModuleFunctions: Not implemented '${nfunc?.name}'")

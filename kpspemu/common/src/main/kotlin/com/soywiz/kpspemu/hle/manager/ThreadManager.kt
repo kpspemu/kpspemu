@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.korge.log.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
@@ -11,8 +12,10 @@ import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.ptr
+import com.soywiz.kpspemu.util.PspLogger
 
 class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
+	val threads get() = resourcesById.values
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
 
 	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
@@ -83,6 +86,8 @@ class PspThread internal constructor(
 	val attributes: Int,
 	val optionPtr: Ptr
 ) : Resource(threadManager, id, name), WithEmulator {
+	val logger = PspLogger("PspThread")
+
 	enum class Phase { STOPPED, RUNNING, WAITING, DELETED }
 
 	var acceptingCallbacks: Boolean = false
@@ -169,7 +174,7 @@ class PspThread internal constructor(
 		} catch (e: CpuBreakException) {
 			when (e.id) {
 				CpuBreakException.THREAD_EXIT_KILL -> {
-					println("BREAK: THREAD_EXIT_KILL")
+					logger.info("BREAK: THREAD_EXIT_KILL")
 					exitAndKill()
 				}
 				CpuBreakException.THREAD_WAIT -> {

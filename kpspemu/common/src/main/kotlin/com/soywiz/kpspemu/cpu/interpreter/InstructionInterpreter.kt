@@ -175,10 +175,10 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bltzall(s: CpuState) = s.branchLikely { RA = _nPC + 4; RS < 0 }
 
 
-	override fun bc1f(s: CpuState) = s.branch { fcr31_cc }
-	override fun bc1t(s: CpuState) = s.branch { !fcr31_cc }
-	override fun bc1fl(s: CpuState) = s.branchLikely { fcr31_cc }
-	override fun bc1tl(s: CpuState) = s.branchLikely { !fcr31_cc }
+	override fun bc1f(s: CpuState) = s.branch { !fcr31_cc }
+	override fun bc1t(s: CpuState) = s.branch { fcr31_cc }
+	override fun bc1fl(s: CpuState) = s.branchLikely { !fcr31_cc }
+	override fun bc1tl(s: CpuState) = s.branchLikely { fcr31_cc }
 
 	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
@@ -191,24 +191,35 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	override fun mtc1(s: CpuState) = s { FS_I = RT }
 	override fun cvt_s_w(s: CpuState) = s { FD = FS_I.toFloat() }
-	override fun cvt_w_s(s: CpuState) = s { FD_I = FS.toInt() } // @TODO: _cvt_w_s_impl, fcr31_rm: 0:rint, 1:cast, 2:ceil, 3:floor
+	override fun cvt_w_s(s: CpuState) = s {
+		FD_I = when (this.fcr31_rm) {
+			0 -> MathFloat.rint(FS) // rint: round nearest
+			1 -> MathFloat.cast(FS) // round to zero
+			2 -> MathFloat.ceil(FS) // round up (ceil)
+			3 -> MathFloat.floor(FS) // round down (floor)
+			else -> FS.toInt()
+		}
+	}
 
-	override fun trunc_w_s(s: CpuState) = s { FD_I = FS.toInt() }
-	override fun round_w_s(s: CpuState) = s { FD_I = round(FS).toInt() }
-	override fun ceil_w_s(s: CpuState) = s { FD_I = ceil(FS).toInt() }
-	override fun floor_w_s(s: CpuState) = s { FD_I = floor(FS).toInt() }
+	override fun trunc_w_s(s: CpuState) = s { FD_I = MathFloat.trunc(FS) }
+	override fun round_w_s(s: CpuState) = s { FD_I = MathFloat.round(FS) }
+	override fun ceil_w_s(s: CpuState) = s { FD_I = MathFloat.ceil(FS) }
+	override fun floor_w_s(s: CpuState) = s { FD_I = MathFloat.floor(FS) }
 
 	override fun mov_s(s: CpuState) = s { FD = FS }
 	override fun add_s(s: CpuState) = s { FD = FS + FT }
 	override fun sub_s(s: CpuState) = s { FD = FS - FT }
-	override fun mul_s(s: CpuState) = s { FD = FS * FT }
+	override fun mul_s(s: CpuState) = s {
+		FD = FS * FT
+		if (fcr31_fs && MathFloat.isAlmostZero(FD)) FD = 0f
+	}
 	override fun div_s(s: CpuState) = s { FD = FS / FT }
 	override fun neg_s(s: CpuState) = s { FD = -FS }
 	override fun abs_s(s: CpuState) = s { FD = kotlin.math.abs(FS) }
 	override fun sqrt_s(s: CpuState) = s { FD = kotlin.math.sqrt(FS) }
 
-	private inline fun CpuState._cu(callback: CpuState.() -> Boolean) = run { fcr31_cc = if (FS.isNaN() || FT.isNaN()) true else callback() }
-	private inline fun CpuState._co(callback: CpuState.() -> Boolean) = run { fcr31_cc = if (FS.isNaN() || FT.isNaN()) false else callback() }
+	private inline fun CpuState._cu(callback: CpuState.() -> Boolean) = this { fcr31_cc = if (FS.isNaN() || FT.isNaN()) true else callback() }
+	private inline fun CpuState._co(callback: CpuState.() -> Boolean) = this { fcr31_cc = if (FS.isNaN() || FT.isNaN()) false else callback() }
 
 	override fun c_f_s(s: CpuState) = s._co { false }
 	override fun c_un_s(s: CpuState) = s._cu { false }
@@ -228,6 +239,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun c_le_s(s: CpuState) = s._co { FS <= FT }
 	override fun c_ngt_s(s: CpuState) = s._cu { FS <= FT }
 
+	override fun cfc1(s: CpuState) = s { when (IR.rd) { 0 -> RT = fcr0; 31 -> RT = fcr31 } }
+	override fun ctc1(s: CpuState) = s { when (IR.rd) { 31 -> fcr31 = RT; } }
+
 	// Missing
 
 	override fun lwl(s: CpuState) = unimplemented(s, Instructions.lwl)
@@ -236,9 +250,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun swr(s: CpuState) = unimplemented(s, Instructions.swr)
 	override fun ll(s: CpuState) = unimplemented(s, Instructions.ll)
 	override fun sc(s: CpuState) = unimplemented(s, Instructions.sc)
-	override fun cfc1(s: CpuState) = unimplemented(s, Instructions.cfc1)
-	override fun ctc1(s: CpuState) = unimplemented(s, Instructions.ctc1)
-
 
 	override fun cache(s: CpuState) = unimplemented(s, Instructions.cache)
 	override fun sync(s: CpuState) = unimplemented(s, Instructions.sync)

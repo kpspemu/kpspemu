@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.lang.Console
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.RA
-import com.soywiz.kpspemu.cpu.dis.printInstructionAt
+import com.soywiz.kpspemu.cpu.dis.getPrintInstructionAt
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.mem
@@ -12,9 +11,9 @@ import com.soywiz.kpspemu.threadManager
 
 class LoadExecForUser(emulator: Emulator) : SceModule(emulator, "LoadExecForUser", 0x40010011, "loadexec_02g.prx", "sceLoadExec") {
 	fun sceKernelExitGame(currentThread: PspThread): Unit {
-		Console.error("sceKernelExitGame: '${currentThread.name}'")
-		mem.printInstructionAt(currentThread.state.PC)
-		mem.printInstructionAt(currentThread.state.RA)
+		logger.info { "sceKernelExitGame: '${currentThread.name}'" }
+		logger.info { mem.getPrintInstructionAt(currentThread.state.PC) }
+		logger.info { mem.getPrintInstructionAt(currentThread.state.RA) }
 		threadManager.stopAllThreads()
 	}
 

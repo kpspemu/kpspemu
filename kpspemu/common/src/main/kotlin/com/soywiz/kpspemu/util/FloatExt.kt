@@ -5,3 +5,5 @@ fun Float.clamp(min: Float, max: Float) = when {
 	(this > max) -> max
 	else -> this
 }
+
+fun Float.isNanOrInfinite() = this.isNaN() || this.isInfinite()

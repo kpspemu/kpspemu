@@ -1,8 +1,12 @@
 package com.soywiz.kpspemu.format.elf
 
+import com.soywiz.kpspemu.util.PspLogger
+
 class ElfDwarf {
+	val logger = PspLogger("ElfDwarf")
+
 	fun parseElfLoader(elfLoader: Elf): Unit {
-		println("ElfDwarfLoader.parseElfLoader: Not implemented")
+		logger.info("ElfDwarfLoader.parseElfLoader: Not implemented")
 	}
 
 	fun getSymbolAt(address: Int): Unit {

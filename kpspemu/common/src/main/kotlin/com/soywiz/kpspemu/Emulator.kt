@@ -9,12 +9,15 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.ptr
+import com.soywiz.kpspemu.util.hex
 
 class Emulator(
 	val syscalls: SyscallManager = SyscallManager(),
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	val logger = com.soywiz.kpspemu.util.PspLogger("Emulator")
+
 	var output = StringBuilder()
 	val ge: Ge = Ge(this)
 	val gpu: Gpu = Gpu(this)
@@ -32,6 +35,10 @@ class Emulator(
 		ge.run()
 		threadManager.step()
 		gpu.render()
+	}
+
+	fun invalidateIcache(ptr: Int, size: Int) {
+		logger.trace { "invalidateIcache(${ptr.hex}, $size)" }
 	}
 }
 
