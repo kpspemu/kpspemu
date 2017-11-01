@@ -9,12 +9,13 @@ import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.util.PspLogLevel
 import com.soywiz.kpspemu.util.PspLoggerManager
 import com.soywiz.kpspemu.util.hex
+import com.soywiz.kpspemu.util.quote
 import org.junit.Test
 
 class PspAutoTests {
 	val TRACE = false
 
-	suspend fun testFile(elf: SyncStream, expected: String, processor: (String) -> String = { it }) {
+	suspend fun testFile(elf: SyncStream, expected: String, ignores: List<String>, processor: (String) -> String = { it }) {
 		val emulator = Emulator()
 		emulator.display.exposeDisplay = false
 		emulator.registerNativeModules()
@@ -35,14 +36,26 @@ class PspAutoTests {
 				}
 			}
 		}
-		fun String.normalize() = this.replace("\r\n", "\n").replace("\r", "\n").trimEnd()
+
+		val ignoresRegex = ignores.map {
+			Regex(Regex.quote(it).replace("\\^", ".")) to it
+		}
+
+		fun String.normalize(): String {
+			var out = this.replace("\r\n", "\n").replace("\r", "\n").trimEnd()
+			for (rex in ignoresRegex) {
+				out = out.replace(rex.first, rex.second)
+			}
+			return out
+		}
 		MyAssert.assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
 	}
 
-	fun testFile(name: String, processor: (String) -> String = { it }) = syncTest {
+	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			localCurrentDirVfs["../../pspautotests/$name.prx"].readAsSyncStream(),
 			localCurrentDirVfs["../../pspautotests/$name.expected"].readString(),
+			ignores,
 			processor
 		)
 	}
@@ -53,18 +66,15 @@ class PspAutoTests {
 
 	@Test fun testIcache() = testFile("cpu/icache/icache")
 
-	@Test fun testFpu() = testFile("cpu/fpu/fpu") {
-		it
-			.replace("mul.s 0.296558 * 62.000000, CAST_1 = 18.386576", "mul.s 0.296558 * 62.000000, CAST_1 = 18.386574")
-			.replace("mul.s 0.296558 * 62.000000, FLOOR_3 = 18.386576", "mul.s 0.296558 * 62.000000, FLOOR_3 = 18.386574")
-	}
+	@Test fun testFpu() = testFile("cpu/fpu/fpu", ignores = listOf(
+		"mul.s 0.296558 * 62.000000, CAST_1 = 18.38657^",
+		"mul.s 0.296558 * 62.000000, FLOOR_3 = 18.38657^"
+	))
 
-	@Test fun testFcr() = testFile("cpu/fpu/fcr") {
-		it
-			.replace("Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 00000000", "Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 0000300c")
-			.replace("Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 00000000", "Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: 00001004")
-	}
-
+	@Test fun testFcr() = testFile("cpu/fpu/fcr", ignores = listOf(
+		"Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^",
+		"Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^"
+	))
 
 	//@Test fun testFpuFpu() = testFile("cpu/fpu/fpu")
 	//@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
