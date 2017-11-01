@@ -3,10 +3,12 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.klock.DateTime
 import com.soywiz.klock.Month
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.clamp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.timeManager
 
@@ -28,6 +30,14 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		ticksPtr.sdw(0, date.date.unix * 1000)
 		return 0
 	}
+	fun sceRtcGetCurrentClock(date: Ptr, timezone: Int): Int {
+		if (date.isNotNull) ScePspDateTime(DateTime.now().addOffset(timezone.clamp(-600000, +600000))).write(date.openSync())
+		return 0
+	}
+	fun sceRtcGetCurrentClockLocalTime(date: Ptr): Int {
+		if (date.isNotNull) ScePspDateTime(DateTime.now().toLocal()).write(date.openSync())
+		return 0
+	}
 
 	fun sceRtcGetAccumulativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x011F03C1)
 	fun sceRtcGetAccumlativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x029CA3B3)
@@ -46,7 +56,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcTickAddYears(cpu: CpuState): Unit = UNIMPLEMENTED(0x42842C77)
 	fun sceRtcTickAddTicks(cpu: CpuState): Unit = UNIMPLEMENTED(0x44F45E05)
 	fun sceRtcCheckValid(cpu: CpuState): Unit = UNIMPLEMENTED(0x4B1B5E82)
-	fun sceRtcGetCurrentClock(cpu: CpuState): Unit = UNIMPLEMENTED(0x4CFA57B0)
 	fun sceRtcGetLastAdjustedTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x62685E98)
 	fun sceRtcUnregisterCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x6A676D2D)
 	fun sceRtcConvertLocalTimeToUTC(cpu: CpuState): Unit = UNIMPLEMENTED(0x779242A2)
@@ -65,7 +74,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcGetTime64_t(cpu: CpuState): Unit = UNIMPLEMENTED(0xE1C93E47)
 	fun sceRtcTickAddDays(cpu: CpuState): Unit = UNIMPLEMENTED(0xE51B4B7A)
 	fun sceRtcTickAddMinutes(cpu: CpuState): Unit = UNIMPLEMENTED(0xE6605BCA)
-	fun sceRtcGetCurrentClockLocalTime(cpu: CpuState): Unit = UNIMPLEMENTED(0xE7C27D1B)
 	fun sceRtcSetDosTime(cpu: CpuState): Unit = UNIMPLEMENTED(0xF006F264)
 	fun sceRtcTickAddSeconds(cpu: CpuState): Unit = UNIMPLEMENTED(0xF2A4AFE5)
 	fun sceRtc_F5FCC995(cpu: CpuState): Unit = UNIMPLEMENTED(0xF5FCC995)
@@ -78,6 +86,8 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionInt("sceRtcGetDaysInMonth", 0x05EF322C, since = 150) { sceRtcGetDaysInMonth(int, int) }
 		registerFunctionInt("sceRtcSetTick", 0x7ED29E40, since = 150) { sceRtcSetTick(ptr, ptr) }
 		registerFunctionInt("sceRtcGetTick", 0x6FF40ACC, since = 150) { sceRtcGetTick(ptr, ptr) }
+		registerFunctionInt("sceRtcGetCurrentClock", 0x4CFA57B0, since = 150) { sceRtcGetCurrentClock(ptr, int) }
+		registerFunctionInt("sceRtcGetCurrentClockLocalTime", 0xE7C27D1B, since = 150) { sceRtcGetCurrentClockLocalTime(ptr) }
 
 		registerFunctionRaw("sceRtcGetAccumulativeTime", 0x011F03C1, since = 150) { sceRtcGetAccumulativeTime(it) }
 		registerFunctionRaw("sceRtcGetAccumlativeTime", 0x029CA3B3, since = 150) { sceRtcGetAccumlativeTime(it) }
@@ -96,7 +106,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtcTickAddYears", 0x42842C77, since = 150) { sceRtcTickAddYears(it) }
 		registerFunctionRaw("sceRtcTickAddTicks", 0x44F45E05, since = 150) { sceRtcTickAddTicks(it) }
 		registerFunctionRaw("sceRtcCheckValid", 0x4B1B5E82, since = 150) { sceRtcCheckValid(it) }
-		registerFunctionRaw("sceRtcGetCurrentClock", 0x4CFA57B0, since = 150) { sceRtcGetCurrentClock(it) }
 		registerFunctionRaw("sceRtcGetLastAdjustedTime", 0x62685E98, since = 150) { sceRtcGetLastAdjustedTime(it) }
 		registerFunctionRaw("sceRtcUnregisterCallback", 0x6A676D2D, since = 150) { sceRtcUnregisterCallback(it) }
 		registerFunctionRaw("sceRtcConvertLocalTimeToUTC", 0x779242A2, since = 150) { sceRtcConvertLocalTimeToUTC(it) }
@@ -115,7 +124,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtcGetTime64_t", 0xE1C93E47, since = 150) { sceRtcGetTime64_t(it) }
 		registerFunctionRaw("sceRtcTickAddDays", 0xE51B4B7A, since = 150) { sceRtcTickAddDays(it) }
 		registerFunctionRaw("sceRtcTickAddMinutes", 0xE6605BCA, since = 150) { sceRtcTickAddMinutes(it) }
-		registerFunctionRaw("sceRtcGetCurrentClockLocalTime", 0xE7C27D1B, since = 150) { sceRtcGetCurrentClockLocalTime(it) }
 		registerFunctionRaw("sceRtcSetDosTime", 0xF006F264, since = 150) { sceRtcSetDosTime(it) }
 		registerFunctionRaw("sceRtcTickAddSeconds", 0xF2A4AFE5, since = 150) { sceRtcTickAddSeconds(it) }
 		registerFunctionRaw("sceRtc_F5FCC995", 0xF5FCC995, since = 150) { sceRtc_F5FCC995(it) }

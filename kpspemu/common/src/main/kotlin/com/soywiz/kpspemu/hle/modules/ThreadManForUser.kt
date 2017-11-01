@@ -66,6 +66,13 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		}.id
 	}
 
+	fun _sceKernelDelayThread(thread: PspThread, microseconds: Int, cb: Boolean): Int {
+		thread.suspend(WaitObject.TIME(rtc.getTimeInMicroseconds() + microseconds), cb = cb)
+		return 0
+	}
+
+	fun sceKernelDelayThreadCB(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = true)
+	fun sceKernelDelayThread(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = false)
 
 	fun sceKernelGetVTimerTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x034A921F)
 	fun sceKernelRegisterThreadEventHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x0C106E53)
@@ -119,7 +126,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelReferSystemStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x627E6F3A)
 	fun sceKernelReferThreadProfiler(cpu: CpuState): Unit = UNIMPLEMENTED(0x64D4540E)
 	fun sceKernelSetAlarm(cpu: CpuState): Unit = UNIMPLEMENTED(0x6652B8CA)
-	fun sceKernelDelayThreadCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x68DA9E36)
 	fun sceKernelUnlockMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0x6B30100F)
 	fun sceKernelWaitSemaCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x6D212BAC)
 	fun _sceKernelReturnFromCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x6E9EA350)
@@ -175,7 +181,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelStartVTimer(cpu: CpuState): Unit = UNIMPLEMENTED(0xC68D9437)
 	fun sceKernelUSec2SysClockWide(cpu: CpuState): Unit = UNIMPLEMENTED(0xC8CD158C)
 	fun sceKernelCancelEventFlag(cpu: CpuState): Unit = UNIMPLEMENTED(0xCD203292)
-	fun sceKernelDelayThread(cpu: CpuState): Unit = UNIMPLEMENTED(0xCEADEB47)
 	fun sceKernelStopVTimer(cpu: CpuState): Unit = UNIMPLEMENTED(0xD0AEEE87)
 	fun sceKernelCheckThreadStack(cpu: CpuState): Unit = UNIMPLEMENTED(0xD13BDE95)
 	fun sceKernelCancelVTimerHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0xD2D615EF)
@@ -214,6 +219,8 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(thread, int, int, ptr) }
 		registerFunctionInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
 		registerFunctionInt("sceKernelGetThreadCurrentPriority", 0x94AA61EE, since = 150) { sceKernelGetThreadCurrentPriority(thread) }
+		registerFunctionInt("sceKernelDelayThreadCB", 0x68DA9E36, since = 150) { sceKernelDelayThreadCB(thread, int) }
+		registerFunctionInt("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(thread, int) }
 
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(str, ptr, int) }
@@ -272,7 +279,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelReferSystemStatus", 0x627E6F3A, since = 150) { sceKernelReferSystemStatus(it) }
 		registerFunctionRaw("sceKernelReferThreadProfiler", 0x64D4540E, since = 150) { sceKernelReferThreadProfiler(it) }
 		registerFunctionRaw("sceKernelSetAlarm", 0x6652B8CA, since = 150) { sceKernelSetAlarm(it) }
-		registerFunctionRaw("sceKernelDelayThreadCB", 0x68DA9E36, since = 150) { sceKernelDelayThreadCB(it) }
 		registerFunctionRaw("sceKernelUnlockMutex", 0x6B30100F, since = 150) { sceKernelUnlockMutex(it) }
 		registerFunctionRaw("sceKernelWaitSemaCB", 0x6D212BAC, since = 150) { sceKernelWaitSemaCB(it) }
 		registerFunctionRaw("_sceKernelReturnFromCallback", 0x6E9EA350, since = 150) { _sceKernelReturnFromCallback(it) }
@@ -328,7 +334,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelStartVTimer", 0xC68D9437, since = 150) { sceKernelStartVTimer(it) }
 		registerFunctionRaw("sceKernelUSec2SysClockWide", 0xC8CD158C, since = 150) { sceKernelUSec2SysClockWide(it) }
 		registerFunctionRaw("sceKernelCancelEventFlag", 0xCD203292, since = 150) { sceKernelCancelEventFlag(it) }
-		registerFunctionRaw("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(it) }
 		registerFunctionRaw("sceKernelStopVTimer", 0xD0AEEE87, since = 150) { sceKernelStopVTimer(it) }
 		registerFunctionRaw("sceKernelCheckThreadStack", 0xD13BDE95, since = 150) { sceKernelCheckThreadStack(it) }
 		registerFunctionRaw("sceKernelCancelVTimerHandler", 0xD2D615EF, since = 150) { sceKernelCancelVTimerHandler(it) }

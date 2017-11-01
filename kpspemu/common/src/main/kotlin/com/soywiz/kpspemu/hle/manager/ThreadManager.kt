@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.korge.log.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.Extra
@@ -38,7 +37,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
 		val now: Long = timeManager.getTimeInMicroseconds()
 
 		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-			val time = (t.waitObject as WaitObject.TIME).time
+			val time = (t.waitObject as WaitObject.TIME).instant
 			if (now >= time) {
 				t.resume()
 			}
@@ -70,7 +69,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>(emulator) {
 }
 
 sealed class WaitObject {
-	class TIME(val time: Long) : WaitObject()
+	class TIME(val instant: Long) : WaitObject()
 	class PROMISE(val promise: Promise<Unit>) : WaitObject()
 	object SLEEP : WaitObject()
 	object VBLANK : WaitObject()

@@ -2,6 +2,7 @@ package com.soywiz.kpspemu
 
 import MyAssert
 import com.soywiz.korio.async.syncTest
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
@@ -28,13 +29,19 @@ class PspAutoTests {
 			PspLoggerManager.setLevel("ElfPsp", PspLogLevel.ERROR)
 		}
 
-		while (emulator.threadManager.aliveThreadCount >= 1) {
-			emulator.frameStep()
-			if (TRACE) {
-				for (thread in emulator.threadManager.threads) {
-					println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
+		try {
+			while (emulator.threadManager.aliveThreadCount >= 1) {
+				emulator.frameStep()
+				if (TRACE) {
+					for (thread in emulator.threadManager.threads) {
+						println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
+					}
 				}
 			}
+		} catch (e: Throwable) {
+			Console.error("Partial output generated:")
+			Console.error(emulator.output.toString())
+			throw e
 		}
 
 		val ignoresRegex = ignores.map {
@@ -77,6 +84,8 @@ class PspAutoTests {
 		"Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^",
 		"Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^"
 	))
+
+	@Test fun testRtc() = testFile("rtc/rtc")
 
 	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
