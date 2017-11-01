@@ -206,7 +206,8 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val exeFile = samplesFolder["cube.iso"]
 		//val exeFile = samplesFolder["cwd.elf"]
 		//val exeFile = samplesFolder["nehetutorial03.pbp"]
-		val exeFile = samplesFolder["cavestory.iso"]
+		//val exeFile = samplesFolder["cavestory.iso"]
+		val exeFile = samplesFolder["TrigWars.iso"]
 
 		val renderView = KorgeRenderer(this)
 
@@ -291,19 +292,23 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 		"iso" -> {
 			val iso = IsoVfs(file)
 			val paramSfo = iso["PSP_GAME/PARAM.SFO"]
-			val file1 = iso["PSP_GAME/SYSDIR/BOOT.BIN"]
-			// Normal ISO
-			if (file1.exists()) {
-				return loadExecutableAndStart(file1)
+
+			val files = listOf(
+				iso["PSP_GAME/SYSDIR/BOOT.BIN"],
+				iso["EBOOT.ELF"],
+				iso["EBOOT.PBP"]
+			)
+
+			for (file in files) {
+				if (file.exists()) {
+					if (file.parent.path.isEmpty()) {
+						deviceManager.currentDirectory = "ms0:/PSP/GAME/app"
+						deviceManager.mount(deviceManager.currentDirectory, iso)
+					}
+					return loadExecutableAndStart(file)
+				}
 			}
-			// ISO as normal package
-			val file2 = iso["EBOOT.PBP"]
-			if (file2.exists()) {
-				deviceManager.currentDirectory = "ms0:/PSP/GAME/app"
-				deviceManager.mount(deviceManager.currentDirectory, iso)
-				return loadExecutableAndStart(file2)
-			}
-			invalidOp("Can't find any possible executalbe in ISO")
+			invalidOp("Can't find any possible executalbe in ISO ($files)")
 		}
 		else -> {
 			invalidOp("Don't know how to load executable file $file")

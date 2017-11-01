@@ -12,17 +12,17 @@ class DeviceManager(val emulator: Emulator) {
 	var currentDirectory = "ms0:/PSP/GAME/app"
 	val dummy = MemoryVfs()
 	val root = MountableVfsSync {
-		mount("fatms0", dummy)
-		mount("ms0", dummy)
-		mount("mscmhc0", dummy)
+		mount("fatms0:", dummy)
+		mount("ms0:", dummy)
+		mount("mscmhc0:", dummy)
 
-		mount("host0", dummy)
-		mount("flash0", dummy)
-		mount("emulator", dummy)
-		mount("kemulator", dummy)
+		mount("host0:", dummy)
+		mount("flash0:", dummy)
+		mount("emulator:", dummy)
+		mount("kemulator:", dummy)
 
-		mount("disc0", dummy)
-		mount("umd0", dummy)
+		mount("disc0:", dummy)
+		mount("umd0:", dummy)
 	}
 	val mountable = root.vfs as MountableSync
 
@@ -34,6 +34,10 @@ class DeviceManager(val emulator: Emulator) {
 	}
 
 	fun resolve(path: String): VfsFile {
-		return root[VfsUtil.combine(currentDirectory, path)]
+		if (path.contains(':')) {
+			return root[path]
+		} else {
+			return root[VfsUtil.combine(currentDirectory, path)]
+		}
 	}
 }
