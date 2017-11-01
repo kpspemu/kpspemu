@@ -30,6 +30,8 @@ class Emulator(
 	val controller = PspController(this)
 	val startThread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
 
+	val running: Boolean get() = threadManager.aliveThreadCount >= 1
+
 	fun frameStep() {
 		threadManager.vblank()
 		ge.run()

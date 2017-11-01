@@ -30,7 +30,7 @@ class IntegrationTests {
 		}
 
 		try {
-			while (emulator.threadManager.aliveThreadCount >= 1) {
+			while (emulator.running) {
 				emulator.frameStep()
 				if (TRACE) {
 					for (thread in emulator.threadManager.threads) {

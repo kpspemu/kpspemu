@@ -178,9 +178,15 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val elfBytes = samplesFolder["minifire.elf"].readAll()
 		//val elfBytes = samplesFolder["HelloWorldPSP.elf"].readAll()
 		//val elfBytes = samplesFolder["rtctest.elf"].readAll()
-		//val elfBytes = samplesFolder["compilerPerf.elf"].readAll()
+		val elfBytes = samplesFolder["compilerPerf.elf"].readAll()
 		//val elfBytes = samplesFolder["cube.elf"].readAll()
-		val elfBytes = samplesFolder["ortho.elf"].readAll()
+		//val elfBytes = samplesFolder["ortho.elf"].readAll()
+		//val elfBytes = samplesFolder["mytest.elf"].readAll()
+		//val elfBytes = samplesFolder["counter.elf"].readAll()
+		//val elfBytes = samplesFolder["controller.elf"].readAll()
+		//val elfBytes = samplesFolder["fputest.elf"].readAll()
+		//val elfBytes = samplesFolder["lines.elf"].readAll()
+		//val elfBytes = samplesFolder["polyphonic.elf"].readAll()
 
 		val renderView = KorgeRenderer(this)
 
@@ -192,9 +198,10 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		}
 
 		var running = true
+		var ended = false
 
 		sceneView.addUpdatable {
-			if (running) {
+			if (running && emulator.running) {
 				try {
 					emulator.frameStep()
 				} catch (e: Throwable) {
@@ -205,6 +212,11 @@ class KpspemuMainScene : Scene(), WithEmulator {
 				if (display.rawDisplay) {
 					display.decodeToBitmap32(display.bmp)
 					tex.update(display.bmp)
+				}
+			} else {
+				if (!ended) {
+					ended = true
+					println("COMPLETED")
 				}
 			}
 		}

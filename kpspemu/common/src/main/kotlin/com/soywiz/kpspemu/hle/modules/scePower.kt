@@ -10,22 +10,22 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 	// 222/111
 	// 333/166
 
-	private var cpuMult = 511; // 222mhz
-	private var pllFreq = 222;
-	private var busFreq = 111; // MAX BUS: 166
+	private var cpuMult = 511f // 222mhz
+	private var pllFreq = 222f
+	private var busFreq = 111f // MAX BUS: 166
 
-	fun _getCpuMult(): Int = (0.43444227005871 * (this.busFreq / 111)).toInt()
-	fun _getCpuFreq(): Int = this.cpuMult * this._getCpuMult()
+	fun _getCpuMult(): Float = (0.43444227005871f * (this.busFreq / 111f))
+	fun _getCpuFreq(): Float = this.cpuMult * this._getCpuMult()
 
 	fun _setCpuFreq(cpuFreq: Int): Unit {
 		this.cpuMult = when {
 			cpuFreq > 222 -> this.cpuMult // TODO: necessary until integer arithmetic to avoid it failing
-			cpuFreq == 222 -> 511;
+			cpuFreq == 222 -> 511f;
 			else -> cpuFreq / this._getCpuMult();
 		}
 	}
 
-	fun scePowerGetCpuClockFrequencyInt(): Int = _getCpuFreq()
+	fun scePowerGetCpuClockFrequencyInt(): Int = _getCpuFreq().toInt()
 
 	fun scePowerGetResumeCount(cpu: CpuState): Unit = UNIMPLEMENTED(0x0074EF9B)
 	fun scePowerRequestColdReset(cpu: CpuState): Unit = UNIMPLEMENTED(0x0442D852)
