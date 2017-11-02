@@ -3,7 +3,7 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 
 [![Build Status](https://travis-ci.org/kpspemu/kpspemu.svg?branch=master)](https://travis-ci.org/kpspemu/kpspemu)
 
-![https://kpspemu.github.io/kpspemu-demo/cube/](/docs/cube.png)
+[![](/docs/cube.png)](https://kpspemu.github.io/kpspemu-demo/cube/)
 
 ### Running from source-code:
 
