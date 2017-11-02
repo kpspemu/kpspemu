@@ -2,18 +2,21 @@ package com.soywiz.kpspemu
 
 import com.soywiz.korge.Korge
 import com.soywiz.korge.bitmapfont.BitmapFont
-import com.soywiz.korge.input.onKeyDown
-import com.soywiz.korge.input.onKeyTyped
-import com.soywiz.korge.input.onKeyUp
+import com.soywiz.korge.input.*
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.scene.Module
 import com.soywiz.korge.scene.Scene
-import com.soywiz.korge.view.Container
-import com.soywiz.korge.view.View
-import com.soywiz.korge.view.text
-import com.soywiz.korge.view.texture
+import com.soywiz.korge.scene.sleep
+import com.soywiz.korge.service.Browser
+import com.soywiz.korge.time.seconds
+import com.soywiz.korge.tween.get
+import com.soywiz.korge.tween.tween
+import com.soywiz.korge.view.*
+import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.font.BitmapFontGenerator
 import com.soywiz.korio.JvmStatic
+import com.soywiz.korio.Korio
+import com.soywiz.korio.async.AsyncThread
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
@@ -23,7 +26,9 @@ import com.soywiz.korio.vfs.IsoVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.Matrix2d
+import com.soywiz.korma.geom.Rectangle
 import com.soywiz.korma.geom.SizeInt
+import com.soywiz.korui.Korui
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.Pbp
 import com.soywiz.kpspemu.format.elf.PspElf
@@ -44,7 +49,8 @@ fun main(args: Array<String>) = Main.main(args)
 object Main {
 	@JvmStatic
 	fun main(args: Array<String>) = Korge(KpspemuModule, injector = AsyncInjector()
-		.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene() }
+		.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class)) }
+		.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
 	)
 }
 
@@ -56,13 +62,43 @@ object KpspemuModule : Module() {
 	override val size: SizeInt get() = SizeInt(480, 272)
 }
 
-class KpspemuMainScene : Scene(), WithEmulator {
+class KpspemuMainScene(
+	val browser: Browser
+) : Scene(), WithEmulator {
+	lateinit var exeFile: VfsFile
 	lateinit override var emulator: Emulator
 	val tex by lazy { views.texture(display.bmp) }
 	val agRenderer by lazy { AGRenderer(this, tex) }
 	val hudFont by lazy { BitmapFont(views.ag, "Lucida Console", 32, BitmapFontGenerator.LATIN_ALL, mipmaps = false) }
+	var running = true
+	var ended = false
+
+	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
+		running = true
+		ended = false
+		emulator = Emulator(
+			coroutineContext,
+			mem = Memory(),
+			gpuRenderer = object : GpuRenderer {
+				override fun render(batches: List<GeBatch>) {
+					agRenderer.batchesQueue += batches
+				}
+			}
+		).apply {
+			registerNativeModules()
+			loadExecutableAndStart(exeFile)
+			//threadManager.trace("_start")
+			//threadManager.trace("user_main")
+		}
+	}
+
+	lateinit var hud: Container
 
 	suspend override fun sceneInit(sceneView: Container) {
+		println("KORIO: ${Korio.VERSION}")
+		println("KORGE: ${Korge.VERSION}")
+		println("KORUI: ${Korui.VERSION}")
+
 		val samplesFolder = when {
 			OS.isJs -> applicationVfs
 		//else -> ResourcesVfs
@@ -93,24 +129,13 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val exeFile = samplesFolder["TrigWars.iso"]
 		//val exeFile = samplesFolder["TrigWars.zip"]
 
-		emulator = Emulator(
-			coroutineContext,
-			mem = Memory(),
-			gpuRenderer = object : GpuRenderer {
-				override fun render(batches: List<GeBatch>) {
-					agRenderer.batchesQueue += batches
-				}
-			}
-		).apply {
-			registerNativeModules()
-			loadExecutableAndStart(exeFile)
-			//threadManager.trace("_start")
-			//threadManager.trace("user_main")
+		hud = views.container()
+		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xAA)).apply {
+			enabled = false
+			mouseEnabled = false
 		}
 
-		var running = true
-		var ended = false
-		val hud = views.container()
+		createEmulatorWithExe(exeFile)
 
 		sceneView.addUpdatable {
 			//controller.updateButton(PspCtrlButtons.cross, true) // auto press X
@@ -126,6 +151,7 @@ class KpspemuMainScene : Scene(), WithEmulator {
 				if (!ended) {
 					ended = true
 					println("COMPLETED")
+					display.clear()
 				}
 			}
 		}
@@ -161,24 +187,52 @@ class KpspemuMainScene : Scene(), WithEmulator {
 			)
 		}
 
-		sceneView.onKeyTyped { println(it.keyCode) }
-		sceneView.onKeyDown { updateKey(it.keyCode, true) }
-		sceneView.onKeyUp { updateKey(it.keyCode, false) }
+		hud.alpha = 0.0
 
 		val statsText = views.text(agRenderer.stats.toString(), textSize = 10.0, font = hudFont).apply {
 			x = 8.0
-			y = 8.0
+			y = 40.0
 		}
 
 		hud += statsText
 
-		sceneView += object : View(views) {
+		hud += views.simpleButton("Load...", font = hudFont).apply {
+			x = 8.0
+			y = 8.0
+		}.onClick {
+			createEmulatorWithExe(browser.openFile())
+		}
+
+		val displayView = object : View(views) {
+			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
 			override fun render(ctx: RenderContext, m: Matrix2d) {
 				agRenderer.render(ctx, m)
 				statsText.text = agRenderer.stats.toString()
 			}
 		}
+
+		sceneView += displayView
 		sceneView += hud
+
+		sceneView.onMove { hudOpen() }
+		sceneView.onOut { hudClose() }
+		sceneView.onClick { if (hud.alpha < 0.5) { hudOpen() } else { hudClose() } }
+		sceneView.onKeyTyped { println(it.keyCode) }
+		sceneView.onKeyDown { updateKey(it.keyCode, true) }
+		sceneView.onKeyUp { updateKey(it.keyCode, false) }
+
+	}
+
+	val hudQueue = AsyncThread()
+
+	suspend fun hudOpen() = hudQueue.cancelAndQueue {
+		hud.tween(hud::alpha[1.0], hud::x[0.0], time = 0.2.seconds)
+		sleep(2.seconds)
+		hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
+	}
+
+	suspend fun hudClose() = hudQueue.cancelAndQueue {
+		hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
 	}
 }
 
@@ -217,4 +271,21 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 			invalidOp("Don't know how to load executable file $file")
 		}
 	}
+}
+
+fun Views.simpleButton(text: String, width: Int = 80, height: Int = 24, font: BitmapFont = this.defaultFont): View {
+	val button = container()
+	val colorOver = RGBA(0xA0, 0xA0, 0xA0, 0xFF)
+	val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
+
+	val bg = solidRect(width, height, colorOut)
+	button += bg
+	button += text(text, font = font).apply {
+		x = 4.0
+		y = 4.0
+		enabled = false
+	}
+	button.onOut { bg.colorMul = colorOut }
+	button.onOver { bg.colorMul = colorOver }
+	return button
 }

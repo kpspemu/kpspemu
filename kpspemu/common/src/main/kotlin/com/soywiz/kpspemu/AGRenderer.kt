@@ -28,6 +28,11 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		var batches: Int = 0,
 		var vertices: Int = 0
 	) {
+		fun reset() {
+			batches = 0
+			vertices = 0
+		}
+
 		override fun toString(): String = "Batches: $batches\nVertices: $vertices"
 	}
 
@@ -40,6 +45,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		val ag = ctx.ag
 		ag.checkErrors = false
 		ctx.flush()
+		stats.reset()
+
 		if (DIRECT_FAST_SHARP_RENDERING) {
 			if (batchesQueue.isNotEmpty()) {
 				renderBatches(ag)
@@ -70,8 +77,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private val vv = VertexRaw()
 
 	private fun renderBatches(ag: AG) {
-		stats.batches = 0
-		stats.vertices = 0
+		stats.reset()
 		try {
 			for (batches in batchesQueue) for (batch in batches) renderBatch(ag, batch)
 		} finally {

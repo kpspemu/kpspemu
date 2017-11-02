@@ -55,4 +55,11 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 			}
 		}
 	}
+
+	fun clear() {
+		for (n in 0 until 512 * 272) {
+			mem.sw(address + n * 4, mem.lw(address + n * 4).inv())
+		}
+		//mem.fill(0, Memory.VIDEOMEM.start, Memory.VIDEOMEM.size)
+	}
 }
