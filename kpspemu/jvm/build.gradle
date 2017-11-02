@@ -10,6 +10,7 @@ dependencies {
     compile "com.soywiz:korag:$koragVersion"
     compile "com.soywiz:korio:$korioVersion"
     compile "com.soywiz:korge:$korgeVersion"
+    compile "com.soywiz:korui:$koruiVersion"
 }
 
 task runApp(type: JavaExec) {

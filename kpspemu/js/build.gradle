@@ -10,6 +10,7 @@ dependencies {
     compile "com.soywiz:korag-js:$koragVersion"
     compile "com.soywiz:korio-js:$korioVersion"
     compile "com.soywiz:korge-js:$korgeVersion"
+    compile "com.soywiz:korui-js:$koruiVersion"
 }
 
 // Cause problems with mocha

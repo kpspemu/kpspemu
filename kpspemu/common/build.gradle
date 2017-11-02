@@ -4,4 +4,5 @@ dependencies {
     compile "com.soywiz:korag-common:$koragVersion"
     compile "com.soywiz:korio-common:$korioVersion"
     compile "com.soywiz:korge-common:$korgeVersion"
+    compile "com.soywiz:korui-common:$koruiVersion"
 }

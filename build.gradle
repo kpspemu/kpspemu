@@ -4,6 +4,7 @@ buildscript {
     ext.koragVersion = "0.15.11"
     ext.korioVersion = "0.15.3"
     ext.korgeVersion = "0.15.8"
+    ext.koruiVersion = "0.15.7"
     ext.kotlinVersion = '1.2.0-beta-88'
     ext.compilerVersion = ext.kotlinVersion
     ext.librariesVersion = ext.kotlinVersion
