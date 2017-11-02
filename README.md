@@ -6,9 +6,23 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 ![](/docs/helloworld_js.png)
 ![](/docs/helloworld_jvm.png)
 
+### Running from source-code:
+
+JVM: `./gradlew runApp`
+JS: `./gradlew compileKotlin2Js && http-server kspspemu/js/web`
+
+Or open `build.gradle` with intelliJ and open `kspspemu/common/src/main/kotlin/com/soywiz/kpspemu/Main.kt` and fun `main` method
+
+### Running tests:
+
+```
+./gradlew check
+```
+
 ### Very basic online demo using Kotlin.JS:
 * https://kpspemu.github.io/kpspemu-demo/minifire (interpreted)
 * https://kpspemu.github.io/kpspemu-demo/helloworld (interpreted)
+* More coming soon...
 
 ---
 
@@ -26,7 +40,7 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 * [Fix Ortho Sample (madd ins + sceCtrl)](https://youtu.be/REF_wFJE85c) 
 
 ### Current state:
-Right now, this is just a proof of concept. It just runs a very small demo in interpreted mode.
+Right now it is capable to run some basic homebrew in interpreted mode.
 
 The aim is to create a portable emulator that can run fast in JVM, JS, Android, C++ targets (using libjit).
 

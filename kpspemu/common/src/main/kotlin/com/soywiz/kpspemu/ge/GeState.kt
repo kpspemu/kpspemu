@@ -193,7 +193,7 @@ class TextureState(val data: IntArray) {
 	val shadeU get() = param2(this.data[Op.TEXTURE_ENV_MAP_MATRIX], 0)
 	val shadeV get() = param2(this.data[Op.TEXTURE_ENV_MAP_MATRIX], 8)
 	val effect get() = TextureEffect(param8(this.data[Op.TFUNC], 0))
-	val hasAlpha get() = this.colorComponent == TextureColorComponent.Rgba
+	val hasAlpha get() = this.colorComponent == TextureColorComponent.RGBA
 	val colorComponent get() = TextureColorComponent(param8(this.data[Op.TFUNC], 8))
 	val fragment2X get() = param8(this.data[Op.TFUNC], 16) != 0
 	val envColor get() = Color().setRGB(param24(this.data[Op.TEC]))
