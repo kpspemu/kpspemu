@@ -34,6 +34,9 @@ import com.soywiz.kpspemu.util.*
 import com.soywiz.kpspemu.util.io.ZipVfs2
 import kotlin.reflect.KClass
 
+const val DIRECT_FAST_SHARP_RENDERING = false
+//const val DIRECT_FAST_SHARP_RENDERING = true
+
 fun main(args: Array<String>) = Main.main(args)
 
 object Main {
@@ -119,74 +122,112 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		private var vertexBuffer: AG.Buffer? = null
 
 		override fun render(ctx: RenderContext, m: Matrix2d) {
+			val ag = ctx.ag
 			ctx.flush()
-			if (batchesQueue.isNotEmpty()) {
-				try {
-					val ag = ctx.ag
-					//mem.read(display.address, tempBmp.data)
-
-					mem.read(display.address, tempBmp.data)
-
-					ag.renderToBitmap(tempBmp) {
-						//ag.drawBmp2(Bitmap32(512, 272, premult = true) { x, y -> RGBA.pack(0, y / 2, x / 2, 0xFF) })
-						ag.drawBmp(tempBmp)
-						//ag.clear(Colors.BLUE) // @TODO: Remove this
-
-						//println(batchesQueue)
-						//println(batchesQueue.size)
-						for (batches in batchesQueue) {
-							//println(batches.size)
-							for (batch in batches) {
-								if (indexBuffer == null) indexBuffer = ag.createIndexBuffer()
-								if (vertexBuffer == null) vertexBuffer = ag.createVertexBuffer()
-
-								indexBuffer!!.upload(batch.indices)
-								vertexBuffer!!.upload(batch.vertices)
-
-								//logger.level = PspLogLevel.TRACE
-								logger.trace { "----------------" }
-								logger.trace { "indices: ${batch.indices.toList()}" }
-								logger.trace { "primitive: ${batch.primType.toAg()}" }
-								logger.trace { "vertexCount: ${batch.vertexCount}" }
-								logger.trace { "vertexType: ${batch.state.vertexType.hex}" }
-								logger.trace { "vertices: ${batch.vertices.hex}" }
-								logger.trace { "matrix: ${batch.modelViewProjMatrix}" }
-
-								logger.trace {
-									val vr = VertexReader()
-									"" + vr.read(batch.vtype, batch.vertices.size / batch.vtype.size(), batch.vertices.openSync())
-								}
-
-								val pl = getProgramLayout(batch.state)
-								ag.draw(
-									type = batch.primType.toAg(),
-									vertices = vertexBuffer!!,
-									indices = indexBuffer!!,
-									program = pl.program,
-									vertexLayout = pl.layout,
-									vertexCount = batch.vertexCount,
-									uniforms = mapOf(
-										u_modelViewProjMatrix to batch.modelViewProjMatrix
-									),
-									blending = AG.Blending.NONE
-								)
-							}
-						}
+			if (DIRECT_FAST_SHARP_RENDERING) {
+				if (batchesQueue.isNotEmpty()) {
+					try {
+						for (batches in batchesQueue) for (batch in batches) renderBatch(ag, batch)
+					} finally {
+						batchesQueue.clear()
 					}
-					mem.write(display.address, tempBmp.data)
-				} finally {
-					batchesQueue.clear()
+				}
+			} else {
+				if (batchesQueue.isNotEmpty()) {
+					try {
+						mem.read(display.address, tempBmp.data)
+						ag.renderToBitmapEx(tempBmp) {
+							ag.drawBmp(tempBmp)
+							for (batches in batchesQueue) for (batch in batches) renderBatch(ag, batch)
+							//val depth = FloatArray(512 * 272)
+							//readDepth(512, 272, depth)
+							//println(depth.toList())
+						}
+						mem.write(display.address, tempBmp.data)
+					} finally {
+						batchesQueue.clear()
+					}
+				}
+
+				if (display.rawDisplay) {
+					display.decodeToBitmap32(display.bmp)
+					display.bmp.setAlpha(0xFF)
+					scene.tex.update(display.bmp)
+				}
+
+				ctx.batch.drawQuad(scene.tex, m = m, blendFactors = AG.Blending.NONE, filtering = false)
+			}
+		}
+
+		private val renderState = AG.RenderState()
+
+		fun TestFunctionEnum.toAg() = when (this) {
+			TestFunctionEnum.NEVER -> AG.CompareMode.NEVER
+			TestFunctionEnum.ALWAYS -> AG.CompareMode.ALWAYS
+			TestFunctionEnum.EQUAL -> AG.CompareMode.EQUAL
+			TestFunctionEnum.NOT_EQUAL -> AG.CompareMode.NOT_EQUAL
+			TestFunctionEnum.LESS -> AG.CompareMode.LESS
+			TestFunctionEnum.LESS_OR_EQUAL -> AG.CompareMode.LESS_EQUAL
+			TestFunctionEnum.GREATER -> AG.CompareMode.GREATER
+			TestFunctionEnum.GREATER_OR_EQUAL -> AG.CompareMode.GREATER_EQUAL
+		}
+
+		private fun renderBatch(ag: AG, batch: GeBatch) {
+			//if (batch.vertexCount < 10) return
+
+			if (indexBuffer == null) indexBuffer = ag.createIndexBuffer()
+			if (vertexBuffer == null) vertexBuffer = ag.createVertexBuffer()
+
+			val state = batch.state
+
+			indexBuffer!!.upload(batch.indices)
+			vertexBuffer!!.upload(batch.vertices)
+
+			//logger.level = PspLogLevel.TRACE
+			logger.trace { "----------------" }
+			logger.trace { "indices: ${batch.indices.toList()}" }
+			logger.trace { "primitive: ${batch.primType.toAg()}" }
+			logger.trace { "vertexCount: ${batch.vertexCount}" }
+			logger.trace { "vertexType: ${batch.state.vertexType.hex}" }
+			logger.trace { "vertices: ${batch.vertices.hex}" }
+			logger.trace { "matrix: ${batch.modelViewProjMatrix}" }
+
+			logger.trace {
+				val vr = VertexReader()
+				"" + vr.read(batch.vtype, batch.vertices.size / batch.vtype.size(), batch.vertices.openSync())
+			}
+
+			renderState.depthNear = state.depthTest.rangeNear.toFloat()
+			renderState.depthFar = state.depthTest.rangeFar.toFloat()
+
+			if (state.clearing) {
+				renderState.depthMask = false
+				renderState.depthFunc = AG.CompareMode.ALWAYS
+				if (state.clearFlags hasFlag ClearBufferSet.DepthBuffer) {
+					renderState.depthMask = true
+				}
+			} else {
+				renderState.depthMask = state.depthTest.mask == 0
+				renderState.depthFunc = when {
+					state.depthTest.enabled -> state.depthTest.func.toAg()
+					else -> AG.CompareMode.ALWAYS
 				}
 			}
 
-			if (display.rawDisplay) {
-				display.decodeToBitmap32(display.bmp)
-				display.bmp.setAlpha(0xFF)
-				scene.tex.update(display.bmp)
-			}
-
-			ctx.batch.drawQuad(scene.tex, m = m, blendFactors = AG.Blending.NONE, filtering = false)
-			//ctx.ag.drawBmp(display.bmp)
+			val pl = getProgramLayout(state)
+			ag.draw(
+				type = batch.primType.toAg(),
+				vertices = vertexBuffer!!,
+				indices = indexBuffer!!,
+				program = pl.program,
+				vertexLayout = pl.layout,
+				vertexCount = batch.vertexCount,
+				uniforms = mapOf(
+					u_modelViewProjMatrix to batch.modelViewProjMatrix
+				),
+				blending = AG.Blending.NONE,
+				renderState = renderState
+			)
 		}
 	}
 
@@ -212,8 +253,8 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		//val exeFile = samplesFolder["lines.elf"]
 		//val exeFile = samplesFolder["lines.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
-		//val exeFile = samplesFolder["cube.iso"]
-		val exeFile = samplesFolder["lights.pbp"]
+		val exeFile = samplesFolder["cube.iso"]
+		//val exeFile = samplesFolder["lights.pbp"]
 		//val exeFile = samplesFolder["cwd.elf"]
 		//val exeFile = samplesFolder["nehetutorial03.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
@@ -236,6 +277,8 @@ class KpspemuMainScene : Scene(), WithEmulator {
 		var ended = false
 
 		sceneView.addUpdatable {
+			//controller.updateButton(PspCtrlButtons.cross, true) // auto press X
+
 			if (running && emulator.running) {
 				try {
 					emulator.frameStep()

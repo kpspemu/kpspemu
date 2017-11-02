@@ -195,3 +195,11 @@ enum class PrimitiveType(override val id: Int) : IdEnum {
 
 	companion object : IdEnum.SmallCompanion<PrimitiveType>(values())
 }
+
+object ClearBufferSet {
+	val ColorBuffer = 1
+	val StencilBuffer = 2
+	val DepthBuffer = 4
+	val FastClear = 16
+}
+

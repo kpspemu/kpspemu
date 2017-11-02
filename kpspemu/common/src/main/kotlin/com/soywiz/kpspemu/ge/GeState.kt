@@ -231,10 +231,10 @@ class CullingState(val data: IntArray) {
 
 class DepthTestState(val data: IntArray) {
 	val enabled get() = bool1(this.data[Op.ZTESTENABLE])
-	val func get() = param8(this.data[Op.ZTST], 0)
+	val func get() = TestFunctionEnum(param8(this.data[Op.ZTST], 0))
 	val mask get() = param16(this.data[Op.ZMSK], 0)
-	val rangeNear get() = (this.data[Op.MAXZ] and 0xFFFF) / 65536
-	val rangeFar get() = (this.data[Op.MINZ] and 0xFFFF) / 65536
+	val rangeNear get() = (this.data[Op.MAXZ] and 0xFFFF).toDouble() / 65535.0
+	val rangeFar get() = (this.data[Op.MINZ] and 0xFFFF).toDouble() / 65535.0
 }
 
 class Color(var r: Float = 0f, var g: Float = 0f, var b: Float = 0f, var a: Float = 1f) {

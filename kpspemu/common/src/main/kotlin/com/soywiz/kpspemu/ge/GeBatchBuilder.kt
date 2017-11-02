@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.kpspemu.mem
+import kotlin.math.max
 
 class GeBatchBuilder(val ge: Ge) {
 	val state = ge.state
@@ -83,13 +84,16 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	fun addIndices(count: Int) {
+		var maxIdx = 0
+
 		//println("addIndices: size=$size, count=$count")
 		when (vertexType.index) {
 			IndexEnum.VOID -> {
 				when (primitiveType) {
 					PrimitiveType.SPRITES -> {
 						var m = 0
-						for (n in 0 until count / 2) {
+						val nsprites = count / 2
+						for (n in 0 until nsprites) {
 							// 0..3
 							// 2..1
 
@@ -108,6 +112,17 @@ class GeBatchBuilder(val ge: Ge) {
 						for (n in 0 until count) putIndex(vertexCount + n)
 					}
 				}
+				maxIdx = count
+			}
+			IndexEnum.SHORT -> {
+				val iaddr = state.indexAddress
+				for (n in 0 until count) {
+					val idx = mem.lhu(iaddr + n * 2)
+					maxIdx = max(maxIdx, idx + 1)
+					putIndex(idx)
+				}
+				//println("maxIdx: $maxIdx")
+				//state.indexAddress += count * 2
 			}
 			else -> TODO("addIndices: ${vertexType.index}, $count")
 		}
@@ -116,7 +131,7 @@ class GeBatchBuilder(val ge: Ge) {
 		when (primitiveType) {
 			PrimitiveType.SPRITES -> {
 				var vaddr = state.vertexAddress
-				for (n in 0 until count / 2) {
+				for (n in 0 until maxIdx / 2) {
 					val TLpos = vertexBufferPos
 					putVertex(vaddr); vaddr += vertexSize // TL
 					val BRpos = vertexBufferPos
@@ -129,7 +144,7 @@ class GeBatchBuilder(val ge: Ge) {
 			}
 			else -> {
 				var vaddr = state.vertexAddress
-				for (n in 0 until count) {
+				for (n in 0 until maxIdx) {
 					putVertex(vaddr)
 					vaddr += vertexSize
 				}

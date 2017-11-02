@@ -133,3 +133,5 @@ fun Int.countTrailingZeros(): Int {
 	}
 	return count
 }
+
+infix fun Int.hasFlag(bits: Int) = (this and bits) == bits

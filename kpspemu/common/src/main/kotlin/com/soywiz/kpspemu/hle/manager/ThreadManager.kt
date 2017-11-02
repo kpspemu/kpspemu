@@ -15,6 +15,13 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.ptr
 import com.soywiz.kpspemu.util.PspLogger
 
+//const val INSTRUCTIONS_PER_STEP = 1_000_000
+//const val INSTRUCTIONS_PER_STEP = 2_000_000
+//const val INSTRUCTIONS_PER_STEP = 4_000_000
+const val INSTRUCTIONS_PER_STEP = 5_000_000
+//const val INSTRUCTIONS_PER_STEP = 10_000_000
+//const val INSTRUCTIONS_PER_STEP = 100_000_000
+
 class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator) {
 	val threads get() = resourcesById.values
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
@@ -175,8 +182,7 @@ class PspThread internal constructor(
 
 	fun step(now: Long) {
 		try {
-			//interpreter.steps(1_000_000)
-			interpreter.steps(1_000_000)
+			interpreter.steps(INSTRUCTIONS_PER_STEP)
 		} catch (e: CpuBreakException) {
 			when (e.id) {
 				CpuBreakException.THREAD_EXIT_KILL -> {
