@@ -107,9 +107,29 @@ object BitUtils {
 
 fun Int.compareToUnsigned(that: Int) = IntEx.compareUnsigned(this, that)
 
-infix fun Int.ult(that: Int) = IntEx.compareUnsigned(this, that) < 0
+// l xor MIN_VALUE, r xor MIN_VALUE
+
+//const val INT_MIN_VALUE = -0x80000000
+//const val INT_MAX_VALUE = 0x7fffffff
+
+infix inline fun Int.ult(that: Int) = (this xor (-0x80000000)) < (that xor (-0x80000000))
+
+//infix fun Int.ult(that: Int) = IntEx.compareUnsigned(this, that) < 0
 infix fun Int.ule(that: Int) = IntEx.compareUnsigned(this, that) <= 0
 infix fun Int.ugt(that: Int) = IntEx.compareUnsigned(this, that) > 0
 infix fun Int.uge(that: Int) = IntEx.compareUnsigned(this, that) >= 0
 
 fun Int.extractBool(offset: Int) = this.extract(offset, 1) != 0
+
+fun Int.bitReverse(): Int = BitUtils.bitrev32(this)
+fun Int.countLeadingZeros(): Int = BitUtils.clz(this)
+
+fun Int.countTrailingZeros(): Int {
+	var count = 0
+	var v = this
+	while ((v and 1) == 0) {
+		v = v shr 1
+		count++
+	}
+	return count
+}

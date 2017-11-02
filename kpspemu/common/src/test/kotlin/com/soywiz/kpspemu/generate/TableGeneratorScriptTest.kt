@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.generate
 
 import com.soywiz.korio.ds.lmapOf
-import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.Indenter
 import com.soywiz.korio.util.quote
 import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.util.countTrailingZeros
 import org.junit.Test
 import kotlin.test.Ignore
 
@@ -99,11 +99,16 @@ class TableGenerator {
 		}
 
 		fun Int.str() = "$this"
+		//fun Int.str() = this.hex
 
-		writer.line("""when ((i and ${commonMask.str()})) {""")
+		val maskShift = commonMask.countTrailingZeros()
+		val shiftedCommonMask = commonMask ushr maskShift
+
+		writer.line("""when (((i ushr ${maskShift.str()}) and ${shiftedCommonMask.str()})) {""")
 		writer.indent {
-			for ((groupKey, group) in groups) {
-				val case = "${groupKey.str()} ->"
+			for ((groupKey, group) in groups.toList().sortedBy { it.first ushr maskShift }) {
+			//for ((groupKey, group) in groups) {
+				val case = "${(groupKey ushr maskShift).str()} ->"
 				if (group.size == 1) {
 					writer.line("$case return e.${group[0].name.kescape()}(s)")
 				} else {
