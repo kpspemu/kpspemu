@@ -5,415 +5,415 @@ import com.soywiz.korio.lang.format
 @Suppress("RemoveRedundantCallsOfConversionMethods", "LiftReturnOrAssignment", "RedundantUnitReturnType")
 class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 	fun dispatch(s: T, pc: Int, i: Int): Unit {
-		when ((i and 0xFC000000.toInt())) {
-			0x00000000.toInt() ->
-				when ((i and 0x0000003F.toInt())) {
-					0x00000020.toInt() -> return e.add(s)
-					0x00000021.toInt() -> return e.addu(s)
-					0x00000022.toInt() -> return e.sub(s)
-					0x00000023.toInt() -> return e.subu(s)
-					0x00000024.toInt() -> return e.and(s)
-					0x00000027.toInt() -> return e.nor(s)
-					0x00000025.toInt() -> return e.or(s)
-					0x00000026.toInt() -> return e.xor(s)
-					0x00000000.toInt() -> return e.sll(s)
-					0x00000004.toInt() -> return e.sllv(s)
-					0x00000003.toInt() -> return e.sra(s)
-					0x00000007.toInt() -> return e.srav(s)
-					0x00000002.toInt() ->
-						when ((i and 0xFFE00000.toInt())) {
-							0x00000000.toInt() -> return e.srl(s)
-							0x00200000.toInt() -> return e.rotr(s)
+		when ((i and -67108864)) {
+			0 ->
+				when ((i and 63)) {
+					32 -> return e.add(s)
+					33 -> return e.addu(s)
+					34 -> return e.sub(s)
+					35 -> return e.subu(s)
+					36 -> return e.and(s)
+					39 -> return e.nor(s)
+					37 -> return e.or(s)
+					38 -> return e.xor(s)
+					0 -> return e.sll(s)
+					4 -> return e.sllv(s)
+					3 -> return e.sra(s)
+					7 -> return e.srav(s)
+					2 ->
+						when ((i and -2097152)) {
+							0 -> return e.srl(s)
+							2097152 -> return e.rotr(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (0) failed mask 0x%08X".format(i, pc, -2097152))
 						}
-					0x00000006.toInt() ->
-						when ((i and 0xFC0007C0.toInt())) {
-							0x00000000.toInt() -> return e.srlv(s)
-							0x00000040.toInt() -> return e.rotrv(s)
+					6 ->
+						when ((i and -67106880)) {
+							0 -> return e.srlv(s)
+							64 -> return e.rotrv(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (1) failed mask 0x%08X".format(i, pc, -67106880))
 						}
-					0x0000002A.toInt() -> return e.slt(s)
-					0x0000002B.toInt() -> return e.sltu(s)
-					0x0000002C.toInt() -> return e.max(s)
-					0x0000002D.toInt() -> return e.min(s)
-					0x0000001A.toInt() -> return e.div(s)
-					0x0000001B.toInt() -> return e.divu(s)
-					0x00000018.toInt() -> return e.mult(s)
-					0x00000019.toInt() -> return e.multu(s)
-					0x0000001C.toInt() -> return e.madd(s)
-					0x0000001D.toInt() -> return e.maddu(s)
-					0x0000002E.toInt() -> return e.msub(s)
-					0x0000002F.toInt() -> return e.msubu(s)
-					0x00000010.toInt() -> return e.mfhi(s)
-					0x00000012.toInt() -> return e.mflo(s)
-					0x00000011.toInt() -> return e.mthi(s)
-					0x00000013.toInt() -> return e.mtlo(s)
-					0x0000000A.toInt() -> return e.movz(s)
-					0x0000000B.toInt() -> return e.movn(s)
-					0x00000016.toInt() -> return e.clz(s)
-					0x00000017.toInt() -> return e.clo(s)
-					0x00000008.toInt() -> return e.jr(s)
-					0x00000009.toInt() -> return e.jalr(s)
-					0x0000000C.toInt() -> return e.syscall(s)
-					0x0000000F.toInt() -> return e.sync(s)
-					0x0000000D.toInt() -> return e._break(s)
+					42 -> return e.slt(s)
+					43 -> return e.sltu(s)
+					44 -> return e.max(s)
+					45 -> return e.min(s)
+					26 -> return e.div(s)
+					27 -> return e.divu(s)
+					24 -> return e.mult(s)
+					25 -> return e.multu(s)
+					28 -> return e.madd(s)
+					29 -> return e.maddu(s)
+					46 -> return e.msub(s)
+					47 -> return e.msubu(s)
+					16 -> return e.mfhi(s)
+					18 -> return e.mflo(s)
+					17 -> return e.mthi(s)
+					19 -> return e.mtlo(s)
+					10 -> return e.movz(s)
+					11 -> return e.movn(s)
+					22 -> return e.clz(s)
+					23 -> return e.clo(s)
+					8 -> return e.jr(s)
+					9 -> return e.jalr(s)
+					12 -> return e.syscall(s)
+					15 -> return e.sync(s)
+					13 -> return e._break(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (2) failed mask 0x%08X".format(i, pc, 63))
 				}
-			0x20000000.toInt() -> return e.addi(s)
-			0x24000000.toInt() -> return e.addiu(s)
-			0x30000000.toInt() -> return e.andi(s)
-			0x34000000.toInt() -> return e.ori(s)
-			0x38000000.toInt() -> return e.xori(s)
-			0x28000000.toInt() -> return e.slti(s)
-			0x2C000000.toInt() -> return e.sltiu(s)
-			0x3C000000.toInt() -> return e.lui(s)
-			0x7C000000.toInt() ->
-				when ((i and 0x0000003F.toInt())) {
-					0x00000020.toInt() ->
-						when ((i and 0xFFE007C0.toInt())) {
-							0x7C000400.toInt() -> return e.seb(s)
-							0x7C000600.toInt() -> return e.seh(s)
-							0x7C000500.toInt() -> return e.bitrev(s)
-							0x7C000080.toInt() -> return e.wsbh(s)
-							0x7C0000C0.toInt() -> return e.wsbw(s)
+			536870912 -> return e.addi(s)
+			603979776 -> return e.addiu(s)
+			805306368 -> return e.andi(s)
+			872415232 -> return e.ori(s)
+			939524096 -> return e.xori(s)
+			671088640 -> return e.slti(s)
+			738197504 -> return e.sltiu(s)
+			1006632960 -> return e.lui(s)
+			2080374784 ->
+				when ((i and 63)) {
+					32 ->
+						when ((i and -2095168)) {
+							2080375808 -> return e.seb(s)
+							2080376320 -> return e.seh(s)
+							2080376064 -> return e.bitrev(s)
+							2080374912 -> return e.wsbh(s)
+							2080374976 -> return e.wsbw(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (3) failed mask 0x%08X".format(i, pc, -2095168))
 						}
-					0x00000000.toInt() -> return e.ext(s)
-					0x00000004.toInt() -> return e.ins(s)
+					0 -> return e.ext(s)
+					4 -> return e.ins(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (4) failed mask 0x%08X".format(i, pc, 63))
 				}
-			0x10000000.toInt() -> return e.beq(s)
-			0x50000000.toInt() -> return e.beql(s)
-			0x04000000.toInt() ->
-				when ((i and 0x001F0000.toInt())) {
-					0x00010000.toInt() -> return e.bgez(s)
-					0x00030000.toInt() -> return e.bgezl(s)
-					0x00110000.toInt() -> return e.bgezal(s)
-					0x00130000.toInt() -> return e.bgezall(s)
-					0x00000000.toInt() -> return e.bltz(s)
-					0x00020000.toInt() -> return e.bltzl(s)
-					0x00100000.toInt() -> return e.bltzal(s)
-					0x00120000.toInt() -> return e.bltzall(s)
+			268435456 -> return e.beq(s)
+			1342177280 -> return e.beql(s)
+			67108864 ->
+				when ((i and 2031616)) {
+					65536 -> return e.bgez(s)
+					196608 -> return e.bgezl(s)
+					1114112 -> return e.bgezal(s)
+					1245184 -> return e.bgezall(s)
+					0 -> return e.bltz(s)
+					131072 -> return e.bltzl(s)
+					1048576 -> return e.bltzal(s)
+					1179648 -> return e.bltzall(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (5) failed mask 0x%08X".format(i, pc, 2031616))
 				}
-			0x18000000.toInt() -> return e.blez(s)
-			0x58000000.toInt() -> return e.blezl(s)
-			0x1C000000.toInt() -> return e.bgtz(s)
-			0x5C000000.toInt() -> return e.bgtzl(s)
-			0x14000000.toInt() -> return e.bne(s)
-			0x54000000.toInt() -> return e.bnel(s)
-			0x08000000.toInt() -> return e.j(s)
-			0x0C000000.toInt() -> return e.jal(s)
-			0x44000000.toInt() ->
-				when ((i and 0x03E00000.toInt())) {
-					0x01000000.toInt() ->
-						when ((i and 0xFC1F0000.toInt())) {
-							0x44000000.toInt() -> return e.bc1f(s)
-							0x44010000.toInt() -> return e.bc1t(s)
-							0x44020000.toInt() -> return e.bc1fl(s)
-							0x44030000.toInt() -> return e.bc1tl(s)
+			402653184 -> return e.blez(s)
+			1476395008 -> return e.blezl(s)
+			469762048 -> return e.bgtz(s)
+			1543503872 -> return e.bgtzl(s)
+			335544320 -> return e.bne(s)
+			1409286144 -> return e.bnel(s)
+			134217728 -> return e.j(s)
+			201326592 -> return e.jal(s)
+			1140850688 ->
+				when ((i and 65011712)) {
+					16777216 ->
+						when ((i and -65077248)) {
+							1140850688 -> return e.bc1f(s)
+							1140916224 -> return e.bc1t(s)
+							1140981760 -> return e.bc1fl(s)
+							1141047296 -> return e.bc1tl(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (6) failed mask 0x%08X".format(i, pc, -65077248))
 						}
-					0x02000000.toInt() ->
-						when ((i and 0xFC00003F.toInt())) {
-							0x44000000.toInt() -> return e.add_s(s)
-							0x44000001.toInt() -> return e.sub_s(s)
-							0x44000002.toInt() -> return e.mul_s(s)
-							0x44000003.toInt() -> return e.div_s(s)
-							0x44000004.toInt() -> return e.sqrt_s(s)
-							0x44000005.toInt() -> return e.abs_s(s)
-							0x44000006.toInt() -> return e.mov_s(s)
-							0x44000007.toInt() -> return e.neg_s(s)
-							0x4400000C.toInt() -> return e.round_w_s(s)
-							0x4400000D.toInt() -> return e.trunc_w_s(s)
-							0x4400000E.toInt() -> return e.ceil_w_s(s)
-							0x4400000F.toInt() -> return e.floor_w_s(s)
-							0x44000024.toInt() -> return e.cvt_w_s(s)
-							0x44000030.toInt() -> return e.c_f_s(s)
-							0x44000031.toInt() -> return e.c_un_s(s)
-							0x44000032.toInt() -> return e.c_eq_s(s)
-							0x44000033.toInt() -> return e.c_ueq_s(s)
-							0x44000034.toInt() -> return e.c_olt_s(s)
-							0x44000035.toInt() -> return e.c_ult_s(s)
-							0x44000036.toInt() -> return e.c_ole_s(s)
-							0x44000037.toInt() -> return e.c_ule_s(s)
-							0x44000038.toInt() -> return e.c_sf_s(s)
-							0x44000039.toInt() -> return e.c_ngle_s(s)
-							0x4400003A.toInt() -> return e.c_seq_s(s)
-							0x4400003B.toInt() -> return e.c_ngl_s(s)
-							0x4400003C.toInt() -> return e.c_lt_s(s)
-							0x4400003D.toInt() -> return e.c_nge_s(s)
-							0x4400003E.toInt() -> return e.c_le_s(s)
-							0x4400003F.toInt() -> return e.c_ngt_s(s)
+					33554432 ->
+						when ((i and -67108801)) {
+							1140850688 -> return e.add_s(s)
+							1140850689 -> return e.sub_s(s)
+							1140850690 -> return e.mul_s(s)
+							1140850691 -> return e.div_s(s)
+							1140850692 -> return e.sqrt_s(s)
+							1140850693 -> return e.abs_s(s)
+							1140850694 -> return e.mov_s(s)
+							1140850695 -> return e.neg_s(s)
+							1140850700 -> return e.round_w_s(s)
+							1140850701 -> return e.trunc_w_s(s)
+							1140850702 -> return e.ceil_w_s(s)
+							1140850703 -> return e.floor_w_s(s)
+							1140850724 -> return e.cvt_w_s(s)
+							1140850736 -> return e.c_f_s(s)
+							1140850737 -> return e.c_un_s(s)
+							1140850738 -> return e.c_eq_s(s)
+							1140850739 -> return e.c_ueq_s(s)
+							1140850740 -> return e.c_olt_s(s)
+							1140850741 -> return e.c_ult_s(s)
+							1140850742 -> return e.c_ole_s(s)
+							1140850743 -> return e.c_ule_s(s)
+							1140850744 -> return e.c_sf_s(s)
+							1140850745 -> return e.c_ngle_s(s)
+							1140850746 -> return e.c_seq_s(s)
+							1140850747 -> return e.c_ngl_s(s)
+							1140850748 -> return e.c_lt_s(s)
+							1140850749 -> return e.c_nge_s(s)
+							1140850750 -> return e.c_le_s(s)
+							1140850751 -> return e.c_ngt_s(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (7) failed mask 0x%08X".format(i, pc, -67108801))
 						}
-					0x02800000.toInt() -> return e.cvt_s_w(s)
-					0x00000000.toInt() -> return e.mfc1(s)
-					0x00800000.toInt() -> return e.mtc1(s)
-					0x00400000.toInt() -> return e.cfc1(s)
-					0x00C00000.toInt() -> return e.ctc1(s)
+					41943040 -> return e.cvt_s_w(s)
+					0 -> return e.mfc1(s)
+					8388608 -> return e.mtc1(s)
+					4194304 -> return e.cfc1(s)
+					12582912 -> return e.ctc1(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (8) failed mask 0x%08X".format(i, pc, 65011712))
 				}
-			0x80000000.toInt() -> return e.lb(s)
-			0x84000000.toInt() -> return e.lh(s)
-			0x8C000000.toInt() -> return e.lw(s)
-			0x88000000.toInt() -> return e.lwl(s)
-			0x98000000.toInt() -> return e.lwr(s)
-			0x90000000.toInt() -> return e.lbu(s)
-			0x94000000.toInt() -> return e.lhu(s)
-			0xA0000000.toInt() -> return e.sb(s)
-			0xA4000000.toInt() -> return e.sh(s)
-			0xAC000000.toInt() -> return e.sw(s)
-			0xA8000000.toInt() -> return e.swl(s)
-			0xB8000000.toInt() -> return e.swr(s)
-			0xC0000000.toInt() -> return e.ll(s)
-			0xE0000000.toInt() -> return e.sc(s)
-			0xC4000000.toInt() -> return e.lwc1(s)
-			0xE4000000.toInt() -> return e.swc1(s)
-			0xBC000000.toInt() -> return e.cache(s)
-			0x70000000.toInt() ->
-				when ((i and 0x000007FF.toInt())) {
-					0x0000003F.toInt() -> return e.dbreak(s)
-					0x00000000.toInt() -> return e.halt(s)
-					0x0000003E.toInt() -> return e.dret(s)
-					0x00000024.toInt() -> return e.mfic(s)
-					0x00000026.toInt() -> return e.mtic(s)
-					0x0000003D.toInt() ->
-						when ((i and 0xFFE00000.toInt())) {
-							0x70000000.toInt() -> return e.mfdr(s)
-							0x70800000.toInt() -> return e.mtdr(s)
+			-2147483648 -> return e.lb(s)
+			-2080374784 -> return e.lh(s)
+			-1946157056 -> return e.lw(s)
+			-2013265920 -> return e.lwl(s)
+			-1744830464 -> return e.lwr(s)
+			-1879048192 -> return e.lbu(s)
+			-1811939328 -> return e.lhu(s)
+			-1610612736 -> return e.sb(s)
+			-1543503872 -> return e.sh(s)
+			-1409286144 -> return e.sw(s)
+			-1476395008 -> return e.swl(s)
+			-1207959552 -> return e.swr(s)
+			-1073741824 -> return e.ll(s)
+			-536870912 -> return e.sc(s)
+			-1006632960 -> return e.lwc1(s)
+			-469762048 -> return e.swc1(s)
+			-1140850688 -> return e.cache(s)
+			1879048192 ->
+				when ((i and 2047)) {
+					63 -> return e.dbreak(s)
+					0 -> return e.halt(s)
+					62 -> return e.dret(s)
+					36 -> return e.mfic(s)
+					38 -> return e.mtic(s)
+					61 ->
+						when ((i and -2097152)) {
+							1879048192 -> return e.mfdr(s)
+							1887436800 -> return e.mtdr(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (9) failed mask 0x%08X".format(i, pc, -2097152))
 						}
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (10) failed mask 0x%08X".format(i, pc, 2047))
 				}
-			0x40000000.toInt() ->
-				when ((i and 0x03E007FF.toInt())) {
-					0x02000018.toInt() -> return e.eret(s)
-					0x00400000.toInt() -> return e.cfc0(s)
-					0x00C00000.toInt() -> return e.ctc0(s)
-					0x00000000.toInt() -> return e.mfc0(s)
-					0x00800000.toInt() -> return e.mtc0(s)
+			1073741824 ->
+				when ((i and 65013759)) {
+					33554456 -> return e.eret(s)
+					4194304 -> return e.cfc0(s)
+					12582912 -> return e.ctc0(s)
+					0 -> return e.mfc0(s)
+					8388608 -> return e.mtc0(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (11) failed mask 0x%08X".format(i, pc, 65013759))
 				}
-			0x48000000.toInt() ->
-				when ((i and 0x03E00000.toInt())) {
-					0x00600000.toInt() ->
-						when ((i and 0xFC00FF80.toInt())) {
-							0x48000000.toInt() -> return e.mfv(s)
-							0x48000080.toInt() -> return e.mfvc(s)
+			1207959552 ->
+				when ((i and 65011712)) {
+					6291456 ->
+						when ((i and -67043456)) {
+							1207959552 -> return e.mfv(s)
+							1207959680 -> return e.mfvc(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (12) failed mask 0x%08X".format(i, pc, -67043456))
 						}
-					0x00E00000.toInt() ->
-						when ((i and 0xFC00FF80.toInt())) {
-							0x48000000.toInt() -> return e.mtv(s)
-							0x48000080.toInt() -> return e.mtvc(s)
+					14680064 ->
+						when ((i and -67043456)) {
+							1207959552 -> return e.mtv(s)
+							1207959680 -> return e.mtvc(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (13) failed mask 0x%08X".format(i, pc, -67043456))
 						}
-					0x01000000.toInt() ->
-						when ((i and 0xFC030000.toInt())) {
-							0x48000000.toInt() -> return e.bvf(s)
-							0x48010000.toInt() -> return e.bvt(s)
-							0x48020000.toInt() -> return e.bvfl(s)
-							0x48030000.toInt() -> return e.bvtl(s)
+					16777216 ->
+						when ((i and -66912256)) {
+							1207959552 -> return e.bvf(s)
+							1208025088 -> return e.bvt(s)
+							1208090624 -> return e.bvfl(s)
+							1208156160 -> return e.bvtl(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (14) failed mask 0x%08X".format(i, pc, -66912256))
 						}
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (15) failed mask 0x%08X".format(i, pc, 65011712))
 				}
-			0xC8000000.toInt() -> return e.lv_s(s)
-			0xD8000000.toInt() -> return e.lv_q(s)
-			0xD4000000.toInt() ->
-				when ((i and 0x00000002.toInt())) {
-					0x00000000.toInt() -> return e.lvl_q(s)
-					0x00000002.toInt() -> return e.lvr_q(s)
+			-939524096 -> return e.lv_s(s)
+			-671088640 -> return e.lv_q(s)
+			-738197504 ->
+				when ((i and 2)) {
+					0 -> return e.lvl_q(s)
+					2 -> return e.lvr_q(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (16) failed mask 0x%08X".format(i, pc, 2))
 				}
-			0xF8000000.toInt() -> return e.sv_q(s)
-			0x64000000.toInt() ->
-				when ((i and 0x03800000.toInt())) {
-					0x00800000.toInt() -> return e.vdot(s)
-					0x01000000.toInt() -> return e.vscl(s)
-					0x02000000.toInt() -> return e.vhdp(s)
-					0x02800000.toInt() -> return e.vcrs_t(s)
-					0x00000000.toInt() -> return e.vmul(s)
-					0x03000000.toInt() -> return e.vdet(s)
+			-134217728 -> return e.sv_q(s)
+			1677721600 ->
+				when ((i and 58720256)) {
+					8388608 -> return e.vdot(s)
+					16777216 -> return e.vscl(s)
+					33554432 -> return e.vhdp(s)
+					41943040 -> return e.vcrs_t(s)
+					0 -> return e.vmul(s)
+					50331648 -> return e.vdet(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (17) failed mask 0x%08X".format(i, pc, 58720256))
 				}
-			0x6C000000.toInt() ->
-				when ((i and 0x03800000.toInt())) {
-					0x03000000.toInt() -> return e.vsge(s)
-					0x03800000.toInt() -> return e.vslt(s)
-					0x01000000.toInt() -> return e.vmin(s)
-					0x01800000.toInt() -> return e.vmax(s)
-					0x00000000.toInt() -> return e.vcmp(s)
-					0x02800000.toInt() -> return e.vscmp(s)
+			1811939328 ->
+				when ((i and 58720256)) {
+					50331648 -> return e.vsge(s)
+					58720256 -> return e.vslt(s)
+					16777216 -> return e.vmin(s)
+					25165824 -> return e.vmax(s)
+					0 -> return e.vcmp(s)
+					41943040 -> return e.vscmp(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (18) failed mask 0x%08X".format(i, pc, 58720256))
 				}
-			0xF0000000.toInt() ->
-				when ((i and 0x03800000.toInt())) {
-					0x03800000.toInt() ->
-						when ((i and 0xFC600000.toInt())) {
-							0xF0200000.toInt() -> return e.vrot(s)
-							0xF0000000.toInt() ->
-								when ((i and 0x039F0000.toInt())) {
-									0x03830000.toInt() -> return e.vmidt(s)
-									0x03800000.toInt() -> return e.vmmov(s)
-									0x03860000.toInt() -> return e.vmzero(s)
-									0x03870000.toInt() -> return e.vmone(s)
+			-268435456 ->
+				when ((i and 58720256)) {
+					58720256 ->
+						when ((i and -60817408)) {
+							-266338304 -> return e.vrot(s)
+							-268435456 ->
+								when ((i and 60751872)) {
+									58916864 -> return e.vmidt(s)
+									58720256 -> return e.vmmov(s)
+									59113472 -> return e.vmzero(s)
+									59179008 -> return e.vmone(s)
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (19) failed mask 0x%08X".format(i, pc, 60751872))
 								}
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (20) failed mask 0x%08X".format(i, pc, -60817408))
 						}
-					0x00000000.toInt() -> return e.vmmul(s)
-					0x02800000.toInt() ->
-						when ((i and 0xFC008080.toInt())) {
-							0xF0008000.toInt() -> return e.vcrsp_t(s)
-							0xF0008080.toInt() -> return e.vqmul(s)
+					0 -> return e.vmmul(s)
+					41943040 ->
+						when ((i and -67075968)) {
+							-268402688 -> return e.vcrsp_t(s)
+							-268402560 -> return e.vqmul(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (21) failed mask 0x%08X".format(i, pc, -67075968))
 						}
-					0x00800000.toInt() ->
-						when ((i and 0xFC008080.toInt())) {
-							0xF0000080.toInt() -> return e.vtfm2(s)
-							0xF0000000.toInt() -> return e.vhtfm2(s)
+					8388608 ->
+						when ((i and -67075968)) {
+							-268435328 -> return e.vtfm2(s)
+							-268435456 -> return e.vhtfm2(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (22) failed mask 0x%08X".format(i, pc, -67075968))
 						}
-					0x01000000.toInt() ->
-						when ((i and 0xFC008080.toInt())) {
-							0xF0008000.toInt() -> return e.vtfm3(s)
-							0xF0000080.toInt() -> return e.vhtfm3(s)
+					16777216 ->
+						when ((i and -67075968)) {
+							-268402688 -> return e.vtfm3(s)
+							-268435328 -> return e.vhtfm3(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (23) failed mask 0x%08X".format(i, pc, -67075968))
 						}
-					0x01800000.toInt() ->
-						when ((i and 0xFC008080.toInt())) {
-							0xF0008080.toInt() -> return e.vtfm4(s)
-							0xF0008000.toInt() -> return e.vhtfm4(s)
+					25165824 ->
+						when ((i and -67075968)) {
+							-268402560 -> return e.vtfm4(s)
+							-268402688 -> return e.vhtfm4(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (24) failed mask 0x%08X".format(i, pc, -67075968))
 						}
-					0x02000000.toInt() -> return e.vmscl(s)
+					33554432 -> return e.vmscl(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (25) failed mask 0x%08X".format(i, pc, 58720256))
 				}
-			0xD0000000.toInt() ->
-				when ((i and 0x03000000.toInt())) {
-					0x00000000.toInt() ->
-						when ((i and 0xFCE00000.toInt())) {
-							0xD0000000.toInt() ->
-								when ((i and 0x031F0000.toInt())) {
-									0x00060000.toInt() -> return e.vzero(s)
-									0x00070000.toInt() -> return e.vone(s)
-									0x00000000.toInt() -> return e.vmov(s)
-									0x00010000.toInt() -> return e.vabs(s)
-									0x00020000.toInt() -> return e.vneg(s)
-									0x00100000.toInt() -> return e.vrcp(s)
-									0x00110000.toInt() -> return e.vrsq(s)
-									0x00120000.toInt() -> return e.vsin(s)
-									0x00130000.toInt() -> return e.vcos(s)
-									0x00140000.toInt() -> return e.vexp2(s)
-									0x00150000.toInt() -> return e.vlog2(s)
-									0x00160000.toInt() -> return e.vsqrt(s)
-									0x00170000.toInt() -> return e.vasin(s)
-									0x00180000.toInt() -> return e.vnrcp(s)
-									0x001A0000.toInt() -> return e.vnsin(s)
-									0x001C0000.toInt() -> return e.vrexp2(s)
-									0x00040000.toInt() -> return e.vsat0(s)
-									0x00050000.toInt() -> return e.vsat1(s)
-									0x00030000.toInt() -> return e.vidt(s)
+			-805306368 ->
+				when ((i and 50331648)) {
+					0 ->
+						when ((i and -52428800)) {
+							-805306368 ->
+								when ((i and 52363264)) {
+									393216 -> return e.vzero(s)
+									458752 -> return e.vone(s)
+									0 -> return e.vmov(s)
+									65536 -> return e.vabs(s)
+									131072 -> return e.vneg(s)
+									1048576 -> return e.vrcp(s)
+									1114112 -> return e.vrsq(s)
+									1179648 -> return e.vsin(s)
+									1245184 -> return e.vcos(s)
+									1310720 -> return e.vexp2(s)
+									1376256 -> return e.vlog2(s)
+									1441792 -> return e.vsqrt(s)
+									1507328 -> return e.vasin(s)
+									1572864 -> return e.vnrcp(s)
+									1703936 -> return e.vnsin(s)
+									1835008 -> return e.vrexp2(s)
+									262144 -> return e.vsat0(s)
+									327680 -> return e.vsat1(s)
+									196608 -> return e.vidt(s)
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (26) failed mask 0x%08X".format(i, pc, 52363264))
 								}
-							0xD0400000.toInt() ->
-								when ((i and 0x031F0000.toInt())) {
-									0x00040000.toInt() -> return e.vocp(s)
-									0x000A0000.toInt() -> return e.vsgn(s)
-									0x00080000.toInt() -> return e.vsrt3(s)
-									0x00060000.toInt() -> return e.vfad(s)
-									0x00070000.toInt() -> return e.vavg(s)
-									0x00190000.toInt() -> return e.vt4444_q(s)
-									0x001A0000.toInt() -> return e.vt5551_q(s)
-									0x001B0000.toInt() -> return e.vt5650_q(s)
-									0x00100000.toInt() -> return e.vmfvc(s)
-									0x00110000.toInt() -> return e.vmtvc(s)
-									0x00020000.toInt() -> return e.vbfy1(s)
-									0x00030000.toInt() -> return e.vbfy2(s)
-									0x00050000.toInt() -> return e.vsocp(s)
-									0x00000000.toInt() -> return e.vsrt1(s)
-									0x00010000.toInt() -> return e.vsrt2(s)
-									0x00090000.toInt() -> return e.vsrt4(s)
+							-801112064 ->
+								when ((i and 52363264)) {
+									262144 -> return e.vocp(s)
+									655360 -> return e.vsgn(s)
+									524288 -> return e.vsrt3(s)
+									393216 -> return e.vfad(s)
+									458752 -> return e.vavg(s)
+									1638400 -> return e.vt4444_q(s)
+									1703936 -> return e.vt5551_q(s)
+									1769472 -> return e.vt5650_q(s)
+									1048576 -> return e.vmfvc(s)
+									1114112 -> return e.vmtvc(s)
+									131072 -> return e.vbfy1(s)
+									196608 -> return e.vbfy2(s)
+									327680 -> return e.vsocp(s)
+									0 -> return e.vsrt1(s)
+									65536 -> return e.vsrt2(s)
+									589824 -> return e.vsrt4(s)
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (27) failed mask 0x%08X".format(i, pc, 52363264))
 								}
-							0xD0600000.toInt() -> return e.vcst(s)
-							0xD0200000.toInt() ->
-								when ((i and 0x031F0000.toInt())) {
-									0x001D0000.toInt() -> return e.vi2c(s)
-									0x001C0000.toInt() -> return e.vi2uc(s)
-									0x00000000.toInt() -> return e.vrnds(s)
-									0x00010000.toInt() -> return e.vrndi(s)
-									0x00020000.toInt() -> return e.vrndf1(s)
-									0x00030000.toInt() -> return e.vrndf2(s)
-									0x00120000.toInt() -> return e.vf2h(s)
-									0x00130000.toInt() -> return e.vh2f(s)
-									0x001F0000.toInt() -> return e.vi2s(s)
-									0x001E0000.toInt() -> return e.vi2us(s)
-									0x00170000.toInt() -> return e.vlgb(s)
-									0x001B0000.toInt() -> return e.vs2i(s)
-									0x00190000.toInt() -> return e.vc2i(s)
-									0x00180000.toInt() -> return e.vuc2i(s)
-									0x00160000.toInt() -> return e.vsbz(s)
-									0x001A0000.toInt() -> return e.vus2i(s)
+							-799014912 -> return e.vcst(s)
+							-803209216 ->
+								when ((i and 52363264)) {
+									1900544 -> return e.vi2c(s)
+									1835008 -> return e.vi2uc(s)
+									0 -> return e.vrnds(s)
+									65536 -> return e.vrndi(s)
+									131072 -> return e.vrndf1(s)
+									196608 -> return e.vrndf2(s)
+									1179648 -> return e.vf2h(s)
+									1245184 -> return e.vh2f(s)
+									2031616 -> return e.vi2s(s)
+									1966080 -> return e.vi2us(s)
+									1507328 -> return e.vlgb(s)
+									1769472 -> return e.vs2i(s)
+									1638400 -> return e.vc2i(s)
+									1572864 -> return e.vuc2i(s)
+									1441792 -> return e.vsbz(s)
+									1703936 -> return e.vus2i(s)
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (28) failed mask 0x%08X".format(i, pc, 52363264))
 								}
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (29) failed mask 0x%08X".format(i, pc, -52428800))
 						}
-					0x02000000.toInt() ->
-						when ((i and 0xFCE00000.toInt())) {
-							0xD0A00000.toInt() ->
-								when ((i and 0x03180000.toInt())) {
-									0x02080000.toInt() -> return e.vcmovf(s)
-									0x02000000.toInt() -> return e.vcmovt(s)
+					33554432 ->
+						when ((i and -52428800)) {
+							-794820608 ->
+								when ((i and 51904512)) {
+									34078720 -> return e.vcmovf(s)
+									33554432 -> return e.vcmovt(s)
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (30) failed mask 0x%08X".format(i, pc, 51904512))
 								}
-							0xD0600000.toInt() -> return e.vf2id(s)
-							0xD0000000.toInt() -> return e.vf2in(s)
-							0xD0400000.toInt() -> return e.vf2iu(s)
-							0xD0200000.toInt() -> return e.vf2iz(s)
-							0xD0800000.toInt() -> return e.vi2f(s)
+							-799014912 -> return e.vf2id(s)
+							-805306368 -> return e.vf2in(s)
+							-801112064 -> return e.vf2iu(s)
+							-803209216 -> return e.vf2iz(s)
+							-796917760 -> return e.vi2f(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (31) failed mask 0x%08X".format(i, pc, -52428800))
 						}
-					0x03000000.toInt() -> return e.vwbn(s)
+					50331648 -> return e.vwbn(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (32) failed mask 0x%08X".format(i, pc, 50331648))
 				}
-			0x60000000.toInt() ->
-				when ((i and 0x03800000.toInt())) {
-					0x00000000.toInt() -> return e.vadd(s)
-					0x00800000.toInt() -> return e.vsub(s)
-					0x03800000.toInt() -> return e.vdiv(s)
-					0x01000000.toInt() -> return e.vsbn(s)
+			1610612736 ->
+				when ((i and 58720256)) {
+					0 -> return e.vadd(s)
+					8388608 -> return e.vsub(s)
+					58720256 -> return e.vdiv(s)
+					16777216 -> return e.vsbn(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (33) failed mask 0x%08X".format(i, pc, 58720256))
 				}
-			0xDC000000.toInt() ->
-				when ((i and 0x03000000.toInt())) {
-					0x03000000.toInt() ->
-						when ((i and 0xFC800000.toInt())) {
-							0xDC000000.toInt() -> return e.viim(s)
-							0xDC800000.toInt() -> return e.vfim(s)
+			-603979776 ->
+				when ((i and 50331648)) {
+					50331648 ->
+						when ((i and -58720256)) {
+							-603979776 -> return e.viim(s)
+							-595591168 -> return e.vfim(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (34) failed mask 0x%08X".format(i, pc, -58720256))
 						}
-					0x02000000.toInt() -> return e.vpfxd(s)
-					0x00000000.toInt() -> return e.vpfxs(s)
-					0x01000000.toInt() -> return e.vpfxt(s)
+					33554432 -> return e.vpfxd(s)
+					0 -> return e.vpfxs(s)
+					16777216 -> return e.vpfxt(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (35) failed mask 0x%08X".format(i, pc, 50331648))
 				}
-			0xFC000000.toInt() ->
-				when ((i and 0x03FFFFFF.toInt())) {
-					0x03FF0000.toInt() -> return e.vnop(s)
-					0x03FF0320.toInt() -> return e.vsync(s)
-					0x03FF040D.toInt() -> return e.vflush(s)
+			-67108864 ->
+				when ((i and 67108863)) {
+					67043328 -> return e.vnop(s)
+					67044128 -> return e.vsync(s)
+					67044365 -> return e.vflush(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (36) failed mask 0x%08X".format(i, pc, 67108863))
 				}
-			0x68000000.toInt() -> return e.mfvme(s)
-			0xB0000000.toInt() -> return e.mtvme(s)
-			0xE8000000.toInt() -> return e.sv_s(s)
-			0xF4000000.toInt() ->
-				when ((i and 0x00000002.toInt())) {
-					0x00000000.toInt() -> return e.svl_q(s)
-					0x00000002.toInt() -> return e.svr_q(s)
+			1744830464 -> return e.mfvme(s)
+			-1342177280 -> return e.mtvme(s)
+			-402653184 -> return e.sv_s(s)
+			-201326592 ->
+				when ((i and 2)) {
+					0 -> return e.svl_q(s)
+					2 -> return e.svr_q(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (37) failed mask 0x%08X".format(i, pc, 2))
 				}
 			else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (38) failed mask 0x%08X".format(i, pc, -67108864))

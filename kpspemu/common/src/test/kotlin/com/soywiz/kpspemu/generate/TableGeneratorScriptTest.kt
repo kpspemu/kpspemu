@@ -8,9 +8,14 @@ import com.soywiz.kpspemu.cpu.*
 import org.junit.Test
 import kotlin.test.Ignore
 
-class TableGeneratorScript {
+fun main(args: Array<String>) {
+	val switch = TableGenerator.createSwitch(Instructions.instructions)
+	println(switch)
+}
+
+class TableGeneratorScriptTest {
 	@Test
-	@Ignore
+	//@Ignore
 	fun name() {
 		val switch = TableGenerator.createSwitch(Instructions.instructions)
 		println(switch)
@@ -93,10 +98,12 @@ class TableGenerator {
 			group.add(item)
 		}
 
-		writer.line("""when ((i and ${"0x%08X".format(commonMask)}.toInt())) {""")
+		fun Int.str() = "$this"
+
+		writer.line("""when ((i and ${commonMask.str()})) {""")
 		writer.indent {
 			for ((groupKey, group) in groups) {
-				val case = "${"0x%08X".format(groupKey)}.toInt() ->"
+				val case = "${groupKey.str()} ->"
 				if (group.size == 1) {
 					writer.line("$case return e.${group[0].name.kescape()}(s)")
 				} else {
@@ -104,8 +111,8 @@ class TableGenerator {
 					writer.indent { this._createSwitch(writer, group, commonMask.inv(), level + 1) }
 				}
 			}
+			writer.line("""else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (${this.lastId++}) failed mask 0x%08X".format(i, pc, ${commonMask.str()}))""")
 		}
-		writer.line("""else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (${this.lastId++}) failed mask 0x%08X".format(i, pc, $commonMask))""")
 		writer.line("}")
 	}
 }
