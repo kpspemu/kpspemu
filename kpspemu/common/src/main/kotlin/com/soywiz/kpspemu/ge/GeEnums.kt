@@ -3,24 +3,24 @@ package com.soywiz.kpspemu.ge
 import com.soywiz.kpspemu.util.IdEnum
 
 enum class CullingDirection(override val id: Int) : IdEnum {
-	CounterClockWise(0),
-	ClockWise(1);
+	COUNTER_CLOCK_WISE(0),
+	CLOCK_WISE(1);
 	companion object : IdEnum.SmallCompanion<CullingDirection>(values())
 }
 
 enum class SyncType(override val id: Int) : IdEnum {
-	WaitForCompletion(0),
-	Peek(1);
+	WAIT_FOR_COMPLETION(0),
+	PEEK(1);
 
 	companion object : IdEnum.SmallCompanion<SyncType>(values())
 }
 
 enum class DisplayListStatus(override val id: Int) : IdEnum {
-	Completed(0), // The list has been completed (PSP_GE_LIST_COMPLETED)
-	Queued(1), // list is queued but not executed yet (PSP_GE_LIST_QUEUED)
-	Drawing(2), // The list is currently being executed (PSP_GE_LIST_DRAWING)
-	Stalling(3), // The list was stopped because it encountered stall address (PSP_GE_LIST_STALLING)
-	Paused(4); // The list is paused because of a signal or sceGeBreak (PSP_GE_LIST_PAUSED)
+	COMPLETED(0), // The list has been completed (PSP_GE_LIST_COMPLETED)
+	QUEUED(1), // list is queued but not executed yet (PSP_GE_LIST_QUEUED)
+	DRAWING(2), // The list is currently being executed (PSP_GE_LIST_DRAWING)
+	STALLING(3), // The list was stopped because it encountered stall address (PSP_GE_LIST_STALLING)
+	PAUSED(4); // The list is paused because of a signal or sceGeBreak (PSP_GE_LIST_PAUSED)
 
 	companion object : IdEnum.SmallCompanion<DisplayListStatus>(values())
 }
@@ -43,26 +43,29 @@ enum class NumericEnum(override val id: Int, val nbytes: Int) : IdEnum {
 }
 
 enum class ColorEnum(override val id: Int, val nbytes: Int) : IdEnum {
-	Void(0, nbytes = 0),
-	Invalid1(1, nbytes = 0),
-	Invalid2(2, nbytes = 0),
-	Invalid3(3, nbytes = 0),
-	Color5650(4, nbytes = 2),
-	Color5551(5, nbytes = 2),
-	Color4444(6, nbytes = 2),
-	Color8888(7, nbytes = 4);
+	VOID(0, nbytes = 0),
+	INVALID1(1, nbytes = 0),
+	INVALID2(2, nbytes = 0),
+	INVALID3(3, nbytes = 0),
+	COLOR5650(4, nbytes = 2),
+	COLOR5551(5, nbytes = 2),
+	COLOR4444(6, nbytes = 2),
+	COLOR8888(7, nbytes = 4);
 
 	companion object : IdEnum.SmallCompanion<ColorEnum>(values())
 }
 
 enum class LightTypeEnum(override val id: Int) : IdEnum {
-	Directional(0), PointLight(1), SpotLight(2);
+	DIRECTIONAL(0),
+	POINT_LIGHT(1),
+	SPOT_LIGHT(2);
 
 	companion object : IdEnum.SmallCompanion<LightTypeEnum>(values())
 }
 
 enum class LightModelEnum(override val id: Int) : IdEnum {
-	SingleColor(0), SeparateSpecularColor(1);
+	SINGLE_COLOR(0),
+	SEPARATE_SPECULAR_COLOR(1);
 
 	companion object : IdEnum.SmallCompanion<LightModelEnum>(values())
 }
@@ -85,27 +88,29 @@ enum class TextureMapMode(override val id: Int) : IdEnum {
 }
 
 enum class TextureLevelMode(override val id: Int) : IdEnum {
-	Auto(0), Const(1), Slope(2);
+	AUTO(0),
+	CONST(1),
+	SLOPE(2);
 
 	companion object : IdEnum.SmallCompanion<TextureLevelMode>(values())
 }
 
 enum class TestFunctionEnum(override val id: Int) : IdEnum {
-	Never(0),
-	Always(1),
-	Equal(2),
-	NotEqual(3),
-	Less(4),
-	LessOrEqual(5),
-	Greater(6),
-	GreaterOrEqual(7);
+	NEVER(0),
+	ALWAYS(1),
+	EQUAL(2),
+	NOT_EQUAL(3),
+	LESS(4),
+	LESS_OR_EQUAL(5),
+	GREATER(6),
+	GREATER_OR_EQUAL(7);
 
 	companion object : IdEnum.SmallCompanion<TestFunctionEnum>(values())
 }
 
 enum class ShadingModelEnum(override val id: Int) : IdEnum {
-	Flat(0),
-	Smooth(1);
+	FLAT(0),
+	SMOOTH(1);
 
 	companion object : IdEnum.SmallCompanion<ShadingModelEnum>(values())
 }
@@ -123,58 +128,58 @@ enum class GuBlendingFactor(override val id: Int) : IdEnum {
 }
 
 enum class GuBlendingEquation(override val id: Int) : IdEnum {
-	Add(0),
-	Substract(1),
-	ReverseSubstract(2),
-	Min(3),
-	Max(4),
-	Abs(5);
+	ADD(0),
+	SUBSTRACT(1),
+	REVERSE_SUBSTRACT(2),
+	MIN(3),
+	MAX(4),
+	ABS(5);
 
 	companion object : IdEnum.SmallCompanion<GuBlendingEquation>(values())
 }
 
 enum class StencilOperationEnum(override val id: Int) : IdEnum {
-	Keep(0),
-	Zero(1),
-	Replace(2),
-	Invert(3),
-	Increment(4),
-	Decrement(5);
+	KEEP(0),
+	ZERO(1),
+	REPLACE(2),
+	INVERT(3),
+	INCREMENT(4),
+	DECREMENT(5);
 
 	companion object : IdEnum.SmallCompanion<StencilOperationEnum>(values())
 }
 
 enum class WrapMode(override val id: Int) : IdEnum {
-	Repeat(0),
-	Clamp(1);
+	REPEAT(0),
+	CLAMP(1);
 
 	companion object : IdEnum.SmallCompanion<WrapMode>(values())
 }
 
 enum class TextureEffect(override val id: Int) : IdEnum {
-	Modulate(0),  // GU_TFX_MODULATE
-	Decal(1),     // GU_TFX_DECAL
-	Blend(2),     // GU_TFX_BLEND
-	Replace(3),   // GU_TFX_REPLACE
-	Add(4);       // GU_TFX_ADD
+	MODULATE(0),  // GU_TFX_MODULATE
+	DECAL(1),     // GU_TFX_DECAL
+	BLEND(2),     // GU_TFX_BLEND
+	REPLACE(3),   // GU_TFX_REPLACE
+	ADD(4);       // GU_TFX_ADD
 
 	companion object : IdEnum.SmallCompanion<TextureEffect>(values())
 }
 
 enum class TextureFilter(override val id: Int) : IdEnum {
-	Nearest(0),
-	Linear(1),
-	NearestMipmapNearest(4),
-	LinearMipmapNearest(5),
-	NearestMipmapLinear(6),
-	LinearMipmapLinear(7);
+	NEAREST(0),
+	LINEAR(1),
+	NEAREST_MIPMAP_NEAREST(4),
+	LINEAR_MIPMAP_NEAREST(5),
+	NEAREST_MIPMAP_LINEAR(6),
+	LINEAR_MIPMAP_LINEAR(7);
 
 	companion object : IdEnum.SmallCompanion<TextureFilter>(values())
 }
 
 enum class TextureColorComponent(override val id: Int) : IdEnum {
-	Rgb(0),    // GU_TCC_RGB
-	Rgba(1);   // GU_TCC_RGBA
+	RGB(0),    // GU_TCC_RGB
+	RGBA(1);   // GU_TCC_RGBA
 
 	companion object : IdEnum.SmallCompanion<TextureColorComponent>(values())
 }

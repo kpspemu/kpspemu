@@ -90,7 +90,7 @@ class Light(val data: IntArray, val index: Int) {
 	val enabled get() = bool1(this.data[Op.LIGHTENABLE0 + this.index])
 	val kind get() = LightModelEnum(param8(this.data[Light.REG_TYPES[this.index]], 0))
 	val type get() = LightTypeEnum(param8(this.data[Light.REG_TYPES[this.index]], 8))
-	val pw get() = (this.type == LightTypeEnum.SpotLight).toInt()
+	val pw get() = (this.type == LightTypeEnum.SPOT_LIGHT).toInt()
 	val px get() = float1(this.data[Light.LXP[this.index]])
 	val py get() = float1(this.data[Light.LYP[this.index]])
 	val pz get() = float1(this.data[Light.LZP[this.index]])
@@ -505,7 +505,7 @@ class VertexType(var v: Int = 0) {
 
 	val hasIndices: Boolean get() = index != IndexEnum.VOID
 	val hasTexture: Boolean get() = tex != NumericEnum.VOID
-	val hasColor: Boolean get() = col != ColorEnum.Void
+	val hasColor: Boolean get() = col != ColorEnum.VOID
 	val hasNormal: Boolean get() = normal != NumericEnum.VOID
 	val hasPosition: Boolean get() = pos != NumericEnum.VOID
 	val hasWeight: Boolean get() = weight != NumericEnum.VOID
@@ -611,10 +611,10 @@ class VertexReader {
 
 	fun SyncStream.readColorType(type: ColorEnum): Int {
 		return when (type) {
-			ColorEnum.Color4444 -> RGBA_4444.packRGBA(readU16_le())
-			ColorEnum.Color5551 -> RGBA_5551.packRGBA(readU16_le())
-			ColorEnum.Color5650 -> RGB_565.packRGBA(readU16_le())
-			ColorEnum.Color8888 -> readS32_le()
+			ColorEnum.COLOR4444 -> RGBA_4444.packRGBA(readU16_le())
+			ColorEnum.COLOR5551 -> RGBA_5551.packRGBA(readU16_le())
+			ColorEnum.COLOR5650 -> RGB_565.packRGBA(readU16_le())
+			ColorEnum.COLOR8888 -> readS32_le()
 			else -> TODO()
 		}
 	}
