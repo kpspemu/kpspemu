@@ -151,12 +151,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun _break(s: CpuState) = s.preadvance { throw CpuBreakException(SYSCALL) }
 
 	// Set less
-	override fun slt(s: CpuState) = s { RD = if (RS < RT) 1 else 0 }
+	override fun slt(s: CpuState) = s { RD = (RS < RT).toInt() }
 
-	override fun sltu(s: CpuState) = s { RD = if (RS.compareToUnsigned(RT) < 0) 1 else 0 }
+	override fun sltu(s: CpuState) = s { RD = (RS ult RT).toInt() }
 
-	override fun slti(s: CpuState) = s { RT = if (RS < S_IMM16) 1 else 0 }
-	override fun sltiu(s: CpuState) = s { RT = if (RS.compareToUnsigned(S_IMM16) < 0) 1 else 0 }
+	override fun slti(s: CpuState) = s { RT = (RS < S_IMM16).toInt() }
+	override fun sltiu(s: CpuState) = s { RT = (RS ult S_IMM16).toInt() }
 
 
 	// Branch

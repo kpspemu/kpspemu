@@ -110,12 +110,11 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 		_nPC += offset
 	}
 
-	fun getGpr(index: Int): Int = _R[index and 0x1F]
-	fun setGpr(index: Int, v: Int): Unit {
-		if (index != 0) {
-			_R[index and 0x1F] = v
-		}
-	}
+	//fun getGpr(index: Int): Int = _R[index and 0x1F]
+	//fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index and 0x1F] = v }
+
+	fun getGpr(index: Int): Int = _R[index]
+	fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index] = v }
 
 	fun getFpr(index: Int): Float = _F.getAlignedFloat32(index)
 	fun setFpr(index: Int, v: Float): Unit = run { _F.setAlignedFloat32(index, v) }
