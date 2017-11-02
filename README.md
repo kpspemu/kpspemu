@@ -20,9 +20,10 @@ Or open `build.gradle` with intelliJ and open `kspspemu/common/src/main/kotlin/c
 ```
 
 ### Very basic online demo using Kotlin.JS:
-* https://kpspemu.github.io/kpspemu-demo/minifire (interpreted)
-* https://kpspemu.github.io/kpspemu-demo/helloworld (interpreted)
-* More coming soon...
+* https://kpspemu.github.io/kpspemu-demo/minifire/ (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/helloworld/ (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/cube/ (interpreted)
+* *More coming soon...*
 
 ---
 

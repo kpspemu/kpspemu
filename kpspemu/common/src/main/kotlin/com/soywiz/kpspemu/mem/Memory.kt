@@ -42,7 +42,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	fun readBytes(srcPos: Int, count: Int): ByteArray = ByteArray(count).apply { read(srcPos, this, 0, count) }
 
-	fun write(dstPos: Int, src: ByteArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
+	open fun write(dstPos: Int, src: ByteArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
 		for (n in 0 until len) sb(dstPos + n, src[srcPos + n].toInt())
 	}
 
@@ -50,7 +50,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		for (n in 0 until len) dst[dstPos + n] = this.lb(srcPos + n).toByte()
 	}
 
-	fun write(dstPos: Int, src: IntArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
+	open fun write(dstPos: Int, src: IntArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
 		for (n in 0 until len) sw(dstPos + n * 4, src[srcPos + n].toInt())
 	}
 
@@ -189,9 +189,9 @@ fun Memory.openSync(): SyncStream {
 	})
 }
 
-class FastMemory : Memory(true) {
-	val buffer = FastMemory.alloc(0x0a000000)
-	private inline fun index(address: Int) = address and MASK
+abstract class FastMemoryBacked : Memory(true) {
+	protected abstract val buffer: com.soywiz.korio.mem.FastMemory
+	protected abstract fun index(address: Int): Int
 
 	//val buffer = FastMemory.alloc(0x10000000)
 	//private inline fun index(address: Int) = address and 0x0fffffff
@@ -204,34 +204,24 @@ class FastMemory : Memory(true) {
 	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
 	override fun lw(address: Int): Int = buffer.getAlignedInt32(index(address) ushr 2)
 
-	override fun copy(srcPos: Int, dstPos: Int, size: Int) {
-		FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)
-	}
-
-	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit {
-		buffer.getArrayInt8(srcPos, dst, dstPos, len)
-	}
-
-	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit {
-		val rsrcPos = index(srcPos) ushr 2
-		buffer.getAlignedArrayInt32(rsrcPos, dst, dstPos, len)
-	}
+	override fun copy(srcPos: Int, dstPos: Int, size: Int) = FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)
+	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit = buffer.getArrayInt8(srcPos, dst, dstPos, len)
+	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = buffer.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
+	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt8(dstPos, src, srcPos, len)
+	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt32(dstPos ushr 2, src, srcPos, len)
 }
 
-class SmallMemory : Memory(true) {
-	private val buffer = FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)
+class FastMemory : FastMemoryBacked() {
+	override val buffer = com.soywiz.korio.mem.FastMemory.alloc(0x0a000000)
+	override fun index(address: Int) = address and MASK
+}
 
-	fun index(address: Int): Int = when {
+class SmallMemory : FastMemoryBacked() {
+	override val buffer = FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)
+
+	override fun index(address: Int): Int = when {
 		address >= 0x08000000 -> address - 0x08000000
 		address >= 0x04000000 -> address - 0x04000000 + 0x02000000
 		else -> address + 0x04000000 + 0x02000000
 	}
-
-	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
-	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }
-	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address) ushr 2, value) }
-
-	override fun lb(address: Int) = buffer[index(address)]
-	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
-	override fun lw(address: Int) = buffer.getAlignedInt32(index(address) ushr 2)
 }
