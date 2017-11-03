@@ -10,6 +10,7 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.coroutineContext
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.hle.error.SceKernelException
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.hle.manager.thread
@@ -34,12 +35,13 @@ class RegisterReader {
 	val thread: PspThread get() = cpu.thread
 	val mem: Memory get() = cpu.mem
 	val int: Int get() = this.cpu.GPR[pos++]
-	val long: Long get() {
-		pos = pos.nextAlignedTo(2) // Ensure register alignment
-		val low = this.cpu.GPR[pos++]
-		val high = this.cpu.GPR[pos++]
-		return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
-	}
+	val long: Long
+		get() {
+			pos = pos.nextAlignedTo(2) // Ensure register alignment
+			val low = this.cpu.GPR[pos++]
+			val high = this.cpu.GPR[pos++]
+			return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
+		}
 	val ptr: Ptr get() = MemPtr(mem, int)
 	val str: String? get() = mem.readStringzOrNull(int)
 }
@@ -102,7 +104,11 @@ abstract class SceModule(
 
 	protected fun registerFunctionInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Int) {
 		registerFunctionRR(name, uid, since, syscall) {
-			this.cpu.r2 = function(it)
+			this.cpu.r2 = try {
+				function(it)
+			} catch (e: SceKernelException) {
+				e.errorCode
+			}
 		}
 	}
 
@@ -128,8 +134,12 @@ abstract class SceModule(
 				}
 
 				override fun resumeWithException(exception: Throwable) {
-					exception.printStackTrace()
-					throw exception
+					if (exception is SceKernelException) {
+						resume(exception.errorCode)
+					} else {
+						exception.printStackTrace()
+						throw exception
+					}
 				}
 			})
 

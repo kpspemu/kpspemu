@@ -19,7 +19,7 @@ data class GeBatch(
 	init {
 		if (vtype.transform2D) {
 			//modelViewProjMatrix.setToOrtho(0f, 480f, 272f, 0f, 0f, (-0xFFFF).toFloat())
-			modelViewProjMatrix.setToOrtho(0f, 272f, 480f, 0f, 0f, (-0xFFFF).toFloat())
+			modelViewProjMatrix.setToOrtho(0f, 0f, 480f, 272f, 0f, (-0xFFFF).toFloat())
 			//modelViewProjMatrix.setToIdentity()
 		} else {
 			modelViewProjMatrix.setToIdentity()
@@ -47,12 +47,26 @@ data class GeBatch(
 	}
 
 	fun getEffectiveTextureMatrix(out: Matrix4 = Matrix4()): Matrix4 {
+		//println(state.texture.textureMapMode)
+		//println(vtype.transform2D)
 		val transform = Matrix2d()
-		transform.setTransform(
-			state.texture.offsetU.toDouble(), state.texture.offsetV.toDouble(),
-			state.texture.scaleU.toDouble(), state.texture.scaleV.toDouble(),
-			0.0, 0.0, 0.0
-		)
+
+		if (vtype.transform2D) {
+			val mipmap = state.texture.mipmap
+
+			transform.setTransform(
+				0.0, 0.0,
+				1.0 / mipmap.bufferWidth.toDouble(), 1.0 / mipmap.textureHeight.toDouble(),
+				0.0, 0.0, 0.0
+			)
+		} else {
+			transform.setTransform(
+				state.texture.offsetU.toDouble(), state.texture.offsetV.toDouble(),
+				state.texture.scaleU.toDouble(), state.texture.scaleV.toDouble(),
+				0.0, 0.0, 0.0
+			)
+		}
+
 		transform.toMatrix4(out)
 		return out
 	}

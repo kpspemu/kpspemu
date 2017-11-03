@@ -4,8 +4,11 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.ge
 import com.soywiz.kpspemu.ge.GeCallback
+import com.soywiz.kpspemu.ge.GeList
 import com.soywiz.kpspemu.ge.GeState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.error.sceKernelException
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.util.ResourceList
 
@@ -32,9 +35,13 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		return ge.listEnqueue(start.addr, stall.addr, geCallbacks[callbackId], pspGeListArgs.addr).id
 	}
 
+	private fun getList(displayListId: Int): GeList {
+		return ge.lists.tryGetById(displayListId) ?: sceKernelException(-1)
+	}
+
 	fun sceGeListUpdateStallAddr(displayListId: Int, stall: Ptr): Int {
 		//println("WIP: sceGeListUpdateStallAddr")
-		val list = ge.lists[displayListId]
+		val list = getList(displayListId)
 		list.stall = stall.addr
 		list.run()
 		return 0
@@ -42,7 +49,7 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 
 	fun sceGeListSync(displayListId: Int, syncType: Int): Int {
 		//println("WIP: sceGeListSync")
-		val displayList = ge.lists[displayListId]
+		val displayList = getList(displayListId)
 		//thread.suspend(WaitObject.PROMISE(displayList.syncAsync(syncType)), cb = false)
 		displayList.sync(syncType)
 		return 0

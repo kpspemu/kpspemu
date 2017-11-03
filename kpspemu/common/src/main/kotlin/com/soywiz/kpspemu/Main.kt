@@ -191,7 +191,7 @@ class KpspemuMainScene(
 
 			controller.updateAnalog(
 				x = when { keys[74] -> -1f; keys[76] -> +1f; else -> 0f; },
-				y = when { keys[73] -> +1f; keys[75] -> -1f; else -> 0f; }
+				y = when { keys[73] -> -1f; keys[75] -> +1f; else -> 0f; }
 			)
 		}
 
@@ -242,7 +242,7 @@ class KpspemuMainScene(
 		sceneView.onMove { hudOpen() }
 		sceneView.onOut { hudClose() }
 		sceneView.onClick { if (hud.alpha < 0.5) { hudOpen() } else { hudClose() } }
-		sceneView.onKeyTyped { println(it.keyCode) }
+		//sceneView.onKeyTyped { println(it.keyCode) }
 		sceneView.onKeyDown { updateKey(it.keyCode, true) }
 		sceneView.onKeyUp { updateKey(it.keyCode, false) }
 

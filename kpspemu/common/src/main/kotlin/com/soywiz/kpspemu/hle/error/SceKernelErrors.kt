@@ -1,5 +1,16 @@
 package com.soywiz.kpspemu.hle.error
 
+import com.soywiz.kpspemu.util.PspLogger
+
+class SceKernelException(val errorCode: Int) : Exception()
+
+private val errorLogger = PspLogger("SceKernelException")
+
+fun sceKernelException(errorCode: Int = SceKernelErrors.ERROR_ERROR): Nothing {
+	errorLogger.info { "ERROR: $errorCode" }
+	throw SceKernelException(errorCode)
+}
+
 @Suppress("unused")
 object SceKernelErrors {
 	val ERROR_OK: Int = 0x00000000.toInt()

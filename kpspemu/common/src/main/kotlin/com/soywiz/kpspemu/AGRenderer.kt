@@ -55,6 +55,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 					ag.drawBmp(tempBmp)
 					renderBatches(ag)
 				}
+				tempBmp.flipY() // @TODO: This should be removed!
 				mem.write(display.fixedAddress(), tempBmp.data)
 			}
 

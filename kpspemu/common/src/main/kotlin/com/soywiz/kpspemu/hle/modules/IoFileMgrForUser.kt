@@ -1,20 +1,15 @@
 package com.soywiz.kpspemu.hle.modules
 
 
-import com.soywiz.korio.FileNotFoundException
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
-import com.soywiz.korio.lang.use
-import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.write32_le
 import com.soywiz.korio.stream.write64_le
 import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.deviceManager
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.fileManager
 import com.soywiz.kpspemu.hle.SceModule
@@ -23,8 +18,6 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
-import com.soywiz.kpspemu.util.ResourceItem
-import com.soywiz.kpspemu.util.ResourceList
 import com.soywiz.kpspemu.util.toInt
 
 
@@ -42,12 +35,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	private fun _resolve(path: String): VfsFile {
 		val resolved = fileManager.resolve(path)
-		logger.error { "resolved:$resolved" }
+		logger.trace { "resolved:$resolved" }
 		return resolved
 	}
 
 	private fun resolve(path: String?): VfsFile {
-		logger.error { "resolve:$path" }
+		logger.trace { "resolve:$path" }
 		return _resolve(path!!)
 	}
 
@@ -78,7 +71,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoOpen(fileName: String?, flags: Int, mode: Int): Int {
-		logger.error("WIP: sceIoOpen: $fileName, $flags, $mode")
+		logger.warn { "WIP: sceIoOpen: $fileName, $flags, $mode" }
 		try {
 			val file = fileDescriptors.alloc()
 			file.file = resolve(fileName)
@@ -148,7 +141,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun _sceIoLseek(fileId: Int, offset: Long, whence: Int): Long {
-		logger.error("WIP: _sceIoLseek: $fileId, $offset, $whence")
+		logger.info { "WIP: _sceIoLseek: $fileId, $offset, $whence" }
 		val stream = fileDescriptors[fileId].stream
 		stream.position = when (whence) {
 			SeekType.Set -> offset
@@ -162,7 +155,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 
 	suspend fun sceIoRead(fileId: Int, dst: Ptr, dstLen: Int): Int {
-		logger.error("WIP: sceIoRead: $fileId, $dst, $dstLen")
+		logger.info { "WIP: sceIoRead: $fileId, $dst, $dstLen" }
 		val stream = fileDescriptors[fileId].stream
 		val out = ByteArray(dstLen)
 		val read = stream.read(out, 0, dstLen)
@@ -171,7 +164,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoWrite(fileId: Int, ptr: Ptr, size: Int): Int {
-		logger.error("WIP: sceIoWrite: $fileId, $ptr, $size")
+		logger.info { "WIP: sceIoWrite: $fileId, $ptr, $size" }
 		//println("----> " + ptr.readBytes(size).toString(UTF8))
 
 		val stream = fileDescriptors[fileId].stream
@@ -182,7 +175,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoClose(fileId: Int): Int {
-		logger.error("WIP: sceIoClose: $fileId")
+		logger.info { "WIP: sceIoClose: $fileId" }
 		fileDescriptors.freeById(fileId)
 		return 0
 	}
