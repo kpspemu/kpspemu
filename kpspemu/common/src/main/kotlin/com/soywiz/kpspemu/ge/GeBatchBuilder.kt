@@ -80,7 +80,7 @@ class GeBatchBuilder(val ge: Ge) {
 		vertexBuffer.copyRangeTo(BRpos + vertexType.colOffset, vertexBuffer, TLpos + vertexType.colOffset, vertexType.col.nbytes)
 
 		vertexBufferPos += vertexSize
-		vertexCount += 2
+		vertexCount++
 	}
 
 	fun addIndices(count: Int) {
