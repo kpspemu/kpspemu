@@ -17,16 +17,16 @@ import kotlin.math.max
 
 
 fun bool1(p: Int): Boolean = p != 0
-fun parambool(p: Int, offset: Int): Boolean = ((p ushr offset) and 0x1) != 0
-fun param1(p: Int, offset: Int): Int = (p ushr offset) and 0x1
-fun param2(p: Int, offset: Int): Int = (p ushr offset) and 0x3
-fun param3(p: Int, offset: Int): Int = (p ushr offset) and 0x7
-fun param4(p: Int, offset: Int): Int = (p ushr offset) and 0xF
-fun param5(p: Int, offset: Int): Int = (p ushr offset) and 0x1F
-fun param8(p: Int, offset: Int): Int = (p ushr offset) and 0xFF
-fun param10(p: Int, offset: Int): Int = (p ushr offset) and 0x3FF
-fun param16(p: Int, offset: Int): Int = (p ushr offset) and 0xFFFF
-fun param24(p: Int): Int = p and 0xFFFFFF
+fun parambool(p: Int, offset: Int): Boolean = ((p ushr offset) and 0b1) != 0
+fun param1(p: Int, offset: Int): Int = (p ushr offset) and 0b1
+fun param2(p: Int, offset: Int): Int = (p ushr offset) and 0b11
+fun param3(p: Int, offset: Int): Int = (p ushr offset) and 0b111
+fun param4(p: Int, offset: Int): Int = (p ushr offset) and 0b1111
+fun param5(p: Int, offset: Int): Int = (p ushr offset) and 0b11111
+fun param8(p: Int, offset: Int): Int = (p ushr offset) and 0b11111111
+fun param10(p: Int, offset: Int): Int = (p ushr offset) and 0b1111111111
+fun param16(p: Int, offset: Int): Int = (p ushr offset) and 0b1111111111111111
+fun param24(p: Int): Int = p and 0b111111111111111111111111
 fun float1(p: Int) = Float.fromBits(p shl 8)
 
 class VertexState(val data: IntArray) {
@@ -277,13 +277,17 @@ class Color(var r: Float = 0f, var g: Float = 0f, var b: Float = 0f, var a: Floa
 }
 
 class Blending(val data: IntArray) {
-	val fixColorSource get() = Color().setRGB(param24(this.data[Op.SFIX]))
-	val fixColorDestination get() = Color().setRGB(param24(this.data[Op.DFIX]))
+	private val fixColorSrc = Color()
+	private val fixColorDst = Color()
+	private val colorMaskColor = Color()
+
+	val fixColorSource get() = fixColorSrc.setRGB(param24(this.data[Op.SFIX]))
+	val fixColorDestination get() = fixColorDst.setRGB(param24(this.data[Op.DFIX]))
 	val enabled get() = bool1(this.data[Op.ALPHABLENDENABLE])
 	val functionSource get() = GuBlendingFactor(param4(this.data[Op.ALPHA], 0))
 	val functionDestination get() = GuBlendingFactor(param4(this.data[Op.ALPHA], 4))
 	val equation get() = GuBlendingEquation(param4(this.data[Op.ALPHA], 8))
-	val colorMask get() = run { Color().setRGB_A(param24(this.data[Op.PMSKC]), param8(this.data[Op.PMSKA], 0)) }
+	val colorMask get() = run { colorMaskColor.setRGB_A(param24(this.data[Op.PMSKC]), param8(this.data[Op.PMSKA], 0)) }
 }
 
 class AlphaTest(val data: IntArray) {

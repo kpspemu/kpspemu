@@ -150,10 +150,21 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		texture?.upload(bmp)
 		batch.getEffectiveTextureMatrix(textureMatrix)
 
-		val blending = AG.Blending(
-			state.blending.functionSource.toAg(),
-			state.blending.functionDestination.toAg()
-		)
+		val blending = when (state.blending.enabled) {
+			false -> AG.Blending.NONE
+			true -> AG.Blending(
+				state.blending.functionSource.toAg(),
+				state.blending.functionDestination.toAg(),
+				state.blending.functionSource.toAg(),
+				state.blending.functionDestination.toAg(),
+				state.blending.equation.toAg(),
+				state.blending.equation.toAg()
+			)
+		}
+
+
+		//println(state.blending.functionSource)
+		//println(state.blending.functionDestination)
 
 		//println(renderState)
 
@@ -268,6 +279,15 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 		return ProgramLayout(program, layout)
 	}
+}
+
+private fun GuBlendingEquation.toAg(): AG.BlendEquation = when (this) {
+	GuBlendingEquation.ADD -> AG.BlendEquation.ADD
+	GuBlendingEquation.SUBSTRACT -> AG.BlendEquation.SUBTRACT
+	GuBlendingEquation.REVERSE_SUBSTRACT -> AG.BlendEquation.REVERSE_SUBTRACT
+	GuBlendingEquation.MIN -> AG.BlendEquation.ADD // TODO: Not defined in OpenGL
+	GuBlendingEquation.MAX -> AG.BlendEquation.ADD // TODO: Not defined in OpenGL
+	GuBlendingEquation.ABS -> AG.BlendEquation.ADD // TODO: Not defined in OpenGL
 }
 
 private fun PrimitiveType.toAg(): AG.DrawType = when (this) {
