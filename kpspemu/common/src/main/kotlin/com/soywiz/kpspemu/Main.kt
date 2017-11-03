@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.klock.KLOCK_VERSION
-import com.soywiz.klock.Klock
 import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
 import com.soywiz.korge.Korge
@@ -46,9 +45,6 @@ import com.soywiz.kpspemu.util.asVfsFile
 import com.soywiz.kpspemu.util.io.ZipVfs2
 import kotlin.reflect.KClass
 
-const val DIRECT_FAST_SHARP_RENDERING = false
-//const val DIRECT_FAST_SHARP_RENDERING = true
-
 fun main(args: Array<String>) = Main.main(args)
 
 object Main {
@@ -77,6 +73,7 @@ class KpspemuMainScene(
 	val hudFont by lazy { BitmapFont(views.ag, "Lucida Console", 32, BitmapFontGenerator.LATIN_ALL, mipmaps = false) }
 	var running = true
 	var ended = false
+	var paused = false
 
 	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
 		running = true
@@ -149,19 +146,20 @@ class KpspemuMainScene(
 
 		sceneView.addUpdatable {
 			//controller.updateButton(PspCtrlButtons.cross, true) // auto press X
-
-			if (running && emulator.running) {
-				try {
-					emulator.frameStep()
-				} catch (e: Throwable) {
-					e.printStackTrace()
-					running = false
-				}
-			} else {
-				if (!ended) {
-					ended = true
-					println("COMPLETED")
-					display.clear()
+			if (!paused) {
+				if (running && emulator.running) {
+					try {
+						emulator.frameStep()
+					} catch (e: Throwable) {
+						e.printStackTrace()
+						running = false
+					}
+				} else {
+					if (!ended) {
+						ended = true
+						println("COMPLETED")
+						display.clear()
+					}
 				}
 			}
 		}
@@ -199,25 +197,42 @@ class KpspemuMainScene(
 
 		hud.alpha = 0.0
 
-		val statsText = views.text(agRenderer.stats.toString(), textSize = 10.0, font = hudFont).apply {
+		fun getInfoText(): String = "kpspemu\n${Kpspemu.VERSION}\n\n${agRenderer.stats.toString()}"
+
+		val infoText = views.text(getInfoText(), textSize = 10.0, font = hudFont).apply {
 			x = 8.0
-			y = 40.0
+			y = 8.0
 		}
 
-		hud += statsText
+		hud += infoText
 
 		hud += views.simpleButton("Load...", font = hudFont).apply {
 			x = 8.0
-			y = 8.0
+			y = 272.0 - 32.0 * 1
 		}.onClick {
 			createEmulatorWithExe(browser.openFile())
+		}
+
+		hud += views.simpleButton("Direct", font = hudFont).apply {
+			x = 8.0
+			y = 272.0 - 32.0 * 2
+		}.onClick {
+			agRenderer.directFastSharpRendering = !agRenderer.directFastSharpRendering
+		}
+
+		hud += views.simpleButton("Pause", font = hudFont).apply {
+			x = 8.0
+			y = 272.0 - 32.0 * 3
+		}.onClick {
+			paused = !paused
+			it.view.setText(if (paused) "Resume" else "Pause")
 		}
 
 		val displayView = object : View(views) {
 			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
 			override fun render(ctx: RenderContext, m: Matrix2d) {
 				agRenderer.render(ctx, m)
-				statsText.text = agRenderer.stats.toString()
+				infoText.text = getInfoText()
 			}
 		}
 

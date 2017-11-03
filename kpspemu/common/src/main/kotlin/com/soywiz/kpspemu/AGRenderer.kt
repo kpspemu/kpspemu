@@ -15,6 +15,8 @@ import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.setAlpha
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
+	var directFastSharpRendering = false
+
 	companion object {
 		//val RGBA_TO_BGRA = OS.isJs
 		val RGBA_TO_BGRA = false
@@ -47,7 +49,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		ctx.flush()
 		stats.reset()
 
-		if (DIRECT_FAST_SHARP_RENDERING) {
+		if (directFastSharpRendering) {
 			if (batchesQueue.isNotEmpty()) {
 				renderBatches(ag)
 			}
