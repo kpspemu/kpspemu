@@ -50,12 +50,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			}
 		} else {
 			if (batchesQueue.isNotEmpty()) {
-				mem.read(display.address, tempBmp.data)
+				mem.read(display.fixedAddress(), tempBmp.data)
 				ag.renderToBitmapEx(tempBmp) {
 					ag.drawBmp(tempBmp)
 					renderBatches(ag)
 				}
-				mem.write(display.address, tempBmp.data)
+				mem.write(display.fixedAddress(), tempBmp.data)
 			}
 
 			if (display.rawDisplay) {
@@ -178,7 +178,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			vertexCount = batch.vertexCount,
 			uniforms = mapOf(
 				u_modelViewProjMatrix to batch.modelViewProjMatrix,
-				u_tex to AG.TextureUnit(this.texture),
+				u_tex to AG.TextureUnit(this.texture, !state.texture.filterMinification.nearest),
 				u_texMatrix to textureMatrix
 			),
 			blending = blending,

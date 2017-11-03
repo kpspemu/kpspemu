@@ -158,7 +158,10 @@ suspend fun ZipVfs2(s: AsyncStream, zipFile: VfsFile? = null): VfsFile {
 				// Uncompressed
 					0 -> compressedData
 				// Deflate
-					8 -> InflateAsyncStream(compressedData, Inflater(true), uncompressedSize.toLong()).toAsyncStream()
+					8 -> {
+						//InflateAsyncStream(compressedData, Inflater(true), uncompressedSize.toLong()).toAsyncStream()
+						InflateAsyncStream(compressedData, Inflater(true), uncompressedSize.toLong()).readAll().openAsync()
+					}
 					else -> TODO("Not implemented zip method ${entry.compressionMethod}")
 				}
 			}

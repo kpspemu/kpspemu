@@ -193,28 +193,6 @@ fun Memory.openSync(): SyncStream {
 	})
 }
 
-//class FastMemory : Memory(true) {
-//	private val buffer = com.soywiz.korio.mem.FastMemory.alloc(0x0a000000)
-//	inline private fun index(address: Int) = address and MASK
-//
-//	//val buffer = FastMemory.alloc(0x10000000)
-//	//private inline fun index(address: Int) = address and 0x0fffffff
-//
-//	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
-//	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }
-//	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address) ushr 2, value) }
-//
-//	override fun lb(address: Int) = buffer[index(address)]
-//	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
-//	override fun lw(address: Int): Int = buffer.getAlignedInt32(index(address) ushr 2)
-//
-//	override fun copy(srcPos: Int, dstPos: Int, size: Int) = FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)
-//	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit = buffer.getArrayInt8(srcPos, dst, dstPos, len)
-//	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = buffer.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
-//	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt8(dstPos, src, srcPos, len)
-//	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt32(dstPos ushr 2, src, srcPos, len)
-//}
-
 abstract class FastMemoryBacked : Memory(true) {
 	protected abstract val buffer: com.soywiz.korio.mem.FastMemory
 	protected abstract fun index(address: Int): Int
@@ -231,10 +209,10 @@ abstract class FastMemoryBacked : Memory(true) {
 	override fun lw(address: Int): Int = buffer.getAlignedInt32(index(address) ushr 2)
 
 	override fun copy(srcPos: Int, dstPos: Int, size: Int) = FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)
-	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit = buffer.getArrayInt8(srcPos, dst, dstPos, len)
+	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit = buffer.getArrayInt8(index(srcPos), dst, dstPos, len)
 	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = buffer.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
-	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt8(dstPos, src, srcPos, len)
-	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt32(dstPos ushr 2, src, srcPos, len)
+	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt8(index(dstPos), src, srcPos, len)
+	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt32(index(dstPos) ushr 2, src, srcPos, len)
 }
 
 class FastMemory : FastMemoryBacked() {

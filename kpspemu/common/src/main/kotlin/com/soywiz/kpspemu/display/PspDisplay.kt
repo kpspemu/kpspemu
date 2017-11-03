@@ -8,6 +8,7 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.util.hex
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var exposeDisplay = true
@@ -27,6 +28,11 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var displayHeight: Int = 272
 
 	val onVsync = Signal<Unit>()
+
+	fun fixedAddress(): Int {
+		//println(address.hex)
+		return address
+	}
 
 	fun dispatchVsync() {
 		onVsync(Unit)

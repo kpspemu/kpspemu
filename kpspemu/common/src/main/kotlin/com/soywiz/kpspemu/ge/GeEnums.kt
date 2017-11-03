@@ -167,13 +167,13 @@ enum class TextureEffect(override val id: Int) : IdEnum {
 	companion object : IdEnum.SmallCompanion<TextureEffect>(values())
 }
 
-enum class TextureFilter(override val id: Int) : IdEnum {
-	NEAREST(0),
-	LINEAR(1),
-	NEAREST_MIPMAP_NEAREST(4),
-	LINEAR_MIPMAP_NEAREST(5),
-	NEAREST_MIPMAP_LINEAR(6),
-	LINEAR_MIPMAP_LINEAR(7);
+enum class TextureFilter(override val id: Int, val nearest: Boolean, val nearestMipmap: Boolean) : IdEnum {
+	NEAREST(0, nearest = true, nearestMipmap = false),
+	LINEAR(1, nearest = false, nearestMipmap = false),
+	NEAREST_MIPMAP_NEAREST(4, nearest = true, nearestMipmap = true),
+	LINEAR_MIPMAP_NEAREST(5, nearest = false, nearestMipmap = true),
+	NEAREST_MIPMAP_LINEAR(6, nearest = true, nearestMipmap = false),
+	LINEAR_MIPMAP_LINEAR(7, nearest = false, nearestMipmap = false);
 
 	companion object : IdEnum.SmallCompanion<TextureFilter>(values())
 }

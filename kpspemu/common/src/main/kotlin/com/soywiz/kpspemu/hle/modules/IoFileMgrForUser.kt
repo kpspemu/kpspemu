@@ -91,8 +91,8 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			file.stream = file.file.open(flags2)
 			return file.id
 		} catch (e: Throwable) {
-			println("Error openingfile: $fileName")
-			e.printStackTrace()
+			println("Error openingfile: $fileName : '${e.message}'")
+			//e.printStackTrace()
 			return SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND
 		}
 	}

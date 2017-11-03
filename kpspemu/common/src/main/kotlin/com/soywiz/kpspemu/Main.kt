@@ -127,14 +127,14 @@ class KpspemuMainScene(
 		//val exeFile = samplesFolder["polyphonic.elf"]
 		//val exeFile = samplesFolder["cube.iso"]
 		//val exeFile = samplesFolder["lights.pbp"]
-		val exeFile = samplesFolder["cwd.elf"]
+		//val exeFile = samplesFolder["cwd.elf"]
 		//val exeFile = samplesFolder["nehetutorial03.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
 		//val exeFile = samplesFolder["text.elf"]
 		//val exeFile = samplesFolder["cavestory.iso"]
 		//val exeFile = samplesFolder["cavestory.zip"]
 		//val exeFile = samplesFolder["TrigWars.iso"]
-		//val exeFile = samplesFolder["TrigWars.zip"]
+		val exeFile = samplesFolder["TrigWars.zip"]
 
 		hud = views.container()
 		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xAA)).apply {
@@ -286,6 +286,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 						deviceManager.mount(fileManager.currentDirectory, iso)
 						deviceManager.mount("game0:/", iso)
 						deviceManager.mount("umd0:/", iso)
+						deviceManager.mount("ms0:/PSP/GAME/virtual", iso)
 					}
 					return loadExecutableAndStart(f)
 				}
