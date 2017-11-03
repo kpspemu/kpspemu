@@ -12,6 +12,8 @@ import com.soywiz.kpspemu.cpu.RA
 import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.PtrArray
+import com.soywiz.kpspemu.mem.array
 import com.soywiz.kpspemu.mem.ptr
 import com.soywiz.kpspemu.util.PspLogger
 
@@ -133,22 +135,25 @@ class PspThread internal constructor(
 		).addr
 	}
 
-	fun putDataInStack(bytes: ByteArray): Ptr {
-		state.SP -= bytes.size.nextAlignedTo(16)
+	fun putDataInStack(bytes: ByteArray): PtrArray {
+		val blockSize = bytes.size.nextAlignedTo(16)
+		state.SP -= blockSize
 		mem.write(state.SP, bytes)
-		return mem.ptr(state.SP)
+		return PtrArray(mem.ptr(state.SP), bytes.size)
 	}
 
-	fun putWordInStack(word: Int): Ptr {
-		state.SP -= 4.nextAlignedTo(16)
+	fun putWordInStack(word: Int): PtrArray {
+		val blockSize = 4.nextAlignedTo(16)
+		state.SP -= blockSize
 		mem.sw(state.SP, word)
-		return mem.ptr(state.SP)
+		return mem.ptr(state.SP).array(4)
 	}
 
-	fun putWordsInStack(vararg words: Int): Ptr {
-		state.SP -= (words.size * 4).nextAlignedTo(16)
+	fun putWordsInStack(vararg words: Int): PtrArray {
+		val blockSize = (words.size * 4).nextAlignedTo(16)
+		state.SP -= blockSize
 		for (n in 0 until words.size) mem.sw(state.SP + n * 4, words[n])
-		return mem.ptr(state.SP)
+		return mem.ptr(state.SP).array(words.size * 4)
 	}
 
 	fun start() {

@@ -228,8 +228,6 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		val program = Program(
 			name = "$vtype",
 			vertex = VertexShader {
-				//SET(out, vec4(a_Pos, 0f.lit, 1f.lit) * u_ProjMat)
-				//SET(out, u_modelViewProjMatrix * vec4(a_Pos, 1f.lit))
 				SET(out, u_modelViewProjMatrix * vec4(a_Pos, 1f.lit))
 				if (a_Col != null) {
 					SET(v_Col, a_Col.rgba)
@@ -237,7 +235,6 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				if (a_Tex != null) {
 					SET(v_Tex, u_texMatrix * vec4(a_Tex.xy, 0f.lit, 0f.lit))
 				}
-				//SET(out, vec4(a_Pos, 1f.lit))
 			},
 			fragment = FragmentShader {
 				SET(out, vec4(1f.lit, 1f.lit, 1f.lit, 1f.lit))

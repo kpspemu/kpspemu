@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.korio.lang.Debugger
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.lang.toByteArray
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
+import com.soywiz.korio.util.join
 import com.soywiz.korma.numeric.nextAlignedTo
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.GP
@@ -122,22 +121,15 @@ class InstructionReader(
 
 fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
 
-fun Emulator.loadElfAndSetRegisters(file: SyncStream, path: String = "ms0:/PSP/GAME/EBOOT.PBP"): PspElf {
+fun Emulator.loadElfAndSetRegisters(file: SyncStream, args: List<String> = listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP")): PspElf {
 	val elf = loadElf(file)
 	val thread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
-
-	val argv = listOf<Int>(
-		thread.putDataInStack(path.toByteArray() + byteArrayOf(0)).addr
-	)
-	val argvp = thread.putWordsInStack(*argv.toIntArray())
-
-	thread.state.r4 = argv.size
-	thread.state.r5 = argvp.addr
-
+	val data = thread.putDataInStack(args.map { it.toByteArray(UTF8) + byteArrayOf(0) }.join())
 	val state = thread.state
 	state.setPC(elf.moduleInfo.PC)
 	state.GP = elf.moduleInfo.GP
-	//println("GP=${state.GP.hex}, PC=${state._PC.hex}")
+	state.r4 = data.size
+	state.r5 = data.addr
 	thread.start()
 	return elf
 }
