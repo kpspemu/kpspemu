@@ -1,5 +1,9 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klock.KLOCK_VERSION
+import com.soywiz.klock.Klock
+import com.soywiz.korag.Korag
+import com.soywiz.korau.Korau
 import com.soywiz.korge.Korge
 import com.soywiz.korge.bitmapfont.BitmapFont
 import com.soywiz.korge.input.*
@@ -25,6 +29,7 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.vfs.IsoVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
+import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
 import com.soywiz.korma.geom.SizeInt
@@ -95,9 +100,14 @@ class KpspemuMainScene(
 	lateinit var hud: Container
 
 	suspend override fun sceneInit(sceneView: Container) {
+		println("KPSPEMU: ${Kpspemu.VERSION}")
+		println("KLOCK: $KLOCK_VERSION")
+		println("KORMA: ${Korma.VERSION}")
 		println("KORIO: ${Korio.VERSION}")
-		println("KORGE: ${Korge.VERSION}")
+		println("KORAG: ${Korag.VERSION}")
+		println("KORAU: ${Korau.VERSION}")
 		println("KORUI: ${Korui.VERSION}")
+		println("KORGE: ${Korge.VERSION}")
 
 		val samplesFolder = when {
 			OS.isJs -> applicationVfs

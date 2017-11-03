@@ -1,11 +1,11 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.koragVersion = "0.15.11"
-    ext.korioVersion = "0.15.3"
-    ext.korgeVersion = "0.15.8"
-    ext.koruiVersion = "0.15.7"
-    ext.kotlinVersion = '1.2.0-beta-88'
+    ext.koragVersion = "0.16.0"
+    ext.korioVersion = "0.16.0"
+    ext.korgeVersion = "0.16.0"
+    ext.koruiVersion = "0.16.0"
+    ext.kotlinVersion = '1.2.0-rc-39'
     ext.compilerVersion = ext.kotlinVersion
     ext.librariesVersion = ext.kotlinVersion
     ext.eapChannel = 'http://dl.bintray.com/kotlin/kotlin-eap-1.2'
@@ -31,7 +31,13 @@ allprojects {
     }
 
     group 'com.soywiz'
-    version '0.1.0-SNAPSHOT'
+    version '0.2.0-SNAPSHOT'
+
+    if (project == rootProject) {
+        new File(rootProject.rootDir, "kpspemu/common/src/main/kotlin/com/soywiz/kpspemu/KpspemuVersion.kt").write(
+                "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
+        )
+    }
 
     apply plugin: 'java'
     apply plugin: 'maven'
