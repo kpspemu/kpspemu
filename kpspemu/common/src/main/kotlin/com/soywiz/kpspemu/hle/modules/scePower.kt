@@ -3,9 +3,9 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
-import kotlin.math.floor
+import com.soywiz.kpspemu.hle.error.SceKernelErrors
 
-@Suppress("UNUSED_PARAMETER")
+@Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate")
 class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011, "power.prx", "scePower_Service") {
 	// 222/111
 	// 333/166
@@ -17,15 +17,33 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 	fun _getCpuMult(): Float = (0.43444227005871f * (this.busFreq / 111f))
 	fun _getCpuFreq(): Float = this.cpuMult * this._getCpuMult()
 
+
+	fun _isValidCpuFreq(freq: Int) = (freq in 1..222)
+	fun _isValidBusFreq(freq: Int) = (freq in 1..111)
+	fun _isValidPllFreq(freq: Int) = (freq in 19..111)
+
 	fun _setCpuFreq(cpuFreq: Int): Unit {
 		this.cpuMult = when {
 			cpuFreq > 222 -> this.cpuMult // TODO: necessary until integer arithmetic to avoid it failing
-			cpuFreq == 222 -> 511f;
-			else -> cpuFreq / this._getCpuMult();
+			cpuFreq == 222 -> 511f
+			else -> cpuFreq / this._getCpuMult()
 		}
 	}
 
 	fun scePowerGetCpuClockFrequencyInt(): Int = _getCpuFreq().toInt()
+
+	fun scePowerSetBusClockFrequency(busFreq: Int): Int {
+		if (!this._isValidBusFreq(busFreq)) return SceKernelErrors.ERROR_INVALID_VALUE
+		//this.busFreq = busFreq;
+		this.busFreq = busFreq.toFloat()
+		return 0
+	}
+
+	fun scePowerSetCpuClockFrequency(cpuFreq: Int): Int {
+		if (!this._isValidCpuFreq(cpuFreq)) return SceKernelErrors.ERROR_INVALID_VALUE
+		this._setCpuFreq(cpuFreq)
+		return 0
+	}
 
 	fun scePowerGetResumeCount(cpu: CpuState): Unit = UNIMPLEMENTED(0x0074EF9B)
 	fun scePowerRequestColdReset(cpu: CpuState): Unit = UNIMPLEMENTED(0x0442D852)
@@ -52,7 +70,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 	fun scePowerIsSuspendRequired(cpu: CpuState): Unit = UNIMPLEMENTED(0x78A1A796)
 	fun scePowerIdleTimerEnable(cpu: CpuState): Unit = UNIMPLEMENTED(0x7F30B3B1)
 	fun scePowerIsRequest(cpu: CpuState): Unit = UNIMPLEMENTED(0x7FA406DD)
-	fun scePowerSetCpuClockFrequency(cpu: CpuState): Unit = UNIMPLEMENTED(0x843FBF43)
 	fun scePowerGetBatteryElec(cpu: CpuState): Unit = UNIMPLEMENTED(0x862AE1A6)
 	fun scePowerIsPowerOnline(cpu: CpuState): Unit = UNIMPLEMENTED(0x87440F5E)
 	fun scePowerGetBatteryLifeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x8EFB3FA2)
@@ -65,7 +82,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 	fun scePowerGetCpuClockFrequencyFloat(cpu: CpuState): Unit = UNIMPLEMENTED(0xB1A52C83)
 	fun scePowerVolatileMemUnlock(cpu: CpuState): Unit = UNIMPLEMENTED(0xB3EDD801)
 	fun scePowerGetBatteryChargingStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xB4432BC8)
-	fun scePowerSetBusClockFrequency(cpu: CpuState): Unit = UNIMPLEMENTED(0xB8D7B3FB)
 	fun scePowerGetLowBatteryCapacity(cpu: CpuState): Unit = UNIMPLEMENTED(0xB999184C)
 	fun scePowerGetCallbackMode(cpu: CpuState): Unit = UNIMPLEMENTED(0xBAFA3DF0)
 	fun scePowerGetBusClockFrequencyInt(cpu: CpuState): Unit = UNIMPLEMENTED(0xBD681969)
@@ -88,6 +104,8 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 
 	override fun registerModule() {
 		registerFunctionInt("scePowerGetCpuClockFrequencyInt", 0xFDB5BFE9, since = 150) { scePowerGetCpuClockFrequencyInt() }
+		registerFunctionInt("scePowerSetBusClockFrequency", 0xB8D7B3FB, since = 150) { scePowerSetBusClockFrequency(int) }
+		registerFunctionInt("scePowerSetCpuClockFrequency", 0x843FBF43, since = 150) { scePowerSetCpuClockFrequency(int) }
 
 		registerFunctionRaw("scePowerGetResumeCount", 0x0074EF9B, since = 150) { scePowerGetResumeCount(it) }
 		registerFunctionRaw("scePowerRequestColdReset", 0x0442D852, since = 150) { scePowerRequestColdReset(it) }
@@ -114,7 +132,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		registerFunctionRaw("scePowerIsSuspendRequired", 0x78A1A796, since = 150) { scePowerIsSuspendRequired(it) }
 		registerFunctionRaw("scePowerIdleTimerEnable", 0x7F30B3B1, since = 150) { scePowerIdleTimerEnable(it) }
 		registerFunctionRaw("scePowerIsRequest", 0x7FA406DD, since = 150) { scePowerIsRequest(it) }
-		registerFunctionRaw("scePowerSetCpuClockFrequency", 0x843FBF43, since = 150) { scePowerSetCpuClockFrequency(it) }
 		registerFunctionRaw("scePowerGetBatteryElec", 0x862AE1A6, since = 150) { scePowerGetBatteryElec(it) }
 		registerFunctionRaw("scePowerIsPowerOnline", 0x87440F5E, since = 150) { scePowerIsPowerOnline(it) }
 		registerFunctionRaw("scePowerGetBatteryLifeTime", 0x8EFB3FA2, since = 150) { scePowerGetBatteryLifeTime(it) }
@@ -127,7 +144,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		registerFunctionRaw("scePowerGetCpuClockFrequencyFloat", 0xB1A52C83, since = 150) { scePowerGetCpuClockFrequencyFloat(it) }
 		registerFunctionRaw("scePowerVolatileMemUnlock", 0xB3EDD801, since = 150) { scePowerVolatileMemUnlock(it) }
 		registerFunctionRaw("scePowerGetBatteryChargingStatus", 0xB4432BC8, since = 150) { scePowerGetBatteryChargingStatus(it) }
-		registerFunctionRaw("scePowerSetBusClockFrequency", 0xB8D7B3FB, since = 150) { scePowerSetBusClockFrequency(it) }
 		registerFunctionRaw("scePowerGetLowBatteryCapacity", 0xB999184C, since = 150) { scePowerGetLowBatteryCapacity(it) }
 		registerFunctionRaw("scePowerGetCallbackMode", 0xBAFA3DF0, since = 150) { scePowerGetCallbackMode(it) }
 		registerFunctionRaw("scePowerGetBusClockFrequencyInt", 0xBD681969, since = 150) { scePowerGetBusClockFrequencyInt(it) }
