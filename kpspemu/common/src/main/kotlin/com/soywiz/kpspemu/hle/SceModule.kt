@@ -148,8 +148,8 @@ abstract class SceModule(
 				override val context: CoroutineContext = coroutineContext
 
 				override fun resume(value: Long) {
-					cpu.r3 = (value ushr 0).toInt() // @TODO: Verify
-					cpu.r2 = (value ushr 32).toInt() // @TODO: Verify
+					cpu.r2 = (value ushr 0).toInt()
+					cpu.r3 = (value ushr 32).toInt()
 					completed = true
 					it.thread.resume()
 				}
