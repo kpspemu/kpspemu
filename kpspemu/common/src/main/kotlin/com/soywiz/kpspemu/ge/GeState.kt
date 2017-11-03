@@ -11,7 +11,6 @@ import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.extractScaledf01
 import com.soywiz.korio.util.nextAlignedTo
-import com.soywiz.kpspemu.hle.PixelFormat
 import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.toInt
 import kotlin.math.max
@@ -37,7 +36,7 @@ class VertexState(val data: IntArray) {
 		set(value) = run { this.data[Op.VADDR] = value or (Op.VADDR shl 24) }
 		get() = param24(this.data[Op.VADDR])
 
-	val texture get() = param2(this.data[Op.VERTEXTYPE], 0)
+	val texture get() = NumericEnum(param2(this.data[Op.VERTEXTYPE], 0))
 	val color get() = ColorEnum(param3(this.data[Op.VERTEXTYPE], 2))
 	val normal get() = NumericEnum(param2(this.data[Op.VERTEXTYPE], 5))
 	val position get() = NumericEnum(param2(this.data[Op.VERTEXTYPE], 7))
@@ -145,11 +144,13 @@ class ClutState(val data: IntArray) {
 	val sizeInBytes get() = this.pixelFormat.getSizeInBytes(this.numberOfColors)
 }
 
-class TextureState(val data: IntArray) {
+class TextureState(val geState: GeState) {
+	val data: IntArray = geState.data
 	fun getTextureMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x4(this@TextureState.data, Op.MAT_TEXTURE, out) }
 
 	val clut = ClutState(this.data)
 
+	val hasTexture get() = geState.vertex.texture != NumericEnum.VOID
 	val hasClut get() = this.pixelFormat.hasClut
 
 	fun getHashSlow(textureData: ByteArray, clutData: ByteArray): String {
@@ -182,6 +183,8 @@ class TextureState(val data: IntArray) {
 		MipmapState(this, this.data, 7)
 	)
 
+	private val envColorColor = Color()
+
 	val wrapU get() = WrapMode(param8(this.data[Op.TWRAP], 0))
 	val wrapV get() = WrapMode(param8(this.data[Op.TWRAP], 8))
 	val levelMode get() = TextureLevelMode(param8(this.data[Op.TBIAS], 0))
@@ -196,7 +199,7 @@ class TextureState(val data: IntArray) {
 	val hasAlpha get() = this.colorComponent == TextureColorComponent.RGBA
 	val colorComponent get() = TextureColorComponent(param8(this.data[Op.TFUNC], 8))
 	val fragment2X get() = param8(this.data[Op.TFUNC], 16) != 0
-	val envColor get() = Color().setRGB(param24(this.data[Op.TEC]))
+	val envColor get() = envColorColor.setRGB(param24(this.data[Op.TEC]))
 	val pixelFormat get() = PixelFormat(param4(this.data[Op.TPSM], 0))
 	val slopeLevel get() = float1(this.data[Op.TSLOPE])
 	val swizzled get() = param8(this.data[Op.TMODE], 0) != 0
@@ -367,7 +370,7 @@ class GeState {
 	val alphaTest = AlphaTest(this.data)
 	val blending = Blending(this.data)
 	val patch = PatchState(this.data)
-	val texture = TextureState(this.data)
+	val texture = TextureState(this)
 	val lineSmoothState = LineSmoothState(this.data)
 	val patchCullingState = PatchCullingState(this.data)
 	val culling = CullingState(this.data)

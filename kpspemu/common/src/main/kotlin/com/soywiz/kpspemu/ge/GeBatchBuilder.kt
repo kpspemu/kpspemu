@@ -91,7 +91,7 @@ class GeBatchBuilder(val ge: Ge) {
 			IndexEnum.VOID -> {
 				when (primitiveType) {
 					PrimitiveType.SPRITES -> {
-						var m = 0
+						var m = vertexCount
 						val nsprites = count / 2
 						for (n in 0 until nsprites) {
 							// 0..3

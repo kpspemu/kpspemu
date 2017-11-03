@@ -1,26 +1,18 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.korag.AG
+import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.*
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.render.Texture
 import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korim.color.BGRA
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korma.Matrix2d
 import com.soywiz.kpspemu.ge.*
-import com.soywiz.kpspemu.util.PspLogger
-import com.soywiz.kpspemu.util.hasFlag
-import com.soywiz.kpspemu.util.hex
-import com.soywiz.kpspemu.util.setAlpha
+import com.soywiz.kpspemu.util.*
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
 	var directFastSharpRendering = false
-
-	companion object {
-		//val RGBA_TO_BGRA = OS.isJs
-		val RGBA_TO_BGRA = false
-	}
 
 	val logger = PspLogger("AGRenderer")
 	val batchesQueue = arrayListOf<List<GeBatch>>()
@@ -87,7 +79,15 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		}
 	}
 
+	val vtype = VertexType()
+	var texture: AG.Texture? = null
+	val textureMatrix = Matrix4()
+
 	private fun renderBatch(ag: AG, batch: GeBatch) {
+		if (texture == null) {
+			texture = ag.createTexture()
+		}
+		vtype.init(batch.state)
 		stats.batches++
 		stats.vertices += batch.vertexCount
 		//if (batch.vertexCount < 10) return
@@ -124,7 +124,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			batch.modelViewProjMatrix.setToOrtho(0f, 272f, 480f, 0f, (-0xFFFF).toFloat(), 0f)
 			val vertex = vr.readOne(batch.vertices.openSync(), batch.vtype, vv)
 			ag.clear(
-				if (RGBA_TO_BGRA) BGRA.packRGBA(vertex.color) else vertex.color,
+				vertex.color,
 				fixedDepth, state.stencil.funcRef,
 				clearColor = state.clearFlags hasFlag ClearBufferSet.ColorBuffer,
 				clearDepth = state.clearFlags hasFlag ClearBufferSet.DepthBuffer,
@@ -140,10 +140,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			renderState.depthFunc = when {
 			//state.depthTest.enabled -> state.depthTest.func.toAg()
 				state.depthTest.enabled -> state.depthTest.func.toInvAg()
-				else -> {
-					AG.CompareMode.ALWAYS
-				}
+				else -> AG.CompareMode.ALWAYS
 			}
+
+			val bmp = batch.getTextureBitmap(mem)
+			texture?.upload(bmp)
+			batch.getEffectiveTextureMatrix(textureMatrix)
 		}
 
 		//println(renderState)
@@ -157,7 +159,9 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			vertexLayout = pl.layout,
 			vertexCount = batch.vertexCount,
 			uniforms = mapOf(
-				u_modelViewProjMatrix to batch.modelViewProjMatrix
+				u_modelViewProjMatrix to batch.modelViewProjMatrix,
+				u_tex to AG.TextureUnit(this.texture),
+				u_texMatrix to textureMatrix
 			),
 			blending = AG.Blending.NONE,
 			renderState = renderState
@@ -167,14 +171,22 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	}
 
 	val u_modelViewProjMatrix = Uniform("u_modelViewProjMatrix", VarType.Mat4)
+	val u_tex = Uniform("u_tex", VarType.TextureUnit)
+	val u_texMatrix = Uniform("u_texMatrix", VarType.Mat4)
 
 	data class ProgramLayout(val program: Program, val layout: VertexLayout)
 
-	val programLayoutByVertexType = LinkedHashMap<Int, ProgramLayout>()
+	val programLayoutByVertexType = LinkedHashMap<String, ProgramLayout>()
 
 	fun getProgramLayout(state: GeState): ProgramLayout {
-		return programLayoutByVertexType.getOrPut(state.vertexType) { createProgramLayout(state) }
+		val hash = "" + state.vertexType + "_" + state.texture.effect.id
+		return programLayoutByVertexType.getOrPut(hash) { createProgramLayout(state) }
 	}
+
+	private val Operand.xy: Operand get() = Program.Swizzle(this, "xy")
+	private val Operand.rgb: Operand get() = Program.Swizzle(this, "rgb")
+	private val Operand.a: Operand get() = Program.Swizzle(this, "a")
+	private val Operand.rgba: Operand get() = Program.Swizzle(this, "rgba")
 
 	fun createProgramLayout(state: GeState): ProgramLayout {
 		val vtype = VertexType().init(state)
@@ -188,9 +200,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		val a_Tex = if (vtype.hasTexture) Attribute("a_Tex", COUNT2[vtype.tex.id], normalized = false, offset = vtype.texOffset) else null
 		val a_Col = if (vtype.hasColor) Attribute("a_Col", COLORS[vtype.col.id], normalized = true, offset = vtype.colOffset) else null
 		val a_Pos = Attribute("a_Pos", COUNT3[vtype.pos.id], normalized = false, offset = vtype.posOffset)
+		val v_Tex = Varying("v_Tex", VarType.Float4)
 		val v_Col = Varying("v_Col", VarType.Byte4)
+		val t_Col = Temp(0, VarType.Byte4)
 
 		val layout = VertexLayout(listOf(a_Tex, a_Col, a_Pos).filterNotNull(), vtype.size())
+
 
 		val program = Program(
 			name = "$vtype",
@@ -199,13 +214,47 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				//SET(out, u_modelViewProjMatrix * vec4(a_Pos, 1f.lit))
 				SET(out, u_modelViewProjMatrix * vec4(a_Pos, 1f.lit))
 				if (a_Col != null) {
-					SET(v_Col, a_Col[if (RGBA_TO_BGRA) "bgra" else "rgba"])
+					SET(v_Col, a_Col.rgba)
+				}
+				if (a_Tex != null) {
+					SET(v_Tex, u_texMatrix * vec4(a_Tex.xy, 0f.lit, 0f.lit))
 				}
 				//SET(out, vec4(a_Pos, 1f.lit))
 			},
 			fragment = FragmentShader {
+				SET(out, vec4(1f.lit, 1f.lit, 1f.lit, 1f.lit))
+
+
 				if (a_Col != null) {
-					SET(out, v_Col)
+					SET(out, out * v_Col)
+				}
+				if (a_Tex != null) {
+					SET(t_Col, texture2D(u_tex, v_Tex["xy"]))
+					val hasAlpha = state.texture.hasAlpha
+					when (state.texture.effect) {
+						TextureEffect.MODULATE -> {
+							SET(out.rgb, out.rgb * t_Col.rgb)
+							if (hasAlpha) SET(out.a, out.a * t_Col.a)
+						}
+						TextureEffect.DECAL -> {
+							if (hasAlpha) {
+								SET(out.rgb, out.rgb * t_Col.rgb)
+								SET(out.a, t_Col.a)
+							} else {
+								SET(out.rgba, t_Col.rgba)
+							}
+						}
+						TextureEffect.BLEND -> SET(out, mix(out, t_Col, 0.5f.lit))
+						TextureEffect.REPLACE -> {
+							SET(out.rgb, t_Col.rgb)
+							if (hasAlpha) SET(out.a, t_Col.a)
+						}
+						TextureEffect.ADD -> {
+							SET(out.rgb, out.rgb + t_Col.rgb)
+							if (hasAlpha) SET(out.a, out.a * t_Col.a)
+						}
+						else -> Unit
+					}
 				}
 			}
 		)

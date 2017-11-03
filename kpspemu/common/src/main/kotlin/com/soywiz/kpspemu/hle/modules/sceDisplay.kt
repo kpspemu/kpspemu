@@ -4,7 +4,7 @@ import com.soywiz.korio.async.waitOne
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
-import com.soywiz.kpspemu.hle.PixelFormat
+import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.hle.SceModule
 
 @Suppress("UNUSED_PARAMETER")

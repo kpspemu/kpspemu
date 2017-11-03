@@ -6,7 +6,7 @@ import com.soywiz.korim.color.RGBA_5551
 import com.soywiz.korio.async.Signal
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
-import com.soywiz.kpspemu.hle.PixelFormat
+import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.mem
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
