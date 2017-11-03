@@ -9,7 +9,10 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korma.Matrix2d
 import com.soywiz.kpspemu.ge.*
-import com.soywiz.kpspemu.util.*
+import com.soywiz.kpspemu.util.PspLogger
+import com.soywiz.kpspemu.util.hasFlag
+import com.soywiz.kpspemu.util.hex
+import com.soywiz.kpspemu.util.setAlpha
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
 	var directFastSharpRendering = false
@@ -131,22 +134,26 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				clearStencil = state.clearFlags hasFlag ClearBufferSet.StencilBuffer
 			)
 			return
-
-		} else {
-			// @TODO: Invert this since in PSP it is reversed and WebGL doesn't support it
-			renderState.depthNear = state.depthTest.rangeFar.toFloat()
-			renderState.depthFar = state.depthTest.rangeNear.toFloat()
-			renderState.depthMask = state.depthTest.mask == 0
-			renderState.depthFunc = when {
-			//state.depthTest.enabled -> state.depthTest.func.toAg()
-				state.depthTest.enabled -> state.depthTest.func.toInvAg()
-				else -> AG.CompareMode.ALWAYS
-			}
-
-			val bmp = batch.getTextureBitmap(mem)
-			texture?.upload(bmp)
-			batch.getEffectiveTextureMatrix(textureMatrix)
 		}
+
+		// @TODO: Invert this since in PSP it is reversed and WebGL doesn't support it
+		renderState.depthNear = state.depthTest.rangeFar.toFloat()
+		renderState.depthFar = state.depthTest.rangeNear.toFloat()
+		renderState.depthMask = state.depthTest.mask == 0
+		renderState.depthFunc = when {
+		//state.depthTest.enabled -> state.depthTest.func.toAg()
+			state.depthTest.enabled -> state.depthTest.func.toInvAg()
+			else -> AG.CompareMode.ALWAYS
+		}
+
+		val bmp = batch.getTextureBitmap(mem)
+		texture?.upload(bmp)
+		batch.getEffectiveTextureMatrix(textureMatrix)
+
+		val blending = AG.Blending(
+			state.blending.functionSource.toAg(),
+			state.blending.functionDestination.toAg()
+		)
 
 		//println(renderState)
 
@@ -163,7 +170,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				u_tex to AG.TextureUnit(this.texture),
 				u_texMatrix to textureMatrix
 			),
-			blending = AG.Blending.NONE,
+			blending = blending,
 			renderState = renderState
 		)
 
@@ -296,4 +303,14 @@ private fun TestFunctionEnum.toInvAg() = when (this) {
 	TestFunctionEnum.LESS_OR_EQUAL -> AG.CompareMode.GREATER_EQUAL
 	TestFunctionEnum.GREATER -> AG.CompareMode.LESS
 	TestFunctionEnum.GREATER_OR_EQUAL -> AG.CompareMode.LESS_EQUAL
+}
+
+private fun GuBlendingFactor.toAg() = when (this) {
+	GuBlendingFactor.GU_SRC_COLOR -> AG.BlendFactor.SOURCE_COLOR
+	GuBlendingFactor.GU_ONE_MINUS_SRC_COLOR -> AG.BlendFactor.ONE_MINUS_SOURCE_COLOR
+	GuBlendingFactor.GU_SRC_ALPHA -> AG.BlendFactor.SOURCE_ALPHA
+	GuBlendingFactor.GU_ONE_MINUS_SRC_ALPHA -> AG.BlendFactor.ONE_MINUS_SOURCE_ALPHA
+	GuBlendingFactor.GU_DST_ALPHA -> AG.BlendFactor.DESTINATION_ALPHA
+	GuBlendingFactor.GU_ONE_MINUS_DST_ALPHA -> AG.BlendFactor.ONE_MINUS_DESTINATION_ALPHA
+	GuBlendingFactor.GU_FIX -> AG.BlendFactor.SOURCE_COLOR
 }
