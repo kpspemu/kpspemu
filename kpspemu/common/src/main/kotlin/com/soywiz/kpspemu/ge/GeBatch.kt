@@ -29,6 +29,16 @@ data class GeBatch(
 		}
 	}
 
+	fun hasTexture(): Boolean = state.texture.hasTexture
+
+	fun getTextureId(): Int {
+		val texture = state.texture
+		if (texture.hasTexture) {
+			return texture.mipmap.address
+		}
+		return 0
+	}
+
 	fun getTextureBitmap(mem: Memory): Bitmap32? {
 		val texture = state.texture
 		if (texture.hasTexture) {

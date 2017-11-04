@@ -85,14 +85,15 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	}
 
 	val vtype = VertexType()
-	var texture: AG.Texture? = null
+	//var texture: AG.Texture? = null
+	val texturesById = LinkedHashMap<Int, AG.Texture>()
 	val textureMatrix = Matrix4()
 
 	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, direct: Boolean) {
 		val ag = ctx.ag
-		if (texture == null) {
-			texture = ag.createTexture()
-		}
+		//if (texture == null) {
+		//	texture = ag.createTexture()
+		//}
 		vtype.init(batch.state)
 		stats.batches++
 		stats.vertices += batch.vertexCount
@@ -155,8 +156,22 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 		//println("${views.nativeWidth}x${views.nativeHeight}")
 
-		val bmp = batch.getTextureBitmap(mem)
-		texture?.upload(bmp)
+		val texture: AG.Texture?
+
+		if (batch.hasTexture()) {
+			val textureId = batch.getTextureId()
+
+			// TextureCache
+			texture = texturesById.getOrPut(textureId) {
+				val tex = ag.createTexture()
+				val bmp = batch.getTextureBitmap(mem)
+				tex.upload(bmp)
+				tex
+			}
+		} else {
+			texture = null
+		}
+
 		batch.getEffectiveTextureMatrix(textureMatrix)
 
 		val blending = when (state.blending.enabled) {
@@ -186,7 +201,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			vertexCount = batch.vertexCount,
 			uniforms = mapOf(
 				u_modelViewProjMatrix to batch.modelViewProjMatrix,
-				u_tex to AG.TextureUnit(this.texture, !state.texture.filterMinification.nearest),
+				u_tex to AG.TextureUnit(texture, !state.texture.filterMinification.nearest),
 				u_texMatrix to textureMatrix
 			),
 			blending = blending,
