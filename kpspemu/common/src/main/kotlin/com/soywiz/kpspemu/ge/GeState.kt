@@ -492,12 +492,11 @@ class GpuFrameBufferState(val data: IntArray) {
 }
 
 
-class VertexType(var v: Int = 0) {
-	fun init(v: Int) = this.apply {
-		this.v = v
+class VertexType(v: Int = 0) {
+	var v: Int = 0
+	init {
+		init(v)
 	}
-
-	enum class Attribute(val index: Int) { WEIGHTS(0), TEXTURE(1), COLOR(2), NORMAL(3), POSITION(4), END(5) }
 
 	val tex: NumericEnum get() = NumericEnum(v.extract(0, 2))
 	val col: ColorEnum get() = ColorEnum(v.extract(2, 3))
@@ -529,41 +528,27 @@ class VertexType(var v: Int = 0) {
 	val textureSize: Int get() = tex.nbytes * texComponents
 	val weightSize: Int get() = weight.nbytes * weightComponents
 
-	val colOffset: Int get() = offsetOf(Attribute.COLOR)
-	val normalOffset: Int get() = offsetOf(Attribute.NORMAL)
-	val posOffset: Int get() = offsetOf(Attribute.POSITION)
-	val texOffset: Int get() = offsetOf(Attribute.TEXTURE)
-	val weightOffset: Int get() = offsetOf(Attribute.WEIGHTS)
+	var colOffset: Int = 0; private set
+	var normalOffset: Int = 0; private set
+	var posOffset: Int  = 0; private set
+	var texOffset: Int = 0; private set
+	var weightOffset: Int = 0; private set
 
-	fun offsetOf(attribute: Attribute): Int {
+	var size: Int = 0
+	//fun size(): Int = offsetOf(Attribute.END)
+
+	fun init(v: Int) = this.apply {
+		this.v = v
+
 		var out = 0
-
-		out = out.nextAlignedTo(weight.nbytes)
-		if (attribute == Attribute.WEIGHTS) return out
-		out += weightSize
-
-		out = out.nextAlignedTo(tex.nbytes)
-		if (attribute == Attribute.TEXTURE) return out
-		out += textureSize
-
-		out = out.nextAlignedTo(col.nbytes)
-		if (attribute == Attribute.COLOR) return out
-		out += colorSize
-
-		out = out.nextAlignedTo(normal.nbytes)
-		if (attribute == Attribute.NORMAL) return out
-		out += normalSize
-
-		out = out.nextAlignedTo(pos.nbytes)
-		if (attribute == Attribute.POSITION) return out
-		out += positionSize
-
+		out = out.nextAlignedTo(weight.nbytes); this.weightOffset = out; out = weightSize
+		out = out.nextAlignedTo(tex.nbytes); this.texOffset = out; out += textureSize
+		out = out.nextAlignedTo(col.nbytes); this.colOffset = out; out += colorSize
+		out = out.nextAlignedTo(normal.nbytes); this.normalOffset = out; out += normalSize
+		out = out.nextAlignedTo(pos.nbytes); this.posOffset = out; out += positionSize
 		out = out.nextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), col.nbytes), normal.nbytes), pos.nbytes))
-
-		return out
+		this.size = out
 	}
-
-	fun size(): Int = offsetOf(Attribute.END)
 
 	override fun toString(): String {
 		val parts = arrayListOf<String>()
@@ -572,7 +557,7 @@ class VertexType(var v: Int = 0) {
 		parts += "pos=$pos"
 		parts += "tex=$tex"
 		parts += "weight=$weight"
-		parts += "size=${size()}"
+		parts += "size=$size"
 		return "VertexType(${parts.joinToString(", ")})"
 	}
 }

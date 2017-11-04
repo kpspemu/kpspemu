@@ -122,7 +122,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 		logger.trace {
 			val vr = VertexReader()
-			"" + vr.read(batch.vtype, batch.vertices.size / batch.vtype.size(), batch.vertices.openSync())
+			"" + vr.read(batch.vtype, batch.vertices.size / batch.vtype.size, batch.vertices.openSync())
 		}
 
 		if (state.clearing) {
@@ -248,9 +248,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		val v_Tex = Varying("v_Tex", VarType.Float4)
 		val v_Col = Varying("v_Col", VarType.Byte4)
 		val t_Col = Temp(0, VarType.Byte4)
-
-		val layout = VertexLayout(listOf(a_Tex, a_Col, a_Pos).filterNotNull(), vtype.size())
-
+		val layout = VertexLayout(listOf(a_Tex, a_Col, a_Pos).filterNotNull(), vtype.size)
 
 		val program = Program(
 			name = "$vtype",

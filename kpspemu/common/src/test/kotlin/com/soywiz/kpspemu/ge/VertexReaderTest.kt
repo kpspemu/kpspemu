@@ -13,7 +13,7 @@ class VertexReaderTest {
 		val vtype = VertexType(0x0000019F)
 		val reader = VertexReader()
 		fun readOne() = reader.readOne(s, vtype).toString()
-		val numberOfVertices = s.length / vtype.size()
+		val numberOfVertices = s.length / vtype.size
 
 		//println(numberOfVertices)
 		//for (n in 0 until numberOfVertices) println(readOne())
@@ -65,7 +65,7 @@ class VertexReaderTest {
 		val vtype = VertexType(0x0080011C)
 		val reader = VertexReader()
 		fun readOne() = reader.readOne(s, vtype).toString()
-		val numberOfVertices = s.length / vtype.size()
+		val numberOfVertices = s.length / vtype.size
 
 		//println(numberOfVertices)
 		//for (n in 0 until numberOfVertices) println(readOne())
@@ -82,7 +82,7 @@ class VertexReaderTest {
 		val vtype = VertexType(0x0080011C)
 		val reader = VertexReader()
 		fun readOne() = reader.readOne(s, vtype).toString()
-		val numberOfVertices = s.length / vtype.size()
+		val numberOfVertices = s.length / vtype.size
 
 		//println(numberOfVertices)
 		//for (n in 0 until numberOfVertices) println(readOne())

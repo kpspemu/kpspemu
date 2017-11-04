@@ -31,12 +31,10 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	fun setVertexKind(primitiveType: PrimitiveType, state: GeState) {
-		if (this.primitiveType != primitiveType || this.vertexType.v != state.vertexType) {
-			flush()
-		}
+		if (this.primitiveType != primitiveType || this.vertexType.v != state.vertexType) flush()
 		vertexType.init(state)
 		this.primitiveType = primitiveType
-		this.vertexSize = vertexType.size()
+		this.vertexSize = vertexType.size
 	}
 
 	fun tflush() = Unit
@@ -93,23 +91,29 @@ class GeBatchBuilder(val ge: Ge) {
 					PrimitiveType.SPRITES -> {
 						var m = vertexCount
 						val nsprites = count / 2
+						var indexBufferPos = this.indexBufferPos
 						for (n in 0 until nsprites) {
 							// 0..3
 							// 2..1
 
-							putIndex(m + 0)
-							putIndex(m + 3)
-							putIndex(m + 2)
+							indexBuffer[indexBufferPos++] = (m + 0).toShort()
+							indexBuffer[indexBufferPos++] = (m + 3).toShort()
+							indexBuffer[indexBufferPos++] = (m + 2).toShort()
 
-							putIndex(m + 2)
-							putIndex(m + 3)
-							putIndex(m + 1)
+							indexBuffer[indexBufferPos++] = (m + 2).toShort()
+							indexBuffer[indexBufferPos++] = (m + 3).toShort()
+							indexBuffer[indexBufferPos++] = (m + 1).toShort()
 
 							m += 4
 						}
+						this.indexBufferPos= indexBufferPos
 					}
 					else -> {
-						for (n in 0 until count) putIndex(vertexCount + n)
+						for (n in 0 until count) {
+							//putIndex(vertexCount + n)
+							indexBuffer[indexBufferPos + n] = (vertexCount + n).toShort()
+						}
+						indexBufferPos += count
 					}
 				}
 				maxIdx = count
@@ -133,9 +137,12 @@ class GeBatchBuilder(val ge: Ge) {
 				var vaddr = state.vertexAddress
 				for (n in 0 until maxIdx / 2) {
 					val TLpos = vertexBufferPos
-					putVertex(vaddr); vaddr += vertexSize // TL
-					val BRpos = vertexBufferPos
-					putVertex(vaddr); vaddr += vertexSize // BR
+					val BRpos = vertexBufferPos + vertexSize
+
+					mem.read(vaddr, vertexBuffer, vertexBufferPos, vertexSize * 2)
+					vertexBufferPos += vertexSize * 2
+					vertexCount += 2
+					vaddr += vertexSize * 2
 
 					putGenVertex(TLpos, BRpos, false, true)
 					putGenVertex(TLpos, BRpos, true, false)
@@ -143,12 +150,10 @@ class GeBatchBuilder(val ge: Ge) {
 				state.vertexAddress = vaddr
 			}
 			else -> {
-				var vaddr = state.vertexAddress
-				for (n in 0 until maxIdx) {
-					putVertex(vaddr)
-					vaddr += vertexSize
-				}
-				state.vertexAddress = vaddr
+				mem.read(state.vertexAddress, vertexBuffer, vertexBufferPos, vertexSize * maxIdx)
+				vertexBufferPos += vertexSize * maxIdx
+				state.vertexAddress += vertexSize * maxIdx
+				vertexCount += maxIdx
 			}
 		}
 	}
