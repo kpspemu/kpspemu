@@ -5,6 +5,7 @@ import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.*
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.render.Texture
+import com.soywiz.korge.view.Views
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korma.Matrix2d
@@ -38,7 +39,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private var indexBuffer: AG.Buffer? = null
 	private var vertexBuffer: AG.Buffer? = null
 
-	fun render(ctx: RenderContext, m: Matrix2d) {
+	fun render(views: Views, ctx: RenderContext, m: Matrix2d) {
 		val ag = ctx.ag
 		ag.checkErrors = false
 		ctx.flush()
@@ -46,14 +47,14 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 		if (directFastSharpRendering) {
 			if (batchesQueue.isNotEmpty()) {
-				renderBatches(ag)
+				renderBatches(views, ctx, direct = true)
 			}
 		} else {
 			if (batchesQueue.isNotEmpty()) {
 				mem.read(display.fixedAddress(), tempBmp.data)
 				ag.renderToBitmapEx(tempBmp) {
 					ag.drawBmp(tempBmp)
-					renderBatches(ag)
+					renderBatches(views, ctx, direct = false)
 				}
 				tempBmp.flipY() // @TODO: This should be removed!
 				mem.write(display.fixedAddress(), tempBmp.data)
@@ -74,10 +75,10 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private val vr = VertexReader()
 	private val vv = VertexRaw()
 
-	private fun renderBatches(ag: AG) {
+	private fun renderBatches(views: Views, ctx: RenderContext, direct: Boolean) {
 		stats.reset()
 		try {
-			for (batches in batchesQueue) for (batch in batches) renderBatch(ag, batch)
+			for (batches in batchesQueue) for (batch in batches) renderBatch(views, ctx, batch, direct)
 		} finally {
 			batchesQueue.clear()
 		}
@@ -87,7 +88,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	var texture: AG.Texture? = null
 	val textureMatrix = Matrix4()
 
-	private fun renderBatch(ag: AG, batch: GeBatch) {
+	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, direct: Boolean) {
+		val ag = ctx.ag
 		if (texture == null) {
 			texture = ag.createTexture()
 		}
@@ -147,6 +149,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			else -> AG.CompareMode.ALWAYS
 		}
 
+		val nativeWidth = if (direct) views.nativeWidth else 480
+
+		renderState.lineWidth = nativeWidth.toFloat() / 480.toFloat()
+
+		//println("${views.nativeWidth}x${views.nativeHeight}")
+
 		val bmp = batch.getTextureBitmap(mem)
 		texture?.upload(bmp)
 		batch.getEffectiveTextureMatrix(textureMatrix)
@@ -162,7 +170,6 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				state.blending.equation.toAg()
 			)
 		}
-
 
 		//println(state.blending.functionSource)
 		//println(state.blending.functionDestination)

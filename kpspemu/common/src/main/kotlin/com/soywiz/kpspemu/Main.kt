@@ -42,6 +42,7 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.asVfsFile
+import com.soywiz.kpspemu.util.io.IsoVfs2
 import com.soywiz.kpspemu.util.io.ZipVfs2
 import kotlin.reflect.KClass
 
@@ -182,9 +183,6 @@ class KpspemuMainScene(
 				38 -> controller.updateButton(PspCtrlButtons.up, pressed) // UP
 				39 -> controller.updateButton(PspCtrlButtons.right, pressed) // RIGHT
 				40 -> controller.updateButton(PspCtrlButtons.down, pressed) // DOWN
-				113 -> { // F2
-					if (pressed) hud.visible = !hud.visible
-				}
 				in 73..76 -> Unit // IJKL (analog)
 				else -> println("UnhandledKey($pressed): $keyCode")
 			}
@@ -231,7 +229,7 @@ class KpspemuMainScene(
 		val displayView = object : View(views) {
 			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
 			override fun render(ctx: RenderContext, m: Matrix2d) {
-				agRenderer.render(ctx, m)
+				agRenderer.render(views, ctx, m)
 				infoText.text = getInfoText()
 			}
 		}
@@ -239,7 +237,7 @@ class KpspemuMainScene(
 		sceneView += displayView
 		sceneView += hud
 
-		sceneView.onMove { hudOpen() }
+		//sceneView.onMove { hudOpen() }
 		sceneView.onOut { hudClose() }
 		sceneView.onClick { if (hud.alpha < 0.5) { hudOpen() } else { hudClose() } }
 		//sceneView.onKeyTyped { println(it.keyCode) }
@@ -252,8 +250,8 @@ class KpspemuMainScene(
 
 	suspend fun hudOpen() = hudQueue.cancelAndQueue {
 		hud.tween(hud::alpha[1.0], hud::x[0.0], time = 0.2.seconds)
-		sleep(2.seconds)
-		hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
+		//sleep(2.seconds)
+		//hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
 	}
 
 	suspend fun hudClose() = hudQueue.cancelAndQueue {
@@ -267,7 +265,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 		"pbp" -> return loadExecutableAndStart(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
 		"iso", "zip" -> {
 			val iso = when (file.extensionLC) {
-				"iso" -> IsoVfs(file)
+				"iso" -> IsoVfs2(file)
 				"zip" -> ZipVfs2(file.open(), file)
 				else -> invalidOp("UNEXPECTED")
 			}

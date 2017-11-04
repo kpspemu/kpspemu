@@ -95,17 +95,17 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 			LO = (value ushr 0).toInt()
 		}
 
-	fun setPC(pc: Int) {
+	inline fun setPC(pc: Int) {
 		_PC = pc
 		_nPC = pc + 4
 	}
 
-	fun jump(pc: Int) {
+	inline fun jump(pc: Int) {
 		_PC = pc
 		_nPC = pc + 4
 	}
 
-	fun advance_pc(offset: Int) {
+	inline fun advance_pc(offset: Int) {
 		_PC = _nPC
 		_nPC += offset
 	}
