@@ -4,7 +4,7 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 
 class Gpu(override val emulator: Emulator) : WithEmulator {
-	val batchQueue = arrayListOf<GeBatch>()
+	val batchQueue = arrayListOf<GeBatchData>()
 
 	fun render() {
 		if (batchQueue.isNotEmpty()) {

@@ -44,7 +44,7 @@ class Ge(override val emulator: Emulator) : WithEmulator {
 		onCompleted(Unit)
 	}
 
-	fun emitBatch(batch: GeBatch) {
+	fun emitBatch(batch: GeBatchData) {
 		gpu.batchQueue += batch
 		//println("BATCH: $batch")
 	}

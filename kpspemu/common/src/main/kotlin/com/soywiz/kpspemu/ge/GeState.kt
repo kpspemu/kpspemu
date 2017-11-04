@@ -403,9 +403,8 @@ class GeState {
 
 	fun writeInt(key: Int, offset: Int, value: Int): Unit = run { data[offset + data[key]++] = value }
 
-	fun setTo(other: GeState) {
-		other.data.copyRangeTo(0, this.data, 0, STATE_NWORDS)
-	}
+	fun setTo(other: IntArray) = run { other.copyRangeTo(0, this.data, 0, STATE_NWORDS) }
+	fun setTo(other: GeState) = setTo(other.data)
 
 	fun clone() = GeState().apply { setTo(this@GeState) }
 

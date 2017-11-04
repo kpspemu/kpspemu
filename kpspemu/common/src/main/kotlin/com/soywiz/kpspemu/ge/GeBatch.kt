@@ -5,18 +5,29 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korma.Matrix2d
 import com.soywiz.kpspemu.mem.Memory
 
-data class GeBatch(
-	val state: GeState,
+data class GeBatchData(
+	val state: IntArray,
 	val primType: PrimitiveType,
 	val vertexCount: Int,
 	val vertices: ByteArray,
 	val indices: ShortArray
-) {
-	val vtype = VertexType().init(state)
+)
+
+class GeBatch {
+	val vtype = VertexType()
+	val state: GeState = GeState()
+	lateinit var data: GeBatchData
 	private val tempMatrix = Matrix4()
 	val modelViewProjMatrix = Matrix4()
+	val primType: PrimitiveType get() = data.primType
+	val vertexCount: Int get() = data.vertexCount
+	val vertices: ByteArray get() = data.vertices
+	val indices: ShortArray get() = data.indices
 
-	init {
+	fun initData(data: GeBatchData) {
+		this.data = data
+		state.setTo(data.state)
+		vtype.init(state)
 		if (vtype.transform2D) {
 			//modelViewProjMatrix.setToOrtho(0f, 480f, 272f, 0f, 0f, (-0xFFFF).toFloat())
 			modelViewProjMatrix.setToOrtho(0f, 0f, 480f, 272f, 0f, (-0xFFFF).toFloat())

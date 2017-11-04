@@ -19,7 +19,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	var directFastSharpRendering = false
 
 	val logger = PspLogger("AGRenderer")
-	val batchesQueue = arrayListOf<List<GeBatch>>()
+	val batchesQueue = arrayListOf<List<GeBatchData>>()
 	val tempBmp = Bitmap32(512, 272)
 
 	data class Stats(
@@ -74,11 +74,15 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private val renderState = AG.RenderState()
 	private val vr = VertexReader()
 	private val vv = VertexRaw()
+	private val batch = GeBatch()
 
 	private fun renderBatches(views: Views, ctx: RenderContext, direct: Boolean) {
 		stats.reset()
 		try {
-			for (batches in batchesQueue) for (batch in batches) renderBatch(views, ctx, batch, direct)
+			for (batches in batchesQueue) for (batch in batches) {
+				this.batch.initData(batch)
+				renderBatch(views, ctx, this.batch, direct)
+			}
 		} finally {
 			batchesQueue.clear()
 		}

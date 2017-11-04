@@ -38,6 +38,7 @@ import com.soywiz.kpspemu.format.Pbp
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.GeBatch
+import com.soywiz.kpspemu.ge.GeBatchData
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
@@ -83,7 +84,7 @@ class KpspemuMainScene(
 			coroutineContext,
 			mem = Memory(),
 			gpuRenderer = object : GpuRenderer {
-				override fun render(batches: List<GeBatch>) {
+				override fun render(batches: List<GeBatchData>) {
 					agRenderer.batchesQueue += batches
 				}
 			}

@@ -45,7 +45,7 @@ class GeBatchBuilder(val ge: Ge) {
 	fun flush() {
 		//println("flush: $indexBufferPos")
 		if (indexBufferPos > 0) {
-			ge.emitBatch(GeBatch(ge.state.clone(), primitiveType ?: PrimitiveType.TRIANGLES, indexBufferPos, vertexBuffer.copyOf(vertexBufferPos), indexBuffer.copyOf(indexBufferPos)))
+			ge.emitBatch(GeBatchData(ge.state.data.copyOf(), primitiveType ?: PrimitiveType.TRIANGLES, indexBufferPos, vertexBuffer.copyOf(vertexBufferPos), indexBuffer.copyOf(indexBufferPos)))
 			vertexCount = 0
 			vertexBufferPos = 0
 			indexBufferPos = 0
