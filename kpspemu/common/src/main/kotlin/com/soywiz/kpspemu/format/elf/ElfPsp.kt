@@ -124,7 +124,7 @@ fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
 fun Emulator.loadElfAndSetRegisters(file: SyncStream, args: List<String> = listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP")): PspElf {
 	val elf = loadElf(file)
 	val thread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
-	val data = thread.putDataInStack(args.map { it.toByteArray(UTF8) + byteArrayOf(0) }.join())
+	val data = thread.putDataInStack(args.map { it.toByteArray(UTF8) + byteArrayOf(0) }.join() + byteArrayOf(0))
 	val state = thread.state
 	state.setPC(elf.moduleInfo.PC)
 	state.GP = elf.moduleInfo.GP
