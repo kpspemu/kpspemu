@@ -164,48 +164,52 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoDopen(path: String?): Int {
-		try {
-			logger.error { "sceIoDopen:$path" }
-			val dd = directoryDescriptors.alloc()
-			dd.directory = resolve(path)
-			dd.pos = 0
-			dd.files = dd.directory.list().toList()
-			return dd.id
-		} catch (e: Throwable) {
-			e.printStackTrace()
-			return -1
-		}
+		logger.error { "sceIoDopen:$path" }
+		//try {
+		//	logger.error { "sceIoDopen:$path" }
+		//	val dd = directoryDescriptors.alloc()
+		//	dd.directory = resolve(path)
+		//	dd.pos = 0
+		//	dd.files = dd.directory.list().toList()
+		//	return dd.id
+		//} catch (e: Throwable) {
+		//	e.printStackTrace()
+		//	return -1
+		//}
+		return 0
 	}
 
 	suspend fun sceIoDread(id: Int, ptr: Ptr): Int {
-		logger.error { "sceIoDread:$id,$ptr" }
-		val dd = directoryDescriptors[id]
-		if (dd.remaining > 0) {
-			val file = dd.files[dd.pos++]
-			val stat = file.stat()
-			val dirent = HleIoDirent(
-				stat = SceIoStat(
-					mode = 0b0_111_111_111,
-					attributes = if (stat.isDirectory) IOFileModes.Directory else IOFileModes.File,
-					size = stat.size,
-					timeCreation = ScePspDateTime(stat.createDate),
-					timeLastAccess = ScePspDateTime(stat.lastAccessDate),
-					timeLastModification = ScePspDateTime(stat.modifiedDate),
-					device = intArrayOf(0, 0, 0, 0, 0, 0)
-				),
-				name = file.basename,
-				privateData = 0,
-				dummy = 0
-			)
-
-			dirent.write(ptr.openSync())
-		}
-		return dd.remaining
+		//logger.error { "sceIoDread:$id,$ptr" }
+		//val dd = directoryDescriptors[id]
+		//if (dd.remaining > 0) {
+		//	val file = dd.files[dd.pos++]
+		//	val stat = file.stat()
+		//	val dirent = HleIoDirent(
+		//		stat = SceIoStat(
+		//			mode = 0b0_111_111_111,
+		//			attributes = if (stat.isDirectory) IOFileModes.Directory else IOFileModes.File,
+		//			size = stat.size,
+		//			timeCreation = ScePspDateTime(stat.createDate),
+		//			timeLastAccess = ScePspDateTime(stat.lastAccessDate),
+		//			timeLastModification = ScePspDateTime(stat.modifiedDate),
+		//			device = intArrayOf(0, 0, 0, 0, 0, 0)
+		//		),
+		//		name = file.basename,
+		//		privateData = 0,
+		//		dummy = 0
+		//	)
+		//
+		//	dirent.write(ptr.openSync())
+		//}
+		//return dd.remaining
+		return 0
 	}
 
 	suspend fun sceIoDclose(id: Int): Int {
-		logger.error { "sceIoDclose:$id" }
-		directoryDescriptors.freeById(id)
+		//logger.error { "sceIoDclose:$id" }
+		//directoryDescriptors.freeById(id)
+		//return 0
 		return 0
 	}
 

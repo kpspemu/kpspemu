@@ -27,8 +27,7 @@ import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.applicationVfs
+import com.soywiz.korio.vfs.*
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -43,6 +42,7 @@ import com.soywiz.kpspemu.ge.GeBatchData
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.native.KPspEmuNative
 import com.soywiz.kpspemu.util.asVfsFile
 import com.soywiz.kpspemu.util.charset.ASCII
 import com.soywiz.kpspemu.util.io.IsoVfs2
@@ -147,7 +147,6 @@ class KpspemuMainScene(
 		//val exeFile = samplesFolder["TrigWars.iso"]
 		//val exeFile = samplesFolder["TrigWars.zip"]
 		//val exeFile = samplesFolder["TrigWars.deflate.zip"]
-
 
 		hud = views.container()
 		//createEmulatorWithExe(exeFile)
@@ -320,6 +319,14 @@ class KpspemuMainScene(
 		//sceneView.onKeyTyped { println(it.keyCode) }
 		sceneView.onKeyDown { updateKey(it.keyCode, true) }
 		sceneView.onKeyUp { updateKey(it.keyCode, false) }
+
+		if (OS.isBrowserJs) {
+			val hash = KPspEmuNative.documentLocationHash.trim('#')
+			val location = hash.trim('#')
+			println("Hash:$hash, Location:$location")
+			hudCloseImmediate()
+			createEmulatorWithExe(localCurrentDirVfs[location])
+		}
 	}
 
 	val fpsCounter = FpsCounter()
@@ -343,6 +350,12 @@ class KpspemuMainScene(
 	suspend fun hudClose() = hudQueue.cancelAndQueue {
 		hud.mouseEnabled = false
 		hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
+	}
+
+	suspend fun hudCloseImmediate() = hudQueue.cancelAndQueue {
+		hud.mouseEnabled = false
+		hud.alpha = 0.0
+		hud.x = -32.0
 	}
 }
 

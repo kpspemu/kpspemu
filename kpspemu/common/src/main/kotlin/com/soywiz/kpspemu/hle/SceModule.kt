@@ -82,8 +82,9 @@ abstract class SceModule(
 	protected fun registerFunctionRaw(function: NativeFunction) {
 		functions[function.nid.toInt()] = function
 		if (function.syscall >= 0) {
-			emulator.syscalls.register(function.syscall) { cpu, syscall ->
+			emulator.syscalls.register(function.syscall, function.name) { cpu, syscall ->
 				//println("REGISTERED SYSCALL $syscall")
+				logger.trace { "${this.name}:${function.name}" }
 				function.function(cpu)
 			}
 		}

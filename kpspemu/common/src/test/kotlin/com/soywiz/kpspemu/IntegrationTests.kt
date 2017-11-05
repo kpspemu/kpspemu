@@ -17,6 +17,7 @@ import kotlin.test.assertEquals
 
 class IntegrationTests {
 	val TRACE = false
+	//val TRACE = true
 
 	@Test fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
 	@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
@@ -70,12 +71,13 @@ class IntegrationTests {
 		}
 
 		try {
+			//println("[1]")
 			while (emulator.running) {
+				//println("[2] : ${emulator.running}")
 				emulator.frameStep()
+				//println("[3]")
 				if (TRACE) {
-					for (thread in emulator.threadManager.threads) {
-						println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
-					}
+					for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
 				}
 			}
 		} catch (e: Throwable) {
