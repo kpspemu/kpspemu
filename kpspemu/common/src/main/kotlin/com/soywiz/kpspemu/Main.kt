@@ -9,7 +9,6 @@ import com.soywiz.korge.input.*
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.scene.Module
 import com.soywiz.korge.scene.Scene
-import com.soywiz.korge.scene.sleep
 import com.soywiz.korge.service.Browser
 import com.soywiz.korge.time.seconds
 import com.soywiz.korge.tween.get
@@ -23,9 +22,9 @@ import com.soywiz.korio.async.AsyncThread
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.stream.openAsync
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.util.OS
-import com.soywiz.korio.vfs.IsoVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.Korma
@@ -37,7 +36,6 @@ import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.Pbp
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
-import com.soywiz.kpspemu.ge.GeBatch
 import com.soywiz.kpspemu.ge.GeBatchData
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
@@ -54,6 +52,7 @@ object Main {
 	fun main(args: Array<String>) = Korge(KpspemuModule, injector = AsyncInjector()
 		.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class)) }
 		.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
+		//, debug = true
 	)
 }
 
@@ -76,6 +75,7 @@ class KpspemuMainScene(
 	var running = true
 	var ended = false
 	var paused = false
+	var forceSteps = 0
 
 	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
 		running = true
@@ -136,7 +136,10 @@ class KpspemuMainScene(
 		//val exeFile = samplesFolder["cavestory.iso"]
 		//val exeFile = samplesFolder["cavestory.zip"]
 		//val exeFile = samplesFolder["TrigWars.iso"]
-		val exeFile = samplesFolder["TrigWars.zip"]
+		//val exeFile = samplesFolder["TrigWars.zip"]
+		//val exeFile = samplesFolder["TrigWars.zip"].readAll().openAsync().asVfsFile("TrigWars.zip")
+		val exeFile = samplesFolder["TrigWars.deflate.zip"]
+
 
 		hud = views.container()
 		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xAA)).apply {
@@ -148,7 +151,8 @@ class KpspemuMainScene(
 
 		sceneView.addUpdatable {
 			//controller.updateButton(PspCtrlButtons.cross, true) // auto press X
-			if (!paused) {
+			if (!paused || forceSteps > 0) {
+				if (forceSteps > 0) forceSteps--
 				if (running && emulator.running) {
 					try {
 						emulator.frameStep()
@@ -203,29 +207,48 @@ class KpspemuMainScene(
 			y = 8.0
 		}
 
-		hud += infoText
-
-		hud += views.simpleButton("Load...", font = hudFont).apply {
+		val loadButton = views.simpleButton("Load...", font = hudFont).apply {
 			x = 8.0
 			y = 272.0 - 32.0 * 1
 		}.onClick {
 			createEmulatorWithExe(browser.openFile())
 		}
 
-		hud += views.simpleButton("Direct", font = hudFont).apply {
+		val directButton = views.simpleButton("Direct", font = hudFont).apply {
 			x = 8.0
 			y = 272.0 - 32.0 * 2
 		}.onClick {
 			agRenderer.directFastSharpRendering = !agRenderer.directFastSharpRendering
 		}
 
-		hud += views.simpleButton("Pause", font = hudFont).apply {
+		lateinit var pauseButton: View
+
+		fun pause(set: Boolean) {
+			paused = set
+			pauseButton.setText(if (paused) "Resume" else "Pause")
+
+		}
+
+		pauseButton = views.simpleButton("Pause", font = hudFont).apply {
 			x = 8.0
 			y = 272.0 - 32.0 * 3
 		}.onClick {
-			paused = !paused
-			it.view.setText(if (paused) "Resume" else "Pause")
+			pause(!paused)
+		}!!
+
+		val stepButton = views.simpleButton("Step", font = hudFont).apply {
+			x = 8.0
+			y = 272.0 - 32.0 * 4
+		}.onClick {
+			pause(true)
+			forceSteps++
 		}
+
+		hud += infoText
+		hud += loadButton
+		hud += directButton
+		hud += pauseButton
+		hud += stepButton
 
 		val displayView = object : View(views) {
 			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
@@ -240,7 +263,13 @@ class KpspemuMainScene(
 
 		//sceneView.onMove { hudOpen() }
 		sceneView.onOut { hudClose() }
-		sceneView.onClick { if (hud.alpha < 0.5) { hudOpen() } else { hudClose() } }
+		sceneView.onClick {
+			if (hud.alpha < 0.5) {
+				hudOpen()
+			} else {
+				hudClose()
+			}
+		}
 		//sceneView.onKeyTyped { println(it.keyCode) }
 		sceneView.onKeyDown { updateKey(it.keyCode, true) }
 		sceneView.onKeyUp { updateKey(it.keyCode, false) }
@@ -250,20 +279,32 @@ class KpspemuMainScene(
 	val hudQueue = AsyncThread()
 
 	suspend fun hudOpen() = hudQueue.cancelAndQueue {
+		hud.mouseEnabled = true
 		hud.tween(hud::alpha[1.0], hud::x[0.0], time = 0.2.seconds)
 		//sleep(2.seconds)
 		//hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
 	}
 
 	suspend fun hudClose() = hudQueue.cancelAndQueue {
+		hud.mouseEnabled = false
 		hud.tween(hud::alpha[0.0], hud::x[-32.0], time = 0.2.seconds)
 	}
 }
 
 suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
+	val PRELOAD_THRESHOLD = 3L * 1024 * 1024 // 3MB
+	if (file.size() < PRELOAD_THRESHOLD) {
+		return loadExecutableAndStartInternal(file.readAll().openAsync().asVfsFile(file.fullname))
+	} else {
+		return loadExecutableAndStartInternal(file)
+	}
+}
+
+suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile): PspElf {
+
 	when (file.extensionLC) {
 		"elf", "prx", "bin" -> return loadElfAndSetRegisters(file.readAll().openSync())
-		"pbp" -> return loadExecutableAndStart(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
+		"pbp" -> return loadExecutableAndStartInternal(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
 		"iso", "zip" -> {
 			val iso = when (file.extensionLC) {
 				"iso" -> IsoVfs2(file)
@@ -287,7 +328,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 						deviceManager.mount("umd0:/", iso)
 						deviceManager.mount("ms0:/PSP/GAME/virtual", iso)
 					}
-					return loadExecutableAndStart(f)
+					return loadExecutableAndStartInternal(f)
 				}
 			}
 			invalidOp("Can't find any possible executalbe in ISO ($files)")
@@ -304,13 +345,21 @@ fun Views.simpleButton(text: String, width: Int = 80, height: Int = 24, font: Bi
 	val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
 
 	val bg = solidRect(width, height, colorOut)
-	button += bg
-	button += text(text, font = font).apply {
-		x = 4.0
-		y = 4.0
-		enabled = false
+	val txt = text(text, font = font).apply {
+		this.x = 4.0
+		this.y = 4.0
+		this.autoSize = true
+		//this.textBounds.setBounds(0, 0, width - 8, height - 8)
+		//this.width = width - 8.0
+		//this.height = height - 8.0
+		//this.enabled = false
+		//this.mouseEnabled = false
+		//this.enabled = false
 	}
+	button += bg
+	button += txt
 	button.onOut { bg.colorMul = colorOut }
 	button.onOver { bg.colorMul = colorOver }
+	//txt.textBounds.setBounds(0, 0, 50, 50)
 	return button
 }

@@ -13,6 +13,7 @@ import com.soywiz.kpspemu.util.PspLoggerManager
 import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.quote
 import org.junit.Test
+import kotlin.test.assertEquals
 
 class IntegrationTests {
 	val TRACE = false
@@ -44,6 +45,15 @@ class IntegrationTests {
 	//@Test fun testFpuFpu() = testFile("cpu/fpu/fpu")
 	//@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
 	//@Test fun testCpuBranch2() = testFile("cpu/cpu_alu/cpu_branch2")
+
+	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
+		testFile(
+			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
+			KpspTests.pspautotests["$name.expected"].readString(),
+			ignores,
+			processor
+		)
+	}
 
 	suspend fun testFile(elf: SyncStream, expected: String, ignores: List<String>, processor: (String) -> String = { it }) {
 		val emulator = Emulator(getCoroutineContext())
@@ -87,14 +97,5 @@ class IntegrationTests {
 		}
 		MyAssert.assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
 		//assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
-	}
-
-	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
-		testFile(
-			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
-			KpspTests.pspautotests["$name.expected"].readString(),
-			ignores,
-			processor
-		)
 	}
 }

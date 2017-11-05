@@ -75,6 +75,16 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private val vr = VertexReader()
 	private val vv = VertexRaw()
 	private val batch = GeBatch()
+	val u_modelViewProjMatrix = Uniform("u_modelViewProjMatrix", VarType.Mat4)
+	val u_tex = Uniform("u_tex", VarType.TextureUnit)
+	val u_texMatrix = Uniform("u_texMatrix", VarType.Mat4)
+	val textureMatrix = Matrix4()
+	val textureUnit = AG.TextureUnit(null, linear = false)
+	private val uniforms = mapOf(
+		u_modelViewProjMatrix to batch.modelViewProjMatrix,
+		u_tex to textureUnit,
+		u_texMatrix to textureMatrix
+	)
 
 	private fun renderBatches(views: Views, ctx: RenderContext, direct: Boolean) {
 		stats.reset()
@@ -91,7 +101,6 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	val vtype = VertexType()
 	//var texture: AG.Texture? = null
 	val texturesById = LinkedHashMap<Int, AG.Texture>()
-	val textureMatrix = Matrix4()
 
 	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, direct: Boolean) {
 		val ag = ctx.ag
@@ -190,6 +199,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			)
 		}
 
+		textureUnit.texture = texture
+		textureUnit.linear = !state.texture.filterMinification.nearest
 		//println(state.blending.functionSource)
 		//println(state.blending.functionDestination)
 
@@ -203,21 +214,13 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			program = pl.program,
 			vertexLayout = pl.layout,
 			vertexCount = batch.vertexCount,
-			uniforms = mapOf(
-				u_modelViewProjMatrix to batch.modelViewProjMatrix,
-				u_tex to AG.TextureUnit(texture, !state.texture.filterMinification.nearest),
-				u_texMatrix to textureMatrix
-			),
+			uniforms = uniforms,
 			blending = blending,
 			renderState = renderState
 		)
 
 		//val out = FloatArray(512 * 1); ag.readDepth(512, 1, out); println(out.toList())
 	}
-
-	val u_modelViewProjMatrix = Uniform("u_modelViewProjMatrix", VarType.Mat4)
-	val u_tex = Uniform("u_tex", VarType.TextureUnit)
-	val u_texMatrix = Uniform("u_texMatrix", VarType.Mat4)
 
 	data class ProgramLayout(val program: Program, val layout: VertexLayout)
 
