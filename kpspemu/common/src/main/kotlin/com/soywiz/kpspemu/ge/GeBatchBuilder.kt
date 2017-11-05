@@ -162,28 +162,28 @@ class GeBatchBuilder(val ge: Ge) {
 				mem.read(vaddr + (n * vertexSize_2), vertexBuffer, vpos, vertexSize * 2)
 				vpos += vertexSize_2
 
-				putGenVertex(vpos + vertexSize * 0, TLpos, BRpos, false, true, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
-				putGenVertex(vpos + vertexSize * 1, TLpos, BRpos, true, false, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
+				putGenVertex(vpos + vertexSize * 0, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
+				putGenVertex(vpos + vertexSize * 1, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
 
 				vpos += vertexSize_2
 			}
-			this.vertexBufferPos = vpos
 			vertexCount += nsprites * 4
+			this.vertexBufferPos = vpos
 			state.vertexAddress += nsprites * vertexSize * 2
 		}
 	}
 
-	private fun putGenVertex(vertexBufferPos: Int, TLpos: Int, BRpos: Int, gx: Boolean, gy: Boolean, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
-		vertexBuffer.copyRangeTo(BRpos, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
+	private fun putGenVertex(vertexBufferPos: Int, base: Int,  gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
+		vertexBuffer.copyRangeTo(base, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + posOffsetX, vertexBuffer, vertexBufferPos + posOffsetX, posSize)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + posOffsetY, vertexBuffer, vertexBufferPos + posOffsetY, posSize)
+			vertexBuffer.copyRangeTo(gx + posOffsetX, vertexBuffer, vertexBufferPos + posOffsetX, posSize)
+			vertexBuffer.copyRangeTo(gy + posOffsetY, vertexBuffer, vertexBufferPos + posOffsetY, posSize)
 		}
 
 		if (vertexType.hasTexture) {
-			vertexBuffer.copyRangeTo((if (!gx) TLpos else BRpos) + texOffsetX, vertexBuffer, vertexBufferPos + texOffsetX, texSize)
-			vertexBuffer.copyRangeTo((if (!gy) TLpos else BRpos) + texOffsetY, vertexBuffer, vertexBufferPos + texOffsetY, texSize)
+			vertexBuffer.copyRangeTo(gx + texOffsetX, vertexBuffer, vertexBufferPos + texOffsetX, texSize)
+			vertexBuffer.copyRangeTo(gy + texOffsetY, vertexBuffer, vertexBufferPos + texOffsetY, texSize)
 		}
 
 		// Copy color
