@@ -36,6 +36,7 @@ import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.Pbp
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
+import com.soywiz.kpspemu.format.openAsCso
 import com.soywiz.kpspemu.ge.GeBatchData
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
@@ -305,6 +306,7 @@ suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile): PspElf {
 	when (file.extensionLC) {
 		"elf", "prx", "bin" -> return loadElfAndSetRegisters(file.readAll().openSync())
 		"pbp" -> return loadExecutableAndStartInternal(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
+		"cso" -> return loadExecutableAndStartInternal(file.openAsCso().asVfsFile(file.pathInfo.pathWithExtension("cso.iso")))
 		"iso", "zip" -> {
 			val iso = when (file.extensionLC) {
 				"iso" -> IsoVfs2(file)
