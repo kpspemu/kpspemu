@@ -107,6 +107,8 @@ class PspThread internal constructor(
 
 	var acceptingCallbacks: Boolean = false
 	var waitObject: WaitObject? = null
+	var waitInfo: Any? = null
+	var exitStatus: Int = 0
 
 	var phase: Phase = Phase.STOPPED
 	val running: Boolean get() = phase == Phase.RUNNING
@@ -167,10 +169,11 @@ class PspThread internal constructor(
 	fun resume() {
 		phase = Phase.RUNNING
 		waitObject = null
+		waitInfo = null
 		acceptingCallbacks = false
 	}
 
-	fun stop() {
+	fun stop(reason: String = "generic") {
 		if (phase != Phase.STOPPED) {
 			phase = Phase.STOPPED
 			onEnd(Unit)
@@ -195,7 +198,7 @@ class PspThread internal constructor(
 		} catch (e: CpuBreakException) {
 			when (e.id) {
 				CpuBreakException.THREAD_EXIT_KILL -> {
-					logger.info("BREAK: THREAD_EXIT_KILL")
+					logger.info("BREAK: THREAD_EXIT_KILL ('${this.name}', ${this.id})")
 					exitAndKill()
 				}
 				CpuBreakException.THREAD_WAIT -> {

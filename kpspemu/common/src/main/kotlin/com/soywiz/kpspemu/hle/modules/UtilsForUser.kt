@@ -58,13 +58,16 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 		return 0
 	}
 
+	fun sceKernelDcacheWritebackInvalidateRange(ptr: Int, size: Int): Unit {
+		emulator.invalidateDcache(ptr, size)
+	}
+
 	fun UtilsForUser_004D4DEE(cpu: CpuState): Unit = UNIMPLEMENTED(0x004D4DEE)
 	fun sceKernelUtilsMt19937UInt(cpu: CpuState): Unit = UNIMPLEMENTED(0x06FB8A63)
 	fun UtilsForUser_157A383A(cpu: CpuState): Unit = UNIMPLEMENTED(0x157A383A)
 	fun sceKernelDcacheReadTag(cpu: CpuState): Unit = UNIMPLEMENTED(0x16641D70)
 	fun UtilsForUser_1B0592A3(cpu: CpuState): Unit = UNIMPLEMENTED(0x1B0592A3)
 	fun sceKernelUtilsSha1BlockUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x346F6DA8)
-	fun sceKernelDcacheWritebackInvalidateRange(cpu: CpuState): Unit = UNIMPLEMENTED(0x34B9FA9E)
 	fun sceKernelGetGPI(cpu: CpuState): Unit = UNIMPLEMENTED(0x37FB5C42)
 	fun UtilsForUser_39F49610(cpu: CpuState): Unit = UNIMPLEMENTED(0x39F49610)
 	fun sceKernelDcacheWritebackRange(cpu: CpuState): Unit = UNIMPLEMENTED(0x3EE30821)
@@ -107,13 +110,13 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 		registerFunctionInt("sceKernelLibcGettimeofday", 0x71EC4271, since = 150) { sceKernelLibcGettimeofday(ptr, ptr) }
 		registerFunctionInt("sceKernelLibcTime", 0x27CC57F0, since = 150) { sceKernelLibcTime(ptr) }
 		registerFunctionInt("sceKernelDcacheWritebackAll", 0x79D1C3FA, since = 150) { sceKernelDcacheWritebackAll() }
+		registerFunctionVoid("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(int, int) }
 
 		registerFunctionRaw("UtilsForUser_004D4DEE", 0x004D4DEE, since = 150) { UtilsForUser_004D4DEE(it) }
 		registerFunctionRaw("UtilsForUser_157A383A", 0x157A383A, since = 150) { UtilsForUser_157A383A(it) }
 		registerFunctionRaw("sceKernelDcacheReadTag", 0x16641D70, since = 150) { sceKernelDcacheReadTag(it) }
 		registerFunctionRaw("UtilsForUser_1B0592A3", 0x1B0592A3, since = 150) { UtilsForUser_1B0592A3(it) }
 		registerFunctionRaw("sceKernelUtilsSha1BlockUpdate", 0x346F6DA8, since = 150) { sceKernelUtilsSha1BlockUpdate(it) }
-		registerFunctionRaw("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(it) }
 		registerFunctionRaw("sceKernelGetGPI", 0x37FB5C42, since = 150) { sceKernelGetGPI(it) }
 		registerFunctionRaw("UtilsForUser_39F49610", 0x39F49610, since = 150) { UtilsForUser_39F49610(it) }
 		registerFunctionRaw("sceKernelDcacheWritebackRange", 0x3EE30821, since = 150) { sceKernelDcacheWritebackRange(it) }

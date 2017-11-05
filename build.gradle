@@ -145,6 +145,6 @@ apply plugin: 'idea'
 
 idea {
     module {
-        excludeDirs += [file('psplibdoc'), file('gradle')]
+        excludeDirs += [file('psplibdoc'), file('gradle'), file('kpspemu/js/web')]
     }
 }

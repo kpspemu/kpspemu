@@ -9,6 +9,9 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 	fun sceKernelIcacheInvalidateRange(ptr: Int, size: Int): Unit {
 		emulator.invalidateIcache(ptr, size)
 	}
+	fun sceKernelDcacheWritebackInvalidateRange(ptr: Int, size: Int): Unit {
+		emulator.invalidateDcache(ptr, size)
+	}
 
 	fun UtilsForKernel_004D4DEE(cpu: CpuState): Unit = UNIMPLEMENTED(0x004D4DEE)
 	fun sceKernelUtilsMt19937UInt(cpu: CpuState): Unit = UNIMPLEMENTED(0x06FB8A63)
@@ -21,7 +24,6 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 	fun sceKernelGzipGetCompressedData(cpu: CpuState): Unit = UNIMPLEMENTED(0x23FFC828)
 	fun sceKernelLibcTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x27CC57F0)
 	fun sceKernelUtilsSha1BlockUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x346F6DA8)
-	fun sceKernelDcacheWritebackInvalidateRange(cpu: CpuState): Unit = UNIMPLEMENTED(0x34B9FA9E)
 	fun sceKernelGetGPI(cpu: CpuState): Unit = UNIMPLEMENTED(0x37FB5C42)
 	fun sceKernelGetPTRIG(cpu: CpuState): Unit = UNIMPLEMENTED(0x39F49610)
 	fun sceKernelDcacheWritebackRange(cpu: CpuState): Unit = UNIMPLEMENTED(0x3EE30821)
@@ -75,6 +77,7 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 
 	override fun registerModule() {
 		registerFunctionVoid("sceKernelIcacheInvalidateRange", 0xC2DF770E, since = 150) { sceKernelIcacheInvalidateRange(int, int) }
+		registerFunctionVoid("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(int, int) }
 
 		registerFunctionRaw("UtilsForKernel_004D4DEE", 0x004D4DEE, since = 150) { UtilsForKernel_004D4DEE(it) }
 		registerFunctionRaw("sceKernelUtilsMt19937UInt", 0x06FB8A63, since = 150) { sceKernelUtilsMt19937UInt(it) }
@@ -87,7 +90,6 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 		registerFunctionRaw("sceKernelGzipGetCompressedData", 0x23FFC828, since = 150) { sceKernelGzipGetCompressedData(it) }
 		registerFunctionRaw("sceKernelLibcTime", 0x27CC57F0, since = 150) { sceKernelLibcTime(it) }
 		registerFunctionRaw("sceKernelUtilsSha1BlockUpdate", 0x346F6DA8, since = 150) { sceKernelUtilsSha1BlockUpdate(it) }
-		registerFunctionRaw("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(it) }
 		registerFunctionRaw("sceKernelGetGPI", 0x37FB5C42, since = 150) { sceKernelGetGPI(it) }
 		registerFunctionRaw("sceKernelGetPTRIG", 0x39F49610, since = 150) { sceKernelGetPTRIG(it) }
 		registerFunctionRaw("sceKernelDcacheWritebackRange", 0x3EE30821, since = 150) { sceKernelDcacheWritebackRange(it) }

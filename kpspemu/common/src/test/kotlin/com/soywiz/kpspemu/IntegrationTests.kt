@@ -2,6 +2,7 @@ package com.soywiz.kpspemu
 
 import KpspTests
 import MyAssert
+import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.lang.Console
@@ -17,7 +18,11 @@ import kotlin.test.assertEquals
 
 class IntegrationTests {
 	val TRACE = false
+	val TRACE1 = false
 	//val TRACE = true
+	//val TRACE1 = true
+
+	//@Test fun testDmac() = testFile("dmac/dmactest")
 
 	@Test fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
 	@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
@@ -43,10 +48,6 @@ class IntegrationTests {
 
 	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
-	//@Test fun testFpuFpu() = testFile("cpu/fpu/fpu")
-	//@Test fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
-	//@Test fun testCpuBranch2() = testFile("cpu/cpu_alu/cpu_branch2")
-
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
@@ -63,6 +64,10 @@ class IntegrationTests {
 		//val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
 		val info = emulator.loadElfAndSetRegisters(elf)
 
+		if (TRACE1) {
+			PspLoggerManager.defaultLevel = PspLogLevel.TRACE
+		}
+
 		if (TRACE) {
 			emulator.threadManager.trace("user_main", trace = true)
 			PspLoggerManager.defaultLevel = PspLogLevel.TRACE
@@ -75,6 +80,7 @@ class IntegrationTests {
 			while (emulator.running) {
 				//println("[2] : ${emulator.running}")
 				emulator.frameStep()
+				getCoroutineContext().eventLoop.step(10)
 				//println("[3]")
 				if (TRACE) {
 					for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")

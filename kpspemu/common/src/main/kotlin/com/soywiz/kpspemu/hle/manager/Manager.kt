@@ -13,7 +13,8 @@ open class Manager<T : Resource>(val name: String, override val emulator: Emulat
 
 	internal fun allocId(): Int = freeIds.alloc()
 	fun tryGetByName(name: String): T? = resourcesById.values.firstOrNull { it.name == name }
-	fun getById(id: Int) = resourcesById[id] ?: invalidOp("Can't find $name $id")
+	fun tryGetById(id: Int): T? = resourcesById[id]
+	fun getById(id: Int) = tryGetById(id) ?: invalidOp("Can't find $name $id")
 }
 
 open class Resource(
