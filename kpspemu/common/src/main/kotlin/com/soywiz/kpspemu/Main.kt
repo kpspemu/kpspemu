@@ -322,10 +322,12 @@ class KpspemuMainScene(
 
 		if (OS.isBrowserJs) {
 			val hash = KPspEmuNative.documentLocationHash.trim('#')
-			val location = hash.trim('#')
+			val location = hash.trim('#').trim()
 			println("Hash:$hash, Location:$location")
-			hudCloseImmediate()
-			createEmulatorWithExe(localCurrentDirVfs[location])
+			if (location.isNotEmpty()) {
+				hudCloseImmediate()
+				createEmulatorWithExe(localCurrentDirVfs[location])
+			}
 		}
 	}
 
