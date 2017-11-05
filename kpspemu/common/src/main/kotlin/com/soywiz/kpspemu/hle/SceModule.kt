@@ -18,6 +18,7 @@ import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.threadManager
+import com.soywiz.kpspemu.util.IntMap
 import com.soywiz.kpspemu.util.PspLogger
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.startCoroutine
@@ -44,6 +45,7 @@ class RegisterReader {
 		}
 	val ptr: Ptr get() = MemPtr(mem, int)
 	val str: String? get() = mem.readStringzOrNull(int)
+	val istr: String get() = mem.readStringzOrNull(int) ?: ""
 }
 
 data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
@@ -65,7 +67,7 @@ abstract class SceModule(
 
 	private val rr: RegisterReader = RegisterReader()
 
-	val functions = LinkedHashMap<Int, NativeFunction>()
+	val functions = IntMap<NativeFunction>()
 
 	fun getByNidOrNull(nid: Int): NativeFunction? = functions[nid]
 	fun getByNid(nid: Int): NativeFunction = getByNidOrNull(nid) ?: invalidOp("Can't find NID 0x%08X in %s".format(nid, name))

@@ -40,6 +40,10 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return 0
 	}
 
+	fun sceDisplayGetVcount(): Int {
+		return emulator.display.vcount
+	}
+
 	fun sceDisplayIsVsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x21038913)
 	fun sceDisplayGetAccumulatedHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x210EAB3A)
 	fun sceDisplayGetBrightness(cpu: CpuState): Unit = UNIMPLEMENTED(0x31C4BAA8)
@@ -49,7 +53,6 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 	fun sceDisplayGetCurrentHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x773DD3A3)
 	fun sceDisplay_77ED8B3A(cpu: CpuState): Unit = UNIMPLEMENTED(0x77ED8B3A)
 	fun sceDisplaySetHoldMode(cpu: CpuState): Unit = UNIMPLEMENTED(0x7ED59BC4)
-	fun sceDisplayGetVcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x9C6EAAD7)
 	fun sceDisplaySetResumeMode(cpu: CpuState): Unit = UNIMPLEMENTED(0xA544C486)
 	fun sceDisplayAdjustAccumulatedHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0xA83EF139)
 	fun sceDisplayIsForeground(cpu: CpuState): Unit = UNIMPLEMENTED(0xB4F378FA)
@@ -66,6 +69,7 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		registerFunctionSuspendInt("sceDisplayWaitVblankCB", 0x8EB9EC49, since = 150, cb = true) { sceDisplayWaitVblank() }
 		registerFunctionSuspendInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147, cb = false) { sceDisplayWaitVblankStart() }
 		registerFunctionSuspendInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150, cb = true) { sceDisplayWaitVblankStart() }
+		registerFunctionInt("sceDisplayGetVcount", 0x9C6EAAD7, since = 150) { sceDisplayGetVcount() }
 
 		registerFunctionRaw("sceDisplayIsVsync", 0x21038913, since = 150) { sceDisplayIsVsync(it) }
 		registerFunctionRaw("sceDisplayGetAccumulatedHcount", 0x210EAB3A, since = 150) { sceDisplayGetAccumulatedHcount(it) }
@@ -76,7 +80,6 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		registerFunctionRaw("sceDisplayGetCurrentHcount", 0x773DD3A3, since = 150) { sceDisplayGetCurrentHcount(it) }
 		registerFunctionRaw("sceDisplay_77ED8B3A", 0x77ED8B3A, since = 150) { sceDisplay_77ED8B3A(it) }
 		registerFunctionRaw("sceDisplaySetHoldMode", 0x7ED59BC4, since = 150) { sceDisplaySetHoldMode(it) }
-		registerFunctionRaw("sceDisplayGetVcount", 0x9C6EAAD7, since = 150) { sceDisplayGetVcount(it) }
 		registerFunctionRaw("sceDisplaySetResumeMode", 0xA544C486, since = 150) { sceDisplaySetResumeMode(it) }
 		registerFunctionRaw("sceDisplayAdjustAccumulatedHcount", 0xA83EF139, since = 150) { sceDisplayAdjustAccumulatedHcount(it) }
 		registerFunctionRaw("sceDisplayIsForeground", 0xB4F378FA, since = 150) { sceDisplayIsForeground(it) }

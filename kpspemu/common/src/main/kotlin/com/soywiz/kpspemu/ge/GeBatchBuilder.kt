@@ -77,43 +77,26 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	fun addIndicesSprites(count: Int) {
-		val OPTIMIZED = false
-		//val OPTIMIZED = true
-
-		var maxIdx = 0
 		val nsprites = count / 2
-		val ivertices = count
 
-		//println("addIndices: size=$size, count=$count")
 		when (vertexType.index) {
 			IndexEnum.VOID -> {
 				// 0..3
 				// 2..1
 				var bp = this.indexBufferPos
 				val start = vertexCount
-				if (OPTIMIZED) {
-					//val end = start + nsprites * 2
-					//for (n in 0 until nsprites) {
-					//	indexBuffer[indexBufferPos++] = (start + n * 2 + 0).toShort()
-					//	indexBuffer[indexBufferPos++] = (end + n * 2 + 1).toShort()
-					//	indexBuffer[indexBufferPos++] = (end + n * 2 + 0).toShort()
-					//	indexBuffer[indexBufferPos++] = (end + n * 2 + 0).toShort()
-					//	indexBuffer[indexBufferPos++] = (end + n * 2 + 1).toShort()
-					//	indexBuffer[indexBufferPos++] = (start + n * 2 + 1).toShort()
-					//}
-				} else {
-					for (n in 0 until nsprites) {
-						indexBuffer[bp++] = (start + n * 4 + 0).toShort()
-						indexBuffer[bp++] = (start + n * 4 + 3).toShort()
-						indexBuffer[bp++] = (start + n * 4 + 2).toShort()
-						indexBuffer[bp++] = (start + n * 4 + 2).toShort()
-						indexBuffer[bp++] = (start + n * 4 + 3).toShort()
-						indexBuffer[bp++] = (start + n * 4 + 1).toShort()
-					}
+				val end = start + nsprites * 2
+				for (n in 0 until nsprites) {
+					val start2 = start + n * 2
+					val end2 = end + n * 2
+					indexBuffer[bp++] = (start2 + 0).toShort()
+					indexBuffer[bp++] = (end2 + 1).toShort()
+					indexBuffer[bp++] = (end2 + 0).toShort()
+					indexBuffer[bp++] = (end2 + 0).toShort()
+					indexBuffer[bp++] = (end2 + 1).toShort()
+					indexBuffer[bp++] = (start2 + 1).toShort()
 				}
 				this.indexBufferPos = bp
-
-				maxIdx = count
 			}
 			else -> TODO("addIndicesSprites: ${vertexType.index}, $count")
 		}
@@ -122,74 +105,46 @@ class GeBatchBuilder(val ge: Ge) {
 		val vertexSize_0 = vertexSize * 0
 		val vertexSize_1 = vertexSize * 1
 		val vertexSize_2 = vertexSize * 2
-		val vertexSize_3 = vertexSize * 3
-		val vertexSize_4 = vertexSize * 4
-		if (OPTIMIZED) {
-			//val posOffset = vertexType.posOffset
-			//val posSize = vertexType.pos.nbytes
-			//val texOffset = vertexType.texOffset
-			//val texSize = vertexType.tex.nbytes
-//
-			//var vaddr = state.vertexAddress
-			//var vpos = vertexBufferPos
-			//var vpos2 = vertexBufferPos + vertexSize_2 * nsprites
-			//for (n in 0 until nsprites) {
-			//	val TLpos = vpos
-			//	val BRpos = vpos + vertexSize
-//
-			//	mem.read(vaddr, vertexBuffer, vpos, vertexSize * 2)
-			//	vpos += vertexSize_2
-			//	vaddr += vertexSize_2
-//
-			//	putGenVertex(vpos2 + vertexSize * 0, TLpos, BRpos, false, true, posOffset, posSize, texOffset, texSize)
-			//	putGenVertex(vpos2 + vertexSize * 1, TLpos, BRpos, true, false, posOffset, posSize, texOffset, texSize)
-			//	vpos2 += vertexSize_2
-			//}
-			//this.vertexBufferPos = vpos2
-			//vertexCount += nsprites * 4
-			//state.vertexAddress = vaddr
 
-		} else {
-			val posSize = vertexType.pos.nbytes
-			val posOffsetX = vertexType.posOffset
-			val posOffsetY = vertexType.posOffset + posSize
-			val texSize = vertexType.tex.nbytes
-			val texOffsetX = vertexType.texOffset
-			val texOffsetY = vertexType.texOffset + texSize
+		val posSize = vertexType.pos.nbytes
+		val posOffsetX = vertexType.posOffset
+		val posOffsetY = vertexType.posOffset + posSize
+		val texSize = vertexType.tex.nbytes
+		val texOffsetX = vertexType.texOffset
+		val texOffsetY = vertexType.texOffset + texSize
 
-			val vaddr = state.vertexAddress
-			val svpos = vertexBufferPos
-			for (n in 0 until nsprites) {
-				val nsvpos = svpos + (n * vertexSize_4)
-				val TLpos = nsvpos + vertexSize_0
-				val BRpos = nsvpos + vertexSize_1
+		// Copy raw sprite vertices at once
+		mem.read(state.vertexAddress, vertexBuffer, vertexBufferPos, nsprites * vertexSize_2)
+		state.vertexAddress += nsprites * vertexSize_2
 
-				mem.read(vaddr + (n * vertexSize_2), vertexBuffer, nsvpos, vertexSize * 2)
-				putGenVertex(nsvpos + vertexSize_2, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
-				putGenVertex(nsvpos + vertexSize_3, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
-			}
-			vertexCount += nsprites * 4
-			this.vertexBufferPos = vertexBufferPos + nsprites * vertexSize * 4
-			state.vertexAddress += nsprites * vertexSize * 2
+		val svpos = vertexBufferPos
+		val dvpos = vertexBufferPos + nsprites * vertexSize_2
+
+		for (n in 0 until nsprites) {
+			val TLpos = svpos + (n * vertexSize_2)
+			val BRpos = TLpos + vertexSize_1
+
+			val dsvpos = dvpos + (n * vertexSize_2)
+			putGenVertex(dsvpos + vertexSize_0, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
+			putGenVertex(dsvpos + vertexSize_1, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
 		}
+		vertexCount += nsprites * 4
+		this.vertexBufferPos = vertexBufferPos + nsprites * vertexSize * 4
+
 	}
 
-	private fun putGenVertex(vertexBufferPos: Int, base: Int,  gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
-		vertexBuffer.copyRangeTo(base, vertexBuffer, vertexBufferPos, vertexSize) // Copy one full
+	private fun putGenVertex(dest: Int, base: Int, gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
+		vertexBuffer.copyRangeTo(base, vertexBuffer, dest, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
-			vertexBuffer.copyRangeTo(gx + posOffsetX, vertexBuffer, vertexBufferPos + posOffsetX, posSize)
-			vertexBuffer.copyRangeTo(gy + posOffsetY, vertexBuffer, vertexBufferPos + posOffsetY, posSize)
+			vertexBuffer.copyRangeTo(gx + posOffsetX, vertexBuffer, dest + posOffsetX, posSize)
+			vertexBuffer.copyRangeTo(gy + posOffsetY, vertexBuffer, dest + posOffsetY, posSize)
 		}
 
 		if (vertexType.hasTexture) {
-			vertexBuffer.copyRangeTo(gx + texOffsetX, vertexBuffer, vertexBufferPos + texOffsetX, texSize)
-			vertexBuffer.copyRangeTo(gy + texOffsetY, vertexBuffer, vertexBufferPos + texOffsetY, texSize)
+			vertexBuffer.copyRangeTo(gx + texOffsetX, vertexBuffer, dest + texOffsetX, texSize)
+			vertexBuffer.copyRangeTo(gy + texOffsetY, vertexBuffer, dest + texOffsetY, texSize)
 		}
-
-		// Copy color
-		//vertexBuffer.copyRangeTo(BRpos + vertexType.colOffset, vertexBuffer, TLpos + vertexType.colOffset, vertexType.col.nbytes)
-
 	}
 
 	fun addIndicesNormal(count: Int) {

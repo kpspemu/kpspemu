@@ -7,6 +7,7 @@ sourceSets {
 
 dependencies {
     expectedBy project(":kpspemu-common")
+    compile "com.soywiz:klock-js:$klockVersion"
     compile "com.soywiz:korag-js:$koragVersion"
     compile "com.soywiz:korio-js:$korioVersion"
     compile "com.soywiz:korge-js:$korgeVersion"

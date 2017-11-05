@@ -24,9 +24,9 @@ import com.soywiz.korio.async.go
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.stream.openAsync
-import com.soywiz.korio.stream.openSync
+import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korma.Korma
@@ -44,6 +44,7 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.asVfsFile
+import com.soywiz.kpspemu.util.charset.ASCII
 import com.soywiz.kpspemu.util.io.IsoVfs2
 import com.soywiz.kpspemu.util.io.ZipVfs2
 import kotlin.reflect.KClass
@@ -71,7 +72,7 @@ object KpspemuModule : Module() {
 class KpspemuMainScene(
 	val browser: Browser
 ) : Scene(), WithEmulator {
-	lateinit var exeFile: VfsFile
+	//lateinit var exeFile: VfsFile
 	lateinit override var emulator: Emulator
 	val tex by lazy { views.texture(display.bmp) }
 	val agRenderer by lazy { AGRenderer(this, tex) }
@@ -81,10 +82,8 @@ class KpspemuMainScene(
 	var paused = false
 	var forceSteps = 0
 
-	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
-		running = true
-		ended = false
-		emulator = Emulator(
+	suspend fun createEmulator(): Emulator {
+		return Emulator(
 			coroutineContext,
 			mem = Memory(),
 			gpuRenderer = object : GpuRenderer {
@@ -94,15 +93,21 @@ class KpspemuMainScene(
 				}
 			}
 		)
+	}
+
+	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
+		running = true
+		ended = false
+		emulator = createEmulator()
 		agRenderer.anyBatch = false
 		emulator.registerNativeModules()
 		emulator.loadExecutableAndStart(exeFile)
-
 	}
 
 	lateinit var hud: Container
 
 	suspend override fun sceneInit(sceneView: Container) {
+		emulator = createEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
 		println("KLOCK: $KLOCK_VERSION")
 		println("KORMA: ${Korma.VERSION}")
@@ -136,7 +141,7 @@ class KpspemuMainScene(
 		//val exeFile = samplesFolder["cwd.elf"]
 		//val exeFile = samplesFolder["nehetutorial03.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
-		val exeFile = samplesFolder["text.elf"]
+		//val exeFile = samplesFolder["text.elf"]
 		//val exeFile = samplesFolder["cavestory.iso"]
 		//val exeFile = samplesFolder["cavestory.zip"]
 		//val exeFile = samplesFolder["TrigWars.iso"]
@@ -145,7 +150,7 @@ class KpspemuMainScene(
 
 
 		hud = views.container()
-		createEmulatorWithExe(exeFile)
+		//createEmulatorWithExe(exeFile)
 
 		sceneView.addUpdatable {
 			//controller.updateButton(PspCtrlButtons.cross, true) // auto press X
@@ -214,18 +219,21 @@ class KpspemuMainScene(
 			)
 		}
 
-		hud.alpha = 0.0
+		//hud.alpha = 0.0
+		//hud.mouseEnabled = false
 
 		fun getInfoText(): String {
 			val out = arrayListOf<String>()
 			out += "kpspemu"
 			out += Kpspemu.VERSION
 			out += ""
-			out += agRenderer.stats.toString()
-			out += ""
 			out += "totalThreads=${emulator.threadManager.totalThreads}"
 			out += "waitingThreads=${emulator.threadManager.waitingThreads}"
 			out += "activeThreads=${emulator.threadManager.activeThreads}"
+			out += ""
+			out += agRenderer.stats.toString()
+			out += ""
+			out += "FPS: ${fpsCounter.getFpsInt()}"
 			return out.joinToString("\n")
 		}
 
@@ -249,9 +257,9 @@ class KpspemuMainScene(
 				AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
 				AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
 				else -> AGRenderer.RenderMode.AUTO
-				//AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
-				//AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
-				//AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
+			//AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+			//AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
+			//AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
 			}
 
 			it.view.setText(when (agRenderer.renderMode) {
@@ -284,7 +292,7 @@ class KpspemuMainScene(
 			forceSteps++
 		}
 
-		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply {  enabled = false; mouseEnabled = false }
+		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
 		hud += infoText
 		hud += loadButton
 		hud += directButton
@@ -294,7 +302,11 @@ class KpspemuMainScene(
 		val displayView = object : View(views) {
 			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
 			override fun render(ctx: RenderContext, m: Matrix2d) {
+				val startTime = Klock.currentTimeMillis()
+				fpsCounter.tick(startTime.toDouble())
 				agRenderer.render(views, ctx, m)
+				val endTime = Klock.currentTimeMillis()
+				agRenderer.stats.renderTime = (endTime - startTime).toInt()
 				infoText.text = getInfoText()
 			}
 		}
@@ -308,9 +320,9 @@ class KpspemuMainScene(
 		//sceneView.onKeyTyped { println(it.keyCode) }
 		sceneView.onKeyDown { updateKey(it.keyCode, true) }
 		sceneView.onKeyUp { updateKey(it.keyCode, false) }
-
 	}
 
+	val fpsCounter = FpsCounter()
 	val hudQueue = AsyncThread()
 
 	suspend fun toggleHud() {
@@ -334,23 +346,54 @@ class KpspemuMainScene(
 	}
 }
 
-suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
-	val PRELOAD_THRESHOLD = 3L * 1024 * 1024 // 3MB
-	if (file.size() < PRELOAD_THRESHOLD) {
-		return loadExecutableAndStartInternal(file.readAll().openAsync().asVfsFile(file.fullname))
-	} else {
-		return loadExecutableAndStartInternal(file)
+class FpsCounter {
+	val MAX_SAMPLES = 100
+	var renderTimes = DoubleArray(MAX_SAMPLES)
+	var renderTimeOffset = 0
+	var renderCount = 0
+
+	fun tick(time: Double) {
+		renderTimes[renderTimeOffset++ % MAX_SAMPLES] = time
+		if (renderCount < MAX_SAMPLES) renderCount++
+	}
+
+	fun getSample(offset: Int) = renderTimes[(renderTimeOffset - 1 - offset) umod MAX_SAMPLES]
+
+	fun getFpsInt(): Int = getFps().toInt()
+
+	fun getFps(): Double {
+		if (renderCount == 0) return 0.0
+		val elapsed = getSample(0) - getSample(renderCount - 1)
+		return 1000.0 * (renderCount.toDouble() / elapsed)
 	}
 }
 
-suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile): PspElf {
+suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
+	val PRELOAD_THRESHOLD = 3L * 1024 * 1024 // 3MB
+	return loadExecutableAndStartInternal(when {
+		file.size() < PRELOAD_THRESHOLD -> file.readAll().openAsync().asVfsFile(file.fullname)
+		else -> file
+	})
+}
 
-	when (file.extensionLC) {
+suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile): PspElf {
+	return loadExecutableAndStartInternal(file, file.open().readBytesUpTo(0x10).openSync())
+}
+
+suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile, magic: SyncStream): PspElf {
+	val magicId = magic.slice().readStringz(4, ASCII)
+	val extension = when (magicId) {
+		"\u007fELF" -> "elf"
+		"\u0000PBP" -> "pbp"
+		"CISO" -> "cso"
+		else -> file.extensionLC
+	}
+	when (extension) {
 		"elf", "prx", "bin" -> return loadElfAndSetRegisters(file.readAll().openSync())
 		"pbp" -> return loadExecutableAndStartInternal(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
-		"cso" -> return loadExecutableAndStartInternal(file.openAsCso().asVfsFile(file.pathInfo.pathWithExtension("cso.iso")))
+		"cso", "ciso" -> return loadExecutableAndStartInternal(file.openAsCso().asVfsFile(file.pathInfo.pathWithExtension("cso.iso")))
 		"iso", "zip" -> {
-			val iso = when (file.extensionLC) {
+			val iso = when (extension) {
 				"iso" -> IsoVfs2(file)
 				"zip" -> ZipVfs2(file.open(), file)
 				else -> invalidOp("UNEXPECTED")

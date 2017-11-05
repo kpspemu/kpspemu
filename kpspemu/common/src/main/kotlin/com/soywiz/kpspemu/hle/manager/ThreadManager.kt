@@ -113,7 +113,7 @@ class PspThread internal constructor(
 	val waiting: Boolean get() = waitObject != null
 	var priority: Int = initPriority
 	override val emulator get() = manager.emulator
-	val state = CpuState(emulator.mem, emulator.syscalls).apply {
+	val state = CpuState(emulator.globalCpuState, emulator.mem, emulator.syscalls).apply {
 		_thread = this@PspThread
 		setPC(entryPoint)
 		SP = stack.high.toInt()

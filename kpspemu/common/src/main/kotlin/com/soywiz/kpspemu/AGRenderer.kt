@@ -10,10 +10,7 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korma.Matrix2d
 import com.soywiz.kpspemu.ge.*
-import com.soywiz.kpspemu.util.PspLogger
-import com.soywiz.kpspemu.util.hasFlag
-import com.soywiz.kpspemu.util.hex
-import com.soywiz.kpspemu.util.setAlpha
+import com.soywiz.kpspemu.util.*
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
 	enum class RenderMode { AUTO, NORMAL, DIRECT }
@@ -39,10 +36,13 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 	var renderScale = 2.0
 
+	var frameCount = 0
+
 	fun render(views: Views, ctx: RenderContext, m: Matrix2d) {
 		val ag = ctx.ag
 		ag.checkErrors = false
 		ctx.flush()
+		frameCount++
 
 		val directFastSharpRendering = when (renderMode) {
 			RenderMode.AUTO -> anyBatch
@@ -60,6 +60,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				if (renderBuffer == null) {
 					renderBuffer = ag.createRenderBuffer()
 					geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH), 0, HH, WW, 0)
+					//geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH))
 				}
 
 				val rb = renderBuffer!!
@@ -123,13 +124,15 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	data class TextureSlot(
 		val id: Int,
 		val texture: AG.Texture,
-		var version: Int = 0
+		var version: Int = 0,
+		var frame: Int = 0,
+		var hash: Int = 0
 	)
 
 	val vtype = VertexType()
 	//var texture: AG.Texture? = null
 	//val texturesById = LinkedHashMap<Int, AG.Texture>()
-	val texturesById = LinkedHashMap<Int, TextureSlot>()
+	val texturesById = IntMap<TextureSlot>()
 
 	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, scale: Double) {
 		val ag = ctx.ag
@@ -207,15 +210,28 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				TextureSlot(textureId, ag.createTexture())
 			}
 
-			if (textureSlot.version != batch.data.texVersion) {
-				textureSlot.version = batch.data.texVersion
-				val bmp = batch.getTextureBitmap(mem)
-				textureSlot.texture.upload(bmp)
-				//go(coroutineContext) {
-				//	bmp?.setAlpha(0xFF)
-				//	bmp?.writeTo(LocalVfs("c:/temp/$textureId.png"), formats = PNG)
-				//}
-				//println("Texture upload!")
+			if (textureSlot.frame != frameCount) {
+				textureSlot.frame = frameCount
+				val texVersion = batch.data.texVersion
+				//val texVersion = 1
+				//val texVersion = frameCount
+
+				if (textureSlot.version != texVersion) {
+					textureSlot.version = texVersion
+
+					val texHash = batch.getTextureHash(mem)
+
+					if (textureSlot.hash != texHash) {
+						textureSlot.hash = texHash
+						val bmp = batch.getTextureBitmap(mem)
+						textureSlot.texture.upload(bmp)
+						//go(coroutineContext) {
+						//	bmp?.setAlpha(0xFF)
+						//	bmp?.writeTo(LocalVfs("c:/temp/$textureId.png"), formats = PNG)
+						//}
+						//println("Texture upload!")
+					}
+				}
 			}
 
 		} else {
@@ -364,7 +380,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		var verticesTriangles: Int = 0,
 		var verticesSprites: Int = 0,
 
-		var cpuTime: Int = 0
+		var cpuTime: Int = 0,
+		var renderTime: Int = 0
 	) {
 		fun reset() {
 			batches = 0
@@ -388,7 +405,9 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			lines += "Lines: $verticesLines ($batchesLines)"
 			lines += "Triangles: $verticesTriangles ($batchesTriangles)"
 			lines += "Sprites: $verticesSprites ($batchesSprites)"
+			lines += ""
 			lines += "CpuTime: $cpuTime"
+			lines += "RenderTime: $renderTime"
 			return lines.joinToString("\n")
 		}
 

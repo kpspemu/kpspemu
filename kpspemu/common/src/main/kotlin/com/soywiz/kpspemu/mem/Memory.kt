@@ -41,6 +41,14 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		val size get() = end - start
 	}
 
+	open fun hash(address4: Int, nwords: Int): Int {
+		var hash = 0
+		for (n in 0 until nwords) {
+			hash += lw(address4 + n * 4)
+		}
+		return hash
+	}
+
 	fun readBytes(srcPos: Int, count: Int): ByteArray = ByteArray(count).apply { read(srcPos, this, 0, count) }
 
 	open fun write(dstPos: Int, src: ByteArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
@@ -199,6 +207,14 @@ abstract class FastMemoryBacked : Memory(true) {
 
 	//val buffer = FastMemory.alloc(0x10000000)
 	//private inline fun index(address: Int) = address and 0x0fffffff
+
+	override fun hash(address4: Int, nwords: Int): Int {
+		var hash = 0
+		val buffer = this.buffer
+		val ptr = index(address4) ushr 2
+		for (n in 0 until nwords) hash += buffer.getAlignedInt32(ptr + n)
+		return hash
+	}
 
 	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
 	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }

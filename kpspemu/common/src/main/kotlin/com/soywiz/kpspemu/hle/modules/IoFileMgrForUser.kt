@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
 
+import com.soywiz.korio.async.toList
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.write32_le
-import com.soywiz.korio.stream.write64_le
 import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
@@ -14,6 +13,7 @@ import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.fileManager
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
@@ -32,6 +32,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	val fileDescriptors get() = emulator.fileManager.fileDescriptors
+	val directoryDescriptors get() = emulator.fileManager.directoryDescriptors
 
 	private fun _resolve(path: String): VfsFile {
 		val resolved = fileManager.resolve(path)
@@ -42,32 +43,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	private fun resolve(path: String?): VfsFile {
 		logger.trace { "resolve:$path" }
 		return _resolve(path!!)
-	}
-
-	object FileOpenFlags {
-		val Read = 0x0001
-		val Write = 0x0002
-		val ReadWrite = Read or Write
-		val NoBlock = 0x0004
-		val _InternalDirOpen = 0x0008 // Internal use for dopen
-		val Append = 0x0100
-		val Create = 0x0200
-		val Truncate = 0x0400
-		val Excl = 0x0800
-		val Unknown1 = 0x4000 // something async?
-		val NoWait = 0x8000
-		val Unknown2 = 0xf0000 // seen on Wipeout Pure and Infected
-		val Unknown3 = 0x2000000 // seen on Puzzle Guzzle, Hammerin' Hero
-	}
-
-	object IOFileModes {
-		val FormatMask = 0x0038
-		val SymbolicLink = 0x0008
-		val Directory = 0x0010
-		val File = 0x0020
-		val CanRead = 0x0004
-		val CanWrite = 0x0002
-		val CanExecute = 0x0001
 	}
 
 	suspend fun sceIoOpen(fileName: String?, flags: Int, mode: Int): Int {
@@ -90,25 +65,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		}
 	}
 
-	class SceIoStat(
-		val mode: Int,
-		val attributes: Int,
-		val size: Long,
-		val timeCreation: ScePspDateTime,
-		val timeLastAccess: ScePspDateTime,
-		val timeLastModifications: ScePspDateTime,
-		val device: IntArray = IntArray(6)
-	) {
-		fun write(s: SyncStream) = s.run {
-			write32_le(mode)
-			write32_le(attributes)
-			write64_le(size)
-			timeCreation.write(s)
-			timeLastAccess.write(s)
-			timeLastModifications.write(s)
-			for (n in 0 until 6) write32_le(device[n])
-		}
-	}
 
 	suspend fun sceIoGetstat(fileName: String?, ptr: Ptr): Int {
 		val file = resolve(fileName)
@@ -119,17 +75,11 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			size = fstat.size,
 			timeCreation = ScePspDateTime(fstat.createDate),
 			timeLastAccess = ScePspDateTime(fstat.lastAccessDate),
-			timeLastModifications = ScePspDateTime(fstat.modifiedDate)
+			timeLastModification = ScePspDateTime(fstat.modifiedDate),
+			device = IntArray(6)
 		)
 		stat.write(ptr.openSync())
 		return 0
-	}
-
-	object SeekType {
-		val Set = 0
-		val Cur = 1
-		val End = 2
-		val Tell = 65536
 	}
 
 	suspend fun sceIoLseek32(fileId: Int, offset: Int, whence: Int): Int {
@@ -214,17 +164,48 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoDopen(path: String?): Int {
-		logger.error { "sceIoDopen:$path" }
-		return 77
+		try {
+			logger.error { "sceIoDopen:$path" }
+			val dd = directoryDescriptors.alloc()
+			dd.directory = resolve(path)
+			dd.pos = 0
+			dd.files = dd.directory.list().toList()
+			return dd.id
+		} catch (e: Throwable) {
+			e.printStackTrace()
+			return -1
+		}
 	}
 
 	suspend fun sceIoDread(id: Int, ptr: Ptr): Int {
 		logger.error { "sceIoDread:$id,$ptr" }
-		return 0
+		val dd = directoryDescriptors[id]
+		if (dd.remaining > 0) {
+			val file = dd.files[dd.pos++]
+			val stat = file.stat()
+			val dirent = HleIoDirent(
+				stat = SceIoStat(
+					mode = 0b0_111_111_111,
+					attributes = if (stat.isDirectory) IOFileModes.Directory else IOFileModes.File,
+					size = stat.size,
+					timeCreation = ScePspDateTime(stat.createDate),
+					timeLastAccess = ScePspDateTime(stat.lastAccessDate),
+					timeLastModification = ScePspDateTime(stat.modifiedDate),
+					device = intArrayOf(0, 0, 0, 0, 0, 0)
+				),
+				name = file.basename,
+				privateData = 0,
+				dummy = 0
+			)
+
+			dirent.write(ptr.openSync())
+		}
+		return dd.remaining
 	}
 
 	suspend fun sceIoDclose(id: Int): Int {
 		logger.error { "sceIoDclose:$id" }
+		directoryDescriptors.freeById(id)
 		return 0
 	}
 

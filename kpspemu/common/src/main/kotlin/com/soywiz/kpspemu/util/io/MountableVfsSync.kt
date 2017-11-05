@@ -28,6 +28,11 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 			mounts.sortBy { -it.first.length }
 		}
 
+		suspend override fun transform(out: VfsFile): VfsFile {
+			//return super.transform(out)
+			return out
+		}
+
 		override suspend fun access(path: String): VfsFile {
 			val rpath = VfsUtil.normalize(path)
 			for ((base, file) in mounts) {
@@ -42,6 +47,7 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 	callback(mount)
 	return mount.root
 }
+
 
 //inline fun MountableVfs(callback: Mountable.() -> Unit): VfsFile {
 //	val mount = MountableVfs()

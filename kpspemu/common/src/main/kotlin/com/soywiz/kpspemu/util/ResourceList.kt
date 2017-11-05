@@ -8,7 +8,7 @@ interface ResourceItem {
 }
 
 class ResourceList<T : ResourceItem>(val name: String, private val create: (id: Int) -> T) {
-	private val items = LinkedHashMap<Int, T>()
+	private val items = IntMap<T>()
 	private var lastId: Int = 1
 	private val freeList = Pool<T>() { create(lastId++) }
 
@@ -23,8 +23,13 @@ class ResourceList<T : ResourceItem>(val name: String, private val create: (id: 
 		items.remove(item.id)
 	}
 
-	fun freeById(id: Int) = free(this[id])
+	fun freeById(id: Int) {
+		if (id in this) {
+			free(this[id])
+		}
+	}
 
 	fun tryGetById(id: Int): T? = items[id]
 	operator fun get(id: Int): T = tryGetById(id) ?: invalidOp("Can't find $name with id $id")
+	operator fun contains(id: Int): Boolean = tryGetById(id) != null
 }

@@ -1,17 +1,20 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.korio.stream.AsyncStream
+import com.soywiz.korio.stream.*
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsUtil
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.hle.modules.ScePspDateTime
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
+import com.soywiz.kpspemu.util.charset.ASCII
 
 class FileManager(val emulator: Emulator) {
 	val deviceManager get() = emulator.deviceManager
 	var currentDirectory = "umd0:/"
 
 	val fileDescriptors = ResourceList<FileDescriptor>("FileDescriptor") { FileDescriptor(it) }
+	val directoryDescriptors = ResourceList<DirectoryDescriptor>("DirectoryDescriptor") { DirectoryDescriptor(it) }
 
 	fun resolvePath(path: String): String {
 		if (path.contains(':')) {
@@ -35,3 +38,108 @@ class FileDescriptor(override val id: Int) : ResourceItem {
 	lateinit var file: VfsFile
 	lateinit var stream: AsyncStream
 }
+
+class DirectoryDescriptor(override val id: Int) : ResourceItem {
+	lateinit var directory: VfsFile
+	var pos: Int = 0
+	var files: List<VfsFile> = listOf()
+	val remaining: Int get() = files.size - pos
+}
+
+data class SceIoStat(
+	val mode: Int, // SceMode
+	val attributes: Int, // IOFileModes.File
+	val size: Long,
+	val timeCreation: ScePspDateTime,
+	val timeLastAccess: ScePspDateTime,
+	val timeLastModification: ScePspDateTime,
+	val device: IntArray = IntArray(6)
+) {
+	fun write(s: SyncStream) = s.run {
+		write32_le(mode)
+		write32_le(attributes)
+		write64_le(size.toLong())
+		timeCreation.write(this)
+		timeLastAccess.write(this)
+		timeLastModification.write(this)
+		for (n in 0 until 6) write32_le(device[n])
+	}
+}
+
+//class SceIoStat(
+//	val mode: Int,
+//	val attributes: Int,
+//	val size: Long,
+//	val timeCreation: ScePspDateTime,
+//	val timeLastAccess: ScePspDateTime,
+//	val timeLastModifications: ScePspDateTime,
+//	val device: IntArray = IntArray(6)
+//) {
+//	fun write(s: SyncStream) = s.run {
+//		write32_le(mode)
+//		write32_le(attributes)
+//		write64_le(size)
+//		timeCreation.write(s)
+//		timeLastAccess.write(s)
+//		timeLastModifications.write(s)
+//		for (n in 0 until 6) write32_le(device[n])
+//	}
+//}
+
+
+data class HleIoDirent(
+	val stat: SceIoStat,
+	val name: String,
+	val privateData: Int = 0,
+	val dummy: Int = 0
+) {
+	fun write(s: SyncStream) {
+		stat.write(s)
+		s.writeStringz(name, 256, ASCII)
+		s.write32_le(privateData)
+		s.write32_le(dummy)
+	}
+}
+
+object IOFileModes {
+	val FormatMask = 0x0038
+	val SymbolicLink = 0x0008
+	val Directory = 0x0010
+	val File = 0x0020
+	val CanRead = 0x0004
+	val CanWrite = 0x0002
+	val CanExecute = 0x0001
+}
+
+object SeekType {
+	val Set = 0
+	val Cur = 1
+	val End = 2
+	val Tell = 65536
+}
+
+object FileOpenFlags {
+	val Read = 0x0001
+	val Write = 0x0002
+	val ReadWrite = Read or Write
+	val NoBlock = 0x0004
+	val _InternalDirOpen = 0x0008 // Internal use for dopen
+	val Append = 0x0100
+	val Create = 0x0200
+	val Truncate = 0x0400
+	val Excl = 0x0800
+	val Unknown1 = 0x4000 // something async?
+	val NoWait = 0x8000
+	val Unknown2 = 0xf0000 // seen on Wipeout Pure and Infected
+	val Unknown3 = 0x2000000 // seen on Puzzle Guzzle, Hammerin' Hero
+}
+
+//object IOFileModes {
+//	val FormatMask = 0x0038
+//	val SymbolicLink = 0x0008
+//	val Directory = 0x0010
+//	val File = 0x0020
+//	val CanRead = 0x0004
+//	val CanWrite = 0x0002
+//	val CanExecute = 0x0001
+//}

@@ -45,6 +45,11 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		return 0
 	}
 
+	fun scePowerSetClockFrequency(pllFreq: Int, cpuFreq: Int, busFreq: Int): Int {
+		logger.warn { "Unimplemented scePowerSetClockFrequency" }
+		return 0
+	}
+
 	fun scePowerGetResumeCount(cpu: CpuState): Unit = UNIMPLEMENTED(0x0074EF9B)
 	fun scePowerRequestColdReset(cpu: CpuState): Unit = UNIMPLEMENTED(0x0442D852)
 	fun scePowerRegisterCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x04B7766E)
@@ -66,7 +71,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 	fun scePowerGetBusClockFrequency(cpu: CpuState): Unit = UNIMPLEMENTED(0x478FE6F5)
 	fun scePowerGetBatteryVolt(cpu: CpuState): Unit = UNIMPLEMENTED(0x483CE86B)
 	fun scePower_545A7F3C(cpu: CpuState): Unit = UNIMPLEMENTED(0x545A7F3C)
-	fun scePowerSetClockFrequency(cpu: CpuState): Unit = UNIMPLEMENTED(0x737486F2)
 	fun scePowerIsSuspendRequired(cpu: CpuState): Unit = UNIMPLEMENTED(0x78A1A796)
 	fun scePowerIdleTimerEnable(cpu: CpuState): Unit = UNIMPLEMENTED(0x7F30B3B1)
 	fun scePowerIsRequest(cpu: CpuState): Unit = UNIMPLEMENTED(0x7FA406DD)
@@ -106,6 +110,7 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		registerFunctionInt("scePowerGetCpuClockFrequencyInt", 0xFDB5BFE9, since = 150) { scePowerGetCpuClockFrequencyInt() }
 		registerFunctionInt("scePowerSetBusClockFrequency", 0xB8D7B3FB, since = 150) { scePowerSetBusClockFrequency(int) }
 		registerFunctionInt("scePowerSetCpuClockFrequency", 0x843FBF43, since = 150) { scePowerSetCpuClockFrequency(int) }
+		registerFunctionInt("scePowerSetClockFrequency", 0x737486F2, since = 150) { scePowerSetClockFrequency(int, int, int) }
 
 		registerFunctionRaw("scePowerGetResumeCount", 0x0074EF9B, since = 150) { scePowerGetResumeCount(it) }
 		registerFunctionRaw("scePowerRequestColdReset", 0x0442D852, since = 150) { scePowerRequestColdReset(it) }
@@ -128,7 +133,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		registerFunctionRaw("scePowerGetBusClockFrequency", 0x478FE6F5, since = 150) { scePowerGetBusClockFrequency(it) }
 		registerFunctionRaw("scePowerGetBatteryVolt", 0x483CE86B, since = 150) { scePowerGetBatteryVolt(it) }
 		registerFunctionRaw("scePower_545A7F3C", 0x545A7F3C, since = 150) { scePower_545A7F3C(it) }
-		registerFunctionRaw("scePowerSetClockFrequency", 0x737486F2, since = 150) { scePowerSetClockFrequency(it) }
 		registerFunctionRaw("scePowerIsSuspendRequired", 0x78A1A796, since = 150) { scePowerIsSuspendRequired(it) }
 		registerFunctionRaw("scePowerIdleTimerEnable", 0x7F30B3B1, since = 150) { scePowerIdleTimerEnable(it) }
 		registerFunctionRaw("scePowerIsRequest", 0x7FA406DD, since = 150) { scePowerIsRequest(it) }

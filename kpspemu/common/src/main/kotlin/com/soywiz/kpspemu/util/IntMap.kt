@@ -1,10 +1,13 @@
 package com.soywiz.kpspemu.util
 
-class IntMap<T> {
-	// @TODO: Optimize
-	val map = LinkedHashMap<Int, T>()
+expect class IntMap<T>() {
+	fun remove(key: Int): Unit
+	operator fun get(key: Int): T?
+	operator fun set(key: Int, value: T): Unit
+}
 
-	fun remove(key: Int): T? = map.remove(key)
-	operator fun get(key: Int): T? = map[key]
-	operator fun set(key: Int, value: T): Unit = run { map[key] = value }
+fun <T> IntMap<T>.getOrPut(key: Int, callback: () -> T): T {
+	val res = get(key)
+	if (res == null) set(key, callback())
+	return get(key)!!
 }

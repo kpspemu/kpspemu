@@ -20,7 +20,7 @@ var CpuState.SP: Int; set(value) = run { r29 = value }; get() = r29
 var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
 var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
-class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
+class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
 	var totalExecuted: Long = 0L
 
 	var _R = IntArray(32)

@@ -51,6 +51,20 @@ class GeBatch {
 		return 0
 	}
 
+	fun getTextureHash(mem: Memory): Int {
+		var hash = 0
+		val texture = state.texture
+		if (texture.hasTexture) {
+			val mipmap = texture.mipmaps[0]
+			hash += mem.hash(mipmap.address, mipmap.sizeInBytes / 4)
+			if (texture.hasClut) {
+				val clut = texture.clut
+				hash += mem.hash(clut.address, clut.sizeInBytes / 4)
+			}
+		}
+		return hash
+	}
+
 	fun getTextureBitmap(mem: Memory): Bitmap32? {
 		val texture = state.texture
 		if (texture.hasTexture) {

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.util.io
 import com.soywiz.korio.async.asyncGenerate
 import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.Charsets
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.*
@@ -10,6 +11,7 @@ import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
+import com.soywiz.kpspemu.util.charset.LATIN1
 
 suspend fun IsoVfs2(file: VfsFile): VfsFile = ISO2.openVfs(file.open(VfsOpenMode.READ))
 suspend fun IsoVfs2(s: AsyncStream): VfsFile = ISO2.openVfs(s)
@@ -425,7 +427,7 @@ object ISO2 {
 	}
 
 	data class IsoDate(val data: String) {
-		constructor(s: SyncStream) : this(data = s.readString(17))
+		constructor(s: SyncStream) : this(data = s.readString(17, LATIN1))
 
 		val year = data.substring(0, 4).toIntOrNull() ?: 0
 		val month = data.substring(4, 6).toIntOrNull() ?: 0

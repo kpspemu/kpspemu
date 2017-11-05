@@ -4,19 +4,27 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.mem.Ptr
 
 
 @Suppress("MemberVisibilityCanPrivate", "UNUSED_PARAMETER")
 class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUser", 0x40010011, "modulemgr.prx", "sceModuleManager") {
+	fun sceKernelLoadModule(path: String, flags: Int, sceKernelLMOption: Ptr): Int {
+		logger.error { "Not implemented sceKernelLoadModule: $path" }
+		return 0x08900000 // Module address
+	}
+	fun sceKernelStartModule(moduleId: Int, argumentSize: Int, argumentPointer: Ptr, status:Ptr, sceKernelSMOption:Ptr): Int {
+		logger.error { "Not implemented sceKernelStartModule: $moduleId" }
+		return 0
+	}
+
 	fun sceKernelLoadModuleBufferMs(cpu: CpuState): Unit = UNIMPLEMENTED(0x1196472E)
 	fun sceKernelLoadModuleBufferApp(cpu: CpuState): Unit = UNIMPLEMENTED(0x24EC0641)
 	fun sceKernelUnloadModule(cpu: CpuState): Unit = UNIMPLEMENTED(0x2E0911AA)
-	fun sceKernelStartModule(cpu: CpuState): Unit = UNIMPLEMENTED(0x50F0C1EC)
 	fun sceKernelGetModuleIdList(cpu: CpuState): Unit = UNIMPLEMENTED(0x644395E2)
 	fun sceKernelLoadModuleMs(cpu: CpuState): Unit = UNIMPLEMENTED(0x710F61B5)
 	fun sceKernelQueryModuleInfo(cpu: CpuState): Unit = UNIMPLEMENTED(0x748CBED9)
 	fun ModuleMgrForUser_8F2DF740(cpu: CpuState): Unit = UNIMPLEMENTED(0x8F2DF740)
-	fun sceKernelLoadModule(cpu: CpuState): Unit = UNIMPLEMENTED(0x977DE386)
 	fun sceKernelLoadModuleByID(cpu: CpuState): Unit = UNIMPLEMENTED(0xB7F46618)
 	fun sceKernelStopUnloadSelfModule(cpu: CpuState): Unit = UNIMPLEMENTED(0xCC1D3699)
 	fun sceKernelStopModule(cpu: CpuState): Unit = UNIMPLEMENTED(0xD1FF982A)
@@ -32,15 +40,16 @@ class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUs
 
 
 	override fun registerModule() {
+		registerFunctionInt("sceKernelLoadModule", 0x977DE386, since = 150) { sceKernelLoadModule(istr, int, ptr) }
+		registerFunctionInt("sceKernelStartModule", 0x50F0C1EC, since = 150) { sceKernelStartModule(int, int, ptr, ptr, ptr) }
+
 		registerFunctionRaw("sceKernelLoadModuleBufferMs", 0x1196472E, since = 150) { sceKernelLoadModuleBufferMs(it) }
 		registerFunctionRaw("sceKernelLoadModuleBufferApp", 0x24EC0641, since = 150) { sceKernelLoadModuleBufferApp(it) }
 		registerFunctionRaw("sceKernelUnloadModule", 0x2E0911AA, since = 150) { sceKernelUnloadModule(it) }
-		registerFunctionRaw("sceKernelStartModule", 0x50F0C1EC, since = 150) { sceKernelStartModule(it) }
 		registerFunctionRaw("sceKernelGetModuleIdList", 0x644395E2, since = 150) { sceKernelGetModuleIdList(it) }
 		registerFunctionRaw("sceKernelLoadModuleMs", 0x710F61B5, since = 150) { sceKernelLoadModuleMs(it) }
 		registerFunctionRaw("sceKernelQueryModuleInfo", 0x748CBED9, since = 150) { sceKernelQueryModuleInfo(it) }
 		registerFunctionRaw("ModuleMgrForUser_8F2DF740", 0x8F2DF740, since = 150) { ModuleMgrForUser_8F2DF740(it) }
-		registerFunctionRaw("sceKernelLoadModule", 0x977DE386, since = 150) { sceKernelLoadModule(it) }
 		registerFunctionRaw("sceKernelLoadModuleByID", 0xB7F46618, since = 150) { sceKernelLoadModuleByID(it) }
 		registerFunctionRaw("sceKernelStopUnloadSelfModule", 0xCC1D3699, since = 150) { sceKernelStopUnloadSelfModule(it) }
 		registerFunctionRaw("sceKernelStopModule", 0xD1FF982A, since = 150) { sceKernelStopModule(it) }

@@ -27,6 +27,8 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var displayWidth: Int = 480
 	var displayHeight: Int = 272
 
+	var vcount = 0
+
 	val onVsync = Signal<Unit>()
 
 	fun fixedAddress(): Int {
@@ -35,6 +37,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	}
 
 	fun dispatchVsync() {
+		vcount++
 		onVsync(Unit)
 	}
 
