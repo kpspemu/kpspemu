@@ -15,12 +15,13 @@ import kotlin.math.sqrt
 class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
-	fun steps(count: Int) {
+	fun steps(count: Int): Int {
 		val dispatcher = this.dispatcher
 		val cpu = this.cpu
 		val mem = cpu.mem
 		val trace = this.trace
 		var sPC = 0
+		var executedCount = 0
 		//val fast = (mem as FastMemory).buffer
 		try {
 			for (n in 0 until count) {
@@ -30,6 +31,7 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 				val IR = mem.lw(sPC)
 				//val IR = fast.getAlignedInt32((PC ushr 2) and Memory.MASK)
 				cpu.IR = IR
+				executedCount++
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
@@ -37,7 +39,10 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
 			}
 			throw e
+		} finally {
+			cpu.totalExecuted += executedCount
 		}
+		return executedCount
 	}
 
 	private fun tracePC() {

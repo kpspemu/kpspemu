@@ -7,6 +7,7 @@ import com.soywiz.kpspemu.ge.Ge
 import com.soywiz.kpspemu.ge.Gpu
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.hle.modules.sceRtc
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.ptr
 import com.soywiz.kpspemu.util.hex
@@ -36,11 +37,13 @@ class Emulator(
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
 
 	fun frameStep() {
+		controller.startFrame(timeManager.getTimeInMicroseconds().toInt())
 		threadManager.vblank()
 		display.dispatchVsync()
 		threadManager.step()
 		ge.run()
 		gpu.render()
+		controller.endFrame()
 	}
 
 	fun invalidateIcache(ptr: Int, size: Int) {

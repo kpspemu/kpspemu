@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.util.IdEnum
 enum class CullingDirection(override val id: Int) : IdEnum {
 	COUNTER_CLOCK_WISE(0),
 	CLOCK_WISE(1);
+
 	companion object : IdEnum.SmallCompanion<CullingDirection>(values())
 }
 
@@ -204,19 +205,30 @@ object ClearBufferSet {
 	val FastClear = 16
 }
 
-enum class PixelFormat(override val id: Int, val hasClut: Boolean, val bytesPerPixel: Double, val colorFormat: ColorFormat? = null) : IdEnum {
-	RGBA_5650(0, hasClut = false, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGB_565),
-	RGBA_5551(1, hasClut = false, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGBA_5551),
-	RGBA_4444(2, hasClut = false, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGBA_4444),
-	RGBA_8888(3, hasClut = false, bytesPerPixel = 4.0, colorFormat = com.soywiz.korim.color.RGBA),
-	PALETTE_T4(4, hasClut = true, bytesPerPixel = 0.5),
-	PALETTE_T8(5, hasClut = true, bytesPerPixel = 1.0),
-	PALETTE_T16(6, hasClut = true, bytesPerPixel = 2.0),
-	PALETTE_T32(7, hasClut = true, bytesPerPixel = 4.0),
-	COMPRESSED_DXT1(8, hasClut = false, bytesPerPixel = 0.5),
-	COMPRESSED_DXT3(9, hasClut = false, bytesPerPixel = 1.0),
-	COMPRESSED_DXT5(10, hasClut = false, bytesPerPixel = 1.0);
+enum class PixelFormat(
+	override val id: Int,
+	val bytesPerPixel: Double,
+	val colorFormat: ColorFormat? = null,
+	val isRgba: Boolean = false,
+	val isPalette: Boolean = false,
+	val colorBits: Int = 0,
+	val paletteBits: Int = 0,
+	val dxtVersion: Int = 0,
+	val isCompressed: Boolean = false
+) : IdEnum {
+	RGBA_5650(0, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGB_565, isRgba = true, colorBits = 16),
+	RGBA_5551(1, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGBA_5551, isRgba = true, colorBits = 16),
+	RGBA_4444(2, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGBA_4444, isRgba = true, colorBits = 16),
+	RGBA_8888(3, bytesPerPixel = 4.0, colorFormat = com.soywiz.korim.color.RGBA, isRgba = true, colorBits = 32),
+	PALETTE_T4(4, bytesPerPixel = 0.5, isPalette = true, paletteBits = 4),
+	PALETTE_T8(5, bytesPerPixel = 1.0, isPalette = true, paletteBits = 8),
+	PALETTE_T16(6, bytesPerPixel = 2.0, isPalette = true, paletteBits = 16),
+	PALETTE_T32(7, bytesPerPixel = 4.0, isPalette = true, paletteBits = 32),
+	COMPRESSED_DXT1(8, bytesPerPixel = 0.5, isCompressed = true, dxtVersion = 1),
+	COMPRESSED_DXT3(9, bytesPerPixel = 1.0, isCompressed = true, dxtVersion = 3),
+	COMPRESSED_DXT5(10, bytesPerPixel = 1.0, isCompressed = true, dxtVersion = 5);
 
+	val requireClut: Boolean = isPalette
 	fun getSizeInBytes(count: Int): Int = (bytesPerPixel * count).toInt()
 
 	companion object : IdEnum.SmallCompanion<PixelFormat>(values())

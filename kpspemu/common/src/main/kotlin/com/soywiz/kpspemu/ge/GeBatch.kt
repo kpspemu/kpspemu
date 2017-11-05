@@ -10,7 +10,8 @@ data class GeBatchData(
 	val primType: PrimitiveType,
 	val vertexCount: Int,
 	val vertices: ByteArray,
-	val indices: ShortArray
+	val indices: ShortArray,
+	val texVersion: Int = 0
 )
 
 class GeBatch {
@@ -55,13 +56,18 @@ class GeBatch {
 		if (texture.hasTexture) {
 			val mipmap = texture.mipmaps[0]
 			val colorData = mem.readBytes(mipmap.address, mipmap.sizeInBytes)
+			var clutData: ByteArray? = null
+			var clutFormat: PixelFormat? = null
+			var clutColors: Int = 0
 			if (texture.hasClut) {
 				val clut = texture.clut
-				val clutData = mem.readBytes(clut.address, clut.sizeInBytes)
+				clutFormat = texture.clut.pixelFormat
+				clutColors = texture.clut.numberOfColors
+				clutData = mem.readBytes(clut.address, clut.sizeInBytes)
 			}
 			val texWidth = mipmap.bufferWidth
 			val texHeight = mipmap.textureHeight
-			return texture.pixelFormat.decode(Bitmap32(texWidth, texHeight), colorData)
+			return Bitmap32(texWidth, texHeight).setTo(texture.pixelFormat, colorData, clutData, clutFormat, clutColors)
 		} else {
 			return null
 		}

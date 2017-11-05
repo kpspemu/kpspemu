@@ -121,6 +121,7 @@ abstract class SceModule(
 	}
 
 	protected fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
+		val fullName = "${this.name}:$name"
 		registerFunctionRR(name, uid, since, syscall) {
 			val mfunction: suspend (RegisterReader) -> Int = { function(it, it.cpu) }
 			var completed = false
@@ -144,13 +145,14 @@ abstract class SceModule(
 			})
 
 			if (!completed) {
-				it.thread.markWaiting(WaitObject.PROMISE(Promise()), cb = cb)
+				it.thread.markWaiting(WaitObject.PROMISE(Promise(), fullName), cb = cb)
 				threadManager.suspend()
 			}
 		}
 	}
 
 	protected fun registerFunctionSuspendLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Long) {
+		val fullName = "${this.name}:$name"
 		registerFunctionRR(name, uid, since, syscall) {
 			val mfunction: suspend (RegisterReader) -> Long = { function(it, it.cpu) }
 			var completed = false
@@ -171,7 +173,7 @@ abstract class SceModule(
 			})
 
 			if (!completed) {
-				it.thread.markWaiting(WaitObject.PROMISE(Promise()), cb = cb)
+				it.thread.markWaiting(WaitObject.PROMISE(Promise(), fullName), cb = cb)
 				threadManager.suspend()
 			}
 		}

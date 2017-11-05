@@ -26,6 +26,9 @@ const val INSTRUCTIONS_PER_STEP = 5_000_000
 
 class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator) {
 	val threads get() = resourcesById.values
+	val waitingThreads: Int get() = resourcesById.count { it.value.waiting }
+	val activeThreads: Int get() = resourcesById.count { it.value.running }
+	val totalThreads: Int get() = resourcesById.size
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
 
 	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
@@ -80,8 +83,8 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 }
 
 sealed class WaitObject {
-	class TIME(val instant: Long) : WaitObject()
-	class PROMISE(val promise: Promise<Unit>) : WaitObject()
+	data class TIME(val instant: Long) : WaitObject()
+	data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
 	object SLEEP : WaitObject()
 	object VBLANK : WaitObject()
 }
@@ -96,6 +99,7 @@ class PspThread internal constructor(
 	val attributes: Int,
 	val optionPtr: Ptr
 ) : Resource(threadManager, id, name), WithEmulator {
+	val totalExecutedInstructions: Long get() = state.totalExecuted
 	val onEnd = Signal<Unit>()
 	val logger = PspLogger("PspThread")
 

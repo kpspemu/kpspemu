@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.ctrl
 
+import com.soywiz.korio.util.umod
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.util.clamp
@@ -8,23 +9,42 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 	var samplingCycle: Int = 0
 	var samplingMode: Int = 0
 
-	var buttons: Int = 0
-	var lx: Int = 128
-	var ly: Int = 128
+	data class Frame(var timestamp: Int = 0, var buttons: Int = 0, var lx: Int = 128, var ly: Int = 128) {
+		fun setTo(other: Frame) {
+			this.buttons = other.buttons
+			this.lx = other.lx
+			this.ly = other.ly
+		}
+	}
+
+	val frames = (0 until 0x10).map { Frame() }
+	var frameIndex = 0
+	fun getFrame(offset: Int): Frame = frames[(frameIndex + offset) umod frames.size]
+	val currentFrame get() = frames[frameIndex]
+
+	fun startFrame(timestamp: Int) {
+		currentFrame.timestamp = timestamp
+	}
+
+	fun endFrame() {
+		val lastFrame = currentFrame
+		frameIndex = (frameIndex + 1) % frames.size
+		currentFrame.setTo(lastFrame)
+	}
 
 	fun updateButton(button: PspCtrlButtons, pressed: Boolean) {
 		if (pressed) {
-			this.buttons = this.buttons or button.bits
+			currentFrame.buttons = currentFrame.buttons or button.bits
 		} else {
-			this.buttons = this.buttons and button.bits.inv()
+			currentFrame.buttons = currentFrame.buttons and button.bits.inv()
 		}
 	}
 
 	private fun fixFloat(v: Float): Int = ((v.clamp(-1f, 1f) * 127) + 128).toInt()
 
 	fun updateAnalog(x: Float, y: Float) {
-		this.lx = fixFloat(x)
-		this.ly = fixFloat(y)
+		currentFrame.lx = fixFloat(x)
+		currentFrame.ly = fixFloat(y)
 		//println("Update analog: ($x, $y) - ($lx, $ly)")
 	}
 }

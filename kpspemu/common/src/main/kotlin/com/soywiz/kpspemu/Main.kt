@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.klock.KLOCK_VERSION
+import com.soywiz.klock.Klock
 import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
 import com.soywiz.korge.Korge
@@ -19,6 +20,7 @@ import com.soywiz.korim.font.BitmapFontGenerator
 import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.Korio
 import com.soywiz.korio.async.AsyncThread
+import com.soywiz.korio.async.go
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.inject.AsyncInjector
 import com.soywiz.korio.lang.printStackTrace
@@ -63,6 +65,7 @@ object KpspemuModule : Module() {
 	override val mainScene: KClass<out Scene> = KpspemuMainScene::class
 	override val title: String = "kpspemu"
 	override val size: SizeInt get() = SizeInt(480, 272)
+	override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
 }
 
 class KpspemuMainScene(
@@ -86,15 +89,15 @@ class KpspemuMainScene(
 			mem = Memory(),
 			gpuRenderer = object : GpuRenderer {
 				override fun render(batches: List<GeBatchData>) {
+					agRenderer.anyBatch = true
 					agRenderer.batchesQueue += batches
 				}
 			}
-		).apply {
-			registerNativeModules()
-			loadExecutableAndStart(exeFile)
-			//threadManager.trace("_start")
-			//threadManager.trace("user_main")
-		}
+		)
+		agRenderer.anyBatch = false
+		emulator.registerNativeModules()
+		emulator.loadExecutableAndStart(exeFile)
+
 	}
 
 	lateinit var hud: Container
@@ -133,21 +136,15 @@ class KpspemuMainScene(
 		//val exeFile = samplesFolder["cwd.elf"]
 		//val exeFile = samplesFolder["nehetutorial03.pbp"]
 		//val exeFile = samplesFolder["polyphonic.elf"]
-		//val exeFile = samplesFolder["text.elf"]
+		val exeFile = samplesFolder["text.elf"]
 		//val exeFile = samplesFolder["cavestory.iso"]
 		//val exeFile = samplesFolder["cavestory.zip"]
 		//val exeFile = samplesFolder["TrigWars.iso"]
 		//val exeFile = samplesFolder["TrigWars.zip"]
-		//val exeFile = samplesFolder["TrigWars.zip"].readAll().openAsync().asVfsFile("TrigWars.zip")
-		val exeFile = samplesFolder["TrigWars.deflate.zip"]
+		//val exeFile = samplesFolder["TrigWars.deflate.zip"]
 
 
 		hud = views.container()
-		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xAA)).apply {
-			enabled = false
-			mouseEnabled = false
-		}
-
 		createEmulatorWithExe(exeFile)
 
 		sceneView.addUpdatable {
@@ -155,12 +152,16 @@ class KpspemuMainScene(
 			if (!paused || forceSteps > 0) {
 				if (forceSteps > 0) forceSteps--
 				if (running && emulator.running) {
+					val startTime = Klock.currentTimeMillis()
 					try {
 						emulator.frameStep()
 					} catch (e: Throwable) {
 						e.printStackTrace()
 						running = false
 					}
+					val endTime = Klock.currentTimeMillis()
+					agRenderer.stats.cpuTime = (endTime - startTime).toInt()
+					agRenderer.updateStats()
 				} else {
 					if (!ended) {
 						ended = true
@@ -193,6 +194,20 @@ class KpspemuMainScene(
 				else -> println("UnhandledKey($pressed): $keyCode")
 			}
 
+			if (pressed) {
+				when (keyCode) {
+					121 -> { // F10
+						go(coroutineContext) { toggleHud() }
+					}
+					122 -> { // F11
+						// Dump threads
+						for (thread in emulator.threadManager.threads) {
+							println("Thread(${thread.name}) : ${thread.waitObject}")
+						}
+					}
+				}
+			}
+
 			controller.updateAnalog(
 				x = when { keys[74] -> -1f; keys[76] -> +1f; else -> 0f; },
 				y = when { keys[73] -> -1f; keys[75] -> +1f; else -> 0f; }
@@ -201,11 +216,22 @@ class KpspemuMainScene(
 
 		hud.alpha = 0.0
 
-		fun getInfoText(): String = "kpspemu\n${Kpspemu.VERSION}\n\n${agRenderer.stats.toString()}"
+		fun getInfoText(): String {
+			val out = arrayListOf<String>()
+			out += "kpspemu"
+			out += Kpspemu.VERSION
+			out += ""
+			out += agRenderer.stats.toString()
+			out += ""
+			out += "totalThreads=${emulator.threadManager.totalThreads}"
+			out += "waitingThreads=${emulator.threadManager.waitingThreads}"
+			out += "activeThreads=${emulator.threadManager.activeThreads}"
+			return out.joinToString("\n")
+		}
 
-		val infoText = views.text(getInfoText(), textSize = 10.0, font = hudFont).apply {
-			x = 8.0
-			y = 8.0
+		val infoText = views.text(getInfoText(), textSize = 8.0, font = hudFont).apply {
+			x = 4.0
+			y = 4.0
 		}
 
 		val loadButton = views.simpleButton("Load...", font = hudFont).apply {
@@ -215,11 +241,24 @@ class KpspemuMainScene(
 			createEmulatorWithExe(browser.openFile())
 		}
 
-		val directButton = views.simpleButton("Direct", font = hudFont).apply {
+		val directButton = views.simpleButton("Auto", font = hudFont).apply {
 			x = 8.0
 			y = 272.0 - 32.0 * 2
 		}.onClick {
-			agRenderer.directFastSharpRendering = !agRenderer.directFastSharpRendering
+			agRenderer.renderMode = when (agRenderer.renderMode) {
+				AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+				AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
+				else -> AGRenderer.RenderMode.AUTO
+				//AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+				//AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
+				//AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
+			}
+
+			it.view.setText(when (agRenderer.renderMode) {
+				AGRenderer.RenderMode.AUTO -> "Auto"
+				AGRenderer.RenderMode.NORMAL -> "Normal"
+				AGRenderer.RenderMode.DIRECT -> "Direct"
+			})
 		}
 
 		lateinit var pauseButton: View
@@ -245,6 +284,7 @@ class KpspemuMainScene(
 			forceSteps++
 		}
 
+		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply {  enabled = false; mouseEnabled = false }
 		hud += infoText
 		hud += loadButton
 		hud += directButton
@@ -264,13 +304,7 @@ class KpspemuMainScene(
 
 		//sceneView.onMove { hudOpen() }
 		sceneView.onOut { hudClose() }
-		sceneView.onClick {
-			if (hud.alpha < 0.5) {
-				hudOpen()
-			} else {
-				hudClose()
-			}
-		}
+		sceneView.onClick { toggleHud() }
 		//sceneView.onKeyTyped { println(it.keyCode) }
 		sceneView.onKeyDown { updateKey(it.keyCode, true) }
 		sceneView.onKeyUp { updateKey(it.keyCode, false) }
@@ -278,6 +312,14 @@ class KpspemuMainScene(
 	}
 
 	val hudQueue = AsyncThread()
+
+	suspend fun toggleHud() {
+		if (hud.alpha < 0.5) {
+			hudOpen()
+		} else {
+			hudClose()
+		}
+	}
 
 	suspend fun hudOpen() = hudQueue.cancelAndQueue {
 		hud.mouseEnabled = true

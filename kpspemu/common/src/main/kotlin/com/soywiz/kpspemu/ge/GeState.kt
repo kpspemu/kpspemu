@@ -151,7 +151,7 @@ class TextureState(val geState: GeState) {
 	val clut = ClutState(this.data)
 
 	val hasTexture get() = geState.vertex.texture != NumericEnum.VOID
-	val hasClut get() = this.pixelFormat.hasClut
+	val hasClut get() = this.pixelFormat.requireClut
 
 	fun getHashSlow(textureData: ByteArray, clutData: ByteArray): String {
 		val hash = arrayListOf<Int>()
@@ -291,6 +291,8 @@ class Blending(val data: IntArray) {
 }
 
 class AlphaTest(val data: IntArray) {
+	val hash: Int get() = (this.data[Op.ALPHATESTENABLE] shl 24) or (this.data[Op.ATST])
+
 	val enabled get() = bool1(this.data[Op.ALPHATESTENABLE])
 	val func get() = TestFunctionEnum(param8(this.data[Op.ATST], 0))
 	val value get() = param8(this.data[Op.ATST], 8)

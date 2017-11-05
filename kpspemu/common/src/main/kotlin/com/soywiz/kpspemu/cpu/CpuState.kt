@@ -21,6 +21,8 @@ var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
 var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
 class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
+	var totalExecuted: Long = 0L
+
 	var _R = IntArray(32)
 	var _F = com.soywiz.korio.mem.FastMemory.alloc(32 * 4)
 	val _VFPR = com.soywiz.korio.mem.FastMemory.alloc(128 * 4)

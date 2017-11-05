@@ -7,23 +7,23 @@ import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Ptr
 
 class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "ctrl.prx", "sceController_Service") {
-	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
+	private fun _sceCtrlPeekBuffer(sceCtrlDataPtr: Ptr, count: Int, positive: Boolean): Int {
 		//console.log('sceCtrlPeekBufferPositive');
 		var pos = 0
 		for (n in 0 until count) {
-			sceCtrlDataPtr.sw(pos + 0, 0) // timestamp
-			sceCtrlDataPtr.sw(pos + 4, controller.buttons) // buttons // @TODO: forced button!
-			sceCtrlDataPtr.sb(pos + 8, controller.lx) // lx
-			sceCtrlDataPtr.sb(pos + 9, controller.ly) // ly
+			val frame = controller.getFrame(-n)
+			sceCtrlDataPtr.sw(pos + 0, frame.timestamp) // timestamp
+			sceCtrlDataPtr.sw(pos + 4, if (positive) frame.buttons else frame.buttons.inv()) // buttons // @TODO: forced button!
+			sceCtrlDataPtr.sb(pos + 8, frame.lx) // lx
+			sceCtrlDataPtr.sb(pos + 9, frame.ly) // ly
 			pos += 16
 		}
 		//return waitAsync(1).then(v => count);
 		return count;
 	}
 
-	fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
-		return sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
-	}
+	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = _sceCtrlPeekBuffer(sceCtrlDataPtr, count, true)
+	fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
 
 	fun sceCtrlSetSamplingCycle(samplingCycle: Int): Int {
 		controller.samplingCycle = samplingCycle

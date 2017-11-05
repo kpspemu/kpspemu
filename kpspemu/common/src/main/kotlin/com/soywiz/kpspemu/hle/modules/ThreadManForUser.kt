@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.async.waitOne
 import com.soywiz.korio.lang.Console
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.callbackManager
@@ -78,15 +79,15 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelDelayThreadCB(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = true)
 	fun sceKernelDelayThread(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = false)
 
-	fun _sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr, cb: Boolean): Int {
+	suspend fun _sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr, cb: Boolean): Int {
 		val thread = threadManager.getById(threadId)
 
-		currentThread.suspend(WaitObject.PROMISE(thread.onEnd.waitOnePromise()), cb = cb)
+		thread.onEnd.waitOne()
 		return 0
 	}
 
-	fun sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = false)
-	fun sceKernelWaitThreadEndCB(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = true)
+	suspend fun sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = false)
+	suspend fun sceKernelWaitThreadEndCB(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = true)
 
 	fun sceKernelReferThreadStatus(threadId: Int, out: Ptr): Int {
 		logger.fatal("Not implemented: sceKernelReferThreadStatus")
@@ -238,8 +239,8 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
 		registerFunctionInt("sceKernelDelayThreadCB", 0x68DA9E36, since = 150) { sceKernelDelayThreadCB(thread, int) }
 		registerFunctionInt("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(thread, int) }
-		registerFunctionInt("sceKernelWaitThreadEnd", 0x278C0DF5, since = 150) { sceKernelWaitThreadEnd(thread, int, ptr) }
-		registerFunctionInt("sceKernelWaitThreadEndCB", 0x840E8133, since = 150) { sceKernelWaitThreadEndCB(thread, int, ptr) }
+		registerFunctionSuspendInt("sceKernelWaitThreadEnd", 0x278C0DF5, since = 150) { sceKernelWaitThreadEnd(thread, int, ptr) }
+		registerFunctionSuspendInt("sceKernelWaitThreadEndCB", 0x840E8133, since = 150) { sceKernelWaitThreadEndCB(thread, int, ptr) }
 		registerFunctionInt("sceKernelReferThreadStatus", 0x17C1684E, since = 150) { sceKernelReferThreadStatus(int, ptr) }
 		registerFunctionInt("sceKernelGetThreadId", 0x293B45B8, since = 150) { sceKernelGetThreadId(thread) }
 

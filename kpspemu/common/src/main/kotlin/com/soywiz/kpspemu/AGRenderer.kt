@@ -16,22 +16,17 @@ import com.soywiz.kpspemu.util.hex
 import com.soywiz.kpspemu.util.setAlpha
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
-	var directFastSharpRendering = false
+	enum class RenderMode { AUTO, NORMAL, DIRECT }
+
+	var renderMode = RenderMode.AUTO
 
 	val logger = PspLogger("AGRenderer")
+	var anyBatch = false
 	val batchesQueue = arrayListOf<List<GeBatchData>>()
 	val tempBmp = Bitmap32(512, 272)
 
-	data class Stats(
-		var batches: Int = 0,
-		var vertices: Int = 0
-	) {
-		fun reset() {
-			batches = 0
-			vertices = 0
-		}
-
-		override fun toString(): String = "Batches: $batches\nVertices: $vertices"
+	fun updateStats() {
+		stats.setTo(batchesQueue)
 	}
 
 	val stats = Stats()
@@ -39,22 +34,50 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private var indexBuffer: AG.Buffer? = null
 	private var vertexBuffer: AG.Buffer? = null
 
+	var renderBuffer: AG.RenderBuffer? = null
+	lateinit var geTexture: Texture
+
+	var renderScale = 2.0
+
 	fun render(views: Views, ctx: RenderContext, m: Matrix2d) {
 		val ag = ctx.ag
 		ag.checkErrors = false
 		ctx.flush()
-		stats.reset()
+
+		val directFastSharpRendering = when (renderMode) {
+			RenderMode.AUTO -> anyBatch
+			RenderMode.NORMAL -> false
+			RenderMode.DIRECT -> true
+		}
 
 		if (directFastSharpRendering) {
+			val WW = 512
+			val HH = 272
+
 			if (batchesQueue.isNotEmpty()) {
-				renderBatches(views, ctx, direct = true)
+				//ag.create
+
+				if (renderBuffer == null) {
+					renderBuffer = ag.createRenderBuffer()
+					geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH), 0, HH, WW, 0)
+				}
+
+				val rb = renderBuffer!!
+				rb.start(WW * renderScale.toInt(), HH * renderScale.toInt())
+				try {
+					//ag.clear() // @TODO: Is this required?
+					renderBatches(views, ctx, scale = renderScale)
+				} finally {
+					rb.end()
+				}
 			}
+			ctx.batch.drawQuad(geTexture, m = m, blendFactors = AG.Blending.NONE, filtering = false, width = WW.toFloat(), height = HH.toFloat())
 		} else {
 			if (batchesQueue.isNotEmpty()) {
 				mem.read(display.fixedAddress(), tempBmp.data)
 				ag.renderToBitmapEx(tempBmp) {
 					ag.drawBmp(tempBmp)
-					renderBatches(views, ctx, direct = false)
+					renderBatches(views, ctx, scale = 1.0)
 				}
 				tempBmp.flipY() // @TODO: This should be removed!
 				mem.write(display.fixedAddress(), tempBmp.data)
@@ -86,30 +109,35 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		u_texMatrix to textureMatrix
 	)
 
-	private fun renderBatches(views: Views, ctx: RenderContext, direct: Boolean) {
-		stats.reset()
+	private fun renderBatches(views: Views, ctx: RenderContext, scale: Double) {
 		try {
 			for (batches in batchesQueue) for (batch in batches) {
 				this.batch.initData(batch)
-				renderBatch(views, ctx, this.batch, direct)
+				renderBatch(views, ctx, this.batch, scale)
 			}
 		} finally {
 			batchesQueue.clear()
 		}
 	}
 
+	data class TextureSlot(
+		val id: Int,
+		val texture: AG.Texture,
+		var version: Int = 0
+	)
+
 	val vtype = VertexType()
 	//var texture: AG.Texture? = null
-	val texturesById = LinkedHashMap<Int, AG.Texture>()
+	//val texturesById = LinkedHashMap<Int, AG.Texture>()
+	val texturesById = LinkedHashMap<Int, TextureSlot>()
 
-	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, direct: Boolean) {
+	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, scale: Double) {
 		val ag = ctx.ag
 		//if (texture == null) {
 		//	texture = ag.createTexture()
 		//}
 		vtype.init(batch.state)
-		stats.batches++
-		stats.vertices += batch.vertexCount
+
 		//if (batch.vertexCount < 10) return
 
 		if (indexBuffer == null) indexBuffer = ag.createIndexBuffer()
@@ -163,26 +191,35 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			else -> AG.CompareMode.ALWAYS
 		}
 
-		val nativeWidth = if (direct) views.nativeWidth else 480
+		//val nativeWidth = if (direct) views.nativeWidth else 480
 
-		renderState.lineWidth = nativeWidth.toFloat() / 480.toFloat()
+		//renderState.lineWidth = nativeWidth.toFloat() / 480.toFloat()
+		renderState.lineWidth = scale.toFloat()
 
 		//println("${views.nativeWidth}x${views.nativeHeight}")
 
-		val texture: AG.Texture?
+		val textureSlot: TextureSlot?
 
 		if (batch.hasTexture()) {
 			val textureId = batch.getTextureId()
 
-			// TextureCache
-			texture = texturesById.getOrPut(textureId) {
-				val tex = ag.createTexture()
-				val bmp = batch.getTextureBitmap(mem)
-				tex.upload(bmp)
-				tex
+			textureSlot = texturesById.getOrPut(textureId) {
+				TextureSlot(textureId, ag.createTexture())
 			}
+
+			if (textureSlot.version != batch.data.texVersion) {
+				textureSlot.version = batch.data.texVersion
+				val bmp = batch.getTextureBitmap(mem)
+				textureSlot.texture.upload(bmp)
+				//go(coroutineContext) {
+				//	bmp?.setAlpha(0xFF)
+				//	bmp?.writeTo(LocalVfs("c:/temp/$textureId.png"), formats = PNG)
+				//}
+				//println("Texture upload!")
+			}
+
 		} else {
-			texture = null
+			textureSlot = null
 		}
 
 		batch.getEffectiveTextureMatrix(textureMatrix)
@@ -198,6 +235,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				state.blending.equation.toAg()
 			)
 		}
+
+		val texture: AG.Texture? = textureSlot?.texture
 
 		textureUnit.texture = texture
 		textureUnit.linear = !state.texture.filterMinification.nearest
@@ -227,7 +266,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	val programLayoutByVertexType = LinkedHashMap<String, ProgramLayout>()
 
 	fun getProgramLayout(state: GeState): ProgramLayout {
-		val hash = "" + state.vertexType + "_" + state.texture.effect.id
+		val hash = "" + state.vertexType + "_" + state.texture.effect.id + "_" + state.alphaTest.hash
 		return programLayoutByVertexType.getOrPut(hash) { createProgramLayout(state) }
 	}
 
@@ -267,10 +306,10 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			fragment = FragmentShader {
 				SET(out, vec4(1f.lit, 1f.lit, 1f.lit, 1f.lit))
 
-
 				if (a_Col != null) {
 					SET(out, out * v_Col)
 				}
+
 				if (a_Tex != null) {
 					SET(t_Col, texture2D(u_tex, v_Tex["xy"]))
 					val hasAlpha = state.texture.hasAlpha
@@ -299,10 +338,87 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 						else -> Unit
 					}
 				}
+
+				if (state.alphaTest.enabled) {
+					IF(out.a le 0f.lit) {
+						DISCARD()
+					}
+				}
 			}
 		)
 
 		return ProgramLayout(program, layout)
+	}
+
+	data class Stats(
+		var batches: Int = 0,
+		var vertices: Int = 0,
+
+		var batchesPoints: Int = 0,
+		var batchesLines: Int = 0,
+		var batchesTriangles: Int = 0,
+		var batchesSprites: Int = 0,
+
+		var verticesPoints: Int = 0,
+		var verticesLines: Int = 0,
+		var verticesTriangles: Int = 0,
+		var verticesSprites: Int = 0,
+
+		var cpuTime: Int = 0
+	) {
+		fun reset() {
+			batches = 0
+			vertices = 0
+
+			batchesPoints = 0
+			batchesLines = 0
+			batchesTriangles = 0
+			batchesSprites = 0
+
+			verticesPoints = 0
+			verticesLines = 0
+			verticesTriangles = 0
+			verticesSprites = 0
+		}
+
+		override fun toString(): String {
+			val lines = arrayListOf<String>()
+			lines += "Total: $vertices ($batches)"
+			lines += "Points: $verticesPoints ($batchesPoints)"
+			lines += "Lines: $verticesLines ($batchesLines)"
+			lines += "Triangles: $verticesTriangles ($batchesTriangles)"
+			lines += "Sprites: $verticesSprites ($batchesSprites)"
+			lines += "CpuTime: $cpuTime"
+			return lines.joinToString("\n")
+		}
+
+		fun setTo(batchesQueue: List<List<GeBatchData>>) {
+			reset()
+			for (bq in batchesQueue) {
+				for (batch in bq) {
+					batches++
+					vertices += batch.vertexCount
+					when (batch.primType) {
+						PrimitiveType.POINTS -> {
+							batchesPoints++
+							verticesPoints += batch.vertexCount
+						}
+						PrimitiveType.LINES, PrimitiveType.LINE_STRIP -> {
+							batchesLines++
+							verticesLines += batch.vertexCount
+						}
+						PrimitiveType.TRIANGLES, PrimitiveType.TRIANGLE_STRIP, PrimitiveType.TRIANGLE_FAN -> {
+							batchesTriangles++
+							verticesTriangles += batch.vertexCount
+						}
+						PrimitiveType.SPRITES -> {
+							batchesSprites++
+							verticesSprites += batch.vertexCount
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
