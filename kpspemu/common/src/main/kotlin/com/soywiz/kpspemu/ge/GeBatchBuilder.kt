@@ -120,6 +120,7 @@ class GeBatchBuilder(val ge: Ge) {
 
 		// Vertices
 		val vertexSize_2 = vertexSize * 2
+		val vertexSize_4 = vertexSize * 4
 		if (OPTIMIZED) {
 			//val posOffset = vertexType.posOffset
 			//val posSize = vertexType.pos.nbytes
@@ -160,15 +161,12 @@ class GeBatchBuilder(val ge: Ge) {
 				val BRpos = vpos + vertexSize
 
 				mem.read(vaddr + (n * vertexSize_2), vertexBuffer, vpos, vertexSize * 2)
-				vpos += vertexSize_2
-
-				putGenVertex(vpos + vertexSize * 0, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
-				putGenVertex(vpos + vertexSize * 1, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
-
-				vpos += vertexSize_2
+				putGenVertex(vpos + vertexSize_2 + vertexSize * 0, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
+				putGenVertex(vpos + vertexSize_2 + vertexSize * 1, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
+				vpos += vertexSize_4
 			}
 			vertexCount += nsprites * 4
-			this.vertexBufferPos = vpos
+			this.vertexBufferPos = vertexBufferPos + nsprites * vertexSize * 4
 			state.vertexAddress += nsprites * vertexSize * 2
 		}
 	}
