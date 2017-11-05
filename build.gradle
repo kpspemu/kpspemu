@@ -31,7 +31,7 @@ allprojects {
     }
 
     group 'com.soywiz'
-    version '0.2.1-SNAPSHOT'
+    version '0.2.2-SNAPSHOT'
 
     if (project == rootProject) {
         new File(rootProject.rootDir, "kpspemu/common/src/main/kotlin/com/soywiz/kpspemu/KpspemuVersion.kt").write(
