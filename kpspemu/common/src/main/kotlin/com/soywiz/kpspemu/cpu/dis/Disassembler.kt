@@ -26,7 +26,8 @@ object Disassembler : InstructionDecoder() {
 		val params = op.format.replace(PERCENT_REGEX) {
 			val type = it.groupValues[0]
 			when (type) {
-				"%j" -> "0x%08X".format((pc and 0xF0000000.toInt()) or i.jump_address)
+				//"%j" -> "0x%08X".format((pc and 0xF0000000.toInt()) or i.jump_address)
+				"%j" -> "0x%08X".format((pc and (-268435456)) or i.jump_address)
 				"%J" -> gprStr(i.rs)
 				"%d" -> gprStr(i.rd)
 				"%s" -> gprStr(i.rs)

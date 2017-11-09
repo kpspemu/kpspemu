@@ -40,7 +40,7 @@ class Emulator(
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
 
 	fun frameStep() {
-		controller.startFrame(timeManager.getTimeInMicroseconds().toInt())
+		controller.startFrame(timeManager.getTimeInMicrosecondsDouble().toInt())
 		threadManager.vblank()
 		display.dispatchVsync()
 		threadManager.step()

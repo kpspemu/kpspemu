@@ -57,7 +57,7 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	fun sceKernelGetThreadCurrentPriority(thread: PspThread): Int = thread.priority
 
 	fun sceKernelGetSystemTimeWide(): Long = rtc.getTimeInMicroseconds()
-	fun sceKernelGetSystemTimeLow(): Int = rtc.getTimeInMicroseconds().toInt()
+	fun sceKernelGetSystemTimeLow(): Int = rtc.getTimeInMicrosecondsDouble().toInt()
 
 	fun sceKernelCreateCallback(name: String?, func: Ptr, arg: Int): Int {
 		val callback = callbackManager.create(name ?: "callback", func, arg)
@@ -76,7 +76,7 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 	}
 
 	fun _sceKernelDelayThread(thread: PspThread, microseconds: Int, cb: Boolean): Int {
-		thread.suspend(WaitObject.TIME(rtc.getTimeInMicroseconds() + microseconds), cb = cb)
+		thread.suspend(WaitObject.TIME(rtc.getTimeInMicrosecondsDouble() + microseconds), cb = cb)
 		return 0
 	}
 

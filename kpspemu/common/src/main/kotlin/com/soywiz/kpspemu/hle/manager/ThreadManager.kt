@@ -48,7 +48,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	}
 
 	fun step() {
-		val now: Long = timeManager.getTimeInMicroseconds()
+		val now: Double = timeManager.getTimeInMicrosecondsDouble()
 
 		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
 			val time = (t.waitObject as WaitObject.TIME).instant
@@ -83,7 +83,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 }
 
 sealed class WaitObject {
-	data class TIME(val instant: Long) : WaitObject()
+	data class TIME(val instant: Double) : WaitObject()
 	data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
 	object SLEEP : WaitObject()
 	object VBLANK : WaitObject()
@@ -192,7 +192,7 @@ class PspThread internal constructor(
 		delete()
 	}
 
-	fun step(now: Long) {
+	fun step(now: Double) {
 		try {
 			interpreter.steps(INSTRUCTIONS_PER_STEP)
 		} catch (e: CpuBreakException) {

@@ -9,6 +9,7 @@ import com.soywiz.korio.util.udiv
 import com.soywiz.korio.util.urem
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
+import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.*
 import kotlin.math.sqrt
 
@@ -190,7 +191,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun bc1fl(s: CpuState) = s.branchLikely { !fcr31_cc }
 	override fun bc1tl(s: CpuState) = s.branchLikely { fcr31_cc }
 
-	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) }
+	//override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) } // @TODO: Kotlin.JS doesn't optimize 0xf0000000.toInt() and generates a long
+	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and (-268435456)) or (JUMP_ADDRESS) }
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
 
 	override fun jal(s: CpuState) = s.none { j(s); RA = _PC + 4; } // $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
@@ -202,6 +204,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun mtc1(s: CpuState) = s { FS_I = RT }
 	override fun cvt_s_w(s: CpuState) = s { FD = FS_I.toFloat() }
 	override fun cvt_w_s(s: CpuState) = s {
+
 		FD_I = when (this.fcr31_rm) {
 			0 -> MathFloat.rint(FS) // rint: round nearest
 			1 -> MathFloat.cast(FS) // round to zero

@@ -26,6 +26,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	companion object {
 		val MASK = MEMORY_MASK
 		const val MAIN_OFFSET = 0x08000000
+		const val HIGH_MASK = 0xf0000000.toInt()
 
 		val SCRATCHPAD = MemorySegment("scatchpad", 0x0000000 until 0x00010000)
 		val VIDEOMEM = MemorySegment("videomem", 0x04000000 until 0x4200000)
