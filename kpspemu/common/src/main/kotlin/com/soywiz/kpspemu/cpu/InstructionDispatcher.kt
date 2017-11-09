@@ -5,12 +5,12 @@ import com.soywiz.korio.lang.format
 @Suppress("RemoveRedundantCallsOfConversionMethods", "LiftReturnOrAssignment", "RedundantUnitReturnType")
 class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 	fun dispatch(s: T, pc: Int, i: Int): Unit {
-		when (((i ushr 26) and 63)) {
+		when (((i shr 26) and 63)) {
 			0 ->
-				when (((i ushr 0) and 63)) {
+				when (((i shr 0) and 63)) {
 					0 -> return e.sll(s)
 					2 ->
-						when (((i ushr 21) and 2047)) {
+						when (((i shr 21) and 2047)) {
 							0 -> return e.srl(s)
 							1 -> return e.rotr(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (0) failed mask 0x%08X".format(i, pc, -2097152))
@@ -18,7 +18,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					3 -> return e.sra(s)
 					4 -> return e.sllv(s)
 					6 ->
-						when (((i ushr 6) and 66060319)) {
+						when (((i shr 6) and 66060319)) {
 							0 -> return e.srlv(s)
 							1 -> return e.rotrv(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (1) failed mask 0x%08X".format(i, pc, -67106880))
@@ -60,7 +60,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (2) failed mask 0x%08X".format(i, pc, 63))
 				}
 			1 ->
-				when (((i ushr 16) and 31)) {
+				when (((i shr 16) and 31)) {
 					0 -> return e.bltz(s)
 					1 -> return e.bgez(s)
 					2 -> return e.bltzl(s)
@@ -86,7 +86,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 			14 -> return e.xori(s)
 			15 -> return e.lui(s)
 			16 ->
-				when (((i ushr 0) and 65013759)) {
+				when (((i shr 0) and 65013759)) {
 					0 -> return e.mfc0(s)
 					4194304 -> return e.cfc0(s)
 					8388608 -> return e.mtc0(s)
@@ -95,13 +95,13 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (4) failed mask 0x%08X".format(i, pc, 65013759))
 				}
 			17 ->
-				when (((i ushr 21) and 31)) {
+				when (((i shr 21) and 31)) {
 					0 -> return e.mfc1(s)
 					2 -> return e.cfc1(s)
 					4 -> return e.mtc1(s)
 					6 -> return e.ctc1(s)
 					8 ->
-						when (((i ushr 16) and 64543)) {
+						when (((i shr 16) and 64543)) {
 							17408 -> return e.bc1f(s)
 							17409 -> return e.bc1t(s)
 							17410 -> return e.bc1fl(s)
@@ -109,7 +109,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (5) failed mask 0x%08X".format(i, pc, -65077248))
 						}
 					16 ->
-						when (((i ushr 0) and -67108801)) {
+						when (((i shr 0) and -67108801)) {
 							1140850688 -> return e.add_s(s)
 							1140850689 -> return e.sub_s(s)
 							1140850690 -> return e.mul_s(s)
@@ -145,21 +145,21 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (7) failed mask 0x%08X".format(i, pc, 65011712))
 				}
 			18 ->
-				when (((i ushr 21) and 31)) {
+				when (((i shr 21) and 31)) {
 					3 ->
-						when (((i ushr 7) and 33030655)) {
+						when (((i shr 7) and 33030655)) {
 							9437184 -> return e.mfv(s)
 							9437185 -> return e.mfvc(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (8) failed mask 0x%08X".format(i, pc, -67043456))
 						}
 					7 ->
-						when (((i ushr 7) and 33030655)) {
+						when (((i shr 7) and 33030655)) {
 							9437184 -> return e.mtv(s)
 							9437185 -> return e.mtvc(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (9) failed mask 0x%08X".format(i, pc, -67043456))
 						}
 					8 ->
-						when (((i ushr 16) and 64515)) {
+						when (((i shr 16) and 64515)) {
 							18432 -> return e.bvf(s)
 							18433 -> return e.bvt(s)
 							18434 -> return e.bvfl(s)
@@ -173,7 +173,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 			22 -> return e.blezl(s)
 			23 -> return e.bgtzl(s)
 			24 ->
-				when (((i ushr 23) and 7)) {
+				when (((i shr 23) and 7)) {
 					0 -> return e.vadd(s)
 					1 -> return e.vsub(s)
 					2 -> return e.vsbn(s)
@@ -181,7 +181,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (12) failed mask 0x%08X".format(i, pc, 58720256))
 				}
 			25 ->
-				when (((i ushr 23) and 7)) {
+				when (((i shr 23) and 7)) {
 					0 -> return e.vmul(s)
 					1 -> return e.vdot(s)
 					2 -> return e.vscl(s)
@@ -192,7 +192,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 				}
 			26 -> return e.mfvme(s)
 			27 ->
-				when (((i ushr 23) and 7)) {
+				when (((i shr 23) and 7)) {
 					0 -> return e.vcmp(s)
 					2 -> return e.vmin(s)
 					3 -> return e.vmax(s)
@@ -202,12 +202,12 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (14) failed mask 0x%08X".format(i, pc, 58720256))
 				}
 			28 ->
-				when (((i ushr 0) and 2047)) {
+				when (((i shr 0) and 2047)) {
 					0 -> return e.halt(s)
 					36 -> return e.mfic(s)
 					38 -> return e.mtic(s)
 					61 ->
-						when (((i ushr 21) and 2047)) {
+						when (((i shr 21) and 2047)) {
 							896 -> return e.mfdr(s)
 							900 -> return e.mtdr(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (15) failed mask 0x%08X".format(i, pc, -2097152))
@@ -217,11 +217,11 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (16) failed mask 0x%08X".format(i, pc, 2047))
 				}
 			31 ->
-				when (((i ushr 0) and 63)) {
+				when (((i shr 0) and 63)) {
 					0 -> return e.ext(s)
 					4 -> return e.ins(s)
 					32 ->
-						when (((i ushr 6) and 67076127)) {
+						when (((i shr 6) and 67076127)) {
 							32505858 -> return e.wsbh(s)
 							32505859 -> return e.wsbw(s)
 							32505872 -> return e.seb(s)
@@ -249,11 +249,11 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 			49 -> return e.lwc1(s)
 			50 -> return e.lv_s(s)
 			52 ->
-				when (((i ushr 24) and 3)) {
+				when (((i shr 24) and 3)) {
 					0 ->
-						when (((i ushr 21) and 2023)) {
+						when (((i shr 21) and 2023)) {
 							1664 ->
-								when (((i ushr 16) and 799)) {
+								when (((i shr 16) and 799)) {
 									0 -> return e.vmov(s)
 									1 -> return e.vabs(s)
 									2 -> return e.vneg(s)
@@ -276,7 +276,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (19) failed mask 0x%08X".format(i, pc, 52363264))
 								}
 							1665 ->
-								when (((i ushr 16) and 799)) {
+								when (((i shr 16) and 799)) {
 									0 -> return e.vrnds(s)
 									1 -> return e.vrndi(s)
 									2 -> return e.vrndf1(s)
@@ -296,7 +296,7 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (20) failed mask 0x%08X".format(i, pc, 52363264))
 								}
 							1666 ->
-								when (((i ushr 16) and 799)) {
+								when (((i shr 16) and 799)) {
 									0 -> return e.vsrt1(s)
 									1 -> return e.vsrt2(s)
 									2 -> return e.vbfy1(s)
@@ -319,14 +319,14 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (22) failed mask 0x%08X".format(i, pc, -52428800))
 						}
 					2 ->
-						when (((i ushr 21) and 2023)) {
+						when (((i shr 21) and 2023)) {
 							1664 -> return e.vf2in(s)
 							1665 -> return e.vf2iz(s)
 							1666 -> return e.vf2iu(s)
 							1667 -> return e.vf2id(s)
 							1668 -> return e.vi2f(s)
 							1669 ->
-								when (((i ushr 19) and 99)) {
+								when (((i shr 19) and 99)) {
 									64 -> return e.vcmovt(s)
 									65 -> return e.vcmovf(s)
 									else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (23) failed mask 0x%08X".format(i, pc, 51904512))
@@ -337,19 +337,19 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (25) failed mask 0x%08X".format(i, pc, 50331648))
 				}
 			53 ->
-				when (((i ushr 1) and 1)) {
+				when (((i shr 1) and 1)) {
 					0 -> return e.lvl_q(s)
 					1 -> return e.lvr_q(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (26) failed mask 0x%08X".format(i, pc, 2))
 				}
 			54 -> return e.lv_q(s)
 			55 ->
-				when (((i ushr 24) and 3)) {
+				when (((i shr 24) and 3)) {
 					0 -> return e.vpfxs(s)
 					1 -> return e.vpfxt(s)
 					2 -> return e.vpfxd(s)
 					3 ->
-						when (((i ushr 23) and 505)) {
+						when (((i shr 23) and 505)) {
 							440 -> return e.viim(s)
 							441 -> return e.vfim(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (27) failed mask 0x%08X".format(i, pc, -58720256))
@@ -360,37 +360,37 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 			57 -> return e.swc1(s)
 			58 -> return e.sv_s(s)
 			60 ->
-				when (((i ushr 23) and 7)) {
+				when (((i shr 23) and 7)) {
 					0 -> return e.vmmul(s)
 					1 ->
-						when (((i ushr 7) and 33030401)) {
+						when (((i shr 7) and 33030401)) {
 							31457280 -> return e.vhtfm2(s)
 							31457281 -> return e.vtfm2(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (29) failed mask 0x%08X".format(i, pc, -67075968))
 						}
 					2 ->
-						when (((i ushr 7) and 33030401)) {
+						when (((i shr 7) and 33030401)) {
 							31457281 -> return e.vhtfm3(s)
 							31457536 -> return e.vtfm3(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (30) failed mask 0x%08X".format(i, pc, -67075968))
 						}
 					3 ->
-						when (((i ushr 7) and 33030401)) {
+						when (((i shr 7) and 33030401)) {
 							31457536 -> return e.vhtfm4(s)
 							31457537 -> return e.vtfm4(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (31) failed mask 0x%08X".format(i, pc, -67075968))
 						}
 					4 -> return e.vmscl(s)
 					5 ->
-						when (((i ushr 7) and 33030401)) {
+						when (((i shr 7) and 33030401)) {
 							31457536 -> return e.vcrsp_t(s)
 							31457537 -> return e.vqmul(s)
 							else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (32) failed mask 0x%08X".format(i, pc, -67075968))
 						}
 					7 ->
-						when (((i ushr 21) and 2019)) {
+						when (((i shr 21) and 2019)) {
 							1920 ->
-								when (((i ushr 16) and 927)) {
+								when (((i shr 16) and 927)) {
 									896 -> return e.vmmov(s)
 									899 -> return e.vmidt(s)
 									902 -> return e.vmzero(s)
@@ -403,14 +403,14 @@ class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (35) failed mask 0x%08X".format(i, pc, 58720256))
 				}
 			61 ->
-				when (((i ushr 1) and 1)) {
+				when (((i shr 1) and 1)) {
 					0 -> return e.svl_q(s)
 					1 -> return e.svr_q(s)
 					else -> throw Exception("Invalid instruction 0x%08X at 0x%08X (36) failed mask 0x%08X".format(i, pc, 2))
 				}
 			62 -> return e.sv_q(s)
 			63 ->
-				when (((i ushr 0) and 67108863)) {
+				when (((i shr 0) and 67108863)) {
 					67043328 -> return e.vnop(s)
 					67044128 -> return e.vsync(s)
 					67044365 -> return e.vflush(s)

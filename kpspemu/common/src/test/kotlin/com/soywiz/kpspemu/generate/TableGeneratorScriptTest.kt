@@ -104,7 +104,7 @@ class TableGenerator {
 		val maskShift = commonMask.countTrailingZeros()
 		val shiftedCommonMask = commonMask ushr maskShift
 
-		writer.line("""when (((i ushr ${maskShift.str()}) and ${shiftedCommonMask.str()})) {""")
+		writer.line("""when (((i shr ${maskShift.str()}) and ${shiftedCommonMask.str()})) {""")
 		writer.indent {
 			for ((groupKey, group) in groups.toList().sortedBy { it.first ushr maskShift }) {
 			//for ((groupKey, group) in groups) {
