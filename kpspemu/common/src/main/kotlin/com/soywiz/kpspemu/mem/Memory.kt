@@ -94,6 +94,9 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		this.sw(aadress, vwrite)
 	}
 
+	open fun getFastMem(): com.soywiz.korio.mem.FastMemory? = null
+	open fun getFastMemOffset(addr: Int): Int = 0
+
 	abstract fun sb(address: Int, value: Int): Unit
 	abstract fun sh(address: Int, value: Int): Unit
 	abstract fun sw(address: Int, value: Int): Unit
@@ -230,11 +233,14 @@ abstract class FastMemoryBacked : Memory(true) {
 	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = buffer.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
 	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt8(index(dstPos), src, srcPos, len)
 	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt32(index(dstPos) ushr 2, src, srcPos, len)
+
+	override fun getFastMem(): com.soywiz.korio.mem.FastMemory? = buffer
+	override fun getFastMemOffset(addr: Int): Int = index(addr)
 }
 
 class FastMemory : FastMemoryBacked() {
 	override val buffer = com.soywiz.korio.mem.FastMemory.alloc(0x0a000000)
-	override fun index(address: Int) = address and MASK
+	override fun index(address: Int) = address and 0x0FFFFFFF
 }
 
 class SmallMemory : FastMemoryBacked() {
