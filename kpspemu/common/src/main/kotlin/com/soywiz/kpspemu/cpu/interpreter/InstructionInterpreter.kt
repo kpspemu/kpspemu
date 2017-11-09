@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.cpu.interpreter
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.Debugger
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
 import com.soywiz.korio.util.udiv
@@ -17,22 +18,31 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun steps(count: Int): Int {
+		val mem = cpu.mem.getFastMem()
+		//val mem = null
+		return if (mem != null) {
+			stepsFastMem(mem, cpu.mem.getFastMemOffset(Memory.MAIN_OFFSET) - Memory.MAIN_OFFSET, count)
+		} else {
+			stepsNormal(count)
+		}
+	}
+
+	fun stepsNormal(count: Int): Int {
 		val dispatcher = this.dispatcher
 		val cpu = this.cpu
 		val mem = cpu.mem
 		val trace = this.trace
 		var sPC = 0
-		var executedCount = 0
+		var n = 0
 		//val fast = (mem as FastMemory).buffer
 		try {
-			for (n in 0 until count) {
+			while (n++ < count) {
 				sPC = cpu._PC
 				//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
 				if (trace) tracePC()
 				val IR = mem.lw(sPC)
 				//val IR = fast.getAlignedInt32((PC ushr 2) and Memory.MASK)
 				cpu.IR = IR
-				executedCount++
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
@@ -41,9 +51,31 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 			}
 			throw e
 		} finally {
-			cpu.totalExecuted += executedCount
+			cpu.totalExecuted += n
 		}
-		return executedCount
+		return n
+	}
+
+	fun stepsFastMem(mem: FastMemory, memOffset: Int, count: Int): Int {
+		val cpu = this.cpu
+		var n = 0
+		var sPC = 0
+		try {
+			while (n++ < count) {
+				sPC = cpu._PC and 0x0FFFFFFF
+				val IR = mem.getAlignedInt32((sPC + memOffset) ushr 2)
+				cpu.IR = IR
+				dispatcher.dispatch(cpu, sPC, IR)
+			}
+		} catch (e: Throwable) {
+			if (e !is CpuBreakException) {
+				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
+			}
+			throw e
+		} finally {
+			cpu.totalExecuted += n
+		}
+		return n
 	}
 
 	private fun tracePC() {
@@ -193,6 +225,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	//override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) } // @TODO: Kotlin.JS doesn't optimize 0xf0000000.toInt() and generates a long
 	override fun j(s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and (-268435456)) or (JUMP_ADDRESS) }
+
 	override fun jr(s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
 
 	override fun jal(s: CpuState) = s.none { j(s); RA = _PC + 4; } // $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
@@ -411,8 +444,18 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Vectorial utilities
 
-	object VectorSize { val Single = 1; val Pair = 2; val Triple = 3; val Quad = 4; }
-	object MatrixSize { val M_2x2 = 2; val M_3x3 = 3;val M_4x4 = 4; }
+	object VectorSize {
+		val Single = 1;
+		val Pair = 2;
+		val Triple = 3;
+		val Quad = 4;
+	}
+
+	object MatrixSize {
+		val M_2x2 = 2;
+		val M_3x3 = 3;
+		val M_4x4 = 4;
+	}
 
 	// VFPU
 	fun getMatrixRegs(matrixReg: Int, N: Int): IntArray {
@@ -423,9 +466,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		var side = 0
 
 		when (N) {
-			MatrixSize.M_2x2 -> {row = (matrixReg ushr 5) and 2; side = 2; }
-			MatrixSize.M_3x3 -> {row = (matrixReg ushr 6) and 1; side = 3; }
-			MatrixSize.M_4x4 -> {row = (matrixReg ushr 5) and 2; side = 4; }
+			MatrixSize.M_2x2 -> {
+				row = (matrixReg ushr 5) and 2; side = 2; }
+			MatrixSize.M_3x3 -> {
+				row = (matrixReg ushr 6) and 1; side = 3; }
+			MatrixSize.M_4x4 -> {
+				row = (matrixReg ushr 5) and 2; side = 4; }
 			else -> Debugger.enterDebugger()
 		}
 
@@ -433,7 +479,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 		val regs = IntArray(side * side)
 		for (i in 0 until side) {
-			for (j  in 0 until side) {
+			for (j in 0 until side) {
 				var index = mtx * 4
 				if (transpose) {
 					index += ((row + i) and 3) + ((col + j) and 3) * 32
