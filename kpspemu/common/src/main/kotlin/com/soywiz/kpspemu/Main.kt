@@ -83,7 +83,9 @@ class KpspemuMainScene(
 	var forceSteps = 0
 
 	suspend fun createEmulator(): Emulator {
-		return Emulator(
+		running = true
+		ended = false
+		emulator = Emulator(
 			coroutineContext,
 			mem = Memory(),
 			gpuRenderer = object : GpuRenderer {
@@ -93,13 +95,13 @@ class KpspemuMainScene(
 				}
 			}
 		)
+		agRenderer.anyBatch = false
+		agRenderer.reset()
+		return emulator
 	}
 
 	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
-		running = true
-		ended = false
 		emulator = createEmulator()
-		agRenderer.anyBatch = false
 		emulator.registerNativeModules()
 		emulator.loadExecutableAndStart(exeFile)
 	}

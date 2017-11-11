@@ -131,8 +131,13 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 	val vtype = VertexType()
 	//var texture: AG.Texture? = null
-	//val texturesById = LinkedHashMap<Int, AG.Texture>()
-	val texturesById = IntMap<TextureSlot>()
+	val texturesById = LinkedHashMap<Int, TextureSlot>()
+	//val texturesById = IntMap<TextureSlot>()
+
+	fun reset() {
+		for ((_, tex) in texturesById) tex.texture.close()
+		texturesById.clear()
+	}
 
 	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, scale: Double) {
 		val ag = ctx.ag
