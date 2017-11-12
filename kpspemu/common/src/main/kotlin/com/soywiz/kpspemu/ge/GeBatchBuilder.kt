@@ -15,13 +15,13 @@ class GeBatchBuilder(val ge: Ge) {
 	var vertexCount: Int = 0
 	var vertexSize: Int = 0
 
-	val vertexBuffer = ByteArray(0x10000 * 16)
+	val vertexBuffer = ByteArray(0x40000 * 16)
 	val vertexBufferMem = FastMemory.wrap(vertexBuffer)
 	val vertexBufferI8 = vertexBufferMem.i8
 	val vertexBufferI16 = vertexBufferMem.i16
 	val vertexBufferI32 = vertexBufferMem.i32
 	var vertexBufferPos = 0
-	val indexBuffer = ShortArray(0x10000)
+	val indexBuffer = ShortArray(0x40000)
 	var indexBufferPos = 0
 
 	fun reset() {
