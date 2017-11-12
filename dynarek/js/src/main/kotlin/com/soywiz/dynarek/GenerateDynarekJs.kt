@@ -1,21 +1,23 @@
 package com.soywiz.dynarek
 
-fun <T> DExpr<T>.genJs(): String = when (this) {
-	is DLiteral<*> -> "$value"
-	is DArg<*> -> "p$index"
-	is DBinopInt -> "((" + left.genJs() + " " + op + " " + right.genJs() + ")|0)" //
-	else -> TODO("Unhandled.DExpr.genJs: $this")
-}
+val <T> DExpr<T>.str: String
+	get() = when (this) {
+		is DLiteral<*> -> "$value"
+		is DArg<*> -> "p$index"
+		is DBinopInt -> "((${left.str} $op ${right.str})|0)"
+		is DFieldAccess<*, *> -> "${obj.str}.${prop.name}"
+		else -> TODO("Unhandled.DExpr.genJs: $this")
+	}
 
 fun DStm.genJs(w: StringBuilder): Unit = when (this) {
 	is DReturnVoid -> run { w.append("return;"); Unit }
-	is DReturnExpr<*> -> run { w.append("return " + expr.genJs() + ";"); Unit }
+	is DReturnExpr<*> -> run { w.append("return ${expr.str};"); Unit }
 	is DAssign<*> -> {
 		val l = left
-		val r = value.genJs()
+		val r = value.str
 		when (l) {
-			is DBindedProp<*, *> -> {
-				val objs = l.obj.genJs()
+			is DFieldAccess<*, *> -> {
+				val objs = l.obj.str
 				val propName = l.prop.name
 				w.append("$objs.$propName = $r;")
 			}
@@ -24,6 +26,17 @@ fun DStm.genJs(w: StringBuilder): Unit = when (this) {
 		Unit
 	}
 	is DStms -> for (stm in stms) stm.genJs(w)
+	is DIfElse -> {
+		w.append("if (${cond.str}) {")
+		strue.genJs(w)
+		w.append("}")
+		if (sfalse != null) {
+			w.append("else {")
+			sfalse?.genJs(w)
+			w.append("}")
+		}
+		Unit
+	}
 	else -> TODO("Unhandled.DStm.genJs: $this")
 }
 
@@ -46,6 +59,6 @@ private fun _generateDynarek(nargs: Int, func: DFunction): dynamic {
 	}
 }
 
-actual fun <TRet> DFunction0<TRet>.generateDynarek(): () -> TRet = _generateDynarek(0, this)
-actual fun <TRet, T0> DFunction1<TRet, T0>.generateDynarek(): (T0) -> TRet = _generateDynarek(1, this)
-actual fun <TRet, T0, T1> DFunction2<TRet, T0, T1>.generateDynarek(): (T0, T1) -> TRet = _generateDynarek(2, this)
+actual fun <TRet : Any> DFunction0<TRet>.generateDynarek(): () -> TRet = _generateDynarek(0, this)
+actual fun <TRet : Any, T0 : Any> DFunction1<TRet, T0>.generateDynarek(): (T0) -> TRet = _generateDynarek(1, this)
+actual fun <TRet : Any, T0 : Any, T1 : Any> DFunction2<TRet, T0, T1>.generateDynarek(): (T0, T1) -> TRet = _generateDynarek(2, this)

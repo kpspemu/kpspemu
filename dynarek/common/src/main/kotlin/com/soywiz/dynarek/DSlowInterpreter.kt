@@ -14,6 +14,10 @@ class DSlowInterpreter(val args: List<*>, var retval: Any? = null) {
 				else -> TODO("Unknown op ${node.op}")
 			}
 		}
+		is DFieldAccess<*, *> -> {
+			val obj = interpret(node.obj)
+			(node as DFieldAccess<Any, Any?>).prop.get(obj) as T
+		}
 		else -> TODO("Not implemented $node")
 	}
 
@@ -23,12 +27,23 @@ class DSlowInterpreter(val args: List<*>, var retval: Any? = null) {
 			val left = node.left
 			val value = interpret(node.value)
 			when (left) {
-				is DBindedProp<*, *> -> {
+				is DFieldAccess<*, *> -> {
 					val obj = interpret(left.obj)
-					(left as DBindedProp<Any?, Any?>).prop.set(obj, value)
+					(left as DFieldAccess<Any, Any?>).prop.set(obj, value)
 				}
 				else -> TODO("Not implemented left assign ${node.left}")
 			}
+		}
+		is DIfElse -> {
+			val cond = interpret(node.cond)
+			val strue = node.strue
+			val sfalse = node.sfalse
+			if (cond) {
+				interpret(strue)
+			} else if (sfalse != null) {
+				interpret(sfalse)
+			}
+			Unit
 		}
 		else -> TODO("Not implemented $node")
 	}
