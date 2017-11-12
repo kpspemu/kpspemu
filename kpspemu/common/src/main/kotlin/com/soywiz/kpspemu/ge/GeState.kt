@@ -9,7 +9,7 @@ import com.soywiz.korim.color.RGB_565
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.korma.Matrix4
-import kotlin.math.max
+import com.soywiz.kpspemu.util.max
 
 
 fun bool1(p: Int): Boolean = p != 0
@@ -489,7 +489,6 @@ class GpuFrameBufferState(val data: IntArray) {
 	val lowAddress get() = param24(this.data[Op.FRAMEBUFPTR])
 }
 
-
 class VertexType(v: Int = 0) {
 	var v: Int = 0
 
@@ -545,8 +544,7 @@ class VertexType(v: Int = 0) {
 		out = out.nextAlignedTo(col.nbytes); this.colOffset = out; out += colorSize
 		out = out.nextAlignedTo(normal.nbytes); this.normalOffset = out; out += normalSize
 		out = out.nextAlignedTo(pos.nbytes); this.posOffset = out; out += positionSize
-		out = out.nextAlignedTo(max(max(max(max(weight.nbytes, tex.nbytes), col.nbytes), normal.nbytes), pos.nbytes))
-		this.size = out
+		this.size = out.nextAlignedTo(max(weight.nbytes, tex.nbytes, col.nbytes, normal.nbytes, pos.nbytes))
 	}
 
 	override fun toString(): String {
@@ -586,7 +584,7 @@ class VertexReader {
 	}
 
 	private fun SyncStream.readShorts(count: Int, out: FloatArray = FloatArray(4), normalized: Boolean) = out.apply {
-		skipToAlign(4)
+		skipToAlign(2)
 		if (normalized) {
 			for (n in 0 until count) out[n] = readS16_le().toFloat() / 0x7FFF
 		} else {
@@ -605,6 +603,7 @@ class VertexReader {
 			ColorEnum.COLOR5551 -> RGBA_5551.packRGBA(readU16_le())
 			ColorEnum.COLOR5650 -> RGB_565.packRGBA(readU16_le())
 			ColorEnum.COLOR8888 -> readS32_le()
+			ColorEnum.VOID -> 0
 			else -> TODO()
 		}
 	}
@@ -620,21 +619,32 @@ class VertexReader {
 
 	fun readOne(s: SyncStream, type: VertexType, out: VertexRaw = VertexRaw()): VertexRaw {
 		s.safeSkipToAlign(type.weight.nbytes)
+		//println("Weight[0]: ${s.position} : align(${type.weight.nbytes})")
 		s.readNumericType(type.weightComponents, type.weight, out.weights, normalized = true)
+		//println("  Weight[1]: ${s.position}")
 
 		s.safeSkipToAlign(type.tex.nbytes)
+		//println("Tex[0]: ${s.position} : ${type.texComponents} : align(${type.tex.nbytes})")
 		s.readNumericType(type.texComponents, type.tex, out.tex, normalized = true)
+		//println("  Tex[1]: ${s.position}")
 
 		s.safeSkipToAlign(type.col.nbytes)
+		//println("Col[0]: ${s.position} : align(${type.col.nbytes})")
 		out.color = s.readColorType(type.col)
+		//println("  Col[1]: ${s.position}")
 
 		s.safeSkipToAlign(type.normal.nbytes)
+		//println("Normal[0]: ${s.position} : ${type.normalComponents} : align(${type.normal.nbytes})")
 		s.readNumericType(type.normalComponents, type.normal, out.normal, normalized = false)
+		//println("  Normal[1]: ${s.position}")
 
 		s.safeSkipToAlign(type.pos.nbytes)
+		//println("Pos[0]: ${s.position} : ${type.posComponents} : align(${type.pos.nbytes})")
 		s.readNumericType(type.posComponents, type.pos, out.pos, normalized = false)
+		//println("  Pos[1]: ${s.position}")
 
-		s.safeSkipToAlign(max(max(max(max(type.weight.nbytes, type.tex.nbytes), type.col.nbytes), type.normal.nbytes), type.pos.nbytes))
+		s.safeSkipToAlign(max(type.weight.nbytes, type.tex.nbytes, type.col.nbytes, type.normal.nbytes, type.pos.nbytes))
+		//println("Align: ${s.position}")
 
 		return out
 	}

@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klogger.LogLevel
 import com.soywiz.klogger.Logger
 import com.soywiz.korag.AG
 import com.soywiz.korag.shader.*
@@ -159,7 +160,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		indexBuffer!!.upload(batch.indices)
 		vertexBuffer!!.upload(batch.vertices)
 
-		//logger.level = PspLogLevel.TRACE
+
+		//logger.level = LogLevel.TRACE
 		logger.trace { "----------------" }
 		logger.trace { "indices: ${batch.indices.toList()}" }
 		logger.trace { "primitive: ${batch.primType.toAg()}" }
@@ -173,6 +175,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			"" + vr.read(batch.vtype, batch.vertices.size / batch.vtype.size, batch.vertices.openSync())
 		}
 
+		logger.trace {
+			//val tex = batch.getTextureBitmap(mem)
+			//"texture: ${batch.hasTexture()} : ${batch.getTextureId()} : $tex : ${batch.state.texture.mipmap.address.hex} : ${tex?.data?.toList()}"
+			"texture: ${batch.hasTexture()} : ${batch.getTextureId()} : ${batch.state.texture.mipmap.address.hex}"
+		}
+
 		if (state.clearing) {
 			val fixedDepth = state.depthTest.rangeNear.toFloat()
 			renderState.depthNear = fixedDepth
@@ -182,14 +190,24 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			//batch.modelViewProjMatrix.setToOrtho(0f, 272f, 480f, 0f, 0f, (-0xFFFF).toFloat())
 			batch.modelViewProjMatrix.setToOrtho(0f, 272f, 480f, 0f, (-0xFFFF).toFloat(), 0f)
 			val vertex = vr.readOne(batch.vertices.openSync(), batch.vtype, vv)
+			val clearFlags = state.clearFlags
+			val clearColor = vertex.color
+			val clearDepth = fixedDepth
+			val clearStencil = state.stencil.funcRef
+			val mustClearColor = clearFlags hasFlag ClearBufferSet.ColorBuffer
+			//val mustClearColor = true
+			val mustClearDepth = clearFlags hasFlag ClearBufferSet.DepthBuffer
+			val mustClearStencil = clearFlags hasFlag ClearBufferSet.StencilBuffer
+
 			ag.clear(
-				vertex.color,
-				fixedDepth, state.stencil.funcRef,
-				clearColor = state.clearFlags hasFlag ClearBufferSet.ColorBuffer,
-				clearDepth = state.clearFlags hasFlag ClearBufferSet.DepthBuffer,
-				clearStencil = state.clearFlags hasFlag ClearBufferSet.StencilBuffer
+				clearColor,
+				clearDepth,
+				clearStencil,
+				clearColor = mustClearColor,
+				clearDepth = mustClearDepth,
+				clearStencil = mustClearStencil
 			)
-			return
+			//return
 		}
 
 		// @TODO: Invert this since in PSP it is reversed and WebGL doesn't support it

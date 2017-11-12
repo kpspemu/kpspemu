@@ -112,13 +112,14 @@ class GeBatchBuilder(val ge: Ge) {
 		val texSize = vertexType.tex.nbytes
 		val texOffsetX = vertexType.texOffset
 		val texOffsetY = vertexType.texOffset + texSize
-
-		// Copy raw sprite vertices at once
-		mem.read(state.vertexAddress, vertexBuffer, vertexBufferPos, nsprites * vertexSize_2)
-		state.vertexAddress += nsprites * vertexSize_2
-
 		val svpos = vertexBufferPos
 		val dvpos = vertexBufferPos + nsprites * vertexSize_2
+
+		// Copy raw sprite vertices at once
+		mem.read(state.vertexAddress, vertexBuffer, svpos, nsprites * vertexSize_2)
+		mem.read(state.vertexAddress, vertexBuffer, dvpos, nsprites * vertexSize_2)
+
+		state.vertexAddress += nsprites * vertexSize_2
 
 		for (n in 0 until nsprites) {
 			val TLpos = svpos + (n * vertexSize_2)
@@ -134,7 +135,7 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	private fun putGenVertex(dest: Int, base: Int, gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
-		arraycopy(vertexBuffer, base, vertexBuffer, dest, vertexSize) // Copy one full
+		//arraycopy(vertexBuffer, base, vertexBuffer, dest, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
 			arraycopy(vertexBuffer, gx + posOffsetX, vertexBuffer, dest + posOffsetX, posSize)
