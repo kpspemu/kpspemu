@@ -3,9 +3,24 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.mem.Ptr
 
 @Suppress("UNUSED_PARAMETER")
 class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010011, "utility.prx", "sceUtility_Driver") {
+	fun sceUtilitySavedataInitStart(params: Ptr): Int {
+		logger.warn { "sceUtilitySavedataInitStart: $params" }
+		//return Promise2.resolve(this._sceUtilitySavedataInitStart(paramsPtr.clone())).then(result => {
+		//	var params = SceUtilitySavedataParam.struct.read(paramsPtr.clone());
+		//	params.base.result = result;
+		//	return 0;
+		//});
+		return 0
+	}
+
+	fun sceUtilitySavedataGetStatus(): Int {
+		return 0
+	}
+
 	fun sceUtility_0251B134(cpu: CpuState): Unit = UNIMPLEMENTED(0x0251B134)
 	fun sceUtilityHtmlViewerUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x05AFB9E4)
 	fun sceUtility_06A48659(cpu: CpuState): Unit = UNIMPLEMENTED(0x06A48659)
@@ -37,7 +52,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtilityOskUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x4B85C861)
 	fun sceUtilityNetconfInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x4DB1E739)
 	fun sceUtilityGetNetParamLatestID(cpu: CpuState): Unit = UNIMPLEMENTED(0x4FED24D8)
-	fun sceUtilitySavedataInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x50C4CD57)
 	fun sceUtility_54A5C62F(cpu: CpuState): Unit = UNIMPLEMENTED(0x54A5C62F)
 	fun sceUtilityCheckNetParam(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EEE6548)
 	fun sceUtilityInstallShutdownStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EF1C24A)
@@ -51,7 +65,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtility_8326AB05(cpu: CpuState): Unit = UNIMPLEMENTED(0x8326AB05)
 	fun sceUtility_86A03A27(cpu: CpuState): Unit = UNIMPLEMENTED(0x86A03A27)
 	fun sceUtility_86ABDB1B(cpu: CpuState): Unit = UNIMPLEMENTED(0x86ABDB1B)
-	fun sceUtilitySavedataGetStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x8874DBE0)
 	fun sceUtility_88BC7406(cpu: CpuState): Unit = UNIMPLEMENTED(0x88BC7406)
 	fun sceUtility_89317C8F(cpu: CpuState): Unit = UNIMPLEMENTED(0x89317C8F)
 	fun sceUtilityNetconfUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x91E70E35)
@@ -99,6 +112,9 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 
 
 	override fun registerModule() {
+		registerFunctionInt("sceUtilitySavedataInitStart", 0x50C4CD57, since = 150) { sceUtilitySavedataInitStart(ptr) }
+		registerFunctionInt("sceUtilitySavedataGetStatus", 0x8874DBE0, since = 150) { sceUtilitySavedataGetStatus() }
+
 		registerFunctionRaw("sceUtility_0251B134", 0x0251B134, since = 150) { sceUtility_0251B134(it) }
 		registerFunctionRaw("sceUtilityHtmlViewerUpdate", 0x05AFB9E4, since = 150) { sceUtilityHtmlViewerUpdate(it) }
 		registerFunctionRaw("sceUtility_06A48659", 0x06A48659, since = 150) { sceUtility_06A48659(it) }
@@ -130,7 +146,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtilityOskUpdate", 0x4B85C861, since = 150) { sceUtilityOskUpdate(it) }
 		registerFunctionRaw("sceUtilityNetconfInitStart", 0x4DB1E739, since = 150) { sceUtilityNetconfInitStart(it) }
 		registerFunctionRaw("sceUtilityGetNetParamLatestID", 0x4FED24D8, since = 150) { sceUtilityGetNetParamLatestID(it) }
-		registerFunctionRaw("sceUtilitySavedataInitStart", 0x50C4CD57, since = 150) { sceUtilitySavedataInitStart(it) }
 		registerFunctionRaw("sceUtility_54A5C62F", 0x54A5C62F, since = 150) { sceUtility_54A5C62F(it) }
 		registerFunctionRaw("sceUtilityCheckNetParam", 0x5EEE6548, since = 150) { sceUtilityCheckNetParam(it) }
 		registerFunctionRaw("sceUtilityInstallShutdownStart", 0x5EF1C24A, since = 150) { sceUtilityInstallShutdownStart(it) }
@@ -144,7 +159,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtility_8326AB05", 0x8326AB05, since = 150) { sceUtility_8326AB05(it) }
 		registerFunctionRaw("sceUtility_86A03A27", 0x86A03A27, since = 150) { sceUtility_86A03A27(it) }
 		registerFunctionRaw("sceUtility_86ABDB1B", 0x86ABDB1B, since = 150) { sceUtility_86ABDB1B(it) }
-		registerFunctionRaw("sceUtilitySavedataGetStatus", 0x8874DBE0, since = 150) { sceUtilitySavedataGetStatus(it) }
 		registerFunctionRaw("sceUtility_88BC7406", 0x88BC7406, since = 150) { sceUtility_88BC7406(it) }
 		registerFunctionRaw("sceUtility_89317C8F", 0x89317C8F, since = 150) { sceUtility_89317C8F(it) }
 		registerFunctionRaw("sceUtilityNetconfUpdate", 0x91E70E35, since = 150) { sceUtilityNetconfUpdate(it) }

@@ -427,18 +427,19 @@ suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile, magic: SyncSt
 				iso["EBOOT.PBP"]
 			)
 
-			for (f in files) {
-				if (f.exists()) {
-					if (f.parent.path.isEmpty()) {
-						fileManager.currentDirectory = "umd0:/"
-						deviceManager.mount(fileManager.currentDirectory, iso)
-						deviceManager.mount("game0:/", iso)
-						deviceManager.mount("disc0:/", iso)
-						deviceManager.mount("umd0:/", iso)
-						deviceManager.mount("ms0:/PSP/GAME/virtual", iso)
-					}
-					return loadExecutableAndStartInternal(f)
+			for (f in files.filter { it.exists() }) {
+				val ebootInRoot = f.parent.path.isEmpty()
+				logger.info { "ebootInRoot: $ebootInRoot" }
+				if (ebootInRoot) {
+					fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
+					deviceManager.mount(fileManager.currentDirectory, iso)
+				} else {
+					fileManager.currentDirectory = "umd0:"
+					deviceManager.mount("game0:", iso)
+					deviceManager.mount("disc0:", iso)
+					deviceManager.mount(fileManager.currentDirectory, iso)
 				}
+				return loadExecutableAndStartInternal(f)
 			}
 			invalidOp("Can't find any possible executalbe in ISO ($files)")
 		}

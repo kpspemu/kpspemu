@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.util.io
 
+import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.asyncGenerate
 import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korio.error.invalidOp
@@ -18,6 +19,8 @@ suspend fun AsyncStream.openAsIso2() = IsoVfs2(this)
 suspend fun VfsFile.openAsIso2() = IsoVfs2(this)
 
 object ISO2 {
+	val logger = Logger("ISO2")
+
 	const val SECTOR_SIZE = 0x800L
 
 	suspend fun read(s: AsyncStream): IsoFile = IsoReader(s).read()
@@ -105,6 +108,7 @@ object ISO2 {
 				}
 				if (dr.name == "" || dr.name == "\u0001") continue
 				val file = IsoFile(this@IsoReader, dr, parent)
+				logger.info { "IsoFile: ${file.fullname}" }
 
 				if (dr.isDirectory) readDirectoryRecords(file, getSectorMemory(dr.extent, dr.size))
 			}

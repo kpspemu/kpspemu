@@ -79,7 +79,7 @@ abstract class SceModule(
 
 	fun UNIMPLEMENTED(nid: Long): Nothing = UNIMPLEMENTED(nid.toInt())
 
-	protected fun registerFunctionRaw(function: NativeFunction) {
+	fun registerFunctionRaw(function: NativeFunction) {
 		functions[function.nid.toInt()] = function
 		if (function.syscall >= 0) {
 			emulator.syscalls.register(function.syscall, function.name) { cpu, syscall ->
@@ -90,22 +90,22 @@ abstract class SceModule(
 		}
 	}
 
-	protected fun registerFunctionRaw(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: (CpuState) -> Unit) {
+	fun registerFunctionRaw(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: (CpuState) -> Unit) {
 		registerFunctionRaw(NativeFunction(name, uid, since, syscall, function))
 	}
 
-	protected fun registerFunctionRR(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {
+	fun registerFunctionRR(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {
 		registerFunctionRaw(name, uid, since, syscall) {
 			rr.reset(it)
 			function(rr, it)
 		}
 	}
 
-	protected fun registerFunctionVoid(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {
+	fun registerFunctionVoid(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {
 		registerFunctionRR(name, uid, since, syscall, function)
 	}
 
-	protected fun registerFunctionInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Int) {
+	fun registerFunctionInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Int) {
 		registerFunctionRR(name, uid, since, syscall) {
 			this.cpu.r2 = try {
 				function(it)
@@ -115,7 +115,7 @@ abstract class SceModule(
 		}
 	}
 
-	protected fun registerFunctionLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Long) {
+	fun registerFunctionLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Long) {
 		registerFunctionRR(name, uid, since, syscall) {
 			val ret = function(it)
 			this.cpu.r2 = (ret ushr 0).toInt()
@@ -123,7 +123,9 @@ abstract class SceModule(
 		}
 	}
 
-	protected fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
+	// @TODO: registerFunctionSuspendInt and registerFunctionSuspendLong are mostly duplicated!
+
+	fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
 		val fullName = "${this.name}:$name"
 		registerFunctionRR(name, uid, since, syscall) {
 			val mfunction: suspend (RegisterReader) -> Int = { function(it, it.cpu) }
@@ -154,7 +156,7 @@ abstract class SceModule(
 		}
 	}
 
-	protected fun registerFunctionSuspendLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Long) {
+	fun registerFunctionSuspendLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Long) {
 		val fullName = "${this.name}:$name"
 		registerFunctionRR(name, uid, since, syscall) {
 			val mfunction: suspend (RegisterReader) -> Long = { function(it, it.cpu) }

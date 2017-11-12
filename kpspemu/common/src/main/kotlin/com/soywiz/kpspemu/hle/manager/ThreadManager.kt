@@ -4,7 +4,6 @@ import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.*
@@ -13,10 +12,7 @@ import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.RA
 import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.PtrArray
-import com.soywiz.kpspemu.mem.array
-import com.soywiz.kpspemu.mem.ptr
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.ResourceItem
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
@@ -52,20 +48,20 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 
 	fun step() {
 		//for (n in 0 until 10) {
-			val now: Double = timeManager.getTimeInMicrosecondsDouble()
+		val now: Double = timeManager.getTimeInMicrosecondsDouble()
 
-			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-				val time = (t.waitObject as WaitObject.TIME).instant
-				if (now >= time) {
-					t.resume()
-				}
+		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+			val time = (t.waitObject as WaitObject.TIME).instant
+			if (now >= time) {
+				t.resume()
 			}
+		}
 
-			val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
-			for (t in availableThreads) {
-				t.step(now)
-			}
-			//emulator.coroutineContext.eventLoop.step(0)
+		val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
+		for (t in availableThreads) {
+			t.step(now)
+		}
+		//emulator.coroutineContext.eventLoop.step(0)
 		//}
 	}
 
@@ -234,6 +230,48 @@ val CpuState.thread: PspThread get() = _thread ?: invalidOp("CpuState doesn't ha
 data class PspEventFlag(override val id: Int) : ResourceItem {
 	var name: String = ""
 	var attributes: Int = 0
-	var bitPattern: Int = 0
+	var currentPattern: Int = 0
 	var optionsPtr: Ptr? = null
+
+	fun poll(bitsToMatch: Int, waitType: Int, outBits: Ptr): Boolean {
+		if (outBits.isNotNull) outBits.sw(0, this.currentPattern)
+
+		val res = when {
+			(waitType and EventFlagWaitTypeSet.Or) != 0 -> ((this.currentPattern and bitsToMatch) != 0) // one or more bits of the mask
+			else -> (this.currentPattern and bitsToMatch) == bitsToMatch // all the bits of the mask
+		}
+
+		if (res) {
+			this._doClear(bitsToMatch, waitType)
+			return true
+		} else {
+			return false
+		}
+	}
+
+	private fun _doClear(bitsToMatch: Int, waitType: Int) {
+		if ((waitType and (EventFlagWaitTypeSet.ClearAll)) != 0) this.clearBits(-1.inv(), false);
+		if ((waitType and (EventFlagWaitTypeSet.Clear)) != 0) this.clearBits(bitsToMatch.inv(), false);
+	}
+
+	fun clearBits(bitsToClear: Int, doUpdateWaitingThreads: Boolean = true) {
+		this.currentPattern = this.currentPattern and bitsToClear;
+		if (doUpdateWaitingThreads) this.updateWaitingThreads();
+	}
+
+	private fun updateWaitingThreads() {
+		//this.waitingThreads.forEach(waitingThread => {
+		//	if (this.poll(waitingThread.bitsToMatch, waitingThread.waitType, waitingThread.outBits)) {
+		//		waitingThread.wakeUp();
+		//	}
+		//});
+	}
+}
+
+object EventFlagWaitTypeSet {
+	val And = 0x00
+	val Or = 0x01
+	val ClearAll = 0x10
+	val Clear = 0x20
+	val MaskValidBits = Or or Clear or ClearAll
 }

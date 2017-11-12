@@ -26,6 +26,7 @@ class DeviceManager(val emulator: Emulator) {
 	//val devicesToVfs = LinkedHashMap<String, VfsFile>()
 
 	fun mount(name: String, vfs: VfsFile) {
+		mountable.unmount(name)
 		mountable.mount(name, vfs)
 		//devicesToVfs[name] = vfs
 	}

@@ -61,7 +61,7 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 		when (op) {
 			Op.PRIM -> prim(p)
 			Op.BEZIER -> {
-				println("BEZIER")
+				logger.info { "Not implemented BEZIER" }
 			}
 			Op.END -> {
 				//println("END")
