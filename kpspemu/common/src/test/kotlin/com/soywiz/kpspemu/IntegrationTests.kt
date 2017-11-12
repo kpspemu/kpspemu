@@ -2,19 +2,18 @@ package com.soywiz.kpspemu
 
 import KpspTests
 import MyAssert
+import com.soywiz.klogger.LogLevel
+import com.soywiz.klogger.LoggerManager
 import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.stream.SyncStream
+import com.soywiz.korio.util.hex
+import com.soywiz.korio.util.quote
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.hle.registerNativeModules
-import com.soywiz.kpspemu.util.PspLogLevel
-import com.soywiz.kpspemu.util.PspLoggerManager
-import com.soywiz.kpspemu.util.hex
-import com.soywiz.kpspemu.util.quote
 import org.junit.Test
-import kotlin.test.assertEquals
 
 class IntegrationTests {
 	val TRACE = false
@@ -65,14 +64,14 @@ class IntegrationTests {
 		val info = emulator.loadElfAndSetRegisters(elf)
 
 		if (TRACE1) {
-			PspLoggerManager.defaultLevel = PspLogLevel.TRACE
+			LoggerManager.defaultLevel = LogLevel.TRACE
 		}
 
 		if (TRACE) {
 			emulator.threadManager.trace("user_main", trace = true)
-			PspLoggerManager.defaultLevel = PspLogLevel.TRACE
+			LoggerManager.defaultLevel = LogLevel.TRACE
 		} else {
-			PspLoggerManager.setLevel("ElfPsp", PspLogLevel.ERROR)
+			LoggerManager.setLevel("ElfPsp", LogLevel.ERROR)
 		}
 
 		try {

@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.util.Extra
+import com.soywiz.kds.Extra
+import com.soywiz.kmem.*
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.Memory
@@ -24,8 +25,14 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	var totalExecuted: Long = 0L
 
 	var _R = IntArray(32)
-	var _F = com.soywiz.korio.mem.FastMemory.alloc(32 * 4)
-	val _VFPR = com.soywiz.korio.mem.FastMemory.alloc(128 * 4)
+
+	val _FMem = MemBufferAlloc(32 * 4)
+	var _F = _FMem.asFloat32Buffer()
+	var _FI = _FMem.asInt32Buffer()
+
+	val _VFPRMem = MemBufferAlloc(128 * 4)
+	val _VFPR = _VFPRMem.asFloat32Buffer()
+	val _VFPR_I = _VFPRMem.asInt32Buffer()
 
 	var fcr0: Int = 0x00003351
 	var fcr25: Int = 0
@@ -118,16 +125,16 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	fun getGpr(index: Int): Int = _R[index]
 	fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index] = v }
 
-	fun getFpr(index: Int): Float = _F.getAlignedFloat32(index)
-	fun setFpr(index: Int, v: Float): Unit = run { _F.setAlignedFloat32(index, v) }
-	fun getFprI(index: Int): Int = _F.getAlignedInt32(index)
-	fun setFprI(index: Int, v: Int): Unit = run { _F.setAlignedInt32(index, v) }
+	fun getFpr(index: Int): Float = _F[index]
+	fun setFpr(index: Int, v: Float): Unit = run { _F[index] = v }
+	fun getFprI(index: Int): Int = _FI[index]
+	fun setFprI(index: Int, v: Int): Unit = run { _FI[index] = v }
 
-	fun setVfpr(index: Int, value: Float) = _VFPR.setAlignedFloat32(index, value)
-	fun getVfpr(index: Int): Float = _VFPR.getAlignedFloat32(index)
+	fun setVfpr(index: Int, value: Float) = run { _VFPR[index] = value }
+	fun getVfpr(index: Int): Float = _VFPR[index]
 
-	fun setVfprI(index: Int, value: Int) = _VFPR.setAlignedInt32(index, value)
-	fun getVfprI(index: Int): Int = _VFPR.getAlignedInt32(index)
+	fun setVfprI(index: Int, value: Int) = run { _VFPR_I[index] = value }
+	fun getVfprI(index: Int): Int = _VFPR_I[index]
 
 	class Gpr(val state: CpuState) {
 		operator fun get(index: Int): Int = state.getGpr(index)

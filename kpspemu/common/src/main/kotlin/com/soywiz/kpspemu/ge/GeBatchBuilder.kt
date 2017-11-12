@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korio.typedarray.copyRangeTo
+import com.soywiz.kmem.arraycopy
 import com.soywiz.kpspemu.mem
 import kotlin.math.max
 
@@ -134,16 +134,16 @@ class GeBatchBuilder(val ge: Ge) {
 	}
 
 	private fun putGenVertex(dest: Int, base: Int, gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
-		vertexBuffer.copyRangeTo(base, vertexBuffer, dest, vertexSize) // Copy one full
+		arraycopy(vertexBuffer, base, vertexBuffer, dest, vertexSize) // Copy one full
 
 		if (vertexType.hasPosition) {
-			vertexBuffer.copyRangeTo(gx + posOffsetX, vertexBuffer, dest + posOffsetX, posSize)
-			vertexBuffer.copyRangeTo(gy + posOffsetY, vertexBuffer, dest + posOffsetY, posSize)
+			arraycopy(vertexBuffer, gx + posOffsetX, vertexBuffer, dest + posOffsetX, posSize)
+			arraycopy(vertexBuffer, gy + posOffsetY, vertexBuffer, dest + posOffsetY, posSize)
 		}
 
 		if (vertexType.hasTexture) {
-			vertexBuffer.copyRangeTo(gx + texOffsetX, vertexBuffer, dest + texOffsetX, texSize)
-			vertexBuffer.copyRangeTo(gy + texOffsetY, vertexBuffer, dest + texOffsetY, texSize)
+			arraycopy(vertexBuffer, gx + texOffsetX, vertexBuffer, dest + texOffsetX, texSize)
+			arraycopy(vertexBuffer, gy + texOffsetY, vertexBuffer, dest + texOffsetY, texSize)
 		}
 	}
 

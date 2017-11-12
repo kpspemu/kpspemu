@@ -1,11 +1,13 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.klockVersion = "0.2.1"
-    ext.koragVersion = "0.16.4"
-    ext.korioVersion = "0.16.4"
-    ext.korgeVersion = "0.16.2"
-    ext.koruiVersion = "0.16.2"
+    ext.kloggerVersion = "0.1.0"
+    ext.klockVersion = "0.2.2"
+    ext.koragVersion = "0.17.1"
+    ext.korauVersion = "0.17.2"
+    ext.korioVersion = "0.17.1"
+    ext.korgeVersion = "0.17.1"
+    ext.koruiVersion = "0.17.1"
     ext.kotlinVersion = '1.2.0-rc-39'
     ext.compilerVersion = ext.kotlinVersion
     ext.librariesVersion = ext.kotlinVersion
@@ -32,7 +34,7 @@ allprojects {
     }
 
     group 'com.soywiz'
-    version '0.2.5-SNAPSHOT'
+    version '0.3.0-SNAPSHOT'
 
     if (project == rootProject) {
         new File(rootProject.rootDir, "kpspemu/common/src/main/kotlin/com/soywiz/kpspemu/KpspemuVersion.kt").write(

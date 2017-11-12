@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.generate
 
-import com.soywiz.korio.ds.lmapOf
 import com.soywiz.korio.util.Indenter
+import com.soywiz.korio.util.countTrailingZeros
 import com.soywiz.korio.util.quote
 import com.soywiz.kpspemu.cpu.*
-import com.soywiz.kpspemu.util.countTrailingZeros
 import org.junit.Test
 import kotlin.test.Ignore
 
@@ -15,7 +14,7 @@ fun main(args: Array<String>) {
 
 class TableGeneratorScriptTest {
 	@Test
-	//@Ignore
+		//@Ignore
 	fun name() {
 		val switch = TableGenerator.createSwitch(Instructions.instructions)
 		println(switch)
@@ -91,7 +90,7 @@ class TableGenerator {
 	private fun _createSwitch(writer: Indenter, instructions: List<InstructionType>, baseMask: Int = 0xFFFFFFFF.toInt(), level: Int = 0) {
 		if (level >= 10) throw Exception("ERROR: Recursive detection")
 		val commonMask = this.getCommonMask(instructions, baseMask)
-		val groups: HashMap<Int, ArrayList<InstructionType>> = lmapOf()
+		val groups: HashMap<Int, ArrayList<InstructionType>> = LinkedHashMap()
 		for (item in instructions) {
 			val commonValue = item.vm.value and commonMask
 			val group = groups.getOrPut(commonValue) { arrayListOf() }
@@ -107,7 +106,7 @@ class TableGenerator {
 		writer.line("""when (((i shr ${maskShift.str()}) and ${shiftedCommonMask.str()})) {""")
 		writer.indent {
 			for ((groupKey, group) in groups.toList().sortedBy { it.first ushr maskShift }) {
-			//for ((groupKey, group) in groups) {
+				//for ((groupKey, group) in groups) {
 				val case = "${(groupKey ushr maskShift).str()} ->"
 				if (group.size == 1) {
 					writer.line("$case return e.${group[0].name.kescape()}(s)")

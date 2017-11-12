@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.kpspemu.util.PspLogger
+import com.soywiz.klogger.Logger
 
 class ElfDwarf {
-	val logger = PspLogger("ElfDwarf")
+	val logger = Logger("ElfDwarf")
 
 	fun parseElfLoader(elfLoader: Elf): Unit {
 		logger.info("ElfDwarfLoader.parseElfLoader: Not implemented")

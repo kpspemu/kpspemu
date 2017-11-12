@@ -1,14 +1,15 @@
 package com.soywiz.kpspemu.util.io
 
 import com.soywiz.klock.DateTime
+import com.soywiz.kmem.indexOf
 import com.soywiz.korio.async.AsyncSequence
 import com.soywiz.korio.async.asyncGenerate
-import com.soywiz.korio.async.executeInWorker
 import com.soywiz.korio.compression.Inflater
-import com.soywiz.korio.coroutine.withCoroutineContext
-import com.soywiz.korio.ds.lmapOf
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
+import com.soywiz.korio.util.getBits
+import com.soywiz.korio.util.toIntClamp
+import com.soywiz.korio.util.toUInt
 import com.soywiz.korio.vfs.*
 import kotlin.math.max
 
@@ -53,8 +54,8 @@ suspend fun ZipVfs2(s: AsyncStream, zipFile: VfsFile? = null): VfsFile {
 		}
 	}
 
-	val files = lmapOf<String, ZipEntry>()
-	val filesPerFolder = lmapOf<String, MutableMap<String, ZipEntry>>()
+	val files = LinkedHashMap<String, ZipEntry>()
+	val filesPerFolder = LinkedHashMap<String, MutableMap<String, ZipEntry>>()
 
 	data.apply {
 		//println(s)
@@ -98,7 +99,7 @@ suspend fun ZipVfs2(s: AsyncStream, zipFile: VfsFile? = null): VfsFile {
 				val baseFolder = normalizedName.substringBeforeLast('/', "")
 				val baseName = normalizedName.substringAfterLast('/')
 
-				val folder = filesPerFolder.getOrPut(baseFolder) { lmapOf() }
+				val folder = filesPerFolder.getOrPut(baseFolder) { LinkedHashMap() }
 				val entry = ZipEntry(
 					path = name,
 					compressionMethod = compressionMethod,
@@ -115,7 +116,7 @@ suspend fun ZipVfs2(s: AsyncStream, zipFile: VfsFile? = null): VfsFile {
 					val f = components[m - 1]
 					val c = components[m]
 					if (c !in files) {
-						val folder2 = filesPerFolder.getOrPut(f) { lmapOf() }
+						val folder2 = filesPerFolder.getOrPut(f) { LinkedHashMap() }
 						val entry2 = ZipEntry(path = c, compressionMethod = 0, isDirectory = true, time = DosFileDateTime(0, 0), inode = 0L, offset = 0, headerEntry = byteArrayOf().openAsync(), compressedSize = 0L, uncompressedSize = 0L)
 						folder2[PathInfo(c).basename] = entry2
 						files[c] = entry2
@@ -171,9 +172,9 @@ suspend fun ZipVfs2(s: AsyncStream, zipFile: VfsFile? = null): VfsFile {
 			return files[path.normalizeName()].toStat(this@Impl[path])
 		}
 
-		suspend override fun list(path: String): AsyncSequence<VfsFile> = withCoroutineContext {
-			asyncGenerate(this@withCoroutineContext) {
-				for ((name, entry) in filesPerFolder[path.normalizeName()] ?: lmapOf()) {
+		suspend override fun list(path: String): AsyncSequence<VfsFile> {
+			return asyncGenerate(getCoroutineContext()) {
+				for ((name, entry) in filesPerFolder[path.normalizeName()] ?: LinkedHashMap()) {
 					//yield(entry.toStat(this@Impl[entry.path]))
 					yield(vfs[entry.path])
 				}

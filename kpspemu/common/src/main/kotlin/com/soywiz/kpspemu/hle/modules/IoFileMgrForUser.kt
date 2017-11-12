@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
 
-import com.soywiz.korio.async.toList
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
+import com.soywiz.korio.util.toInt
 import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
@@ -18,7 +17,6 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
-import com.soywiz.kpspemu.util.toInt
 
 
 @Suppress("UNUSED_PARAMETER")
@@ -137,7 +135,9 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 				when (command) {
 					EMULATOR_DEVCTL__IS_EMULATOR -> return 0 // Yes, we are in an emulator!
 					EMULATOR_DEVCTL__GET_HAS_DISPLAY -> {
-						outputPointer.sw(0, display.exposeDisplay.toInt()); return 0; }
+						outputPointer.sw(0, display.exposeDisplay.toInt())
+						return 0
+					}
 					EMULATOR_DEVCTL__SEND_OUTPUT -> {
 						emulator.output.append(inputPointer.readBytes(inputLength).toString(UTF8))
 						return 0

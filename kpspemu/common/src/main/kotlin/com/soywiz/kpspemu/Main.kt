@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.klock.KLOCK_VERSION
 import com.soywiz.klock.Klock
+import com.soywiz.kmem.Kmem
 import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
 import com.soywiz.korge.Korge
@@ -17,17 +17,21 @@ import com.soywiz.korge.tween.tween
 import com.soywiz.korge.view.*
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.font.BitmapFontGenerator
+import com.soywiz.korinject.AsyncInjector
+import com.soywiz.korinject.Korinject
 import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.Korio
 import com.soywiz.korio.async.AsyncThread
 import com.soywiz.korio.async.go
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.inject.AsyncInjector
+import com.soywiz.korio.lang.ASCII
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korio.vfs.applicationVfs
+import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -43,8 +47,6 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
-import com.soywiz.kpspemu.util.asVfsFile
-import com.soywiz.kpspemu.util.charset.ASCII
 import com.soywiz.kpspemu.util.io.IsoVfs2
 import com.soywiz.kpspemu.util.io.ZipVfs2
 import kotlin.reflect.KClass
@@ -111,7 +113,9 @@ class KpspemuMainScene(
 	suspend override fun sceneInit(sceneView: Container) {
 		emulator = createEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
-		println("KLOCK: $KLOCK_VERSION")
+		println("KORINJECT: ${Korinject.VERSION}")
+		println("KMEM: ${Kmem.VERSION}")
+		println("KLOCK: ${Klock.VERSION}")
 		println("KORMA: ${Korma.VERSION}")
 		println("KORIO: ${Korio.VERSION}")
 		println("KORAG: ${Korag.VERSION}")

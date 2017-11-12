@@ -1,17 +1,16 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
+import com.soywiz.kmem.FastMemory
+import com.soywiz.kmem.get
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.Debugger
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.mem.FastMemory
-import com.soywiz.korio.util.extract
-import com.soywiz.korio.util.insert
-import com.soywiz.korio.util.udiv
-import com.soywiz.korio.util.urem
+import com.soywiz.korio.util.*
+import com.soywiz.korma.math.Math
+import com.soywiz.korma.math.isAlmostZero
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.*
 import kotlin.math.sqrt
 
 class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
@@ -57,13 +56,14 @@ class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
 	}
 
 	fun stepsFastMem(mem: FastMemory, memOffset: Int, count: Int): Int {
+		val i32 = mem.i32
 		val cpu = this.cpu
 		var n = 0
 		var sPC = 0
 		try {
 			while (n++ < count) {
 				sPC = cpu._PC and 0x0FFFFFFF
-				val IR = mem.getAlignedInt32((sPC + memOffset) ushr 2)
+				val IR = i32[(sPC + memOffset) ushr 2]
 				cpu.IR = IR
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
@@ -239,18 +239,18 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun cvt_w_s(s: CpuState) = s {
 
 		FD_I = when (this.fcr31_rm) {
-			0 -> MathFloat.rint(FS) // rint: round nearest
-			1 -> MathFloat.cast(FS) // round to zero
-			2 -> MathFloat.ceil(FS) // round up (ceil)
-			3 -> MathFloat.floor(FS) // round down (floor)
+			0 -> Math.rint(FS) // rint: round nearest
+			1 -> Math.cast(FS) // round to zero
+			2 -> Math.ceil(FS) // round up (ceil)
+			3 -> Math.floor(FS) // round down (floor)
 			else -> FS.toInt()
 		}
 	}
 
-	override fun trunc_w_s(s: CpuState) = s { FD_I = MathFloat.trunc(FS) }
-	override fun round_w_s(s: CpuState) = s { FD_I = MathFloat.round(FS) }
-	override fun ceil_w_s(s: CpuState) = s { FD_I = MathFloat.ceil(FS) }
-	override fun floor_w_s(s: CpuState) = s { FD_I = MathFloat.floor(FS) }
+	override fun trunc_w_s(s: CpuState) = s { FD_I = Math.trunc(FS) }
+	override fun round_w_s(s: CpuState) = s { FD_I = Math.round(FS) }
+	override fun ceil_w_s(s: CpuState) = s { FD_I = Math.ceil(FS) }
+	override fun floor_w_s(s: CpuState) = s { FD_I = Math.floor(FS) }
 
 	inline fun CpuState.checkNan(callback: CpuState.() -> Unit) = this.normal {
 		callback()

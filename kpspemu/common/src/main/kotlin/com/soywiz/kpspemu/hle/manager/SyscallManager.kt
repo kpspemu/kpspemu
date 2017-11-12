@@ -1,14 +1,14 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.kds.IntMap
+import com.soywiz.klogger.Logger
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.Syscalls
 import com.soywiz.kpspemu.hle.NativeFunction
-import com.soywiz.kpspemu.util.IntMap
-import com.soywiz.kpspemu.util.PspLogger
 
 class SyscallManager : Syscalls {
-	val logger = PspLogger("SyscallManager")
+	val logger = Logger("SyscallManager")
 	var lasSyscallId = 1
 
 	fun unhandled(state: CpuState, id: Int) {

@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.kds.Pool
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.util.Pool
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 

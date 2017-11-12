@@ -8,7 +8,6 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.mem
-import com.soywiz.kpspemu.util.hex
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var exposeDisplay = true

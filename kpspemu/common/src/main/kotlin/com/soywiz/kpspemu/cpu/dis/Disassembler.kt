@@ -2,11 +2,11 @@ package com.soywiz.kpspemu.cpu.dis
 
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.cpu.InstructionDecoder
 import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
 import com.soywiz.kpspemu.cpu.InstructionType
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.hex
 
 object Disassembler : InstructionDecoder() {
 	private val PERCENT_REGEX = Regex("%\\w+")
@@ -26,7 +26,7 @@ object Disassembler : InstructionDecoder() {
 		val params = op.format.replace(PERCENT_REGEX) {
 			val type = it.groupValues[0]
 			when (type) {
-				//"%j" -> "0x%08X".format((pc and 0xF0000000.toInt()) or i.jump_address)
+			//"%j" -> "0x%08X".format((pc and 0xF0000000.toInt()) or i.jump_address)
 				"%j" -> "0x%08X".format((pc and (-268435456)) or i.jump_address)
 				"%J" -> gprStr(i.rs)
 				"%d" -> gprStr(i.rd)

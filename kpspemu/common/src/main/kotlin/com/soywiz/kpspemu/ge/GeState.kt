@@ -2,17 +2,13 @@
 
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korag.geom.Matrix4
+import com.soywiz.kmem.arraycopy
 import com.soywiz.korim.color.RGBA_4444
 import com.soywiz.korim.color.RGBA_5551
 import com.soywiz.korim.color.RGB_565
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.typedarray.copyRangeTo
-import com.soywiz.korio.util.extract
-import com.soywiz.korio.util.extractScaledf01
-import com.soywiz.korio.util.nextAlignedTo
-import com.soywiz.kpspemu.util.hex
-import com.soywiz.kpspemu.util.toInt
+import com.soywiz.korio.util.*
+import com.soywiz.korma.Matrix4
 import kotlin.math.max
 
 
@@ -405,7 +401,7 @@ class GeState {
 
 	fun writeInt(key: Int, offset: Int, value: Int): Unit = run { data[offset + data[key]++] = value }
 
-	fun setTo(other: IntArray) = run { other.copyRangeTo(0, this.data, 0, STATE_NWORDS) }
+	fun setTo(other: IntArray) = run { arraycopy(other, 0, this.data, 0, STATE_NWORDS) }
 	fun setTo(other: GeState) = setTo(other.data)
 
 	fun clone() = GeState().apply { setTo(this@GeState) }
@@ -496,6 +492,7 @@ class GpuFrameBufferState(val data: IntArray) {
 
 class VertexType(v: Int = 0) {
 	var v: Int = 0
+
 	init {
 		init(v)
 	}
@@ -532,7 +529,7 @@ class VertexType(v: Int = 0) {
 
 	var colOffset: Int = 0; private set
 	var normalOffset: Int = 0; private set
-	var posOffset: Int  = 0; private set
+	var posOffset: Int = 0; private set
 	var texOffset: Int = 0; private set
 	var weightOffset: Int = 0; private set
 

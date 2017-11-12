@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.ctrl
 
 import com.soywiz.korio.util.umod
+import com.soywiz.korma.math.clamp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
-import com.soywiz.kpspemu.util.clamp
 
 class PspController(override val emulator: Emulator) : WithEmulator {
 	var samplingCycle: Int = 0

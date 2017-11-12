@@ -2,12 +2,11 @@
 
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.kds.ext.reduceAcumulate
+import com.soywiz.kds.ext.splice
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.format.elf.ElfMachine
-import com.soywiz.kpspemu.util.reduceAcumulate
-import com.soywiz.kpspemu.util.splice
 
 class MemoryManager(val emulator: Emulator) {
 	val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()
@@ -45,7 +44,8 @@ enum class MemoryAnchor(val id: Int) {
 	companion object {
 		val BY_ID = values().map { it.id to it }.toMap()
 		operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
-	}}
+	}
+}
 
 class OutOfMemoryError(message: String) : Exception(message)
 

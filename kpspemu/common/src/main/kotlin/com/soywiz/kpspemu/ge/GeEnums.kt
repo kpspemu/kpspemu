@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.ge
 
 import com.soywiz.korim.color.ColorFormat
-import com.soywiz.kpspemu.util.IdEnum
+import com.soywiz.korio.util.IdEnum
 
 enum class CullingDirection(override val id: Int) : IdEnum {
 	COUNTER_CLOCK_WISE(0),

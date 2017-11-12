@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.hle.error
 
-import com.soywiz.kpspemu.util.PspLogger
+import com.soywiz.klogger.Logger
 
 class SceKernelException(val errorCode: Int) : Exception()
 
-private val errorLogger = PspLogger("SceKernelException")
+private val errorLogger = Logger("SceKernelException")
 
 fun sceKernelException(errorCode: Int = SceKernelErrors.ERROR_ERROR): Nothing {
 	errorLogger.info { "ERROR: $errorCode" }

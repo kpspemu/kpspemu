@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.korio.ds.lmapOf
+import com.soywiz.kmem.UByteArray
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.UByteArray
+import com.soywiz.korio.util.Flags
+import com.soywiz.korio.util.NumericEnum
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.Flags
-import com.soywiz.kpspemu.util.NumericEnum
 
 class Elf private constructor(val stream: SyncStream) {
 	companion object {
@@ -37,7 +36,7 @@ class Elf private constructor(val stream: SyncStream) {
 		sectionHeaderStringTable = sectionHeaders[header.sectionHeaderStringTable]
 		stringTableStream = getSectionHeaderFileStream(sectionHeaderStringTable)
 
-		sectionHeadersByName = lmapOf<String, ElfSectionHeader>()
+		sectionHeadersByName = LinkedHashMap<String, ElfSectionHeader>()
 		for (sectionHeader in sectionHeaders) {
 			val name = this.getStringFromStringTable(sectionHeader.nameOffset)
 			sectionHeader.name = name

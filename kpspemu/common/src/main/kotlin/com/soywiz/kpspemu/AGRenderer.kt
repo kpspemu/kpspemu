@@ -1,23 +1,26 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klogger.Logger
 import com.soywiz.korag.AG
-import com.soywiz.korag.geom.Matrix4
 import com.soywiz.korag.shader.*
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.render.Texture
 import com.soywiz.korge.view.Views
 import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korim.bitmap.setAlpha
 import com.soywiz.korio.stream.openSync
+import com.soywiz.korio.util.hasFlag
+import com.soywiz.korio.util.hex
 import com.soywiz.korma.Matrix2d
+import com.soywiz.korma.Matrix4
 import com.soywiz.kpspemu.ge.*
-import com.soywiz.kpspemu.util.*
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
 	enum class RenderMode { AUTO, NORMAL, DIRECT }
 
 	var renderMode = RenderMode.AUTO
 
-	val logger = PspLogger("AGRenderer")
+	val logger = Logger("AGRenderer")
 	var anyBatch = false
 	val batchesQueue = arrayListOf<List<GeBatchData>>()
 	val tempBmp = Bitmap32(512, 272)

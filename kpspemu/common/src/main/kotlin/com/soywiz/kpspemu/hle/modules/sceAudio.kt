@@ -1,29 +1,95 @@
 package com.soywiz.kpspemu.hle.modules
 
-
+import com.soywiz.kds.Pool
+import com.soywiz.korau.sound.NativeAudioStream
+import com.soywiz.korau.sound.addSamples
 import com.soywiz.korio.async.sleep
-import com.soywiz.korio.coroutine.getCoroutineContext
+import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.coroutineContext
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
-
+import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.timeManager
 
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
 	object AudioFormat {
-		val Stereo = 0x00
-		val Mono = 0x10
+		val STEREO = 0x00
+		val MONO = 0x10
 	}
+
+	class AudioChannel(val id: Int) {
+		var reserved: Boolean = false
+		val stream by lazy { NativeAudioStream() }
+		var sampleCount: Int = 0
+		var audioFormat: Int = 0
+		var line = ShortArray(0)
+		val isStereo get() = audioFormat == AudioFormat.STEREO
+		val shortsPerSamples get() = if (isStereo) 2 else 1
+		var started = 0.0
+		var msBuffered = 0.0
+		val msPerLine: Int get() = ((sampleCount.toDouble() * 1000.0) / 44100.0).toInt()
+	}
+
+	val channels = (0 until 32).map { AudioChannel(it) }
+
+	var lastId = 0
+	val pool = Pool { AudioChannel(lastId++) }
 
 	fun sceAudioChReserve(channelId: Int, sampleCount: Int, audioFormat: Int): Int {
-		logger.info("WIP: sceAudioChReserve")
-		return 0
+		val actualChannelId = if (channelId >= 0) channelId else channels.indexOfFirst { !it.reserved }
+		val channel = channels[actualChannelId]
+		logger.info { "WIP: sceAudioChReserve: $channelId, $sampleCount, $audioFormat" }
+		channel.stream
+		channel.started = timeManager.getTimeInMillisecondsDouble()
+		channel.msBuffered = 0.0
+		channel.reserved = true
+		channel.sampleCount = sampleCount
+		channel.audioFormat = audioFormat
+		channel.line = ShortArray(sampleCount * channel.shortsPerSamples)
+		return actualChannelId
 	}
 
-	suspend fun sceAudioOutputPannedBlocking(channelId: Int, leftVolume: Int, rightVolume: Int, ptr: Ptr): Int {
-		logger.info("WIP: sceAudioOutputPannedBlocking")
-		getCoroutineContext().sleep(10)
+	suspend fun sceAudioOutputPannedBlocking(channelId: Int, leftVolume: Int, rightVolume: Int, ptr: Int): Int {
+		logger.trace { "WIP: sceAudioOutputPannedBlocking: $channelId, $leftVolume, $rightVolume, $ptr" }
+		val channel = channels[channelId]
+
+		//val now = timeManager.getTimeInMillisecondsDouble()
+		//val elapsedTime = now - channel.started
+		//val elapsedTimePlayer = channel.stream.msElapsed
+
+		mem.read(ptr, channel.line, 0, channel.line.size)
+
+		channel.stream.addSamples(channel.line)
 		return 0
+
+		/*
+		channel.msBuffered += channel.msPerLine
+		spawnAndForget(coroutineContext) {
+			channel.stream.addSamples(channel.line)
+		}
+
+
+		//val margin = channel.msBuffered - elapsedTime
+		val margin = channel.msBuffered - elapsedTimePlayer
+
+		//val marginDelta = margin - 200
+		//val marginDelta = margin - 100
+		//val marginDelta = margin - 40
+		val marginDelta = margin - 10
+
+		//if (channelId == 0)
+		logger.trace { "sceAudioOutputPannedBlocking($channelId) :: time=$elapsedTime :: player=$elapsedTimePlayer :: buffered=${channel.msBuffered} :: margin=$margin :: marginDelta=$marginDelta :: availableBuffers=${channel.stream.availableBuffers} :: msPerLine=${channel.msPerLine}" }
+
+		if (channel.stream.availableBuffers > 10) {
+			coroutineContext.sleep(channel.msPerLine)
+		} else if (channel.stream.availableBuffers > 5) {
+			coroutineContext.sleep(channel.msPerLine / 2)
+		}
+
+		//if (marginDelta > 0) coroutineContext.sleep(marginDelta.toInt())
+		return 0
+		*/
 	}
 
 	fun sceAudioChReserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EC81C55)
@@ -57,7 +123,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 
 	override fun registerModule() {
 		registerFunctionInt("sceAudioChReserve", 0x5EC81C55, since = 150) { sceAudioChReserve(int, int, int) }
-		registerFunctionSuspendInt("sceAudioOutputPannedBlocking", 0x13F592BC, since = 150) { sceAudioOutputPannedBlocking(int, int, int, ptr) }
+		registerFunctionSuspendInt("sceAudioOutputPannedBlocking", 0x13F592BC, since = 150) { sceAudioOutputPannedBlocking(int, int, int, int) }
 
 		registerFunctionRaw("sceAudioOutput2Reserve", 0x01562BA3, since = 150) { sceAudioOutput2Reserve(it) }
 		registerFunctionRaw("sceAudioInputBlocking", 0x086E5895, since = 150) { sceAudioInputBlocking(it) }

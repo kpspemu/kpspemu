@@ -1,13 +1,14 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.korio.async.waitOne
-import com.soywiz.korio.lang.Console
+import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.callbackManager
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.GP
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.manager.PspEventFlag
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.mem.Ptr
@@ -15,13 +16,12 @@ import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.rtc
 import com.soywiz.kpspemu.threadManager
-import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
-import com.soywiz.kpspemu.util.hex
-import com.soywiz.kpspemu.util.waitOnePromise
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate")
 class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager") {
+	val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }
+
 	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): Int {
 		logger.trace { "sceKernelCreateThread: '$name', ${entryPoint.hex}, $initPriority, $stackSize, ${attributes.hex}, $optionPtr" }
 		val thread = threadManager.create(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
@@ -63,8 +63,6 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		val callback = callbackManager.create(name ?: "callback", func, arg)
 		return callback.id
 	}
-
-	val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }
 
 	fun sceKernelCreateEventFlag(name: String?, attributes: Int, bitPattern: Int, optionsPtr: Ptr): Int {
 		return eventFlags.alloc().apply {
@@ -393,11 +391,4 @@ class ThreadManForUser(emulator: Emulator) : SceModule(emulator, "ThreadManForUs
 		registerFunctionRaw("sceKernelCancelWakeupThread", 0xFCCFAD26, since = 150) { sceKernelCancelWakeupThread(it) }
 		registerFunctionRaw("sceKernelReferThreadRunStatus", 0xFFC36A14, since = 150) { sceKernelReferThreadRunStatus(it) }
 	}
-}
-
-data class PspEventFlag(override val id: Int) : ResourceItem {
-	var name: String = ""
-	var attributes: Int = 0
-	var bitPattern: Int = 0
-	var optionsPtr: Ptr? = null
 }

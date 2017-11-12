@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.hle.psplibdoc
 
 import com.soywiz.korio.serialization.xml.Xml
 import com.soywiz.korio.serialization.xml.get
-import com.soywiz.kpspemu.util.parseInt
+import com.soywiz.korio.util.parseInt
 
 
 object LibDoc {

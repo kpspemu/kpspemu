@@ -1,11 +1,11 @@
 package com.soywiz.kpspemu.mem
 
+import com.soywiz.kmem.arraycopy
+import com.soywiz.kmem.get
+import com.soywiz.kmem.set
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.mem.FastMemory
 import com.soywiz.korio.stream.*
-import com.soywiz.kpspemu.util.hex
 
 const private val MEMORY_MASK = 0x0FFFFFFF
 const private val MASK = MEMORY_MASK
@@ -32,7 +32,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		val VIDEOMEM = MemorySegment("videomem", 0x04000000 until 0x4200000)
 		val MAINMEM = MemorySegment("mainmem", MAIN_OFFSET until 0x0a000000)
 
-		operator fun invoke(): Memory = com.soywiz.kpspemu.mem.FastMemory()
+		operator fun invoke(): Memory = com.soywiz.kpspemu.mem.NormalMemory()
 		//operator fun invoke(): Memory = SmallMemory()
 	}
 
@@ -62,6 +62,10 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	open fun write(dstPos: Int, src: IntArray, srcPos: Int = 0, len: Int = src.size - srcPos): Unit {
 		for (n in 0 until len) sw(dstPos + n * 4, src[srcPos + n].toInt())
+	}
+
+	open fun read(srcPos: Int, dst: ShortArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
+		for (n in 0 until len) dst[dstPos + n] = lh(srcPos + n * 4).toShort()
 	}
 
 	open fun read(srcPos: Int, dst: IntArray, dstPos: Int = 0, len: Int = dst.size - dstPos): Unit {
@@ -94,7 +98,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		this.sw(aadress, vwrite)
 	}
 
-	open fun getFastMem(): com.soywiz.korio.mem.FastMemory? = null
+	open fun getFastMem(): com.soywiz.kmem.FastMemory? = null
 	open fun getFastMemOffset(addr: Int): Int = 0
 
 	abstract fun sb(address: Int, value: Int): Unit
@@ -109,20 +113,11 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	fun lbu(address: Int): Int = lb(address) and 0xFF
 
 	fun lhu(address: Int): Int = lh(address) and 0xFFFF
-	fun memset(address: Int, value: Int, size: Int) {
-		for (n in 0 until size) sb(address, value)
-	}
+	fun memset(address: Int, value: Int, size: Int) = run { for (n in 0 until size) sb(address, value) }
 
 	open fun copy(srcPos: Int, dstPos: Int, size: Int) = run { for (n in 0 until size) sb(dstPos + n, lb(srcPos + n)) }
-
-	fun getPointerStream(address: Int, size: Int): SyncStream {
-		return openSync().sliceWithSize(address, size)
-	}
-
-	fun readStringzOrNull(offset: Int): String? = when {
-		offset == 0 -> null
-		else -> readStringz(offset)
-	}
+	fun getPointerStream(address: Int, size: Int): SyncStream = openSync().sliceWithSize(address, size)
+	fun readStringzOrNull(offset: Int): String? = if (offset != 0) readStringz(offset) else null
 
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
 	fun fill(value: Int, offset: Int, size: Int) {
@@ -205,47 +200,48 @@ fun Memory.openSync(): SyncStream {
 	})
 }
 
-abstract class FastMemoryBacked : Memory(true) {
-	protected abstract val buffer: com.soywiz.korio.mem.FastMemory
+abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(true) {
 	protected abstract fun index(address: Int): Int
+
+	val i8 = fmem.i8
+	val i16 = fmem.i16
+	val i32 = fmem.i32
 
 	//val buffer = FastMemory.alloc(0x10000000)
 	//private inline fun index(address: Int) = address and 0x0fffffff
 
 	override fun hash(address4: Int, nwords: Int): Int {
 		var hash = 0
-		val buffer = this.buffer
+		val i32 = this.i32
 		val ptr = index(address4) ushr 2
-		for (n in 0 until nwords) hash += buffer.getAlignedInt32(ptr + n)
+		for (n in 0 until nwords) hash += i32[ptr + n]
 		return hash
 	}
 
-	override fun sb(address: Int, value: Int) = run { buffer[index(address)] = value }
-	override fun sh(address: Int, value: Int) = run { buffer.setAlignedInt16(index(address) ushr 1, value.toShort()) }
-	override fun sw(address: Int, value: Int) = run { buffer.setAlignedInt32(index(address) ushr 2, value) }
+	override fun sb(address: Int, value: Int) = run { i8[index(address)] = value.toByte() }
+	override fun sh(address: Int, value: Int) = run { i16[index(address) ushr 1] = value.toShort() }
+	override fun sw(address: Int, value: Int) = run { i32[index(address) ushr 2] = value }
 
-	override fun lb(address: Int) = buffer[index(address)]
-	override fun lh(address: Int) = buffer.getAlignedInt16(index(address) ushr 1).toInt()
-	override fun lw(address: Int): Int = buffer.getAlignedInt32(index(address) ushr 2)
+	override fun lb(address: Int) = i8[index(address)].toInt()
+	override fun lh(address: Int) = i16[index(address) ushr 1].toInt()
+	override fun lw(address: Int): Int = i32[index(address) ushr 2]
 
-	override fun copy(srcPos: Int, dstPos: Int, size: Int) = FastMemory.copy(buffer, index(srcPos), buffer, index(dstPos), size)
-	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit = buffer.getArrayInt8(index(srcPos), dst, dstPos, len)
-	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = buffer.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
-	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt8(index(dstPos), src, srcPos, len)
-	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = buffer.setAlignedArrayInt32(index(dstPos) ushr 2, src, srcPos, len)
+	override fun copy(srcPos: Int, dstPos: Int, size: Int) = run { arraycopy(fmem.buffer, index(srcPos), fmem.buffer, index(dstPos), size) }
+	override fun read(srcPos: Int, dst: ByteArray, dstPos: Int, len: Int): Unit = fmem.getArrayInt8(index(srcPos), dst, dstPos, len)
+	override fun read(srcPos: Int, dst: ShortArray, dstPos: Int, len: Int): Unit = fmem.getAlignedArrayInt16(index(srcPos) ushr 1, dst, dstPos, len)
+	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = fmem.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
+	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = fmem.setAlignedArrayInt8(index(dstPos), src, srcPos, len)
+	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = fmem.setAlignedArrayInt32(index(dstPos) ushr 2, src, srcPos, len)
 
-	override fun getFastMem(): com.soywiz.korio.mem.FastMemory? = buffer
+	override fun getFastMem(): com.soywiz.kmem.FastMemory? = fmem
 	override fun getFastMemOffset(addr: Int): Int = index(addr)
 }
 
-class FastMemory : FastMemoryBacked() {
-	override val buffer = com.soywiz.korio.mem.FastMemory.alloc(0x0a000000)
+class NormalMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x0a000000)) {
 	override fun index(address: Int) = address and 0x0FFFFFFF
 }
 
-class SmallMemory : FastMemoryBacked() {
-	override val buffer = FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)
-
+class SmallMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)) {
 	override fun index(address: Int): Int = when {
 		address >= 0x08000000 -> address - 0x08000000
 		address >= 0x04000000 -> address - 0x04000000 + 0x02000000

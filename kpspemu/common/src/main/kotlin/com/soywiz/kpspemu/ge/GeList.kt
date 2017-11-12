@@ -1,19 +1,16 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korge.log.Logger
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.util.extract
+import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.callbackManager
 import com.soywiz.kpspemu.mem
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.PspLogLevel
-import com.soywiz.kpspemu.util.PspLogger
 import com.soywiz.kpspemu.util.ResourceItem
-import com.soywiz.kpspemu.util.hex
 
 class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by ge {
-	val logger = PspLogger("GeList")
+	val logger = com.soywiz.klogger.Logger("GeList")
 
 	var start: Int = 0
 	var stall: Int = 0

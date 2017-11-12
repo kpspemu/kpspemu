@@ -2,11 +2,11 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.klock.DateTime
 import com.soywiz.klock.Month
-import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.clamp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.ScePspDateTime
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.openSync
@@ -30,10 +30,12 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		ticksPtr.sdw(0, date.date.unix * 1000)
 		return 0
 	}
+
 	fun sceRtcGetCurrentClock(date: Ptr, timezone: Int): Int {
 		if (date.isNotNull) ScePspDateTime(DateTime.now().addOffset(timezone.clamp(-600000, +600000))).write(date.openSync())
 		return 0
 	}
+
 	fun sceRtcGetCurrentClockLocalTime(date: Ptr): Int {
 		if (date.isNotNull) ScePspDateTime(DateTime.now().toLocal()).write(date.openSync())
 		return 0
@@ -128,44 +130,5 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtcTickAddSeconds", 0xF2A4AFE5, since = 150) { sceRtcTickAddSeconds(it) }
 		registerFunctionRaw("sceRtc_F5FCC995", 0xF5FCC995, since = 150) { sceRtc_F5FCC995(it) }
 		registerFunctionRaw("sceRtcRegisterCallback", 0xFB3B18CD, since = 150) { sceRtcRegisterCallback(it) }
-	}
-}
-
-class ScePspDateTime(
-	var year: Int,
-	var month: Int,
-	var day: Int,
-	var hour: Int,
-	var minute: Int,
-	var second: Int,
-	var microsecond: Int
-) {
-	val date: DateTime get() = DateTime.createAdjusted(year, month, day, hour, minute, second, microsecond / 1000)
-
-	constructor(date: DateTime) : this(date.year, date.month, date.dayOfMonth, date.hours, date.minutes, date.seconds, date.milliseconds * 1000)
-	constructor(ticks: Long) : this(DateTime(ticks))
-
-	companion object {
-		fun read(s: SyncStream): ScePspDateTime = s.run {
-			ScePspDateTime(
-				year = s.readU16_le(),
-				month = s.readU16_le(),
-				day = s.readU16_le(),
-				hour = s.readU16_le(),
-				minute = s.readU16_le(),
-				second = s.readU16_le(),
-				microsecond = s.readS32_le()
-			)
-		}
-	}
-
-	fun write(s: SyncStream) = s.apply {
-		write16_le(year)
-		write16_le(month)
-		write16_le(day)
-		write16_le(hour)
-		write16_le(minute)
-		write16_le(second)
-		write32_le(microsecond)
 	}
 }

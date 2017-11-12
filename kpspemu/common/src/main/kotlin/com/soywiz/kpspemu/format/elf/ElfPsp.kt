@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.format.elf
 
+import com.soywiz.klogger.Logger
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.extract
@@ -15,7 +16,6 @@ import com.soywiz.kpspemu.hle.manager.SyscallManager
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.ptr
-import com.soywiz.kpspemu.util.PspLogger
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KProperty
@@ -140,7 +140,7 @@ class PspElf private constructor(
 	private var moduleManager: ModuleManager,
 	private var syscallManager: SyscallManager
 ) {
-	private val logger = PspLogger("ElfPsp")
+	private val logger = Logger("ElfPsp")
 
 	lateinit var elf: Elf; private set
 	lateinit var moduleInfo: ElfPspModuleInfo; private set

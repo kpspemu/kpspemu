@@ -1,12 +1,12 @@
 package com.soywiz.kpspemu.format
 
+import com.soywiz.kds.CacheMap
+import com.soywiz.kmem.arraycopy
 import com.soywiz.korio.compression.uncompressZlibRaw
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.System
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.hasFlag
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.kpspemu.util.ds.CacheMap
-import com.soywiz.kpspemu.util.hasFlag
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -85,7 +85,7 @@ class Cso private constructor() {
 				if (isValidBlock(block)) {
 					val blockData = readUncompressedBlockCached(block)
 					val toRead = min(len, blockData.size - pinblock)
-					System.arraycopy(blockData, pinblock, buffer, offset, toRead)
+					arraycopy(blockData, pinblock, buffer, offset, toRead)
 					return toRead
 				} else {
 					return 0

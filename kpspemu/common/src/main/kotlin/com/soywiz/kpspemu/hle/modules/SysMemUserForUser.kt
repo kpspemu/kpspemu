@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
@@ -10,7 +11,6 @@ import com.soywiz.kpspemu.hle.manager.OutOfMemoryError
 import com.soywiz.kpspemu.memoryManager
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
-import com.soywiz.kpspemu.util.hex
 
 @Suppress("UNUSED_PARAMETER")
 class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserForUser", 0x40000011, "sysmem.prx", "sceSystemMemoryManager") {

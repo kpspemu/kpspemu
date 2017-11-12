@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korag.geom.Matrix4
+import com.soywiz.korma.Matrix4
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korma.Matrix2d
 import com.soywiz.kpspemu.mem.Memory

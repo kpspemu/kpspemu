@@ -1,5 +1,7 @@
 package com.soywiz.kpspemu.hle
 
+import com.soywiz.kds.IntMap
+import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.coroutine.Continuation
 import com.soywiz.korio.error.invalidOp
@@ -18,8 +20,6 @@ import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.threadManager
-import com.soywiz.kpspemu.util.IntMap
-import com.soywiz.kpspemu.util.PspLogger
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.startCoroutine
 
@@ -57,7 +57,7 @@ abstract class SceModule(
 	val prxFile: String = "",
 	val prxName: String = ""
 ) : WithEmulator {
-	val logger = PspLogger("SceModule.$name")
+	val logger = Logger("SceModule.$name")
 
 	fun registerPspModule() {
 		registerModule()

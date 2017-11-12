@@ -3,7 +3,7 @@ package com.soywiz.kpspemu.util.io
 import com.soywiz.korio.async.asyncGenerate
 import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.Charsets
+import com.soywiz.korio.lang.LATIN1
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.*
@@ -11,7 +11,6 @@ import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
-import com.soywiz.kpspemu.util.charset.LATIN1
 
 suspend fun IsoVfs2(file: VfsFile): VfsFile = ISO2.openVfs(file.open(VfsOpenMode.READ))
 suspend fun IsoVfs2(s: AsyncStream): VfsFile = ISO2.openVfs(s)

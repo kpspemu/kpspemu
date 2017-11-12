@@ -1,9 +1,11 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.kds.Extra
+import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
+import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuBreakException
@@ -15,8 +17,9 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.PtrArray
 import com.soywiz.kpspemu.mem.array
 import com.soywiz.kpspemu.mem.ptr
-import com.soywiz.kpspemu.util.PspLogger
+import com.soywiz.kpspemu.util.ResourceItem
 
+//const val INSTRUCTIONS_PER_STEP = 500_000
 //const val INSTRUCTIONS_PER_STEP = 1_000_000
 //const val INSTRUCTIONS_PER_STEP = 2_000_000
 //const val INSTRUCTIONS_PER_STEP = 4_000_000
@@ -48,19 +51,22 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	}
 
 	fun step() {
-		val now: Double = timeManager.getTimeInMicrosecondsDouble()
+		//for (n in 0 until 10) {
+			val now: Double = timeManager.getTimeInMicrosecondsDouble()
 
-		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-			val time = (t.waitObject as WaitObject.TIME).instant
-			if (now >= time) {
-				t.resume()
+			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+				val time = (t.waitObject as WaitObject.TIME).instant
+				if (now >= time) {
+					t.resume()
+				}
 			}
-		}
 
-		val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
-		for (t in availableThreads) {
-			t.step(now)
-		}
+			val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
+			for (t in availableThreads) {
+				t.step(now)
+			}
+			//emulator.coroutineContext.eventLoop.step(0)
+		//}
 	}
 
 	val traces = hashMapOf<String, Boolean>()
@@ -101,7 +107,7 @@ class PspThread internal constructor(
 ) : Resource(threadManager, id, name), WithEmulator {
 	val totalExecutedInstructions: Long get() = state.totalExecuted
 	val onEnd = Signal<Unit>()
-	val logger = PspLogger("PspThread")
+	val logger = Logger("PspThread")
 
 	enum class Phase { STOPPED, RUNNING, WAITING, DELETED }
 
@@ -225,3 +231,10 @@ class PspThread internal constructor(
 
 var CpuState._thread: PspThread? by Extra.Property { null }
 val CpuState.thread: PspThread get() = _thread ?: invalidOp("CpuState doesn't have a thread attached")
+
+data class PspEventFlag(override val id: Int) : ResourceItem {
+	var name: String = ""
+	var attributes: Int = 0
+	var bitPattern: Int = 0
+	var optionsPtr: Ptr? = null
+}

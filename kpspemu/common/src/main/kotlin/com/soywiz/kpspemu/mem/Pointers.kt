@@ -1,14 +1,14 @@
 package com.soywiz.kpspemu.mem
 
-import com.soywiz.korio.ds.ByteArrayBuilderSmall
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Charset
 import com.soywiz.korio.lang.Charsets
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.stream.ByteArrayBuilderSmall
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.SyncStreamBase
 import com.soywiz.korio.stream.toSyncStream
-import com.soywiz.kpspemu.util.unsigned
+import com.soywiz.korio.util.unsigned
 
 data class PtrArray(val ptr: Ptr, val size: Int) {
 	val addr: Int get() = ptr.addr

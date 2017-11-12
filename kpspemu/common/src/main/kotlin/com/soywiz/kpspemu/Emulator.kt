@@ -1,5 +1,7 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klogger.Logger
+import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.battery.PspBattery
 import com.soywiz.kpspemu.cpu.GlobalCpuState
 import com.soywiz.kpspemu.ctrl.PspController
@@ -10,7 +12,6 @@ import com.soywiz.kpspemu.ge.Gpu
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.hex
 import kotlin.coroutines.experimental.CoroutineContext
 
 class Emulator(
@@ -20,7 +21,7 @@ class Emulator(
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
 	val globalCpuState = GlobalCpuState()
-	val logger = com.soywiz.kpspemu.util.PspLogger("Emulator")
+	val logger = Logger("Emulator")
 
 	var output = StringBuilder()
 	val ge: Ge = Ge(this)
