@@ -22,7 +22,7 @@ fun Bitmap32.setTo(colorFormat: PixelFormat, colorData: ByteArray, clutData: Byt
 				}
 				8 -> {
 					var m = 0
-					for (n in 0 until this.area / 2) {
+					for (n in 0 until this.area) {
 						val byte = colorData[n]
 						this.data[m++] = colors[(byte.toInt() ushr 0) and 0b11111111]
 					}
