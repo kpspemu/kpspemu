@@ -81,7 +81,8 @@ class GeBatch {
 			}
 			val texWidth = mipmap.bufferWidth
 			val texHeight = mipmap.textureHeight
-			return Bitmap32(texWidth, texHeight).setTo(texture.pixelFormat, colorData, clutData, clutFormat, clutColors)
+
+			return Bitmap32(texWidth, texHeight).setTo(texture.pixelFormat, colorData, clutData, clutFormat, clutColors, swizzled = texture.swizzled, width = texWidth, height = texHeight)
 		} else {
 			return null
 		}

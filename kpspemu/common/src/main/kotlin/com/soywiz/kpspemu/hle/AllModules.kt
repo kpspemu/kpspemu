@@ -34,4 +34,5 @@ fun ModuleManager.registerNativeModules() {
 	register(sceDmac(emulator))
 	register(ExceptionManagerForKernel(emulator))
 	register(LoadCoreForKernel(emulator))
+	register(sceHprm(emulator))
 }
