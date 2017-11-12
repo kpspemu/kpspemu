@@ -7,6 +7,9 @@ sourceSets {
 
 dependencies {
     expectedBy project(":kpspemu-common")
+
+    compile project(":dynarek-js")
+
     compile "com.soywiz:klogger-js:$kloggerVersion"
     compile "com.soywiz:klock-js:$klockVersion"
     compile "com.soywiz:korag-js:$koragVersion"

@@ -1,6 +1,8 @@
 apply plugin: 'kotlin-platform-common'
 
 dependencies {
+    compile project(":dynarek-common")
+
     compile "com.soywiz:klogger-common:$kloggerVersion"
     compile "com.soywiz:klock-common:$klockVersion"
     compile "com.soywiz:korag-common:$koragVersion"

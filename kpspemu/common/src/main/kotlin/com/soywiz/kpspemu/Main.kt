@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.dynarek.*
 import com.soywiz.klock.Klock
 import com.soywiz.kmem.Kmem
 import com.soywiz.korag.Korag
@@ -49,17 +50,20 @@ import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
 import com.soywiz.kpspemu.util.io.IsoVfs2
 import com.soywiz.kpspemu.util.io.ZipVfs2
+import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) = Main.main(args)
 
 object Main {
 	@JvmStatic
-	fun main(args: Array<String>) = Korge(KpspemuModule, injector = AsyncInjector()
-		.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class)) }
-		.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
-		//, debug = true
-	)
+	fun main(args: Array<String>) {
+		Korge(KpspemuModule, injector = AsyncInjector()
+			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class)) }
+			.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
+			//, debug = true
+		)
+	}
 }
 
 object KpspemuModule : Module() {
@@ -111,6 +115,17 @@ class KpspemuMainScene(
 	lateinit var hud: Container
 
 	suspend override fun sceneInit(sceneView: Container) {
+		//data class State(var a: Int = 0, var b: Int = 0)
+		//val function = function(DClass(State::class), DINT, DVOID) {
+		//	SET(p0[State::a], p1 * 2.lit)
+		//}
+		//val state = State()
+		//val interpreter = DSlowInterpreter(listOf(state, 10))
+		//interpreter.interpret(function)
+		//println("Interpreted: $state")
+		//println("Name: ${State::a}")
+
+
 		emulator = createEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
 		println("KORINJECT: ${Korinject.VERSION}")
@@ -380,7 +395,7 @@ class FpsCounter {
 
 	fun getSample(offset: Int) = renderTimes[(renderTimeOffset - 1 - offset) umod MAX_SAMPLES]
 
-	fun getFpsInt(): Int = getFps().toInt()
+	fun getFpsInt(): Int = getFps().roundToInt()
 
 	fun getFps(): Double {
 		if (renderCount == 0) return 0.0
