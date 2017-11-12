@@ -118,7 +118,16 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun addiu(s: CpuState) = s { RT = RS + S_IMM16 }
 
 	override fun div(s: CpuState) = s { LO = RS / RT; HI = RS % RT }
-	override fun divu(s: CpuState) = s { LO = RS udiv RT; HI = RS urem RT }
+	override fun divu(s: CpuState) = s {
+		val d = RT
+		if (d != 0) {
+			LO = RS udiv d
+			HI = RS urem d
+		} else {
+			LO = 0
+			HI = 0
+		}
+	}
 
 	override fun mult(s: CpuState) = s { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
 	override fun multu(s: CpuState) = s { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }

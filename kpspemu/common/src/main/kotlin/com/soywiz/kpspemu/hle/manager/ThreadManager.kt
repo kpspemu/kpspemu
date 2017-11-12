@@ -189,8 +189,7 @@ class PspThread internal constructor(
 	fun delete() {
 		stop()
 		phase = Phase.DELETED
-		manager.freeIds.free(id)
-		manager.resourcesById.remove(id)
+		manager.freeById(id)
 	}
 
 	fun exitAndKill() {

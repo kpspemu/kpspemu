@@ -35,8 +35,25 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		return 0
 	}
 
+	fun _peekLatch(currentLatchPtr: Ptr): Unit {
+		val ButtonsNew = controller.currentFrame.buttons
+		val ButtonsOld = controller.lastLatchData.buttons;
+		val ButtonsChanged = ButtonsOld xor ButtonsNew;
+
+		currentLatchPtr.sw(0, ButtonsNew and ButtonsChanged); // uiMake
+		currentLatchPtr.sw(4, ButtonsOld and ButtonsChanged); // uiBreak
+		currentLatchPtr.sw(8, ButtonsNew); // uiPress
+		currentLatchPtr.sw(12, (ButtonsOld and ButtonsNew.inv()) and ButtonsChanged) // uiRelease
+
+		controller.lastLatchData.setTo(controller.currentFrame)
+	}
+
+	fun sceCtrlReadLatch(currentLatchPtr: Ptr): Int {
+		_peekLatch(currentLatchPtr)
+		return 0
+	}
+
 	fun sceCtrlGetSamplingCycle(cpu: CpuState): Unit = UNIMPLEMENTED(0x02BAAD91)
-	fun sceCtrlReadLatch(cpu: CpuState): Unit = UNIMPLEMENTED(0x0B588501)
 	fun sceCtrl_348D99D4(cpu: CpuState): Unit = UNIMPLEMENTED(0x348D99D4)
 	fun sceCtrlPeekBufferPositive(cpu: CpuState): Unit = UNIMPLEMENTED(0x3A622550)
 	fun sceCtrlReadBufferNegative(cpu: CpuState): Unit = UNIMPLEMENTED(0x60B81F86)
@@ -55,9 +72,9 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		registerFunctionInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(ptr, int) }
 		registerFunctionInt("sceCtrlSetSamplingCycle", 0x6A2774F3, since = 150) { sceCtrlSetSamplingCycle(int) }
 		registerFunctionInt("sceCtrlSetSamplingMode", 0x1F4011E6, since = 150) { sceCtrlSetSamplingMode(int) }
+		registerFunctionInt("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(ptr) }
 
 		registerFunctionRaw("sceCtrlGetSamplingCycle", 0x02BAAD91, since = 150) { sceCtrlGetSamplingCycle(it) }
-		registerFunctionRaw("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(it) }
 		registerFunctionRaw("sceCtrl_348D99D4", 0x348D99D4, since = 150) { sceCtrl_348D99D4(it) }
 		registerFunctionRaw("sceCtrlReadBufferNegative", 0x60B81F86, since = 150) { sceCtrlReadBufferNegative(it) }
 		registerFunctionRaw("sceCtrlSetRapidFire", 0x6841BE1A, since = 150) { sceCtrlSetRapidFire(it) }

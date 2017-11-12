@@ -41,12 +41,16 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		return 0
 	}
 
+	fun sceRtcTickAddMicroseconds(dst: Ptr, src: Ptr, count: Long): Int {
+		dst.sdw(0, src.ldw(0) + count)
+		return 0
+	}
+
 	fun sceRtcGetAccumulativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x011F03C1)
 	fun sceRtcGetAccumlativeTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x029CA3B3)
 	fun sceRtcFormatRFC3339(cpu: CpuState): Unit = UNIMPLEMENTED(0x0498FB3C)
 	fun sceRtcSetTime64_t(cpu: CpuState): Unit = UNIMPLEMENTED(0x1909C99B)
 	fun sceRtcGetLastReincarnatedTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x203CEB0D)
-	fun sceRtcTickAddMicroseconds(cpu: CpuState): Unit = UNIMPLEMENTED(0x26D25A5D)
 	fun sceRtcTickAddHours(cpu: CpuState): Unit = UNIMPLEMENTED(0x26D7A24A)
 	fun sceRtcGetTime_t(cpu: CpuState): Unit = UNIMPLEMENTED(0x27C4594C)
 	fun sceRtcFormatRFC3339LocalTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x27F98543)
@@ -90,13 +94,13 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionInt("sceRtcGetTick", 0x6FF40ACC, since = 150) { sceRtcGetTick(ptr, ptr) }
 		registerFunctionInt("sceRtcGetCurrentClock", 0x4CFA57B0, since = 150) { sceRtcGetCurrentClock(ptr, int) }
 		registerFunctionInt("sceRtcGetCurrentClockLocalTime", 0xE7C27D1B, since = 150) { sceRtcGetCurrentClockLocalTime(ptr) }
+		registerFunctionInt("sceRtcTickAddMicroseconds", 0x26D25A5D, since = 150) { sceRtcTickAddMicroseconds(ptr, ptr, long) }
 
 		registerFunctionRaw("sceRtcGetAccumulativeTime", 0x011F03C1, since = 150) { sceRtcGetAccumulativeTime(it) }
 		registerFunctionRaw("sceRtcGetAccumlativeTime", 0x029CA3B3, since = 150) { sceRtcGetAccumlativeTime(it) }
 		registerFunctionRaw("sceRtcFormatRFC3339", 0x0498FB3C, since = 150) { sceRtcFormatRFC3339(it) }
 		registerFunctionRaw("sceRtcSetTime64_t", 0x1909C99B, since = 150) { sceRtcSetTime64_t(it) }
 		registerFunctionRaw("sceRtcGetLastReincarnatedTime", 0x203CEB0D, since = 150) { sceRtcGetLastReincarnatedTime(it) }
-		registerFunctionRaw("sceRtcTickAddMicroseconds", 0x26D25A5D, since = 150) { sceRtcTickAddMicroseconds(it) }
 		registerFunctionRaw("sceRtcTickAddHours", 0x26D7A24A, since = 150) { sceRtcTickAddHours(it) }
 		registerFunctionRaw("sceRtcGetTime_t", 0x27C4594C, since = 150) { sceRtcGetTime_t(it) }
 		registerFunctionRaw("sceRtcFormatRFC3339LocalTime", 0x27F98543, since = 150) { sceRtcFormatRFC3339LocalTime(it) }

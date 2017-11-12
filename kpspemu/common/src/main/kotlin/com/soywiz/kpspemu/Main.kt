@@ -433,6 +433,7 @@ suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile, magic: SyncSt
 						fileManager.currentDirectory = "umd0:/"
 						deviceManager.mount(fileManager.currentDirectory, iso)
 						deviceManager.mount("game0:/", iso)
+						deviceManager.mount("disc0:/", iso)
 						deviceManager.mount("umd0:/", iso)
 						deviceManager.mount("ms0:/PSP/GAME/virtual", iso)
 					}

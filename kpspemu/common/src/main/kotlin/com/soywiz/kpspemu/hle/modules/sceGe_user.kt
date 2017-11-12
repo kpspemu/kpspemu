@@ -72,8 +72,9 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		return 0
 	}
 
+	fun sceGeEdramGetSize(): Int = 0x00200000; // 2MB
+
 	fun sceGeListEnQueueHead(cpu: CpuState): Unit = UNIMPLEMENTED(0x1C0D95A6)
-	fun sceGeEdramGetSize(cpu: CpuState): Unit = UNIMPLEMENTED(0x1F6752AD)
 	fun sceGeContinue(cpu: CpuState): Unit = UNIMPLEMENTED(0x4C06E472)
 	fun sceGeGetMtx(cpu: CpuState): Unit = UNIMPLEMENTED(0x57C8945B)
 	fun sceGeListDeQueue(cpu: CpuState): Unit = UNIMPLEMENTED(0x5FB86AB0)
@@ -85,6 +86,7 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 	override fun registerModule() {
 		// Address
 		registerFunctionInt("sceGeEdramGetAddr", 0xE47E40E4, since = 150) { sceGeEdramGetAddr() }
+		registerFunctionInt("sceGeEdramGetSize", 0x1F6752AD, since = 150) { sceGeEdramGetSize() }
 
 		// Lists & Sync
 		registerFunctionInt("sceGeListUpdateStallAddr", 0xE0D68148, since = 150) { sceGeListUpdateStallAddr(int, ptr) }
@@ -102,7 +104,6 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 
 		// Unimplemented
 		registerFunctionRaw("sceGeListEnQueueHead", 0x1C0D95A6, since = 150) { sceGeListEnQueueHead(it) }
-		registerFunctionRaw("sceGeEdramGetSize", 0x1F6752AD, since = 150) { sceGeEdramGetSize(it) }
 		registerFunctionRaw("sceGeContinue", 0x4C06E472, since = 150) { sceGeContinue(it) }
 		registerFunctionRaw("sceGeGetMtx", 0x57C8945B, since = 150) { sceGeGetMtx(it) }
 		registerFunctionRaw("sceGeListDeQueue", 0x5FB86AB0, since = 150) { sceGeListDeQueue(it) }

@@ -21,6 +21,7 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 	var frameIndex = 0
 	fun getFrame(offset: Int): Frame = frames[(frameIndex + offset) umod frames.size]
 	val currentFrame get() = frames[frameIndex]
+	val lastLatchData = Frame()
 
 	fun startFrame(timestamp: Int) {
 		currentFrame.timestamp = timestamp

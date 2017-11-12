@@ -1,8 +1,9 @@
 package com.soywiz.kpspemu.hle.modules
 
-
+import com.soywiz.korio.async.toList
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
 import com.soywiz.korio.util.toInt
 import com.soywiz.korio.vfs.*
@@ -17,7 +18,6 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
-
 
 @Suppress("UNUSED_PARAMETER")
 class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUser", 0x40010011, "iofilemgr.prx", "sceIOFileManager") {
@@ -113,11 +113,16 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoWrite(fileId: Int, ptr: Ptr, size: Int): Int {
 		logger.info { "WIP: sceIoWrite: $fileId, $ptr, $size" }
-		//println("----> " + ptr.readBytes(size).toString(UTF8))
+		try {
+			//logger.error { "WIP: sceIoWrite: $fileId, $ptr, $size" }
+			println("----> " + ptr.readBytes(size).toString(UTF8))
 
-		val stream = fileDescriptors[fileId].stream
-		val bytes = ptr.readBytes(size)
-		stream.write(bytes)
+			val stream = fileDescriptors[fileId].stream
+			val bytes = ptr.readBytes(size)
+			stream.write(bytes)
+		} catch (e: Throwable) {
+			println("### error writting: ${e.message}")
+		}
 
 		return 0
 	}
@@ -164,7 +169,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoDopen(path: String?): Int {
-		logger.error { "sceIoDopen:$path" }
+		//logger.error { "sceIoDopen:$path" }
 		//try {
 		//	logger.error { "sceIoDopen:$path" }
 		//	val dd = directoryDescriptors.alloc()
@@ -180,7 +185,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoDread(id: Int, ptr: Ptr): Int {
-		//logger.error { "sceIoDread:$id,$ptr" }
+		logger.error { "sceIoDread:$id,$ptr" }
 		//val dd = directoryDescriptors[id]
 		//if (dd.remaining > 0) {
 		//	val file = dd.files[dd.pos++]
@@ -199,7 +204,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		//		privateData = 0,
 		//		dummy = 0
 		//	)
-		//
+//
 		//	dirent.write(ptr.openSync())
 		//}
 		//return dd.remaining
@@ -207,7 +212,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoDclose(id: Int): Int {
-		//logger.error { "sceIoDclose:$id" }
+		logger.error { "sceIoDclose:$id" }
 		//directoryDescriptors.freeById(id)
 		//return 0
 		return 0

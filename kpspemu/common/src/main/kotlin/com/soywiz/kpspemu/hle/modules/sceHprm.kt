@@ -3,9 +3,13 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.mem.Ptr
 
 class sceHprm(emulator: Emulator) : SceModule(emulator, "sceHprm", 0x40010011, "hpremote_02g.prx", "sceHP_Remote_Driver") {
-	fun sceHprmPeekCurrentKey(cpu: CpuState): Unit = UNIMPLEMENTED(0x1910B327)
+	fun sceHprmPeekCurrentKey(ptr: Ptr): Int {
+		ptr.sw(0, 0)
+		return 0
+	}
 	fun sceHprmIsRemoteExist(cpu: CpuState): Unit = UNIMPLEMENTED(0x208DB1BD)
 	fun sceHprmIsMicrophoneExist(cpu: CpuState): Unit = UNIMPLEMENTED(0x219C58F1)
 	fun sceHprmPeekLatch(cpu: CpuState): Unit = UNIMPLEMENTED(0x2BCEC83E)
@@ -20,7 +24,8 @@ class sceHprm(emulator: Emulator) : SceModule(emulator, "sceHprm", 0x40010011, "
 
 
 	override fun registerModule() {
-		registerFunctionRaw("sceHprmPeekCurrentKey", 0x1910B327, since = 150) { sceHprmPeekCurrentKey(it) }
+		registerFunctionInt("sceHprmPeekCurrentKey", 0x1910B327, since = 150) { sceHprmPeekCurrentKey(ptr) }
+
 		registerFunctionRaw("sceHprmIsRemoteExist", 0x208DB1BD, since = 150) { sceHprmIsRemoteExist(it) }
 		registerFunctionRaw("sceHprmIsMicrophoneExist", 0x219C58F1, since = 150) { sceHprmIsMicrophoneExist(it) }
 		registerFunctionRaw("sceHprmPeekLatch", 0x2BCEC83E, since = 150) { sceHprmPeekLatch(it) }

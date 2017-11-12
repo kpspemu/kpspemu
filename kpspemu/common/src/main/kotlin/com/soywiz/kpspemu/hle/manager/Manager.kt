@@ -11,10 +11,15 @@ open class Manager<T : Resource>(val name: String, override val emulator: Emulat
 	internal val resourcesById = LinkedHashMap<Int, T>()
 	val resourcesCount: Int get() = resourcesById.size
 
+	fun put(item: T): T = item.apply { resourcesById[item.id] = item }
 	internal fun allocId(): Int = freeIds.alloc()
 	fun tryGetByName(name: String): T? = resourcesById.values.firstOrNull { it.name == name }
 	fun tryGetById(id: Int): T? = resourcesById[id]
 	fun getById(id: Int) = tryGetById(id) ?: invalidOp("Can't find $name $id")
+	fun freeById(id: Int) {
+		freeIds.free(id)
+		resourcesById.remove(id)
+	}
 }
 
 open class Resource(
