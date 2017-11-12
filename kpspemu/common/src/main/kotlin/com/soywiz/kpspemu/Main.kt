@@ -26,6 +26,7 @@ import com.soywiz.korio.async.AsyncThread
 import com.soywiz.korio.async.go
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.ASCII
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
@@ -38,6 +39,7 @@ import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
 import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.Korui
+import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.Pbp
 import com.soywiz.kpspemu.format.elf.PspElf
@@ -73,6 +75,24 @@ object KpspemuModule : Module() {
 	override val title: String = "kpspemu"
 	override val size: SizeInt get() = SizeInt(480, 272)
 	override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
+}
+
+fun dynarekExperiment() {
+	data class State(var a: Int = 0, var b: Int = 0)
+	val function = function(DClass(State::class), DINT, DVOID) {
+		SET(p0[State::a], 4.lit * p1)
+	}
+	val state = State()
+	val func = function.generateDynarek()
+	val ret = func(state, 2)
+	Console.log(func)
+	println(state.a)
+
+	//val state = State()
+	//val interpreter = DSlowInterpreter(listOf(state, 10))
+	//interpreter.interpret(function)
+	//println("Interpreted: $state")
+	//println("Name: ${State::a}")
 }
 
 class KpspemuMainScene(
@@ -115,16 +135,7 @@ class KpspemuMainScene(
 	lateinit var hud: Container
 
 	suspend override fun sceneInit(sceneView: Container) {
-		//data class State(var a: Int = 0, var b: Int = 0)
-		//val function = function(DClass(State::class), DINT, DVOID) {
-		//	SET(p0[State::a], p1 * 2.lit)
-		//}
-		//val state = State()
-		//val interpreter = DSlowInterpreter(listOf(state, 10))
-		//interpreter.interpret(function)
-		//println("Interpreted: $state")
-		//println("Name: ${State::a}")
-
+		dynarekExperiment()
 
 		emulator = createEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
