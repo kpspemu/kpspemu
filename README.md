@@ -18,16 +18,12 @@ Or open `build.gradle` with intelliJ and open `kspspemu/common/src/main/kotlin/c
 ./gradlew check
 ```
 
-### Very basic online demo using Kotlin.JS:
-* https://kpspemu.github.io/kpspemu-demo/minifire/ (interpreted)
-* https://kpspemu.github.io/kpspemu-demo/helloworld/ (interpreted)
-* https://kpspemu.github.io/kpspemu-demo/cube/ (interpreted)
+### More advanced homebrew working:
+* https://kpspemu.github.io/kpspemu-demo/0.3.1/ (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/0.3.1/#samples/cube.cso (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/0.3.1/#samples/TrigWars.zip (interpreted)
+* https://kpspemu.github.io/kpspemu-demo/0.3.1/#samples/cavestory.zip (interpreted)
 * *More coming soon...*
-
----
-
-* *REFERENCE:* http://jspspemu.com/#samples/minifire.elf (dynarec) <-- original jspepmu
-* *REFERENCE:* http://jspspemu.com/#samples/HelloWorldPSP.elf (dynarec) <-- original jspspemu
 
 ### Previous works:
 * https://github.com/soywiz/pspemu (PSP Emulator done in D programming language. Interpreted.)
@@ -40,13 +36,17 @@ Or open `build.gradle` with intelliJ and open `kspspemu/common/src/main/kotlin/c
 * [Fix Ortho Sample (madd ins + sceCtrl)](https://youtu.be/REF_wFJE85c) 
 
 ### Current state:
-Right now it is capable to run some basic homebrew in interpreted mode.
+Right now it is capable to run some homebrew in interpreted mode and starts to run some early simple commercial games.
 
-The aim is to create a portable emulator that can run fast in JVM, JS, Android, C++ targets (using libjit).
+The aim is to create a portable emulator that can run fast in
+JVM (generating bytecode),
+JS (generating JavaScript),
+Android (generating dex or in interpreted mode),
+C++ targets (using libjit or in interpreted mode).
 
 To achieve this, I have created an embedded module called `dynarek` that will provide an IR that
 will generate JS code, JVM bytecode and relevant native code for each supported platform.
 
 The rest of the code is kotlin common and uses [korge](https://github.com/korlibs/korge) and all
-the [korlibs](https://github.com/korlibs/korlibs) libraries to do accelerated portable rendering.  
-
+the [korlibs](https://github.com/korlibs/) libraries to do accelerated portable rendering, input,
+audio, ui, timers, logging, zlib...  
