@@ -520,7 +520,7 @@ class VertexType(v: Int = 0) {
 	val normalComponents: Int get() = components // @TODO: Verify this
 	val texComponents: Int get() = 2 // @TODO: texture components must be 2 or 3
 
-	val colorSize: Int get() = col.nbytes
+	val colSize: Int get() = col.nbytes
 	val normalSize: Int get() = normal.nbytes * normalComponents
 	val positionSize: Int get() = pos.nbytes * posComponents
 	val textureSize: Int get() = tex.nbytes * texComponents
@@ -541,7 +541,7 @@ class VertexType(v: Int = 0) {
 		var out = 0
 		out = out.nextAlignedTo(weight.nbytes); this.weightOffset = out; out = weightSize
 		out = out.nextAlignedTo(tex.nbytes); this.texOffset = out; out += textureSize
-		out = out.nextAlignedTo(col.nbytes); this.colOffset = out; out += colorSize
+		out = out.nextAlignedTo(col.nbytes); this.colOffset = out; out += colSize
 		out = out.nextAlignedTo(normal.nbytes); this.normalOffset = out; out += normalSize
 		out = out.nextAlignedTo(pos.nbytes); this.posOffset = out; out += positionSize
 		this.size = out.nextAlignedTo(max(weight.nbytes, tex.nbytes, col.nbytes, normal.nbytes, pos.nbytes))

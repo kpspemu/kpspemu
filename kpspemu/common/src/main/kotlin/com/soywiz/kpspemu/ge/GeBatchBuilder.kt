@@ -1,6 +1,8 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.kmem.arraycopy
+import com.soywiz.kmem.FastMemory
+import com.soywiz.kmem.get
+import com.soywiz.kmem.set
 import com.soywiz.kpspemu.mem
 import kotlin.math.max
 
@@ -14,6 +16,10 @@ class GeBatchBuilder(val ge: Ge) {
 	var vertexSize: Int = 0
 
 	val vertexBuffer = ByteArray(0x10000 * 16)
+	val vertexBufferMem = FastMemory.wrap(vertexBuffer)
+	val vertexBufferI8 = vertexBufferMem.i8
+	val vertexBufferI16 = vertexBufferMem.i16
+	val vertexBufferI32 = vertexBufferMem.i32
 	var vertexBufferPos = 0
 	val indexBuffer = ShortArray(0x10000)
 	var indexBufferPos = 0
@@ -112,6 +118,8 @@ class GeBatchBuilder(val ge: Ge) {
 		val texSize = vertexType.tex.nbytes
 		val texOffsetX = vertexType.texOffset
 		val texOffsetY = vertexType.texOffset + texSize
+		val colSize = vertexType.colSize
+		val colOffset = vertexType.colOffset
 		val svpos = vertexBufferPos
 		val dvpos = vertexBufferPos + nsprites * vertexSize_2
 
@@ -125,26 +133,48 @@ class GeBatchBuilder(val ge: Ge) {
 			val TLpos = svpos + (n * vertexSize_2)
 			val BRpos = TLpos + vertexSize_1
 
+			val ssvpos = svpos + (n * vertexSize_2)
 			val dsvpos = dvpos + (n * vertexSize_2)
-			putGenVertex(dsvpos + vertexSize_0, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
-			putGenVertex(dsvpos + vertexSize_1, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY)
+
+			putGenVertexColor(ssvpos + vertexSize_0, BRpos, TLpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY, colOffset, colSize)
+			putGenVertexColor(ssvpos + vertexSize_1, BRpos, BRpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY, colOffset, colSize)
+			putGenVertex(dsvpos + vertexSize_0, BRpos, TLpos, BRpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY, colOffset, colSize)
+			putGenVertex(dsvpos + vertexSize_1, BRpos, BRpos, TLpos, posSize, posOffsetX, posOffsetY, texSize, texOffsetX, texOffsetY, colOffset, colSize)
 		}
 		vertexCount += nsprites * 4
 		this.vertexBufferPos = vertexBufferPos + nsprites * vertexSize * 4
 
 	}
 
-	private fun putGenVertex(dest: Int, base: Int, gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int) {
+	private fun putGenVertex(dest: Int, base: Int, gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int, colOffset: Int, colSize: Int) {
 		//arraycopy(vertexBuffer, base, vertexBuffer, dest, vertexSize) // Copy one full
 
+		if (vertexType.hasColor) {
+			smallVBCopy(base + colOffset, dest + colOffset, colSize)
+		}
+
 		if (vertexType.hasPosition) {
-			arraycopy(vertexBuffer, gx + posOffsetX, vertexBuffer, dest + posOffsetX, posSize)
-			arraycopy(vertexBuffer, gy + posOffsetY, vertexBuffer, dest + posOffsetY, posSize)
+			smallVBCopy(gx + posOffsetX, dest + posOffsetX, posSize)
+			smallVBCopy(gy + posOffsetY, dest + posOffsetY, posSize)
 		}
 
 		if (vertexType.hasTexture) {
-			arraycopy(vertexBuffer, gx + texOffsetX, vertexBuffer, dest + texOffsetX, texSize)
-			arraycopy(vertexBuffer, gy + texOffsetY, vertexBuffer, dest + texOffsetY, texSize)
+			smallVBCopy(gx + texOffsetX, dest + texOffsetX, texSize)
+			smallVBCopy(gy + texOffsetY, dest + texOffsetY, texSize)
+		}
+	}
+
+	private fun putGenVertexColor(dest: Int, base: Int, gx: Int, gy: Int, posSize: Int, posOffsetX: Int, posOffsetY: Int, texSize: Int, texOffsetX: Int, texOffsetY: Int, colOffset: Int, colSize: Int) {
+		if (vertexType.hasColor) {
+			smallVBCopy(base + colOffset, dest + colOffset, colSize)
+		}
+	}
+
+	private fun smallVBCopy(src: Int, dst: Int, size: Int) {
+		when (size) {
+			1 -> vertexBufferI8[dst] = vertexBufferI8[src]
+			2 -> vertexBufferI16[dst ushr 1] = vertexBufferI16[src ushr 1]
+			4 -> vertexBufferI32[dst ushr 2] = vertexBufferI32[src ushr 2]
 		}
 	}
 
