@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
+import com.soywiz.dynarek.JvmField
 import com.soywiz.kds.Extra
 import com.soywiz.kmem.*
 import com.soywiz.korio.util.extract
@@ -88,12 +89,12 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	//val FPR = FloatArray(32) { 0f }
 	//val FPR_I = FprI(this)
 
-	var IR: Int = 0
-	var _PC: Int = 0
-	var _nPC: Int = 0
-	var LO: Int = 0
-	var HI: Int = 0
-	var IC: Int = 0
+	@JvmField var IR: Int = 0
+	@JvmField var _PC: Int = 0
+	@JvmField var _nPC: Int = 0
+	@JvmField var LO: Int = 0
+	@JvmField var HI: Int = 0
+	@JvmField var IC: Int = 0
 
 	val PC: Int get() = _PC
 

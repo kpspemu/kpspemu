@@ -44,7 +44,7 @@ JS (generating JavaScript),
 Android (generating dex or in interpreted mode),
 C++ targets (using libjit or in interpreted mode).
 
-To achieve this, I have created an embedded module called `dynarek` that will provide an IR that
+To achieve this, I have created a library called [`dynarek`](https://korlibs.github.io/dynarek/) that will provide an IR that
 will generate JS code, JVM bytecode and relevant native code for each supported platform.
 
 The rest of the code is kotlin common and uses [korge](https://github.com/korlibs/korge) and all

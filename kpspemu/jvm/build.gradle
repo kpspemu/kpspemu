@@ -8,8 +8,7 @@ sourceSets {
 dependencies {
     expectedBy project(":kpspemu-common")
 
-    compile project(":dynarek")
-
+    compile "com.soywiz:dynarek:$dynarekVersion"
     compile "com.soywiz:klogger:$kloggerVersion"
     compile "com.soywiz:klock:$klockVersion"
     compile "com.soywiz:korag:$koragVersion"

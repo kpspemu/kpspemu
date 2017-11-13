@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.dynarek.Dynarek
 import com.soywiz.klock.Klock
 import com.soywiz.kmem.Kmem
 import com.soywiz.korag.Korag
@@ -30,7 +31,6 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
@@ -114,8 +114,17 @@ class KpspemuMainScene(
 	lateinit var hud: Container
 
 	suspend override fun sceneInit(sceneView: Container) {
+		//val func = function(DClass(CpuState::class), DVOID) {
+		//	SET(p0[CpuState::_PC], 7.lit)
+		//}.generateDynarek()
+		//
+		//val cpuState = CpuState(GlobalCpuState(), Memory())
+		//val result = func(cpuState)
+		//println("PC: ${cpuState.PC.hex}")
+
 		emulator = createEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
+		println("DYNAREK: ${Dynarek.VERSION}")
 		println("KORINJECT: ${Korinject.VERSION}")
 		println("KMEM: ${Kmem.VERSION}")
 		println("KLOCK: ${Klock.VERSION}")
@@ -125,37 +134,6 @@ class KpspemuMainScene(
 		println("KORAU: ${Korau.VERSION}")
 		println("KORUI: ${Korui.VERSION}")
 		println("KORGE: ${Korge.VERSION}")
-
-		val samplesFolder = when {
-			OS.isJs -> applicationVfs
-		//else -> ResourcesVfs
-			else -> applicationVfs["samples"].jail()
-		}
-
-		//val exeFile = samplesFolder["minifire.elf"]
-		//val exeFile = samplesFolder["HelloWorldPSP.elf"]
-		//val exeFile = samplesFolder["rtctest.elf"]
-		//val exeFile = samplesFolder["compilerPerf.elf"]
-		//val exeFile = samplesFolder["cube.elf"]
-		//val exeFile = samplesFolder["ortho.elf"]
-		//val exeFile = samplesFolder["mytest.elf"]
-		//val exeFile = samplesFolder["counter.elf"]
-		//val exeFile = samplesFolder["controller.elf"]
-		//val exeFile = samplesFolder["fputest.elf"]
-		//val exeFile = samplesFolder["lines.elf"]
-		//val exeFile = samplesFolder["lines.pbp"]
-		//val exeFile = samplesFolder["polyphonic.elf"]
-		//val exeFile = samplesFolder["cube.iso"]
-		//val exeFile = samplesFolder["lights.pbp"]
-		//val exeFile = samplesFolder["cwd.elf"]
-		//val exeFile = samplesFolder["nehetutorial03.pbp"]
-		//val exeFile = samplesFolder["polyphonic.elf"]
-		//val exeFile = samplesFolder["text.elf"]
-		//val exeFile = samplesFolder["cavestory.iso"]
-		//val exeFile = samplesFolder["cavestory.zip"]
-		//val exeFile = samplesFolder["TrigWars.iso"]
-		//val exeFile = samplesFolder["TrigWars.zip"]
-		//val exeFile = samplesFolder["TrigWars.deflate.zip"]
 
 		hud = views.container()
 		//createEmulatorWithExe(exeFile)
