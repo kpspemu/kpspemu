@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.korio.stream.MemorySyncStream
+import com.soywiz.korio.util.IdEnum
 import mytest.assertEquals
 import org.junit.Test
 
@@ -15,19 +16,27 @@ class StructTest {
 		)
 	}
 
+	enum class MyEnum(override val id: Int) : IdEnum {
+		A(1), B(99), C(3);
+
+		companion object : INT32_ENUM<MyEnum>(values())
+	}
+
 	data class Demo(
 		var header: Header = Header(),
-		var size: Int = 0
+		var size: Int = 0,
+		var enum: MyEnum = MyEnum.C
 	) {
 		companion object : Struct<Demo>({ Demo() },
 			Demo::header AS Header,
-			Demo::size AS INT32
+			Demo::size AS INT32,
+			Demo::enum AS MyEnum
 		)
 	}
 
 	@Test
 	fun name() {
-		val demo = Demo(Header(1, 2), 3)
+		val demo = Demo(Header(1, 2), 3, MyEnum.B)
 		val mem = MemorySyncStream()
 		mem.write(Demo, demo)
 		mem.position = 0
