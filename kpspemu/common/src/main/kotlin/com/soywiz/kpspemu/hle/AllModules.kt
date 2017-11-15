@@ -40,4 +40,5 @@ fun ModuleManager.registerNativeModules() {
 	register(sceNetAdhocctl(emulator))
 	register(sceNetAdhocMatching(emulator))
 	register(sceWlanDrv(emulator))
+	register(sceReg(emulator))
 }

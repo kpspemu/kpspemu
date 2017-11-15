@@ -20,15 +20,15 @@ fun Bitmap32.setTo(colorFormat: PixelFormat, colorData: ByteArray, clutData: Byt
 					var m = 0
 					for (n in 0 until this.area / 2) {
 						val byte = colorData[n].toInt() and 0xFF
-						this.data[m++] = colors[(byte ushr 0) and 0b1111]
-						this.data[m++] = colors[(byte ushr 4) and 0b1111]
+						this.data[m++] = colors[((byte ushr 0) and 0b1111) % colors.size]
+						this.data[m++] = colors[((byte ushr 4) and 0b1111) % colors.size]
 					}
 				}
 				8 -> {
 					var m = 0
 					for (n in 0 until this.area) {
 						val byte = colorData[n]
-						this.data[m++] = colors[(byte.toInt() ushr 0) and 0b11111111]
+						this.data[m++] = colors[((byte.toInt() ushr 0) and 0b11111111) % colors.size]
 					}
 				}
 			}
@@ -68,7 +68,9 @@ private fun unswizzle(input: ByteArray, output: ByteArray, rowWidth: Int, textur
 			var dest = xdest
 			for (n in 0 until 8) {
 				//ArrayBufferUtils.copy(input, src, output, dest, 16);
-				for (m in 0 until 16) output[dest++] = input[src++]
+				arraycopy(input, src, output, dest, 16)
+				src += 16
+				dest += 16
 				dest += pitch4
 			}
 			xdest += 16

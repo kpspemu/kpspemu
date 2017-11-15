@@ -60,6 +60,15 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 		logger.trace { "GE: ${cPC.hex}-${stall.hex}: ${op.hex}" }
 		when (op) {
 			Op.PRIM -> prim(p)
+			Op.TRXKICK -> {
+				println("TRXKICK")
+			}
+			Op.TRXSPOS -> {
+				println("TRXSPOS")
+			}
+			Op.TRXDPOS -> {
+				println("TRXDPOS")
+			}
 			Op.BEZIER -> {
 				logger.info { "Not implemented BEZIER" }
 			}
