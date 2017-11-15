@@ -10,6 +10,18 @@ import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.mem
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
+	companion object {
+		const val PROCESSED_PIXELS_PER_SECOND = 9000000 // hz
+		const val CYCLES_PER_PIXEL = 1
+		const val PIXELS_IN_A_ROW = 525
+		const val VSYNC_ROW = 272
+		const val NUMBER_OF_ROWS = 286
+		const val HCOUNT_PER_VBLANK = 285.72
+		const val HORIZONTAL_SYNC_HZ = (PspDisplay.PROCESSED_PIXELS_PER_SECOND * PspDisplay.CYCLES_PER_PIXEL) / PspDisplay.PIXELS_IN_A_ROW // 17142.85714285714
+		const val HORIZONTAL_SECONDS = 1 / PspDisplay.HORIZONTAL_SYNC_HZ // 5.8333333333333E-5
+		const val VERTICAL_SYNC_HZ = PspDisplay.HORIZONTAL_SYNC_HZ / PspDisplay.HCOUNT_PER_VBLANK // 59.998800024
+		const val VERTICAL_SECONDS = 1 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
+	}
 	var exposeDisplay = true
 
 	val bmp = Bitmap32(512, 272)

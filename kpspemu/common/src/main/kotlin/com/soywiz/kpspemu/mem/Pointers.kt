@@ -9,6 +9,9 @@ import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.SyncStreamBase
 import com.soywiz.korio.stream.toSyncStream
 import com.soywiz.korio.util.unsigned
+import com.soywiz.kpspemu.util.Struct
+import com.soywiz.kpspemu.util.read
+import com.soywiz.kpspemu.util.write
 
 data class PtrArray(val ptr: Ptr, val size: Int) {
 	val addr: Int get() = ptr.addr
@@ -34,6 +37,16 @@ interface Ptr {
 		val low = lw(offset + 0).unsigned
 		val high = lw(offset + 4).unsigned
 		return (high shl 32) or low
+	}
+}
+
+inline fun <T, TR> Ptr.capture(struct: Struct<T>, callback: (T) -> TR): TR {
+	val ptr = this
+	val obj = ptr.openSync().read(struct)
+	try {
+		return callback(obj)
+	} finally {
+		ptr.openSync().write(struct, obj)
 	}
 }
 

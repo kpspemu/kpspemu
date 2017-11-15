@@ -44,13 +44,18 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return emulator.display.vcount
 	}
 
+	fun sceDisplayGetCurrentHcount(): Int {
+		//this.hcountTotal = (this.elapsedSeconds * PspDisplay.HORIZONTAL_SYNC_HZ) | 0;
+		//this.hcountCurrent = (((this.elapsedSeconds % 1.00002) * PspDisplay.HORIZONTAL_SYNC_HZ) | 0) % PspDisplay.NUMBER_OF_ROWS;
+		return 0
+	}
+
 	fun sceDisplayIsVsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x21038913)
 	fun sceDisplayGetAccumulatedHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x210EAB3A)
 	fun sceDisplayGetBrightness(cpu: CpuState): Unit = UNIMPLEMENTED(0x31C4BAA8)
 	fun sceDisplay_40F1469C(cpu: CpuState): Unit = UNIMPLEMENTED(0x40F1469C)
 	fun sceDisplayIsVblank(cpu: CpuState): Unit = UNIMPLEMENTED(0x4D4E10EC)
 	fun sceDisplayGetVblankRest(cpu: CpuState): Unit = UNIMPLEMENTED(0x69B53541)
-	fun sceDisplayGetCurrentHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x773DD3A3)
 	fun sceDisplay_77ED8B3A(cpu: CpuState): Unit = UNIMPLEMENTED(0x77ED8B3A)
 	fun sceDisplaySetHoldMode(cpu: CpuState): Unit = UNIMPLEMENTED(0x7ED59BC4)
 	fun sceDisplaySetResumeMode(cpu: CpuState): Unit = UNIMPLEMENTED(0xA544C486)
@@ -61,7 +66,6 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 	fun sceDisplayGetMode(cpu: CpuState): Unit = UNIMPLEMENTED(0xDEA197D4)
 	fun sceDisplayGetFrameBuf(cpu: CpuState): Unit = UNIMPLEMENTED(0xEEDA2E54)
 
-
 	override fun registerModule() {
 		registerFunctionInt("sceDisplaySetMode", 0x0E20F177, 150, syscall = 0x213A) { sceDisplaySetMode(int, int, int) }
 		registerFunctionInt("sceDisplaySetFrameBuf", 0x289D82FE, 150, syscall = 0x213F) { sceDisplaySetFrameBuf(int, int, int, int) }
@@ -70,6 +74,7 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		registerFunctionSuspendInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147, cb = false) { sceDisplayWaitVblankStart() }
 		registerFunctionSuspendInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150, cb = true) { sceDisplayWaitVblankStart() }
 		registerFunctionInt("sceDisplayGetVcount", 0x9C6EAAD7, since = 150) { sceDisplayGetVcount() }
+		registerFunctionInt("sceDisplayGetCurrentHcount", 0x773DD3A3, since = 150) { sceDisplayGetCurrentHcount() }
 
 		registerFunctionRaw("sceDisplayIsVsync", 0x21038913, since = 150) { sceDisplayIsVsync(it) }
 		registerFunctionRaw("sceDisplayGetAccumulatedHcount", 0x210EAB3A, since = 150) { sceDisplayGetAccumulatedHcount(it) }
@@ -77,7 +82,6 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		registerFunctionRaw("sceDisplay_40F1469C", 0x40F1469C, since = 150) { sceDisplay_40F1469C(it) }
 		registerFunctionRaw("sceDisplayIsVblank", 0x4D4E10EC, since = 150) { sceDisplayIsVblank(it) }
 		registerFunctionRaw("sceDisplayGetVblankRest", 0x69B53541, since = 150) { sceDisplayGetVblankRest(it) }
-		registerFunctionRaw("sceDisplayGetCurrentHcount", 0x773DD3A3, since = 150) { sceDisplayGetCurrentHcount(it) }
 		registerFunctionRaw("sceDisplay_77ED8B3A", 0x77ED8B3A, since = 150) { sceDisplay_77ED8B3A(it) }
 		registerFunctionRaw("sceDisplaySetHoldMode", 0x7ED59BC4, since = 150) { sceDisplaySetHoldMode(it) }
 		registerFunctionRaw("sceDisplaySetResumeMode", 0xA544C486, since = 150) { sceDisplaySetResumeMode(it) }

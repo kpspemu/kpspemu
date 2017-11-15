@@ -3,17 +3,16 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.korio.util.IdEnum
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.ge.LightModelEnum
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.capture
 import com.soywiz.kpspemu.util.*
-import kotlin.reflect.KMutableProperty1
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate", "FunctionName")
 class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010011, "utility.prx", "sceUtility_Driver") {
 	fun sceUtilitySavedataInitStart(params: Ptr): Int {
-		logger.warn { "sceUtilitySavedataInitStart: $params" }
+		logger.error { "sceUtilitySavedataInitStart: $params" }
 		//return Promise2.resolve(this._sceUtilitySavedataInitStart(paramsPtr.clone())).then(result => {
 		//	var params = SceUtilitySavedataParam.struct.read(paramsPtr.clone());
 		//	params.base.result = result;
@@ -23,6 +22,7 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	}
 
 	fun sceUtilitySavedataGetStatus(): Int {
+		logger.error { "sceUtilitySavedataGetStatus" }
 		return 0
 	}
 
@@ -92,7 +92,31 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		return PSP_SYSTEMPARAM_RETVAL_OK
 	}
 
-	fun sceUtilityMsgDialogInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x2AD8E239)
+	var currentStep = DialogStepEnum.NONE
+
+	fun sceUtilityMsgDialogInitStart(paramsPtr: Ptr): Int {
+		logger.error { "sceUtilityMsgDialogInitStart:$paramsPtr" }
+		paramsPtr.capture(PspUtilityMsgDialogParams) { params ->
+			params.buttonPressed = PspUtilityMsgDialogPressed.PSP_UTILITY_MSGDIALOG_RESULT_YES
+			this.currentStep = DialogStepEnum.SUCCESS
+		}
+		return 0
+	}
+
+	fun sceUtilityMsgDialogGetStatus(): Int {
+		logger.error { "sceUtilityMsgDialogGetStatus" }
+		try {
+			return this.currentStep.id
+		} finally {
+			if (this.currentStep === DialogStepEnum.SHUTDOWN) this.currentStep = DialogStepEnum.NONE
+		}
+	}
+
+	fun sceUtilityMsgDialogShutdownStart(): Unit {
+		logger.error { "sceUtilityMsgDialogShutdownStart" }
+		currentStep = DialogStepEnum.SHUTDOWN
+
+	}
 
 	fun sceUtility_0251B134(cpu: CpuState): Unit = UNIMPLEMENTED(0x0251B134)
 	fun sceUtilityHtmlViewerUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x05AFB9E4)
@@ -129,7 +153,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtilityInstallShutdownStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EF1C24A)
 	fun sceUtilityNetconfGetStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x6332AA39)
 	fun sceUtilityUnloadNetModule(cpu: CpuState): Unit = UNIMPLEMENTED(0x64D50C56)
-	fun sceUtilityMsgDialogShutdownStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x67AF3428)
 	fun sceUtility_6F56F9CF(cpu: CpuState): Unit = UNIMPLEMENTED(0x6F56F9CF)
 	fun sceUtility_70267ADF(cpu: CpuState): Unit = UNIMPLEMENTED(0x70267ADF)
 	fun sceUtilityGameSharingUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x7853182D)
@@ -144,7 +167,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtilityGameSharingGetStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x946963F3)
 	fun sceUtilityMsgDialogUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x95FC253B)
 	fun sceUtilitySavedataShutdownStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x9790B33C)
-	fun sceUtilityMsgDialogGetStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x9A1C91D7)
 	fun sceUtilityInstallUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0xA03D29BA)
 	fun sceUtility_A084E056(cpu: CpuState): Unit = UNIMPLEMENTED(0xA084E056)
 	fun sceUtility_A50E5B30(cpu: CpuState): Unit = UNIMPLEMENTED(0xA50E5B30)
@@ -186,6 +208,9 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionInt("sceUtilitySavedataInitStart", 0x50C4CD57, since = 150) { sceUtilitySavedataInitStart(ptr) }
 		registerFunctionInt("sceUtilitySavedataGetStatus", 0x8874DBE0, since = 150) { sceUtilitySavedataGetStatus() }
 		registerFunctionInt("sceUtilityGetSystemParamInt", 0xA5DA2406, since = 150) { sceUtilityGetSystemParamInt(int, ptr) }
+		registerFunctionInt("sceUtilityMsgDialogInitStart", 0x2AD8E239, since = 150) { sceUtilityMsgDialogInitStart(ptr) }
+		registerFunctionInt("sceUtilityMsgDialogGetStatus", 0x9A1C91D7, since = 150) { sceUtilityMsgDialogGetStatus() }
+		registerFunctionVoid("sceUtilityMsgDialogShutdownStart", 0x67AF3428, since = 150) { sceUtilityMsgDialogShutdownStart() }
 
 		registerFunctionRaw("sceUtility_0251B134", 0x0251B134, since = 150) { sceUtility_0251B134(it) }
 		registerFunctionRaw("sceUtilityHtmlViewerUpdate", 0x05AFB9E4, since = 150) { sceUtilityHtmlViewerUpdate(it) }
@@ -201,7 +226,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtility_28D35634", 0x28D35634, since = 150) { sceUtility_28D35634(it) }
 		registerFunctionRaw("sceUtility_2995D020", 0x2995D020, since = 150) { sceUtility_2995D020(it) }
 		registerFunctionRaw("sceUtilityLoadModule", 0x2A2B3DE0, since = 150) { sceUtilityLoadModule(it) }
-		registerFunctionRaw("sceUtilityMsgDialogInitStart", 0x2AD8E239, since = 150) { sceUtilityMsgDialogInitStart(it) }
 		registerFunctionRaw("sceUtility_2B96173B", 0x2B96173B, since = 150) { sceUtility_2B96173B(it) }
 		registerFunctionRaw("sceUtilityGetSystemParamString", 0x34B78343, since = 150) { sceUtilityGetSystemParamString(it) }
 		registerFunctionRaw("sceUtility_3AAD51DC", 0x3AAD51DC, since = 150) { sceUtility_3AAD51DC(it) }
@@ -223,7 +247,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtilityInstallShutdownStart", 0x5EF1C24A, since = 150) { sceUtilityInstallShutdownStart(it) }
 		registerFunctionRaw("sceUtilityNetconfGetStatus", 0x6332AA39, since = 150) { sceUtilityNetconfGetStatus(it) }
 		registerFunctionRaw("sceUtilityUnloadNetModule", 0x64D50C56, since = 150) { sceUtilityUnloadNetModule(it) }
-		registerFunctionRaw("sceUtilityMsgDialogShutdownStart", 0x67AF3428, since = 150) { sceUtilityMsgDialogShutdownStart(it) }
 		registerFunctionRaw("sceUtility_6F56F9CF", 0x6F56F9CF, since = 150) { sceUtility_6F56F9CF(it) }
 		registerFunctionRaw("sceUtility_70267ADF", 0x70267ADF, since = 150) { sceUtility_70267ADF(it) }
 		registerFunctionRaw("sceUtilityGameSharingUpdate", 0x7853182D, since = 150) { sceUtilityGameSharingUpdate(it) }
@@ -238,7 +261,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtilityGameSharingGetStatus", 0x946963F3, since = 150) { sceUtilityGameSharingGetStatus(it) }
 		registerFunctionRaw("sceUtilityMsgDialogUpdate", 0x95FC253B, since = 150) { sceUtilityMsgDialogUpdate(it) }
 		registerFunctionRaw("sceUtilitySavedataShutdownStart", 0x9790B33C, since = 150) { sceUtilitySavedataShutdownStart(it) }
-		registerFunctionRaw("sceUtilityMsgDialogGetStatus", 0x9A1C91D7, since = 150) { sceUtilityMsgDialogGetStatus(it) }
 		registerFunctionRaw("sceUtilityInstallUpdate", 0xA03D29BA, since = 150) { sceUtilityInstallUpdate(it) }
 		registerFunctionRaw("sceUtility_A084E056", 0xA084E056, since = 150) { sceUtility_A084E056(it) }
 		registerFunctionRaw("sceUtility_A50E5B30", 0xA50E5B30, since = 150) { sceUtility_A50E5B30(it) }
@@ -336,7 +358,7 @@ enum class PspUtilitySavedataFocus(override val id: Int) : IdEnum {
 	companion object : INT32_ENUM<PspUtilitySavedataFocus>(values())
 }
 
-class PspUtilityDialogCommon(
+data class PspUtilityDialogCommon(
 	var size: Int = 0, // 0000 - Size of the structure
 	var language: PspLanguages = PspLanguages.SPANISH, // 0004 - Language
 	var buttonSwap: Int = 0, // 0008 - Set to 1 for X/O button swap
@@ -360,7 +382,7 @@ class PspUtilityDialogCommon(
 	)
 }
 
-class PspUtilitySavedataSFOParam(
+data class PspUtilitySavedataSFOParam(
 	var title: String = "", // 0000 -
 	var savedataTitle: String = "", // 0080 -
 	var detail: String = "", // 0100 -
@@ -376,7 +398,7 @@ class PspUtilitySavedataSFOParam(
 	)
 }
 
-class PspUtilitySavedataFileData(
+data class PspUtilitySavedataFileData(
 	var bufferPointer: Int = 0, // 0000 -
 	var bufferSize: Int = 0, // 0004 -
 	var size: Int = 0, // 0008 - why are there two sizes?
@@ -384,10 +406,10 @@ class PspUtilitySavedataFileData(
 ) {
 	val used: Boolean
 		get() {
-			if (this.bufferPointer == 0) return false;
+			if (this.bufferPointer == 0) return false
 			//if (BufferSize == 0) return false;
-			if (this.size == 0) return false;
-			return true;
+			if (this.size == 0) return false
+			return true
 		}
 
 	companion object : Struct<PspUtilitySavedataFileData>({ PspUtilitySavedataFileData() },
@@ -398,7 +420,7 @@ class PspUtilitySavedataFileData(
 	)
 }
 
-class SceUtilitySavedataParam(
+data class SceUtilitySavedataParam(
 	var base: PspUtilityDialogCommon = PspUtilityDialogCommon(), // 0000 - PspUtilityDialogCommon
 	var mode: PspUtilitySavedataMode = PspUtilitySavedataMode.Autoload, // 0030 -
 	var unknown1: Int = 0, // 0034 -
@@ -459,5 +481,60 @@ class SceUtilitySavedataParam(
 		SceUtilitySavedataParam::fileListAddr AS INT32,
 		SceUtilitySavedataParam::sizeAddr AS INT32,
 		SceUtilitySavedataParam::unknown3 AS ARRAY(UINT8, 20 - 5)
+	)
+}
+
+enum class PspUtilityMsgDialogMode(override val id: Int) : IdEnum {
+	PSP_UTILITY_MSGDIALOG_MODE_ERROR(0), // Error message
+	PSP_UTILITY_MSGDIALOG_MODE_TEXT(1); // String message
+
+	companion object : INT32_ENUM<PspUtilityMsgDialogMode>(values())
+}
+
+enum class PspUtilityMsgDialogOption(override val id: Int) : IdEnum {
+	PSP_UTILITY_MSGDIALOG_OPTION_ERROR(0x00000000), // Error message (why two flags?)
+	PSP_UTILITY_MSGDIALOG_OPTION_TEXT(0x00000001), // Text message (why two flags?)
+	PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS(0x00000010), // Yes/No buttons instead of 'Cancel'
+	PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO(0x00000100); // Default position 'No', if not set will default to 'Yes'
+
+	companion object : INT32_ENUM<PspUtilityMsgDialogOption>(values())
+}
+
+enum class PspUtilityMsgDialogPressed(override val id: Int) : IdEnum {
+	PSP_UTILITY_MSGDIALOG_RESULT_UNKNOWN1(0),
+	PSP_UTILITY_MSGDIALOG_RESULT_YES(1),
+	PSP_UTILITY_MSGDIALOG_RESULT_NO(2),
+	PSP_UTILITY_MSGDIALOG_RESULT_BACK(3);
+
+	companion object : INT32_ENUM<PspUtilityMsgDialogPressed>(values())
+}
+
+enum class DialogStepEnum(override val id: Int) : IdEnum {
+	NONE(0),
+	INIT(1),
+	PROCESSING(2),
+	SUCCESS(3),
+	SHUTDOWN(4);
+
+	companion object : INT32_ENUM<DialogStepEnum>(values())
+}
+
+data class PspUtilityMsgDialogParams(
+	var base: PspUtilityDialogCommon = PspUtilityDialogCommon(),
+	var unknown: Int = 0, // uint
+	var mnode: PspUtilityMsgDialogMode = PspUtilityMsgDialogMode.PSP_UTILITY_MSGDIALOG_MODE_ERROR, // uint
+	var errorValue: Int = 0, // uint
+	var message: String = "", // byte[512]
+	var options: PspUtilityMsgDialogOption = PspUtilityMsgDialogOption.PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO,
+	var buttonPressed: PspUtilityMsgDialogPressed = PspUtilityMsgDialogPressed.PSP_UTILITY_MSGDIALOG_RESULT_BACK
+) {
+	companion object : Struct<PspUtilityMsgDialogParams>({ PspUtilityMsgDialogParams() },
+		PspUtilityMsgDialogParams::base AS PspUtilityDialogCommon,
+		PspUtilityMsgDialogParams::unknown AS INT32,
+		PspUtilityMsgDialogParams::mnode AS PspUtilityMsgDialogMode,
+		PspUtilityMsgDialogParams::errorValue AS INT32,
+		PspUtilityMsgDialogParams::message AS STRINGZ(512),
+		PspUtilityMsgDialogParams::options AS PspUtilityMsgDialogOption,
+		PspUtilityMsgDialogParams::buttonPressed AS PspUtilityMsgDialogPressed
 	)
 }

@@ -109,13 +109,8 @@ class INTARRAY(val etype: StructType<Int>, val size: Int) : StructType<IntArray>
 }
 
 open class INT32_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T> {
-	override fun write(s: SyncStream, value: T) {
-		s.write32_le(value.id)
-	}
-
-	override fun read(s: SyncStream): T {
-		return invoke(s.readS32_le())
-	}
+	override fun write(s: SyncStream, value: T) = s.write32_le(value.id)
+	override fun read(s: SyncStream): T = invoke(s.readS32_le())
 
 	private val defaultValue: T = values.first()
 	private val MAX_ID = values.map { it.id }.max() ?: 0
