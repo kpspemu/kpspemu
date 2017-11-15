@@ -5,13 +5,6 @@ import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.InstructionDispatcher
 import com.soywiz.kpspemu.cpu.InstructionEvaluator
 
-private inline val Int.rd: Int get() = (this ushr 11) and 0x1F
-private inline val Int.rt: Int get() = (this ushr 16) and 0x1F
-private inline val Int.rs: Int get() = (this ushr 21) and 0x1F
-private inline val Int.pos: Int get() = (this ushr 6) and 0x1F
-private inline val Int.s_imm16: Int get() = ((this and 0xFFFF) shl 16) shr 16
-private inline val Int.u_imm16: Int get() = this and 0xFFFF
-
 open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 	val stms = StmBuilder<Unit, CpuState, Unit>(Unit::class, CpuState::class, Unit::class)
 	val dispatcher = InstructionDispatcher(this)
@@ -70,5 +63,4 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
 	override fun lui(s: InstructionInfo) = s { RT = (U_IMM16_V shl 16).lit }
 }
 
-data class InstructionInfo(var PC: Int, var IR: Int) {
-}
+data class InstructionInfo(var PC: Int, var IR: Int)

@@ -1,11 +1,16 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.util.IdEnum
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.ge.LightModelEnum
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.error.SceKernelErrors
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.util.*
+import kotlin.reflect.KMutableProperty1
 
-@Suppress("UNUSED_PARAMETER")
+@Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate", "FunctionName")
 class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010011, "utility.prx", "sceUtility_Driver") {
 	fun sceUtilitySavedataInitStart(params: Ptr): Int {
 		logger.warn { "sceUtilitySavedataInitStart: $params" }
@@ -21,6 +26,74 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		return 0
 	}
 
+	companion object {
+		val PSP_SYSTEMPARAM_ID_STRING_NICKNAME = 1
+		val PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL = 2
+		val PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE = 3
+		val PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT = 4
+		val PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT = 5
+		val PSP_SYSTEMPARAM_ID_INT_TIMEZONE = 6
+		val PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS = 7
+		val PSP_SYSTEMPARAM_ID_INT_LANGUAGE = 8
+		val PSP_SYSTEMPARAM_ID_INT_UNKNOWN = 9
+		val PSP_SYSTEMPARAM_RETVAL_OK = 0
+		val PSP_SYSTEMPARAM_RETVAL_FAIL = 0x80110103
+		val PSP_SYSTEMPARAM_ADHOC_CHANNEL_AUTOMATIC = 0
+		val PSP_SYSTEMPARAM_ADHOC_CHANNEL_1 = 1
+		val PSP_SYSTEMPARAM_ADHOC_CHANNEL_6 = 6
+		val PSP_SYSTEMPARAM_ADHOC_CHANNEL_11 = 11
+		val PSP_SYSTEMPARAM_WLAN_POWERSAVE_OFF = 0
+		val PSP_SYSTEMPARAM_WLAN_POWERSAVE_ON = 1
+		val PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD = 0
+		val PSP_SYSTEMPARAM_DATE_FORMAT_MMDDYYYY = 1
+		val PSP_SYSTEMPARAM_DATE_FORMAT_DDMMYYYY = 2
+		val PSP_SYSTEMPARAM_TIME_FORMAT_24HR = 0
+		val PSP_SYSTEMPARAM_TIME_FORMAT_12HR = 1
+		val PSP_SYSTEMPARAM_DAYLIGHTSAVINGS_STD = 0
+		val PSP_SYSTEMPARAM_DAYLIGHTSAVINGS_SAVING = 1
+		val PSP_SYSTEMPARAM_LANGUAGE_JAPANESE = 0
+		val PSP_SYSTEMPARAM_LANGUAGE_ENGLISH = 1
+		val PSP_SYSTEMPARAM_LANGUAGE_FRENCH = 2
+		val PSP_SYSTEMPARAM_LANGUAGE_SPANISH = 3
+		val PSP_SYSTEMPARAM_LANGUAGE_GERMAN = 4
+		val PSP_SYSTEMPARAM_LANGUAGE_ITALIAN = 5
+		val PSP_SYSTEMPARAM_LANGUAGE_DUTCH = 6
+		val PSP_SYSTEMPARAM_LANGUAGE_PORTUGUESE = 7
+		val PSP_SYSTEMPARAM_LANGUAGE_RUSSIAN = 8
+		val PSP_SYSTEMPARAM_LANGUAGE_KOREAN = 9
+		val PSP_SYSTEMPARAM_LANGUAGE_CHINESE_TRADITIONAL = 10
+		val PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED = 11
+	}
+
+	// @TODO: Move to a system configuration class and make it mutable
+	val adhocChannel = 0
+	val wlanPowersave = 0
+	val dateFormat = PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD
+	val timeFormat = PSP_SYSTEMPARAM_TIME_FORMAT_24HR
+	val language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH
+	val timezone = 0
+	val daylightSavings = PSP_SYSTEMPARAM_DAYLIGHTSAVINGS_STD
+
+	fun sceUtilityGetSystemParamInt(id: Int, value: Ptr): Int {
+		logger.trace { "Not implemented: sceUtilityGetSystemParamInt:$id,$value" }
+		val avalue = when (id) {
+			PSP_SYSTEMPARAM_ID_STRING_NICKNAME -> -1
+			PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL -> adhocChannel
+			PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE -> wlanPowersave
+			PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT -> dateFormat
+			PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT -> timeFormat
+			PSP_SYSTEMPARAM_ID_INT_TIMEZONE -> timezone
+			PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS -> daylightSavings
+			PSP_SYSTEMPARAM_ID_INT_LANGUAGE -> language
+			PSP_SYSTEMPARAM_ID_INT_UNKNOWN -> -1
+			else -> -1
+		}
+		value.sw(0, avalue)
+		return PSP_SYSTEMPARAM_RETVAL_OK
+	}
+
+	fun sceUtilityMsgDialogInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x2AD8E239)
+
 	fun sceUtility_0251B134(cpu: CpuState): Unit = UNIMPLEMENTED(0x0251B134)
 	fun sceUtilityHtmlViewerUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0x05AFB9E4)
 	fun sceUtility_06A48659(cpu: CpuState): Unit = UNIMPLEMENTED(0x06A48659)
@@ -35,7 +108,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtility_28D35634(cpu: CpuState): Unit = UNIMPLEMENTED(0x28D35634)
 	fun sceUtility_2995D020(cpu: CpuState): Unit = UNIMPLEMENTED(0x2995D020)
 	fun sceUtilityLoadModule(cpu: CpuState): Unit = UNIMPLEMENTED(0x2A2B3DE0)
-	fun sceUtilityMsgDialogInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x2AD8E239)
 	fun sceUtility_2B96173B(cpu: CpuState): Unit = UNIMPLEMENTED(0x2B96173B)
 	fun sceUtilityGetSystemParamString(cpu: CpuState): Unit = UNIMPLEMENTED(0x34B78343)
 	fun sceUtility_3AAD51DC(cpu: CpuState): Unit = UNIMPLEMENTED(0x3AAD51DC)
@@ -76,7 +148,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtilityInstallUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0xA03D29BA)
 	fun sceUtility_A084E056(cpu: CpuState): Unit = UNIMPLEMENTED(0xA084E056)
 	fun sceUtility_A50E5B30(cpu: CpuState): Unit = UNIMPLEMENTED(0xA50E5B30)
-	fun sceUtilityGetSystemParamInt(cpu: CpuState): Unit = UNIMPLEMENTED(0xA5DA2406)
 	fun sceUtility_AB083EA9(cpu: CpuState): Unit = UNIMPLEMENTED(0xAB083EA9)
 	fun sceUtility_B0FB7FF5(cpu: CpuState): Unit = UNIMPLEMENTED(0xB0FB7FF5)
 	fun sceUtility_B62A4061(cpu: CpuState): Unit = UNIMPLEMENTED(0xB62A4061)
@@ -114,6 +185,7 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	override fun registerModule() {
 		registerFunctionInt("sceUtilitySavedataInitStart", 0x50C4CD57, since = 150) { sceUtilitySavedataInitStart(ptr) }
 		registerFunctionInt("sceUtilitySavedataGetStatus", 0x8874DBE0, since = 150) { sceUtilitySavedataGetStatus() }
+		registerFunctionInt("sceUtilityGetSystemParamInt", 0xA5DA2406, since = 150) { sceUtilityGetSystemParamInt(int, ptr) }
 
 		registerFunctionRaw("sceUtility_0251B134", 0x0251B134, since = 150) { sceUtility_0251B134(it) }
 		registerFunctionRaw("sceUtilityHtmlViewerUpdate", 0x05AFB9E4, since = 150) { sceUtilityHtmlViewerUpdate(it) }
@@ -170,7 +242,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtilityInstallUpdate", 0xA03D29BA, since = 150) { sceUtilityInstallUpdate(it) }
 		registerFunctionRaw("sceUtility_A084E056", 0xA084E056, since = 150) { sceUtility_A084E056(it) }
 		registerFunctionRaw("sceUtility_A50E5B30", 0xA50E5B30, since = 150) { sceUtility_A50E5B30(it) }
-		registerFunctionRaw("sceUtilityGetSystemParamInt", 0xA5DA2406, since = 150) { sceUtilityGetSystemParamInt(it) }
 		registerFunctionRaw("sceUtility_AB083EA9", 0xAB083EA9, since = 150) { sceUtility_AB083EA9(it) }
 		registerFunctionRaw("sceUtility_B0FB7FF5", 0xB0FB7FF5, since = 150) { sceUtility_B0FB7FF5(it) }
 		registerFunctionRaw("sceUtility_B62A4061", 0xB62A4061, since = 150) { sceUtility_B62A4061(it) }
@@ -204,4 +275,189 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtilityNetconfShutdownStart", 0xF88155F6, since = 150) { sceUtilityNetconfShutdownStart(it) }
 		registerFunctionRaw("sceUtility_F9E0008C", 0xF9E0008C, since = 150) { sceUtility_F9E0008C(it) }
 	}
+}
+
+enum class PspLanguages(override val id: Int) : IdEnum { // ISO-639-1
+	JAPANESE(0), // ja
+	ENGLISH(1), // en
+	FRENCH(2), // fr
+	SPANISH(3), // es
+	GERMAN(4), // de
+	ITALIAN(5), // it
+	DUTCH(6), // nl
+	PORTUGUESE(7), // pt
+	RUSSIAN(8), // ru
+	KOREAN(9), // ko
+	TRADITIONAL_CHINESE(10), // zh
+	SIMPLIFIED_CHINESE(11);// zh?
+
+	companion object : INT32_ENUM<PspLanguages>(values())
+}
+
+enum class PspUtilitySavedataMode(override val id: Int) : IdEnum {
+	Autoload(0), // PSP_UTILITY_SAVEDATA_AUTOLOAD = 0
+	Autosave(1), // PSP_UTILITY_SAVEDATA_AUTOSAVE = 1
+	Load(2), // PSP_UTILITY_SAVEDATA_LOAD = 2
+	Save(3), // PSP_UTILITY_SAVEDATA_SAVE = 3
+	ListLoad(4), // PSP_UTILITY_SAVEDATA_LISTLOAD = 4
+	ListSave(5), // PSP_UTILITY_SAVEDATA_LISTSAVE = 5
+	ListDelete(6), // PSP_UTILITY_SAVEDATA_LISTDELETE = 6
+	Delete(7), // PSP_UTILITY_SAVEDATA_DELETE = 7
+	Sizes(8), // PSP_UTILITY_SAVEDATA_SIZES = 8
+	AutoDelete(9), // PSP_UTILITY_SAVEDATA_AUTODELETE = 9
+	SingleDelete(10), // PSP_UTILITY_SAVEDATA_SINGLEDELETE = 10 = 0x0A
+	List(11), // PSP_UTILITY_SAVEDATA_LIST = 11 = 0x0B
+	Files(12), // PSP_UTILITY_SAVEDATA_FILES = 12 = 0x0C
+	MakeDataSecure(13), // PSP_UTILITY_SAVEDATA_MAKEDATASECURE = 13 = 0x0D
+	MakeData(14), // PSP_UTILITY_SAVEDATA_MAKEDATA = 14 = 0x0E
+	ReadSecure(15), // PSP_UTILITY_SAVEDATA_READSECURE = 15 = 0x0F
+	Read(16), // PSP_UTILITY_SAVEDATA_READ = 16 = 0x10
+	WriteSecure(17), // PSP_UTILITY_SAVEDATA_WRITESECURE = 17 = 0x11
+	Write(18), // PSP_UTILITY_SAVEDATA_WRITE = 18 = 0x12
+	EraseSecure(19), // PSP_UTILITY_SAVEDATA_ERASESECURE = 19 = 0x13
+	Erase(20), // PSP_UTILITY_SAVEDATA_ERASE = 20 = 0x14
+	DeleteData(21), // PSP_UTILITY_SAVEDATA_DELETEDATA = 21 = 0x15
+	GetSize(22); // PSP_UTILITY_SAVEDATA_GETSIZE = 22 = 0x16
+
+	companion object : INT32_ENUM<PspUtilitySavedataMode>(values())
+}
+
+enum class PspUtilitySavedataFocus(override val id: Int) : IdEnum {
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN(0), //
+	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTLIST(1), // First in list
+	PSP_UTILITY_SAVEDATA_FOCUS_LASTLIST(2), // Last in list
+	PSP_UTILITY_SAVEDATA_FOCUS_LATEST(3), // Most recent date
+	PSP_UTILITY_SAVEDATA_FOCUS_OLDEST(4), // Oldest date
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN2(5), //
+	PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN3(6), //
+	PSP_UTILITY_SAVEDATA_FOCUS_FIRSTEMPTY(7), // First empty slot
+	PSP_UTILITY_SAVEDATA_FOCUS_LASTEMPTY(8); // Last empty slot
+
+	companion object : INT32_ENUM<PspUtilitySavedataFocus>(values())
+}
+
+class PspUtilityDialogCommon(
+	var size: Int = 0, // 0000 - Size of the structure
+	var language: PspLanguages = PspLanguages.SPANISH, // 0004 - Language
+	var buttonSwap: Int = 0, // 0008 - Set to 1 for X/O button swap
+	var graphicsThread: Int = 0, // 000C - Graphics thread priority
+	var accessThread: Int = 0, // 0010 - Access/fileio thread priority (SceJobThread)
+	var fontThread: Int = 0, // 0014 - Font thread priority (ScePafThread)
+	var soundThread: Int = 0, // 0018 - Sound thread priority
+	var result: Int = SceKernelErrors.ERROR_OK, // 001C - Result
+	var reserved: ArrayList<Int> = arrayListOf(0, 0, 0, 0) // 0020 - Set to 0
+) {
+	companion object : Struct<PspUtilityDialogCommon>({ PspUtilityDialogCommon() },
+		PspUtilityDialogCommon::size AS INT32,
+		PspUtilityDialogCommon::language AS PspLanguages,
+		PspUtilityDialogCommon::buttonSwap AS INT32,
+		PspUtilityDialogCommon::graphicsThread AS INT32,
+		PspUtilityDialogCommon::accessThread AS INT32,
+		PspUtilityDialogCommon::fontThread AS INT32,
+		PspUtilityDialogCommon::soundThread AS INT32,
+		PspUtilityDialogCommon::result AS INT32,
+		PspUtilityDialogCommon::reserved AS ARRAY(INT32, 4)
+	)
+}
+
+class PspUtilitySavedataSFOParam(
+	var title: String = "", // 0000 -
+	var savedataTitle: String = "", // 0080 -
+	var detail: String = "", // 0100 -
+	var parentalLevel: Int = 0, // 0500 -
+	var unknown: ArrayList<Int> = arrayListOf(0, 0, 0) // 0501 -
+) {
+	companion object : Struct<PspUtilitySavedataSFOParam>({ PspUtilitySavedataSFOParam() },
+		PspUtilitySavedataSFOParam::title AS STRINGZ(0x80),
+		PspUtilitySavedataSFOParam::savedataTitle AS STRINGZ(0x80),
+		PspUtilitySavedataSFOParam::detail AS STRINGZ(0x400),
+		PspUtilitySavedataSFOParam::parentalLevel AS UINT8,
+		PspUtilitySavedataSFOParam::unknown AS ARRAY(UINT8, 3)
+	)
+}
+
+class PspUtilitySavedataFileData(
+	var bufferPointer: Int = 0, // 0000 -
+	var bufferSize: Int = 0, // 0004 -
+	var size: Int = 0, // 0008 - why are there two sizes?
+	var unknown: Int = 0 // 000C -
+) {
+	val used: Boolean
+		get() {
+			if (this.bufferPointer == 0) return false;
+			//if (BufferSize == 0) return false;
+			if (this.size == 0) return false;
+			return true;
+		}
+
+	companion object : Struct<PspUtilitySavedataFileData>({ PspUtilitySavedataFileData() },
+		PspUtilitySavedataFileData::bufferPointer AS INT32,
+		PspUtilitySavedataFileData::bufferSize AS INT32,
+		PspUtilitySavedataFileData::size AS INT32,
+		PspUtilitySavedataFileData::unknown AS INT32
+	)
+}
+
+class SceUtilitySavedataParam(
+	var base: PspUtilityDialogCommon = PspUtilityDialogCommon(), // 0000 - PspUtilityDialogCommon
+	var mode: PspUtilitySavedataMode = PspUtilitySavedataMode.Autoload, // 0030 -
+	var unknown1: Int = 0, // 0034 -
+	var overwrite: Int = 0, // 0038 -
+	var gameName: String = "", // 003C - GameName: name used from the game for saves, equal for all saves
+	var saveName: String = "", // 004C - SaveName: name of the particular save, normally a number
+	var saveNameListPointer: Int = 0, // 0060 - SaveNameList: used by multiple modes (char[20])
+	var fileName: String = "", // 0064 - FileName: Name of the data file of the game for example DATA.BIN
+	var dataBufPointer: Int = 0, // 0074 - Pointer to a buffer that will contain data file unencrypted data
+	var dataBufSize: Int = 0, // 0078 - Size of allocated space to dataBuf
+	var dataSize: Int = 0, // 007C -
+	var sfoParam: PspUtilitySavedataSFOParam = PspUtilitySavedataSFOParam(), // 0080 - (504?)
+	var icon0FileData: PspUtilitySavedataFileData = PspUtilitySavedataFileData(), // 0584 - (16)
+	var icon1FileData: PspUtilitySavedataFileData = PspUtilitySavedataFileData(), // 0594 - (16)
+	var pic1FileData: PspUtilitySavedataFileData = PspUtilitySavedataFileData(), // 05A4 - (16)
+	var snd0FileData: PspUtilitySavedataFileData = PspUtilitySavedataFileData(), // 05B4 - (16)
+	var newDataPointer: Int = 0, // 05C4 -Pointer to an PspUtilitySavedataListSaveNewData structure (PspUtilitySavedataListSaveNewData *)
+	var focus: PspUtilitySavedataFocus = PspUtilitySavedataFocus.PSP_UTILITY_SAVEDATA_FOCUS_UNKNOWN, // 05C8 -Initial focus for lists
+	var abortStatus: Int = 0, // 05CC -
+	var msFreeAddr: Int = 0, // 05D0 -
+	var msDataAddr: Int = 0, // 05D4 -
+	var utilityDataAddr: Int = 0, // 05D8 -
+	var key: ArrayList<Int> = arrayListOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), // 05E0 - Key: Encrypt/decrypt key for save with firmware >= 2.00
+	var secureVersion: Int = 0, // 05F0 -
+	var multiStatus: Int = 0, // 05F4 -
+	var idListAddr: Int = 0, // 05F8 -
+	var fileListAddr: Int = 0, // 05FC -
+	var sizeAddr: Int = 0, // 0600 -
+	var unknown3: ArrayList<Int> = arrayListOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) // 0604 -unknown3: ?
+) {
+	companion object : Struct<SceUtilitySavedataParam>({ SceUtilitySavedataParam() },
+		SceUtilitySavedataParam::base AS PspUtilityDialogCommon,
+		SceUtilitySavedataParam::mode AS PspUtilitySavedataMode,
+		SceUtilitySavedataParam::unknown1 AS INT32,
+		SceUtilitySavedataParam::overwrite AS INT32,
+		SceUtilitySavedataParam::gameName AS STRINGZ(16),
+		SceUtilitySavedataParam::saveName AS STRINGZ(20),
+		SceUtilitySavedataParam::saveNameListPointer AS INT32,
+		SceUtilitySavedataParam::fileName AS STRINGZ(16),
+		SceUtilitySavedataParam::dataBufPointer AS INT32,
+		SceUtilitySavedataParam::dataBufSize AS INT32,
+		SceUtilitySavedataParam::dataSize AS INT32,
+		SceUtilitySavedataParam::sfoParam AS PspUtilitySavedataSFOParam,
+		SceUtilitySavedataParam::icon0FileData AS PspUtilitySavedataFileData,
+		SceUtilitySavedataParam::icon1FileData AS PspUtilitySavedataFileData,
+		SceUtilitySavedataParam::pic1FileData AS PspUtilitySavedataFileData,
+		SceUtilitySavedataParam::snd0FileData AS PspUtilitySavedataFileData,
+		SceUtilitySavedataParam::newDataPointer AS INT32,
+		SceUtilitySavedataParam::focus AS PspUtilitySavedataFocus,
+		SceUtilitySavedataParam::abortStatus AS INT32,
+		SceUtilitySavedataParam::msFreeAddr AS INT32,
+		SceUtilitySavedataParam::msDataAddr AS INT32,
+		SceUtilitySavedataParam::utilityDataAddr AS INT32,
+		SceUtilitySavedataParam::key AS ARRAY(UINT8, 16),
+		SceUtilitySavedataParam::secureVersion AS INT32,
+		SceUtilitySavedataParam::multiStatus AS INT32,
+		SceUtilitySavedataParam::idListAddr AS INT32,
+		SceUtilitySavedataParam::fileListAddr AS INT32,
+		SceUtilitySavedataParam::sizeAddr AS INT32,
+		SceUtilitySavedataParam::unknown3 AS ARRAY(UINT8, 20 - 5)
+	)
 }

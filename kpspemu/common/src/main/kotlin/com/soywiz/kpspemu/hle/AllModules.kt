@@ -35,4 +35,9 @@ fun ModuleManager.registerNativeModules() {
 	register(ExceptionManagerForKernel(emulator))
 	register(LoadCoreForKernel(emulator))
 	register(sceHprm(emulator))
+	register(sceNet(emulator))
+	register(sceNetAdhoc(emulator))
+	register(sceNetAdhocctl(emulator))
+	register(sceNetAdhocMatching(emulator))
+	register(sceWlanDrv(emulator))
 }
