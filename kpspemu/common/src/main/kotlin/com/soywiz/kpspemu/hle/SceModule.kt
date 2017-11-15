@@ -35,12 +35,12 @@ class RegisterReader {
 
 	val thread: PspThread get() = cpu.thread
 	val mem: Memory get() = cpu.mem
-	val int: Int get() = this.cpu.GPR[pos++]
+	val int: Int get() = this.cpu.getGpr(pos++)
 	val long: Long
 		get() {
 			pos = pos.nextAlignedTo(2) // Ensure register alignment
-			val low = this.cpu.GPR[pos++]
-			val high = this.cpu.GPR[pos++]
+			val low = this.cpu.getGpr(pos++)
+			val high = this.cpu.getGpr(pos++)
 			return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
 		}
 	val ptr: Ptr get() = MemPtr(mem, int)
