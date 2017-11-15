@@ -16,7 +16,7 @@ class DynarekMethodBuilderTest {
 		mb.dispatch(4, 0x3C100890) // lui 0x890
 		mb.dispatch(8, 0x26040004) // addiu   $a0, $s0, 4
 		val func = mb.generateFunction()
-		println(func.generateJsBody())
+		println(func.generateJsBody(strict = false))
 
 		val state = CpuState(GlobalCpuState(), Memory())
 		val ff = func.generateDynarek()

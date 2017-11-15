@@ -18,8 +18,10 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 
 	fun generateFunction() = DFunction1(DVOID, DClass(CpuState::class), stms.build())
 
+	private val ii = InstructionInfo(0, 0)
 	fun dispatch(pc: Int, i: Int) {
-		val ii = InstructionInfo(pc, i)
+		ii.PC = pc
+		ii.IR = i
 		return dispatcher.dispatch(ii, pc, i)
 	}
 
@@ -68,5 +70,5 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
 	override fun lui(s: InstructionInfo) = s { RT = (U_IMM16_V shl 16).lit }
 }
 
-data class InstructionInfo(val PC: Int, val IR: Int) {
+data class InstructionInfo(var PC: Int, var IR: Int) {
 }
