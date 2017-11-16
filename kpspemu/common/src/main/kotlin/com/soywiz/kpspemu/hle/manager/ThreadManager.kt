@@ -82,6 +82,28 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		}
 		throw CpuBreakException(CpuBreakException.THREAD_EXIT_KILL)
 	}
+
+	fun executeInterrupt(address: Int, argument: Int) {
+		val gcpustate = emulator.globalCpuState
+		val oldInsideInterrupt = gcpustate.insideInterrupt
+		gcpustate.insideInterrupt = true
+		val thread = threads.first()
+		val cpu = thread.state
+		val backCpu = cpu.clone()
+		try {
+			cpu.setPC(address)
+			cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
+			cpu.r4 = argument
+			mem.sw(CpuBreakException.INTERRUPT_RETURN_RA, 0b000000_00000000000000000000_001101 or (CpuBreakException.INTERRUPT_RETURN shl 6))
+
+			thread.step(timeManager.getTimeInMicrosecondsDouble())
+		} catch (e: CpuBreakException) {
+			// END OF INTERRUPT
+		} finally {
+			cpu.setTo(backCpu)
+			gcpustate.insideInterrupt = oldInsideInterrupt
+		}
+	}
 }
 
 sealed class WaitObject {

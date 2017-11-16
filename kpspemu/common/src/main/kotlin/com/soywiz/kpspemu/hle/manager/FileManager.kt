@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.lang.ASCII
-import com.soywiz.korio.stream.*
+import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsUtil
 import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.util.ResourceItem
-import com.soywiz.kpspemu.util.ResourceList
+import com.soywiz.kpspemu.util.*
 
 class FileManager(val emulator: Emulator) {
 	val deviceManager get() = emulator.deviceManager
@@ -47,23 +46,23 @@ class DirectoryDescriptor(override val id: Int) : ResourceItem {
 }
 
 data class SceIoStat(
-	val mode: Int, // SceMode
-	val attributes: Int, // IOFileModes.File
-	val size: Long,
-	val timeCreation: ScePspDateTime,
-	val timeLastAccess: ScePspDateTime,
-	val timeLastModification: ScePspDateTime,
-	val device: IntArray = IntArray(6)
+	var mode: Int = 0, // SceMode
+	var attributes: Int = 0, // IOFileModes.File
+	var size: Long = 0L,
+	var timeCreation: ScePspDateTime = ScePspDateTime(0L),
+	var timeLastAccess: ScePspDateTime = ScePspDateTime(0L),
+	var timeLastModification: ScePspDateTime = ScePspDateTime(0L),
+	var device: IntArray = IntArray(6)
 ) {
-	fun write(s: SyncStream) = s.run {
-		write32_le(mode)
-		write32_le(attributes)
-		write64_le(size.toLong())
-		timeCreation.write(this)
-		timeLastAccess.write(this)
-		timeLastModification.write(this)
-		for (n in 0 until 6) write32_le(device[n])
-	}
+	companion object : Struct<SceIoStat>({ SceIoStat() },
+		SceIoStat::mode AS INT32,
+		SceIoStat::attributes AS INT32,
+		SceIoStat::size AS INT64,
+		SceIoStat::timeCreation AS ScePspDateTime,
+		SceIoStat::timeLastAccess AS ScePspDateTime,
+		SceIoStat::timeLastModification AS ScePspDateTime,
+		SceIoStat::device AS INTARRAY(INT32, 6)
+	)
 }
 
 //class SceIoStat(
@@ -88,17 +87,17 @@ data class SceIoStat(
 
 
 data class HleIoDirent(
-	val stat: SceIoStat,
-	val name: String,
-	val privateData: Int = 0,
-	val dummy: Int = 0
+	var stat: SceIoStat = SceIoStat(),
+	var name: String = "",
+	var privateData: Int = 0,
+	var dummy: Int = 0
 ) {
-	fun write(s: SyncStream) {
-		stat.write(s)
-		s.writeStringz(name, 256, ASCII)
-		s.write32_le(privateData)
-		s.write32_le(dummy)
-	}
+	companion object : Struct<HleIoDirent>({ HleIoDirent() },
+		HleIoDirent::stat AS SceIoStat,
+		HleIoDirent::name AS STRINGZ(ASCII, 256),
+		HleIoDirent::privateData AS INT32,
+		HleIoDirent::dummy AS INT32
+	)
 }
 
 object IOFileModes {

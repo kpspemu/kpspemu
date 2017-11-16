@@ -8,6 +8,7 @@ import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.rtc
+import com.soywiz.kpspemu.timeManager
 import com.soywiz.kpspemu.util.currentTimeMicro
 
 @Suppress("UNUSED_PARAMETER")
@@ -62,6 +63,8 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 		emulator.invalidateDcache(ptr, size)
 	}
 
+	fun sceKernelLibcClock(): Int = timeManager.getTimeInMicrosecondsInt()
+
 	fun UtilsForUser_004D4DEE(cpu: CpuState): Unit = UNIMPLEMENTED(0x004D4DEE)
 	fun sceKernelUtilsMt19937UInt(cpu: CpuState): Unit = UNIMPLEMENTED(0x06FB8A63)
 	fun UtilsForUser_157A383A(cpu: CpuState): Unit = UNIMPLEMENTED(0x157A383A)
@@ -86,7 +89,6 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 	fun sceKernelDcacheProbe(cpu: CpuState): Unit = UNIMPLEMENTED(0x80001C4C)
 	fun sceKernelUtilsSha1Digest(cpu: CpuState): Unit = UNIMPLEMENTED(0x840259F1)
 	fun sceKernelPutUserLog(cpu: CpuState): Unit = UNIMPLEMENTED(0x87E81561)
-	fun sceKernelLibcClock(cpu: CpuState): Unit = UNIMPLEMENTED(0x91E4F6A7)
 	fun sceKernelIcacheInvalidateAll(cpu: CpuState): Unit = UNIMPLEMENTED(0x920F104A)
 	fun UtilsForUser_99134C3F(cpu: CpuState): Unit = UNIMPLEMENTED(0x99134C3F)
 	fun sceKernelUtilsMd5BlockInit(cpu: CpuState): Unit = UNIMPLEMENTED(0x9E5C5086)
@@ -111,6 +113,7 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 		registerFunctionInt("sceKernelLibcTime", 0x27CC57F0, since = 150) { sceKernelLibcTime(ptr) }
 		registerFunctionInt("sceKernelDcacheWritebackAll", 0x79D1C3FA, since = 150) { sceKernelDcacheWritebackAll() }
 		registerFunctionVoid("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(int, int) }
+		registerFunctionInt("sceKernelLibcClock", 0x91E4F6A7, since = 150) { sceKernelLibcClock() }
 
 		registerFunctionRaw("UtilsForUser_004D4DEE", 0x004D4DEE, since = 150) { UtilsForUser_004D4DEE(it) }
 		registerFunctionRaw("UtilsForUser_157A383A", 0x157A383A, since = 150) { UtilsForUser_157A383A(it) }
@@ -135,7 +138,6 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 		registerFunctionRaw("sceKernelDcacheProbe", 0x80001C4C, since = 150) { sceKernelDcacheProbe(it) }
 		registerFunctionRaw("sceKernelUtilsSha1Digest", 0x840259F1, since = 150) { sceKernelUtilsSha1Digest(it) }
 		registerFunctionRaw("sceKernelPutUserLog", 0x87E81561, since = 150) { sceKernelPutUserLog(it) }
-		registerFunctionRaw("sceKernelLibcClock", 0x91E4F6A7, since = 150) { sceKernelLibcClock(it) }
 		registerFunctionRaw("sceKernelIcacheInvalidateAll", 0x920F104A, since = 150) { sceKernelIcacheInvalidateAll(it) }
 		registerFunctionRaw("UtilsForUser_99134C3F", 0x99134C3F, since = 150) { UtilsForUser_99134C3F(it) }
 		registerFunctionRaw("sceKernelUtilsMd5BlockInit", 0x9E5C5086, since = 150) { sceKernelUtilsMd5BlockInit(it) }

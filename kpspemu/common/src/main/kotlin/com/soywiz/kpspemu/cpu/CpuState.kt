@@ -8,12 +8,15 @@ import com.soywiz.korio.error.invalidArg
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
+import com.soywiz.kpspemu.hle.modules.sceWlanDrv
 import com.soywiz.kpspemu.mem.Memory
 
 data class CpuBreakException(val id: Int) : Exception() {
 	companion object {
 		val THREAD_WAIT = 10001
 		val THREAD_EXIT_KILL = 10002
+		val INTERRUPT_RETURN = 10003
+		val INTERRUPT_RETURN_RA = Memory.MAIN_OFFSET
 	}
 }
 
@@ -156,6 +159,13 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	fun getGpr(index: Int): Int = _R[index]
 	fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index] = v }
 
+	fun writeRegisters(addr: Int, start: Int = 0, count: Int = 32 - start) {
+		for (n in 0 until count) mem.sw(addr + n * 4, getGpr(start + n))
+	}
+
+	fun readRegisters(addr: Int, start: Int = 0, count: Int = 32 - start) {
+		for (n in 0 until count) setGpr(start + n, mem.lw(addr + n * 4))
+	}
 
 	//val FPR = FloatArray(32) { 0f }
 	//val FPR_I = FprI(this)
@@ -206,6 +216,31 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	fun getVfprI(index: Int): Int = _VFPR_I[index]
 
 	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
+
+	fun clone() = CpuState(globalCpuState, mem, syscalls).apply {
+		this@CpuState.copyTo(this)
+	}
+
+	fun setTo(src: CpuState) = run { src.copyTo(this) }
+
+	fun copyTo(dst: CpuState) {
+		val src = this
+		dst._PC = src._PC
+		dst._nPC = src._nPC
+		dst.HI = src.HI
+		dst.LO = src.LO
+		dst.IC = src.IC
+		dst.IR = src.IR
+		dst.fcr0 = src.fcr0
+		dst.fcr25 = src.fcr25
+		dst.fcr26 = src.fcr26
+		dst.fcr27 = src.fcr27
+		dst.fcr28 = src.fcr28
+		dst.fcr31 = src.fcr31
+		for (n in 0 until 32) dst.setGpr(n, src.getGpr(n))
+		for (n in 0 until 32) dst.setFpr(n, src.getFpr(n))
+		for (n in 0 until 128) dst.setVfpr(n, src.getVfpr(n))
+	}
 }
 
 /*

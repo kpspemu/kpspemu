@@ -134,6 +134,7 @@ abstract class SceModule(
 				override val context: CoroutineContext = coroutineContext
 
 				override fun resume(value: Int) {
+					logger.trace { "Resumed $name with value: $value" }
 					cpu.r2 = value
 					completed = true
 					it.thread.resume()

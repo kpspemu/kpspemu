@@ -49,6 +49,12 @@ class ThreadManForUser(emulator: Emulator)
 		return 0
 	}
 
+	fun sceKernelChangeThreadPriority(threadId: Int, priority: Int): Int {
+		val thread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+		thread.priority = priority
+		return 0
+	}
+
 	fun sceKernelDeleteThread(threadId: Int): Int {
 		threadManager.getById(threadId).delete()
 		return 0
@@ -105,7 +111,7 @@ class ThreadManForUser(emulator: Emulator)
 		val newThread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
 		newThread.stop("_sceKernelTerminateThread")
 		newThread.exitStatus = 0x800201ac.toInt()
-		return 0;
+		return 0
 	}
 
 	class Semaphore(
@@ -204,7 +210,6 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelUnlockMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0x6B30100F)
 	fun _sceKernelReturnFromCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x6E9EA350)
 	fun ThreadManForUser_71040D5C(cpu: CpuState): Unit = UNIMPLEMENTED(0x71040D5C)
-	fun sceKernelChangeThreadPriority(cpu: CpuState): Unit = UNIMPLEMENTED(0x71BC9871)
 	fun sceKernelReleaseThreadEventHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x72F3C145)
 	fun sceKernelReferCallbackStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x730ED8BC)
 	fun sceKernelReceiveMsgPipe(cpu: CpuState): Unit = UNIMPLEMENTED(0x74829B76)
@@ -307,6 +312,7 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionSuspendInt("sceKernelWaitSemaCB", 0x6D212BAC, since = 150, cb = true) { _sceKernelWaitSema(thread, int, int, ptr) }
 		registerFunctionInt("sceKernelSignalSema", 0x3F53E640, since = 150) { sceKernelSignalSema(thread, int, int) }
 		registerFunctionInt("sceKernelDeleteSema", 0x28B6489C, since = 150) { sceKernelDeleteSema(int) }
+		registerFunctionInt("sceKernelChangeThreadPriority", 0x71BC9871, since = 150) { sceKernelChangeThreadPriority(int, int) }
 
 		registerFunctionRaw("sceKernelGetVTimerTime", 0x034A921F, since = 150) { sceKernelGetVTimerTime(it) }
 		registerFunctionRaw("sceKernelRegisterThreadEventHandler", 0x0C106E53, since = 150) { sceKernelRegisterThreadEventHandler(it) }
@@ -351,7 +357,6 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelUnlockMutex", 0x6B30100F, since = 150) { sceKernelUnlockMutex(it) }
 		registerFunctionRaw("_sceKernelReturnFromCallback", 0x6E9EA350, since = 150) { _sceKernelReturnFromCallback(it) }
 		registerFunctionRaw("ThreadManForUser_71040D5C", 0x71040D5C, since = 150) { ThreadManForUser_71040D5C(it) }
-		registerFunctionRaw("sceKernelChangeThreadPriority", 0x71BC9871, since = 150) { sceKernelChangeThreadPriority(it) }
 		registerFunctionRaw("sceKernelReleaseThreadEventHandler", 0x72F3C145, since = 150) { sceKernelReleaseThreadEventHandler(it) }
 		registerFunctionRaw("sceKernelReferCallbackStatus", 0x730ED8BC, since = 150) { sceKernelReferCallbackStatus(it) }
 		registerFunctionRaw("sceKernelReceiveMsgPipe", 0x74829B76, since = 150) { sceKernelReceiveMsgPipe(it) }

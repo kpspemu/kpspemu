@@ -15,12 +15,13 @@ class InterruptManager(val emulator: Emulator) {
 		state.interruptFlags = state.interruptFlags or value
 	}
 
-	class InterruptHandler(val id: Int) {
-		var enabled: Boolean = false
-		var address: Int = 0
-		var argument: Int = 0
+	data class InterruptHandler(
+		val id: Int,
+		var enabled: Boolean = false,
+		var address: Int = 0,
+		var argument: Int = 0,
 		var cpuState: CpuState? = null
-	}
+	)
 
 	class InterruptKind(val index: Int) {
 		val handlers by lazy { (0 until 32).map { InterruptHandler(it) } }
@@ -30,6 +31,14 @@ class InterruptManager(val emulator: Emulator) {
 
 	fun get(interrupt: Int, handlerIndex: Int): InterruptHandler {
 		return interrupts[interrupt].handlers[handlerIndex]
+	}
+
+	fun dispatchVsync() {
+		val int = interrupts[PspInterrupts.PSP_VBLANK_INT]
+		for (handler in int.handlers.filter { it.enabled }) {
+			println("VBLANK Interrupt: $handler")
+			emulator.threadManager.executeInterrupt(handler.address, handler.argument)
+		}
 	}
 }
 

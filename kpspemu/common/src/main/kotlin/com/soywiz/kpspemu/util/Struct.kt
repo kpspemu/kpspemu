@@ -60,9 +60,19 @@ object UINT8 : StructType<Int> {
 	override fun read(s: SyncStream): Int = s.readU8()
 }
 
+object UINT16 : StructType<Int> {
+	override fun write(s: SyncStream, value: Int) = s.write16_le(value)
+	override fun read(s: SyncStream): Int = s.readU16_le()
+}
+
 object INT32 : StructType<Int> {
 	override fun write(s: SyncStream, value: Int) = s.write32_le(value)
 	override fun read(s: SyncStream): Int = s.readS32_le()
+}
+
+object INT64 : StructType<Long> {
+	override fun write(s: SyncStream, value: Long) = s.write64_le(value)
+	override fun read(s: SyncStream): Long = s.readS64_le()
 }
 
 object FLOAT32 : StructType<Float> {

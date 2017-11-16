@@ -14,6 +14,7 @@ class InterruptManager(emulator: Emulator) : SceModule(emulator, "InterruptManag
 		intr.address = callbackAddress
 		intr.argument = callbackArgument
 		intr.enabled = true
+		intr.cpuState = thread.state
 		return 0
 	}
 

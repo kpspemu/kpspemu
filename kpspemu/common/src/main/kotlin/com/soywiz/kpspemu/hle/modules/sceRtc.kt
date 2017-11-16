@@ -10,6 +10,7 @@ import com.soywiz.kpspemu.hle.manager.ScePspDateTime
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.openSync
+import com.soywiz.kpspemu.mem.write
 import com.soywiz.kpspemu.timeManager
 
 @Suppress("UNUSED_PARAMETER")
@@ -21,7 +22,7 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcSetTick(datePtr: Ptr, ticksPtr: Ptr): Int {
 		val ticks = ticksPtr.ldw(0)
 		val time = ScePspDateTime(DateTime(ticks))
-		time.write(datePtr.openSync())
+		datePtr.write(ScePspDateTime, time)
 		return 0
 	}
 

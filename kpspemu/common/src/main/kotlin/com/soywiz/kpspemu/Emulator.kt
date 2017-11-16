@@ -3,6 +3,7 @@ package com.soywiz.kpspemu
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.battery.PspBattery
+import com.soywiz.kpspemu.cpu.CpuBreakException
 import com.soywiz.kpspemu.cpu.GlobalCpuState
 import com.soywiz.kpspemu.ctrl.PspController
 import com.soywiz.kpspemu.display.PspDisplay
@@ -44,6 +45,7 @@ class Emulator(
 		controller.startFrame(timeManager.getTimeInMicrosecondsInt())
 		threadManager.vblank()
 		display.dispatchVsync()
+		interruptManager.dispatchVsync()
 		threadManager.step()
 		ge.run()
 		gpu.render()

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.timeManager
 
 @Suppress("UNUSED_PARAMETER")
 class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel", 0x00090011, "sysmem.prx", "sceSystemMemoryManager") {
@@ -12,6 +13,7 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 	fun sceKernelDcacheWritebackInvalidateRange(ptr: Int, size: Int): Unit {
 		emulator.invalidateDcache(ptr, size)
 	}
+	fun sceKernelLibcClock(): Int = timeManager.getTimeInMicrosecondsInt()
 
 	fun UtilsForKernel_004D4DEE(cpu: CpuState): Unit = UNIMPLEMENTED(0x004D4DEE)
 	fun sceKernelUtilsMt19937UInt(cpu: CpuState): Unit = UNIMPLEMENTED(0x06FB8A63)
@@ -49,7 +51,6 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 	fun sceKernelDcacheInvalidateAll(cpu: CpuState): Unit = UNIMPLEMENTED(0x864A9D72)
 	fun sceKernelPutUserLog(cpu: CpuState): Unit = UNIMPLEMENTED(0x87E81561)
 	fun sceKernelGzipGetComment(cpu: CpuState): Unit = UNIMPLEMENTED(0x8C1FBE04)
-	fun sceKernelLibcClock(cpu: CpuState): Unit = UNIMPLEMENTED(0x91E4F6A7)
 	fun sceKernelIcacheInvalidateAll(cpu: CpuState): Unit = UNIMPLEMENTED(0x920F104A)
 	fun sceKernelRegisterUserLogHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x92282A47)
 	fun sceKernelSetGPOMask(cpu: CpuState): Unit = UNIMPLEMENTED(0x95035FEF)
@@ -78,6 +79,7 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 	override fun registerModule() {
 		registerFunctionVoid("sceKernelIcacheInvalidateRange", 0xC2DF770E, since = 150) { sceKernelIcacheInvalidateRange(int, int) }
 		registerFunctionVoid("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(int, int) }
+		registerFunctionInt("sceKernelLibcClock", 0x91E4F6A7, since = 150) { sceKernelLibcClock() }
 
 		registerFunctionRaw("UtilsForKernel_004D4DEE", 0x004D4DEE, since = 150) { UtilsForKernel_004D4DEE(it) }
 		registerFunctionRaw("sceKernelUtilsMt19937UInt", 0x06FB8A63, since = 150) { sceKernelUtilsMt19937UInt(it) }
@@ -115,7 +117,6 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 		registerFunctionRaw("sceKernelDcacheInvalidateAll", 0x864A9D72, since = 150) { sceKernelDcacheInvalidateAll(it) }
 		registerFunctionRaw("sceKernelPutUserLog", 0x87E81561, since = 150) { sceKernelPutUserLog(it) }
 		registerFunctionRaw("sceKernelGzipGetComment", 0x8C1FBE04, since = 150) { sceKernelGzipGetComment(it) }
-		registerFunctionRaw("sceKernelLibcClock", 0x91E4F6A7, since = 150) { sceKernelLibcClock(it) }
 		registerFunctionRaw("sceKernelIcacheInvalidateAll", 0x920F104A, since = 150) { sceKernelIcacheInvalidateAll(it) }
 		registerFunctionRaw("sceKernelRegisterUserLogHandler", 0x92282A47, since = 150) { sceKernelRegisterUserLogHandler(it) }
 		registerFunctionRaw("sceKernelSetGPOMask", 0x95035FEF, since = 150) { sceKernelSetGPOMask(it) }

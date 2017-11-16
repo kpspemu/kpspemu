@@ -41,6 +41,7 @@ interface Ptr {
 }
 
 fun <T> Ptr.read(struct: Struct<T>): T = openSync().read(struct)
+fun <T> Ptr.write(struct: Struct<T>, value: T): Unit = openSync().write(struct, value)
 
 inline fun <T, TR> Ptr.capture(struct: Struct<T>, callback: (T) -> TR): TR {
 	val ptr = this

@@ -18,6 +18,7 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
+import com.soywiz.kpspemu.util.write
 
 @Suppress("UNUSED_PARAMETER")
 class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUser", 0x40010011, "iofilemgr.prx", "sceIOFileManager") {
@@ -55,6 +56,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 				else -> VfsOpenMode.READ
 			}
 			file.stream = file.file.open(flags2)
+			logger.warn { "WIP: sceIoOpen --> ${file.id}" }
 			return file.id
 		} catch (e: Throwable) {
 			println("Error openingfile: $fileName : '${e.message}'")
@@ -66,6 +68,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 
 	suspend fun sceIoGetstat(fileName: String?, ptr: Ptr): Int {
+		logger.warn { "sceIoGetstat:$fileName,$ptr" }
 		val file = resolve(fileName)
 		val fstat = file.stat()
 		val stat = SceIoStat(
@@ -77,7 +80,8 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			timeLastModification = ScePspDateTime(fstat.modifiedDate),
 			device = IntArray(6)
 		)
-		stat.write(ptr.openSync())
+		ptr.openSync().write(SceIoStat, stat)
+		logger.warn { "sceIoGetstat --> 0" }
 		return 0
 	}
 
@@ -90,7 +94,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun _sceIoLseek(fileId: Int, offset: Long, whence: Int): Long {
-		logger.info { "WIP: _sceIoLseek: $fileId, $offset, $whence" }
+		logger.warn { "WIP: _sceIoLseek: $fileId, $offset, $whence" }
 		val stream = fileDescriptors[fileId].stream
 		stream.position = when (whence) {
 			SeekType.Set -> offset
@@ -129,7 +133,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoClose(fileId: Int): Int {
-		logger.info { "WIP: sceIoClose: $fileId" }
+		logger.warn { "WIP: sceIoClose: $fileId" }
 		fileDescriptors.freeById(fileId)
 		return 0
 	}
