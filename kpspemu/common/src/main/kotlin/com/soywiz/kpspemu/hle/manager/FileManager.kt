@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.lang.ASCII
+import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsUtil
@@ -94,13 +95,16 @@ data class HleIoDirent(
 ) {
 	companion object : Struct<HleIoDirent>({ HleIoDirent() },
 		HleIoDirent::stat AS SceIoStat,
-		HleIoDirent::name AS STRINGZ(ASCII, 256),
+		HleIoDirent::name AS STRINGZ(UTF8, 256),
 		HleIoDirent::privateData AS INT32,
 		HleIoDirent::dummy AS INT32
 	)
 }
 
 object IOFileModes {
+	val DIR = 0x1000
+	val FILE = 0x2000
+
 	val FormatMask = 0x0038
 	val SymbolicLink = 0x0008
 	val Directory = 0x0010

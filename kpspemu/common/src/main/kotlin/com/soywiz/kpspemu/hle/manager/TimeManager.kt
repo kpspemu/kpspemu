@@ -16,7 +16,7 @@ class TimeManager(override val emulator: Emulator) : WithEmulator {
 	fun getTimeInSeconds(): Int = (Klock.currentTimeMillisDouble() / 1000).toInt()
 }
 
-class ScePspDateTime(
+data class ScePspDateTime(
 	var year: Int = 0,
 	var month: Int = 0,
 	var day: Int = 0,

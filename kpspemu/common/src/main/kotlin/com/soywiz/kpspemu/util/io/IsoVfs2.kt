@@ -31,7 +31,7 @@ object ISO2 {
 			val vfs = this
 			val isoFile = iso
 
-			fun getVfsStat(file: IsoFile): VfsStat = createExistsStat(file.fullname, isDirectory = file.isDirectory, size = file.size)
+			fun getVfsStat(file: IsoFile): VfsStat = createExistsStat(file.fullname, isDirectory = file.isDirectory, size = file.size, extraInfo = intArrayOf(file.record.extent, 0, 0, 0, 0, 0))
 
 			suspend override fun stat(path: String): VfsStat = try {
 				getVfsStat(isoFile[path])

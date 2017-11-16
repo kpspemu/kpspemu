@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.async.toList
+import com.soywiz.korio.async.*
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.printStackTrace
@@ -18,6 +19,10 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
+import com.soywiz.kpspemu.util.AsyncPool2
+import com.soywiz.kpspemu.util.PoolItem
+import com.soywiz.kpspemu.util.Resetable
+import com.soywiz.kpspemu.util.io.ISO2
 import com.soywiz.kpspemu.util.write
 
 @Suppress("UNUSED_PARAMETER")
@@ -66,20 +71,24 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		}
 	}
 
+	fun VfsStat.toSce() = SceIoStat(
+		mode = 511 ,
+		attributes = when {
+			isDirectory -> IOFileModes.DIR or IOFileModes.Directory or IOFileModes.CanRead
+			else -> IOFileModes.FILE or IOFileModes.File or IOFileModes.CanRead or IOFileModes.CanExecute or IOFileModes.CanWrite
+		},
+		size = size,
+		timeCreation = ScePspDateTime(createDate),
+		timeLastAccess = ScePspDateTime(lastAccessDate),
+		timeLastModification = ScePspDateTime(modifiedDate),
+		device = (extraInfo as? IntArray?) ?: intArrayOf(0, 0, 0, 0, 0, 0)
+	)
 
 	suspend fun sceIoGetstat(fileName: String?, ptr: Ptr): Int {
 		logger.warn { "sceIoGetstat:$fileName,$ptr" }
 		val file = resolve(fileName)
 		val fstat = file.stat()
-		val stat = SceIoStat(
-			mode = IOFileModes.File,
-			attributes = 0,
-			size = fstat.size,
-			timeCreation = ScePspDateTime(fstat.createDate),
-			timeLastAccess = ScePspDateTime(fstat.lastAccessDate),
-			timeLastModification = ScePspDateTime(fstat.modifiedDate),
-			device = IntArray(6)
-		)
+		val stat = fstat.toSce()
 		ptr.openSync().write(SceIoStat, stat)
 		logger.warn { "sceIoGetstat --> 0" }
 		return 0
@@ -174,51 +183,45 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun sceIoDopen(path: String?): Int {
-		//logger.error { "sceIoDopen:$path" }
-		//try {
-		//	logger.error { "sceIoDopen:$path" }
-		//	val dd = directoryDescriptors.alloc()
-		//	dd.directory = resolve(path)
-		//	dd.pos = 0
-		//	dd.files = dd.directory.list().toList()
-		//	return dd.id
-		//} catch (e: Throwable) {
-		//	e.printStackTrace()
-		//	return -1
-		//}
-		return 0
+		logger.error { "sceIoDopen:$path" }
+		try {
+			logger.error { "sceIoDopen:$path" }
+			val dd = directoryDescriptors.alloc()
+			dd.directory = resolve(path)
+			dd.pos = 0
+			dd.files = dd.directory.list().toList()
+			return dd.id
+		} catch (e: Throwable) {
+			e.printStackTrace()
+			return -1
+		}
+		//return 0
 	}
 
 	suspend fun sceIoDread(id: Int, ptr: Ptr): Int {
 		logger.error { "sceIoDread:$id,$ptr" }
-		//val dd = directoryDescriptors[id]
-		//if (dd.remaining > 0) {
-		//	val file = dd.files[dd.pos++]
-		//	val stat = file.stat()
-		//	val dirent = HleIoDirent(
-		//		stat = SceIoStat(
-		//			mode = 0b0_111_111_111,
-		//			attributes = if (stat.isDirectory) IOFileModes.Directory else IOFileModes.File,
-		//			size = stat.size,
-		//			timeCreation = ScePspDateTime(stat.createDate),
-		//			timeLastAccess = ScePspDateTime(stat.lastAccessDate),
-		//			timeLastModification = ScePspDateTime(stat.modifiedDate),
-		//			device = intArrayOf(0, 0, 0, 0, 0, 0)
-		//		),
-		//		name = file.basename,
-		//		privateData = 0,
-		//		dummy = 0
-		//	)
-//
-		//	dirent.write(ptr.openSync())
-		//}
-		//return dd.remaining
-		return 0
+		val dd = directoryDescriptors[id]
+		if (dd.remaining > 0) {
+			val file = dd.files[dd.pos++]
+			val stat = file.stat()
+
+			val dirent = HleIoDirent(
+				stat = stat.toSce(),
+				name = file.basename,
+				privateData = 0,
+				dummy = 0
+			)
+
+			logger.error { "sceIoDread --> $dirent" }
+
+			ptr.openSync().write(HleIoDirent, dirent)
+		}
+		return dd.remaining
 	}
 
 	suspend fun sceIoDclose(id: Int): Int {
 		logger.error { "sceIoDclose:$id" }
-		//directoryDescriptors.freeById(id)
+		directoryDescriptors.freeById(id)
 		//return 0
 		return 0
 	}
@@ -240,18 +243,74 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		return 0
 	}
 
+	class AsyncHandle(
+		override val id: Int,
+		var promise: Promise<Unit>? = null,
+		var result: Long = 0L,
+		var done: Boolean = false
+	) : PoolItem {
+		override fun reset() {
+			promise = null
+			result = 0L
+			done = false
+		}
+	}
+	val asyncPool = AsyncPool2<AsyncHandle>(initId = 1) { AsyncHandle(it) }
+
+	suspend fun async(name: String, callback: suspend () -> Long): Int {
+		logger.error { "starting async $name" }
+		val res = asyncPool.alloc()
+		res.done = false
+		res.promise = spawn {
+			res.result = callback()
+			logger.error { "  async $name completed with result ${res.result}" }
+			res.done = true
+			getCoroutineContext().eventLoop.sleep(10000) // TODO: Delete after 10 seconds. Probably wrong and not time-related
+			asyncPool.free(res)
+		}
+		logger.error { "  async $name ---> ${res.id}" }
+		return res.id
+	}
+
+	suspend fun sceIoOpenAsync(filename: String?, flags: Int, mode: Int): Int {
+		logger.error { "sceIoOpenAsync:$filename,$flags,$mode" }
+		//val async = asyncPool.alloc()
+		//async.promise = spawn {
+		//	async.result = sceIoOpen(filename, flags, mode).toLong()
+		//}
+		//return async.id
+		return async("sceIoOpenAsync") {
+			val res = sceIoOpen(filename, flags, mode)
+			logger.error { "sceIoOpenAsync --> $res" }
+			res.toLong()
+		}
+	}
+
+	suspend fun sceIoReadAsync(fileId: Int, outputPointer: Ptr, outputLength: Int): Int {
+		logger.error { "sceIoReadAsync:$fileId,$outputPointer,$outputLength" }
+		return async("sceIoReadAsync") {
+			val res = sceIoRead(fileId, outputPointer, outputLength)
+			logger.error { "sceIoReadAsync --> $res" }
+			res.toLong()
+		}
+	}
+
+	fun sceIoPollAsync(fd: Int, out: Ptr): Int {
+		logger.error { "sceIoPollAsync:$fd,$out" }
+		val res = asyncPool[fd] ?: return -1
+		out.sdw(0, res.result)
+		return if (res.done) 0 else 1
+	}
+
 	fun sceIoGetDevType(cpu: CpuState): Unit = UNIMPLEMENTED(0x08BD7374)
 	fun sceIoWriteAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x0FACAB19)
 	fun sceIoLseek32Async(cpu: CpuState): Unit = UNIMPLEMENTED(0x1B385D8F)
-	fun sceIoPollAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x3251EA56)
 	fun sceIoWaitAsyncCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x35DBD746)
 	fun sceIoGetFdList(cpu: CpuState): Unit = UNIMPLEMENTED(0x5C2BE2CC)
 	fun sceIoIoctl(cpu: CpuState): Unit = UNIMPLEMENTED(0x63632449)
 	fun sceIoUnassign(cpu: CpuState): Unit = UNIMPLEMENTED(0x6D08A871)
 	fun sceIoLseekAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x71B19E77)
 	fun sceIoRename(cpu: CpuState): Unit = UNIMPLEMENTED(0x779103A0)
-	fun sceIoOpenAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x89AA9906)
-	fun sceIoReadAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0xA0B5A7C2)
 	fun sceIoSetAsyncCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xA12A0514)
 	fun sceIoSync(cpu: CpuState): Unit = UNIMPLEMENTED(0xAB96437F)
 	fun sceIoChangeAsyncPriority(cpu: CpuState): Unit = UNIMPLEMENTED(0xB293727F)
@@ -278,6 +337,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionSuspendInt("sceIoClose", 0x810C4BC3, since = 150) { sceIoClose(int) }
 		registerFunctionSuspendInt("sceIoGetstat", 0xACE946E8, since = 150) { sceIoGetstat(str, ptr) }
 
+		// Files Async
+		registerFunctionSuspendInt("sceIoOpenAsync", 0x89AA9906, since = 150) { sceIoOpenAsync(str, int, int) }
+		registerFunctionSuspendInt("sceIoReadAsync", 0xA0B5A7C2, since = 150) { sceIoReadAsync(int, ptr, int) }
+		registerFunctionInt("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(int, ptr) }
+
+
 		// Directories
 		registerFunctionSuspendInt("sceIoDopen", 0xB29DDF9C, since = 150) { sceIoDopen(str) }
 		registerFunctionSuspendInt("sceIoDread", 0xE3EB004C, since = 150) { sceIoDread(int, ptr) }
@@ -296,15 +361,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionRaw("sceIoGetDevType", 0x08BD7374, since = 150) { sceIoGetDevType(it) }
 		registerFunctionRaw("sceIoWriteAsync", 0x0FACAB19, since = 150) { sceIoWriteAsync(it) }
 		registerFunctionRaw("sceIoLseek32Async", 0x1B385D8F, since = 150) { sceIoLseek32Async(it) }
-		registerFunctionRaw("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(it) }
 		registerFunctionRaw("sceIoWaitAsyncCB", 0x35DBD746, since = 150) { sceIoWaitAsyncCB(it) }
 		registerFunctionRaw("sceIoGetFdList", 0x5C2BE2CC, since = 150) { sceIoGetFdList(it) }
 		registerFunctionRaw("sceIoIoctl", 0x63632449, since = 150) { sceIoIoctl(it) }
 		registerFunctionRaw("sceIoUnassign", 0x6D08A871, since = 150) { sceIoUnassign(it) }
 		registerFunctionRaw("sceIoLseekAsync", 0x71B19E77, since = 150) { sceIoLseekAsync(it) }
 		registerFunctionRaw("sceIoRename", 0x779103A0, since = 150) { sceIoRename(it) }
-		registerFunctionRaw("sceIoOpenAsync", 0x89AA9906, since = 150) { sceIoOpenAsync(it) }
-		registerFunctionRaw("sceIoReadAsync", 0xA0B5A7C2, since = 150) { sceIoReadAsync(it) }
 		registerFunctionRaw("sceIoSetAsyncCallback", 0xA12A0514, since = 150) { sceIoSetAsyncCallback(it) }
 		registerFunctionRaw("sceIoSync", 0xAB96437F, since = 150) { sceIoSync(it) }
 		registerFunctionRaw("sceIoChangeAsyncPriority", 0xB293727F, since = 150) { sceIoChangeAsyncPriority(it) }

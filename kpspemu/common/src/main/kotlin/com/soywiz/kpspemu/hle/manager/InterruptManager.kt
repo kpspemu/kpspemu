@@ -1,9 +1,12 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.klogger.Logger
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 
 class InterruptManager(val emulator: Emulator) {
+	val logger = Logger("InterruptManager")
+
 	val state = emulator.globalCpuState
 	fun disableAllInterrupts(): Int {
 		val res = state.interruptFlags
@@ -34,10 +37,18 @@ class InterruptManager(val emulator: Emulator) {
 	}
 
 	fun dispatchVsync() {
-		val int = interrupts[PspInterrupts.PSP_VBLANK_INT]
-		for (handler in int.handlers.filter { it.enabled }) {
-			println("VBLANK Interrupt: $handler")
-			emulator.threadManager.executeInterrupt(handler.address, handler.argument)
+		dispatchInterrupt(PspInterrupts.PSP_VBLANK_INT)
+	}
+
+	fun isEnabled(id: Int) = (state.interruptFlags and (1 shl id)) != 0
+
+	fun dispatchInterrupt(id: Int) {
+		if (isEnabled(id)) {
+			val int = interrupts[id]
+			for (handler in int.handlers.filter { it.enabled }) {
+				logger.trace { "Interrupt $id: $handler" }
+				emulator.threadManager.executeInterrupt(handler.address, handler.argument)
+			}
 		}
 	}
 }
