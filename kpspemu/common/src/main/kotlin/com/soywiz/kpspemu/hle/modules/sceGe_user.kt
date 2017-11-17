@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.ge
 import com.soywiz.kpspemu.ge.GeCallback
 import com.soywiz.kpspemu.ge.GeList
@@ -55,10 +56,11 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		return 0
 	}
 
-	fun sceGeDrawSync(syncType: Int): Int {
+	suspend fun sceGeDrawSync(syncType: Int): Int {
 		//println("WIP: sceGeDrawSync")
 		//thread.suspend(WaitObject.PROMISE(ge.syncAsync(syncType)), cb = false)
 		ge.sync(syncType)
+		display.waitVsyncExtra2()
 		return 0
 	}
 
@@ -92,7 +94,7 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		registerFunctionInt("sceGeListUpdateStallAddr", 0xE0D68148, since = 150) { sceGeListUpdateStallAddr(int, ptr) }
 		registerFunctionInt("sceGeListEnQueue", 0xAB49E76A, since = 150) { sceGeListEnQueue(ptr, ptr, int, ptr) }
 		registerFunctionInt("sceGeListSync", 0x03444EB4, since = 150) { sceGeListSync(int, int) }
-		registerFunctionInt("sceGeDrawSync", 0xB287BD61, since = 150) { sceGeDrawSync(int) }
+		registerFunctionSuspendInt("sceGeDrawSync", 0xB287BD61, since = 150) { sceGeDrawSync(int) }
 
 		// Callbacks
 		registerFunctionInt("sceGeSetCallback", 0xA4FC06A4, since = 150) { sceGeSetCallback(ptr) }

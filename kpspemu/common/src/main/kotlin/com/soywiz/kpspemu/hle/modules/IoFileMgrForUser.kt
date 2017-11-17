@@ -189,9 +189,11 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		try {
 			logger.error { "sceIoDopen:$path" }
 			val dd = directoryDescriptors.alloc()
-			dd.directory = resolve(path)
+			val dir = resolve(path)
+			dd.directory = dir
 			dd.pos = 0
-			dd.files = dd.directory.list().toList()
+
+			dd.files = listOf(VfsFile(dir.vfs, dir.fullname + "/."), VfsFile(dir.vfs, dir.fullname + "/..")) + dd.directory.list().toList()
 			return dd.id
 		} catch (e: Throwable) {
 			e.printStackTrace()

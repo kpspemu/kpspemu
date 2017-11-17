@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.controller
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Ptr
 
@@ -23,7 +24,10 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 	}
 
 	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = _sceCtrlPeekBuffer(sceCtrlDataPtr, count, true)
-	fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
+	suspend fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
+		display.waitVsyncExtra()
+		return sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
+	}
 
 	fun sceCtrlSetSamplingCycle(samplingCycle: Int): Int {
 		controller.samplingCycle = samplingCycle
@@ -69,7 +73,7 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 	override fun registerModule() {
 		registerFunctionInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
-		registerFunctionInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(ptr, int) }
+		registerFunctionSuspendInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(ptr, int) }
 		registerFunctionInt("sceCtrlSetSamplingCycle", 0x6A2774F3, since = 150) { sceCtrlSetSamplingCycle(int) }
 		registerFunctionInt("sceCtrlSetSamplingMode", 0x1F4011E6, since = 150) { sceCtrlSetSamplingMode(int) }
 		registerFunctionInt("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(ptr) }

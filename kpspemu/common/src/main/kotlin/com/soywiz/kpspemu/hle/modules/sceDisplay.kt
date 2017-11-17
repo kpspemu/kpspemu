@@ -20,13 +20,13 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 
 	suspend fun sceDisplayWaitVblankStart(): Int {
 		//thread.suspend(WaitObject.VBLANK, cb = cb)
-		display.onVsync.waitOne()
+		display.waitVsyncStart()
 		return 0
 	}
 
 	suspend fun sceDisplayWaitVblank(): Int {
 		//thread.suspend(WaitObject.VBLANK, cb = cb)
-		//display.onVsync.waitOne()
+		display.waitVsync()
 		return 0
 	}
 

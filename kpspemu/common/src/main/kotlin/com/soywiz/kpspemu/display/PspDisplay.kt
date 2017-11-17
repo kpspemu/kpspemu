@@ -4,8 +4,10 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.color.RGBA_5551
 import com.soywiz.korio.async.Signal
+import com.soywiz.korio.async.waitOne
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.mem
 
@@ -81,5 +83,23 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 			mem.sw(address + n * 4, mem.lw(address + n * 4).inv())
 		}
 		//mem.fill(0, Memory.VIDEOMEM.start, Memory.VIDEOMEM.size)
+	}
+
+	suspend fun waitVsyncStart() {
+		display.onVsync.waitOne()
+	}
+
+	suspend fun waitVsync() {
+		// This is not completely true!
+		display.onVsync.waitOne()
+	}
+
+	suspend fun waitVsyncExtra() {
+		// This is not completely true!
+	}
+
+	suspend fun waitVsyncExtra2() {
+		// This is not completely true!
+		display.onVsync.waitOne()
 	}
 }
