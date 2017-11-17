@@ -23,6 +23,8 @@ object ISO2 {
 
 	const val SECTOR_SIZE = 0x800L
 
+	val SCE_LBN_REGEX = Regex("^/?sce_lbn0x([0-9a-fA-F]+)_size0x([0-9a-fA-F]+)$")
+
 	suspend fun read(s: AsyncStream): IsoFile = IsoReader(s).read()
 
 	suspend fun openVfs(s: AsyncStream): VfsFile = withCoroutineContext {
@@ -39,7 +41,20 @@ object ISO2 {
 				createNonExistsStat(path)
 			}
 
-			suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream = isoFile[path].open2(mode)
+
+			suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
+				println("Opening ISO path: $path")
+				val result = SCE_LBN_REGEX.matchEntire(path)
+				if (result != null) {
+					val (_, lbnString, sizeString) = result.groupValues
+					val lbn = lbnString.toInt(16)
+					val size = sizeString.toInt(16)
+					println("Matching sce_lbn: ${result.groupValues} : $lbn, $size")
+					return isoFile.reader.getSector(lbn, size)
+				} else {
+					return isoFile[path].open2(mode)
+				}
+			}
 
 			suspend override fun list(path: String) = asyncGenerate(this@withCoroutineContext) {
 				val file = isoFile[path]

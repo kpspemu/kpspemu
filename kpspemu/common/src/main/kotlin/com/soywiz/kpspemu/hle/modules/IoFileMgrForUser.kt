@@ -1,7 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.getCoroutineContext
+import com.soywiz.korio.async.Promise
+import com.soywiz.korio.async.spawn
+import com.soywiz.korio.async.toList
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.printStackTrace
@@ -19,10 +20,7 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.openSync
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
-import com.soywiz.kpspemu.util.AsyncPool2
 import com.soywiz.kpspemu.util.PoolItem
-import com.soywiz.kpspemu.util.Resetable
-import com.soywiz.kpspemu.util.io.ISO2
 import com.soywiz.kpspemu.util.write
 
 @Suppress("UNUSED_PARAMETER")
@@ -49,10 +47,10 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		return _resolve(path!!)
 	}
 
-	suspend fun sceIoOpen(fileName: String?, flags: Int, mode: Int): Int {
-		logger.warn { "WIP: sceIoOpen: $fileName, $flags, $mode" }
+	suspend fun _sceIoOpen(fileId: Int, fileName: String?, flags: Int, mode: Int): Int {
+		logger.warn { "WIP: _sceIoOpen: $fileId, $fileName, $flags, $mode" }
 		try {
-			val file = fileDescriptors.alloc()
+			val file = fileDescriptors[fileId]
 			file.file = resolve(fileName)
 			val flags2 = when {
 				(flags and FileOpenFlags.Truncate) != 0 -> VfsOpenMode.CREATE_OR_TRUNCATE
@@ -61,7 +59,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 				else -> VfsOpenMode.READ
 			}
 			file.stream = file.file.open(flags2)
-			logger.warn { "WIP: sceIoOpen --> ${file.id}" }
+			logger.warn { "WIP: sceIoOpen --> $fileName, ${file.id}" }
 			return file.id
 		} catch (e: Throwable) {
 			println("Error openingfile: $fileName : '${e.message}'")
@@ -71,8 +69,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		}
 	}
 
+	suspend fun sceIoOpen(fileName: String?, flags: Int, mode: Int): Int {
+		return _sceIoOpen(fileDescriptors.alloc().id, fileName, flags, mode)
+	}
+
 	fun VfsStat.toSce() = SceIoStat(
-		mode = 511 ,
+		mode = 511,
 		attributes = when {
 			isDirectory -> IOFileModes.DIR or IOFileModes.Directory or IOFileModes.CanRead
 			else -> IOFileModes.FILE or IOFileModes.File or IOFileModes.CanRead or IOFileModes.CanExecute or IOFileModes.CanWrite
@@ -255,18 +257,15 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			done = false
 		}
 	}
-	val asyncPool = AsyncPool2<AsyncHandle>(initId = 1) { AsyncHandle(it) }
 
-	suspend fun async(name: String, callback: suspend () -> Long): Int {
+	suspend fun async(fileId: Int, name: String, callback: suspend () -> Long): Int {
 		logger.error { "starting async $name" }
-		val res = asyncPool.alloc()
-		res.done = false
-		res.promise = spawn {
-			res.result = callback()
-			logger.error { "  async $name completed with result ${res.result}" }
-			res.done = true
-			getCoroutineContext().eventLoop.sleep(10000) // TODO: Delete after 10 seconds. Probably wrong and not time-related
-			asyncPool.free(res)
+		val res = fileDescriptors[fileId]
+		res.asyncDone = false
+		res.asyncPromise = spawn {
+			res.asyncResult = callback()
+			logger.error { "  async $name completed with result ${res.asyncResult}" }
+			res.asyncDone = true
 		}
 		logger.error { "  async $name ---> ${res.id}" }
 		return res.id
@@ -274,13 +273,11 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoOpenAsync(filename: String?, flags: Int, mode: Int): Int {
 		logger.error { "sceIoOpenAsync:$filename,$flags,$mode" }
-		//val async = asyncPool.alloc()
-		//async.promise = spawn {
-		//	async.result = sceIoOpen(filename, flags, mode).toLong()
-		//}
-		//return async.id
-		return async("sceIoOpenAsync") {
-			val res = sceIoOpen(filename, flags, mode)
+
+		val fid = fileDescriptors.alloc().id
+
+		return async(fid, "sceIoOpenAsync") {
+			val res = _sceIoOpen(fid, filename, flags, mode)
 			logger.error { "sceIoOpenAsync --> $res" }
 			res.toLong()
 		}
@@ -288,18 +285,26 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoReadAsync(fileId: Int, outputPointer: Ptr, outputLength: Int): Int {
 		logger.error { "sceIoReadAsync:$fileId,$outputPointer,$outputLength" }
-		return async("sceIoReadAsync") {
+		return async(fileId, "sceIoReadAsync") {
 			val res = sceIoRead(fileId, outputPointer, outputLength)
+			//println(outputPointer.readBytes(outputLength).toString(UTF8))
 			logger.error { "sceIoReadAsync --> $res" }
-			res.toLong()
+			//res.toLong()
+			0L
 		}
 	}
 
 	fun sceIoPollAsync(fd: Int, out: Ptr): Int {
 		logger.error { "sceIoPollAsync:$fd,$out" }
-		val res = asyncPool[fd] ?: return -1
-		out.sdw(0, res.result)
-		return if (res.done) 0 else 1
+		val res = fileDescriptors.tryGetById(fd)
+		out.sdw(0, res?.asyncResult ?: 0)
+		val outv = when {
+			res == null -> -1
+			res.asyncDone -> 0
+			else -> 1
+		}
+		logger.error { "   sceIoPollAsync:$fd,$out -> valid=${res != null} :: ${res?.asyncResult} -> $outv" }
+		return outv
 	}
 
 	fun sceIoGetDevType(cpu: CpuState): Unit = UNIMPLEMENTED(0x08BD7374)
@@ -341,7 +346,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionSuspendInt("sceIoOpenAsync", 0x89AA9906, since = 150) { sceIoOpenAsync(str, int, int) }
 		registerFunctionSuspendInt("sceIoReadAsync", 0xA0B5A7C2, since = 150) { sceIoReadAsync(int, ptr, int) }
 		registerFunctionInt("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(int, ptr) }
-
+		registerFunctionRaw("sceIoCloseAsync", 0xFF5940B6, since = 150) { sceIoCloseAsync(it) }
 
 		// Directories
 		registerFunctionSuspendInt("sceIoDopen", 0xB29DDF9C, since = 150) { sceIoDopen(str) }
@@ -377,6 +382,5 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionRaw("sceIoCancel", 0xE8BC6571, since = 150) { sceIoCancel(it) }
 		registerFunctionRaw("sceIoIoctlAsync", 0xE95A012B, since = 150) { sceIoIoctlAsync(it) }
 		registerFunctionRaw("sceIoRemove", 0xF27A9C51, since = 150) { sceIoRemove(it) }
-		registerFunctionRaw("sceIoCloseAsync", 0xFF5940B6, since = 150) { sceIoCloseAsync(it) }
 	}
 }

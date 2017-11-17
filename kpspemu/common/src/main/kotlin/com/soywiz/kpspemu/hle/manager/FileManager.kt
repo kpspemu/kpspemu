@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.korio.lang.ASCII
+import com.soywiz.korio.async.Promise
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.vfs.VfsFile
@@ -37,6 +37,10 @@ class FileManager(val emulator: Emulator) {
 class FileDescriptor(override val id: Int) : ResourceItem {
 	lateinit var file: VfsFile
 	lateinit var stream: AsyncStream
+
+	var asyncPromise: Promise<Unit>? = null
+	var asyncResult: Long = 0L
+	var asyncDone: Boolean = false
 }
 
 class DirectoryDescriptor(override val id: Int) : ResourceItem {
