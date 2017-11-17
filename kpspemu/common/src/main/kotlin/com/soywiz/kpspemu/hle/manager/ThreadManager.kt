@@ -47,22 +47,27 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	}
 
 	fun step() {
-		//for (n in 0 until 10) {
-		val now: Double = timeManager.getTimeInMicrosecondsDouble()
+		var startTime = rtc.getTimeInMicrosecondsDouble()
+		while ((rtc.getTimeInMicrosecondsDouble() - startTime) < 16.0) { // Max 16 milliseconds
 
-		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-			val time = (t.waitObject as WaitObject.TIME).instant
-			if (now >= time) {
-				t.resume()
+			val now: Double = timeManager.getTimeInMicrosecondsDouble()
+
+			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+				val time = (t.waitObject as WaitObject.TIME).instant
+				if (now >= time) {
+					t.resume()
+				}
 			}
-		}
 
-		val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
-		for (t in availableThreads) {
-			t.step(now)
+			val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
+			for (t in availableThreads) {
+				t.step(now)
+			}
+
+			if (availableThreads.isEmpty()) break
+
+			emulator.eventLoop.step(0)
 		}
-		//emulator.coroutineContext.eventLoop.step(0)
-		//}
 	}
 
 	val traces = hashMapOf<String, Boolean>()

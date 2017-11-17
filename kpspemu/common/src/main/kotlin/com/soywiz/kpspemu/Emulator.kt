@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.klogger.Logger
+import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.battery.PspBattery
-import com.soywiz.kpspemu.cpu.CpuBreakException
 import com.soywiz.kpspemu.cpu.GlobalCpuState
 import com.soywiz.kpspemu.ctrl.PspController
 import com.soywiz.kpspemu.display.PspDisplay
@@ -21,6 +21,7 @@ class Emulator(
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	val eventLoop = coroutineContext.eventLoop
 	val globalCpuState = GlobalCpuState()
 	val logger = Logger("Emulator")
 
