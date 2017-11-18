@@ -19,6 +19,13 @@ data class PtrArray(val ptr: Ptr, val size: Int) {
 	val high: Int get() = low + size
 }
 
+class Ptr32(val ptr: Ptr) {
+	fun get(): Int = this[0]
+	fun set(value: Int) = run { this[0] = value }
+	operator fun get(index: Int): Int = ptr.lw(index * 4)
+	operator fun set(index: Int, value: Int) = ptr.sw(index * 4, value)
+}
+
 interface Ptr {
 	val addr: Int
 	fun sb(offset: Int, value: Int): Unit
@@ -38,6 +45,16 @@ interface Ptr {
 		val high = lw(offset + 4).unsigned
 		return (high shl 32) or low
 	}
+}
+
+object DummyPtr : Ptr {
+	override val addr: Int = 0
+	override fun sb(offset: Int, value: Int) = Unit
+	override fun sh(offset: Int, value: Int) = Unit
+	override fun sw(offset: Int, value: Int) = Unit
+	override fun lb(offset: Int): Int = 0
+	override fun lh(offset: Int): Int = 0
+	override fun lw(offset: Int): Int = 0
 }
 
 fun <T> Ptr.read(struct: Struct<T>): T = openSync().read(struct)

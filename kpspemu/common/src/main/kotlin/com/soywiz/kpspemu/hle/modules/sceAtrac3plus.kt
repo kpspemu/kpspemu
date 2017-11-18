@@ -1,19 +1,83 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korau.format.atrac3plus.Atrac3plusDecoder
+import com.soywiz.korau.format.atrac3plus.Atrac3plusDecoder.Companion.ATRAC3P_FRAME_SAMPLES
+import com.soywiz.korau.format.atrac3plus.util.Atrac3PlusUtil
+import com.soywiz.korau.format.atrac3plus.util.Atrac3PlusUtil.PSP_CODEC_AT3
+import com.soywiz.korau.format.atrac3plus.util.Atrac3PlusUtil.PSP_CODEC_AT3PLUS
+import com.soywiz.korio.lang.format
+import com.soywiz.korio.util.toIntCeil
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.error.sceKernelException
+import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.threadManager
 
 @Suppress("UNUSED_PARAMETER")
 class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0x00010011, "libatrac3plus.prx", "sceATRAC3plus_Library") {
-	fun sceAtracSetDataAndGetID(data: Ptr): Int {
-		logger.error { "sceAtracSetDataAndGetID Not implemented" }
-		return 0
+	class AtracID(val id: Int) {
+		val decoder = Atrac3plusDecoder()
+		var inputBuffer = PtrArray(DummyPtr, 0)
+		var inUse = false
+		var isSecondBufferNeeded = false
+		var isSecondBufferSet = false
+		val info = Atrac3PlusUtil.AtracFileInfo()
+		var atracCurrentSample: Int = 0
+		val atracEndSample: Int get() = info.atracEndSample
+		val secondBufferReadPosition: Int = 0
+		val secondBufferSize: Int = 0
+		var readAddr: Int = 0
+		val remainFrames: Int get() = 0 // @TODO
 	}
 
-	fun sceAtracGetSecondBufferInfo(id: Int, puiPosition: Ptr, puiDataByte: Ptr): Int {
-		logger.error { "sceAtracGetSecondBufferInfo Not implemented ($id, $puiPosition, $puiDataByte)" }
+	private val atracIDs = Array(6) { AtracID(it) }
+
+	fun getAtrac(id: Int) = atracIDs[id]
+
+	fun getStartSkippedSamples(codecType: Int) = when (codecType) {
+		PSP_CODEC_AT3 -> 69
+		PSP_CODEC_AT3PLUS -> 368
+		else -> 0
+	}
+
+	fun getMaxSamples(codecType: Int) = when (codecType) {
+		PSP_CODEC_AT3 -> 1024
+		PSP_CODEC_AT3PLUS -> ATRAC3P_FRAME_SAMPLES
+		else -> 0
+	}
+
+	fun sceAtracSetDataAndGetID(data: Ptr, bufferSize: Int): Int {
+		val id = atracIDs.firstOrNull { !it.inUse } ?: sceKernelException(SceKernelErrors.ERROR_ATRAC_NO_ID)
+		val info = id.info
+		logger.trace { "sceAtracSetDataAndGetID Partially implemented" }
+		val res = Atrac3PlusUtil.analyzeRiffFile(data.openSync(), 0, bufferSize, id.info)
+		if (res < 0) return res
+		val outputChannels = 2
+		id.inputBuffer = PtrArray(data, bufferSize)
+
+		val startSkippedSamples = getStartSkippedSamples(PSP_CODEC_AT3PLUS)
+		val maxSamples = getMaxSamples(PSP_CODEC_AT3PLUS)
+		val skippedSamples = startSkippedSamples + info.atracSampleOffset
+		val skippedFrames = (skippedSamples.toDouble() / maxSamples.toDouble()).toIntCeil()
+
+		id.readAddr = data.addr + id.info.inputFileDataOffset + (skippedFrames * info.atracBytesPerFrame)
+		id.decoder.init(id.info.atracBytesPerFrame, id.info.atracChannels, outputChannels, 0)
+		return id.id
+	}
+
+	fun sceAtracGetSecondBufferInfo(atID: Int, puiPosition: Ptr32, puiDataByte: Ptr32): Int {
+		logger.error { "sceAtracGetSecondBufferInfo Not implemented ($atID, $puiPosition, $puiDataByte)" }
+		val id = getAtrac(atID)
+		if (!id.isSecondBufferNeeded) {
+			puiPosition[0] = 0
+			puiDataByte[0] = 0
+			return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED
+		}
+		puiPosition[0] = id.secondBufferReadPosition
+		puiDataByte[0] = id.secondBufferSize
 		return 0
 	}
 
@@ -32,27 +96,76 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 		return 0
 	}
 
-	fun sceAtracGetRemainFrame(id: Int, remainFramePtr: Ptr): Int {
-		logger.error { "sceAtracGetRemainFrame Not implemented ($id, $remainFramePtr)" }
+	fun sceAtracGetRemainFrame(atID: Int, remainFramePtr: Ptr32): Int {
+		logger.error { "sceAtracGetRemainFrame Not implemented ($atID, $remainFramePtr)" }
+		val id = getAtrac(atID)
+		remainFramePtr.set(-1)
 		return 0
 	}
 
-	fun sceAtracGetNextDecodePosition(id: Int, samplePositionPtr: Ptr): Int {
-		logger.error { "sceAtracGetNextDecodePosition Not implemented ($id, $samplePositionPtr)" }
+	fun sceAtracGetNextDecodePosition(atracId: Int, samplePositionPtr: Ptr): Int {
+		val id = getAtrac(atracId)
+		logger.info { "sceAtracGetNextDecodePosition Not implemented ($id, $samplePositionPtr)" }
+		if (id.atracCurrentSample >= id.atracEndSample) sceKernelException(SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED)
+		samplePositionPtr.sw(0, id.atracCurrentSample)
+		logger.trace { "sceAtracGetNextDecodePosition returning pos=%d".format(samplePositionPtr.lw(0)) }
+
 		return 0
 	}
 
-	fun sceAtracDecodeData(id: Int, samplesOutPtr: Ptr, decodedSamplesCountPtr: Ptr, reachedEndPtr: Ptr, remainingFramesToDecodePtr: Ptr): Int {
-		logger.error { "sceAtracDecodeData Not implemented ($id, $samplesOutPtr, $decodedSamplesCountPtr, $reachedEndPtr, $remainingFramesToDecodePtr)" }
-		return 0
+	fun sceAtracDecodeData(idAT: Int, samplesAddr: Ptr, samplesNbrAddr: Ptr32, outEndAddr: Ptr, remainFramesAddr: Ptr32): Int {
+		logger.trace { "sceAtracDecodeData Not implemented ($idAT, $samplesAddr, $samplesNbrAddr, $outEndAddr, $remainFramesAddr)" }
+		val id = getAtrac(idAT)
+		val info = id.info
+		if (id.isSecondBufferNeeded && !id.isSecondBufferSet) {
+			logger.warn { "sceAtracDecodeData atracID=0x%X needs second buffer!".format(idAT) }
+			return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NEEDED
+		}
+
+		//val result = id.decoder.decode(emulator.imem, samplesAddr.addr, outEndAddr)
+		val result = id.decoder.decode(emulator.imem, id.readAddr, id.info.atracBytesPerFrame, samplesAddr.openSync())
+		if (result < 0) {
+			samplesNbrAddr.set(0)
+			return result
+		}
+
+		id.readAddr += info.atracBytesPerFrame
+		samplesNbrAddr.set(id.decoder.numberOfSamples)
+		//remainFramesAddr.set(id.remainFrames)
+		remainFramesAddr.set(id.remainFrames)
+
+		if (result == 0) threadManager.delayThread(2300)
+
+		return result
 	}
 
-	fun sceAtracGetStreamDataInfo(id: Int, writePointerPointer: Ptr, availableBytesPtr: Ptr, readOffsetPtr: Ptr): Int {
-		logger.error { "sceAtracGetStreamDataInfo Not implemented ($id, $writePointerPointer, $availableBytesPtr, $readOffsetPtr)" }
+	fun sceAtracGetStreamDataInfo(idAT: Int, writePointerPointer: Ptr, availableBytesPtr: Ptr, readOffsetPtr: Ptr): Int {
+		logger.error { "sceAtracGetStreamDataInfo Not implemented ($idAT, $writePointerPointer, $availableBytesPtr, $readOffsetPtr)" }
+		val id = getAtrac(idAT)
+
+		//if (inputBuffer.getFileWriteSize() <= 0 && currentLoopNum >= 0 && info.loopNum != 0) {
+		//	// Read ahead to restart the loop
+		//	inputBuffer.setFilePosition(getFilePositionFromSample(info.loops[currentLoopNum].startSample))
+		//	reloadingFromLoopStart = true
+		//}
+//
+		//// Remember the CurrentSample at the time of the getStreamDataInfo
+		//getStreamDataInfoCurrentSample = getAtracCurrentSample()
+//
+		//writeAddr.setValue(inputBuffer.getWriteAddr())
+		//writableBytesAddr.setValue(inputBuffer.getWriteSize())
+		//readOffsetAddr.setValue(inputBuffer.getFilePosition())
+
 		return 0
 	}
 
 	fun sceAtracAddStreamData(id: Int, bytesToAdd: Int): Int {
+		return 0
+	}
+
+	fun sceAtracReleaseAtracID(id: Int): Int {
+		val atrac = getAtrac(id)
+		atrac.inUse = false
 		return 0
 	}
 
@@ -66,7 +179,6 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 	fun sceAtracSetAA3DataAndGetID(cpu: CpuState): Unit = UNIMPLEMENTED(0x5622B7C1)
 	fun sceAtracSetMOutHalfwayBuffer(cpu: CpuState): Unit = UNIMPLEMENTED(0x5CF9D852)
 	fun sceAtracSetAA3HalfwayBufferAndGetID(cpu: CpuState): Unit = UNIMPLEMENTED(0x5DD66588)
-	fun sceAtracReleaseAtracID(cpu: CpuState): Unit = UNIMPLEMENTED(0x61EB33F5)
 	fun sceAtracResetPlayPosition(cpu: CpuState): Unit = UNIMPLEMENTED(0x644E5607)
 	fun sceAtracGetAtracID(cpu: CpuState): Unit = UNIMPLEMENTED(0x780F88D1)
 	fun sceAtracSetMOutHalfwayBufferAndGetID(cpu: CpuState): Unit = UNIMPLEMENTED(0x9CD7DE03)
@@ -82,14 +194,15 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 
 
 	override fun registerModule() {
-		registerFunctionInt("sceAtracSetDataAndGetID", 0x7A20E7AF, since = 150) { sceAtracSetDataAndGetID(ptr) }
-		registerFunctionInt("sceAtracGetSecondBufferInfo", 0x83E85EA0, since = 150) { sceAtracGetSecondBufferInfo(int, ptr, ptr) }
+		registerFunctionInt("sceAtracSetDataAndGetID", 0x7A20E7AF, since = 150) { sceAtracSetDataAndGetID(ptr, int) }
+		registerFunctionInt("sceAtracReleaseAtracID", 0x61EB33F5, since = 150) { sceAtracReleaseAtracID(int) }
+		registerFunctionInt("sceAtracGetSecondBufferInfo", 0x83E85EA0, since = 150) { sceAtracGetSecondBufferInfo(int, ptr32, ptr32) }
 		registerFunctionInt("sceAtracSetSecondBuffer", 0x83BF7AFD, since = 150) { sceAtracSetSecondBuffer(int, ptr, ptr) }
 		registerFunctionInt("sceAtracGetSoundSample", 0xA2BBA8BE, since = 150) { sceAtracGetSoundSample(int, ptr, ptr, ptr) }
 		registerFunctionInt("sceAtracSetLoopNum", 0x868120B5, since = 150) { sceAtracSetLoopNum(int, int) }
-		registerFunctionInt("sceAtracGetRemainFrame", 0x9AE849A7, since = 150) { sceAtracGetRemainFrame(int, ptr) }
+		registerFunctionInt("sceAtracGetRemainFrame", 0x9AE849A7, since = 150) { sceAtracGetRemainFrame(int, ptr32) }
 		registerFunctionInt("sceAtracGetNextDecodePosition", 0xE23E3A35, since = 150) { sceAtracGetNextDecodePosition(int, ptr) }
-		registerFunctionInt("sceAtracDecodeData", 0x6A8C3CD5, since = 150) { sceAtracDecodeData(int, ptr, ptr, ptr, ptr) }
+		registerFunctionInt("sceAtracDecodeData", 0x6A8C3CD5, since = 150) { sceAtracDecodeData(int, ptr, ptr32, ptr, ptr32) }
 		registerFunctionInt("sceAtracGetStreamDataInfo", 0x5D268707, since = 150) { sceAtracGetStreamDataInfo(int, ptr, ptr, ptr) }
 		registerFunctionInt("sceAtracAddStreamData", 0x7DB31251, since = 150) { sceAtracAddStreamData(int, int) }
 
@@ -103,7 +216,6 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 		registerFunctionRaw("sceAtracSetAA3DataAndGetID", 0x5622B7C1, since = 150) { sceAtracSetAA3DataAndGetID(it) }
 		registerFunctionRaw("sceAtracSetMOutHalfwayBuffer", 0x5CF9D852, since = 150) { sceAtracSetMOutHalfwayBuffer(it) }
 		registerFunctionRaw("sceAtracSetAA3HalfwayBufferAndGetID", 0x5DD66588, since = 150) { sceAtracSetAA3HalfwayBufferAndGetID(it) }
-		registerFunctionRaw("sceAtracReleaseAtracID", 0x61EB33F5, since = 150) { sceAtracReleaseAtracID(it) }
 		registerFunctionRaw("sceAtracResetPlayPosition", 0x644E5607, since = 150) { sceAtracResetPlayPosition(it) }
 		registerFunctionRaw("sceAtracGetAtracID", 0x780F88D1, since = 150) { sceAtracGetAtracID(it) }
 		registerFunctionRaw("sceAtracSetMOutHalfwayBufferAndGetID", 0x9CD7DE03, since = 150) { sceAtracSetMOutHalfwayBufferAndGetID(it) }

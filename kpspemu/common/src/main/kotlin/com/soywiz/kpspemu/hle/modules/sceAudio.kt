@@ -1,12 +1,14 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kds.Pool
+import com.soywiz.kmem.arraycopy
 import com.soywiz.korau.sound.NativeAudioStream
 import com.soywiz.korau.sound.addSamples
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem
+import kotlin.math.min
 
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
 	object AudioFormat {
@@ -17,13 +19,21 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 	class AudioChannel(val id: Int) {
 		var reserved: Boolean = false
 		val stream by lazy { NativeAudioStream() }
-		var sampleCount: Int = 0
 		var audioFormat: Int = 0
 		var line = ShortArray(0)
+		var lineEx = ShortArray(0)
 		val isStereo get() = audioFormat == AudioFormat.STEREO
 		val shortsPerSamples get() = if (isStereo) 2 else 1
 		var volumeLeft: Double = 1.0
 		var volumeRight: Double = 1.0
+		var sampleCount: Int = 0
+			set(value) {
+				field = value
+				line = ShortArray(sampleCount * shortsPerSamples)
+				lineEx = ShortArray(sampleCount * 2)
+			}
+
+		fun ensureInitStream() = stream
 		//var started = 0.0
 		//var msBuffered = 0.0
 		//val msPerLine: Int get() = ((sampleCount.toDouble() * 1000.0) / 44100.0).toInt()
@@ -38,13 +48,12 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		val actualChannelId = if (channelId >= 0) channelId else channels.indexOfFirst { !it.reserved }
 		val channel = channels[actualChannelId]
 		logger.info { "WIP: sceAudioChReserve: $channelId, $sampleCount, $audioFormat" }
-		channel.stream
+		channel.ensureInitStream()
 		//channel.started = timeManager.getTimeInMillisecondsDouble()
 		//channel.msBuffered = 0.0
 		channel.reserved = true
-		channel.sampleCount = sampleCount
 		channel.audioFormat = audioFormat
-		channel.line = ShortArray(sampleCount * channel.shortsPerSamples)
+		channel.sampleCount = sampleCount
 		return actualChannelId
 	}
 
@@ -52,7 +61,17 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		logger.trace { "WIP: sceAudioOutputPannedBlocking: ChannelId($channelId), Volumes($leftVolume, $rightVolume), Ptr($ptr)" }
 		val channel = channels[channelId]
 		mem.read(ptr, channel.line, 0, channel.line.size)
-		channel.stream.addSamples(channel.line)
+		if (channel.isStereo) {
+			arraycopy(channel.line, 0, channel.lineEx, 0, min(channel.line.size, channel.lineEx.size))
+		} else {
+			var m = 0
+			for (n in 0 until channel.sampleCount) {
+				val sh = channel.line[n]
+				channel.lineEx[m++] = sh
+				channel.lineEx[m++] = sh
+			}
+		}
+		channel.stream.addSamples(channel.lineEx)
 		return 0
 	}
 
@@ -82,6 +101,11 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		return 0
 	}
 
+	fun sceAudioSetChannelDataLen(channelId: Int, sampleCount: Int): Int {
+		val channel = channels[channelId]
+		channel.sampleCount = sampleCount
+		return 0
+	}
 
 	fun sceAudioChReserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EC81C55)
 
@@ -103,7 +127,6 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 	fun sceAudioPollInputEnd(cpu: CpuState): Unit = UNIMPLEMENTED(0xA633048E)
 	fun sceAudioGetInputLength(cpu: CpuState): Unit = UNIMPLEMENTED(0xA708C6A6)
 	fun sceAudioGetChannelRestLength(cpu: CpuState): Unit = UNIMPLEMENTED(0xB011922F)
-	fun sceAudioSetChannelDataLen(cpu: CpuState): Unit = UNIMPLEMENTED(0xCB2E439E)
 	fun sceAudioSRCOutputBlocking(cpu: CpuState): Unit = UNIMPLEMENTED(0xE0727056)
 	fun sceAudioOutputPanned(cpu: CpuState): Unit = UNIMPLEMENTED(0xE2D56B2D)
 	fun sceAudioInputInitEx(cpu: CpuState): Unit = UNIMPLEMENTED(0xE926D3FB)
@@ -115,6 +138,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		registerFunctionInt("sceAudioChangeChannelVolume", 0xB7E1D8E7, since = 150) { sceAudioChangeChannelVolume(int, int, int) }
 		registerFunctionSuspendInt("sceAudioOutputPannedBlocking", 0x13F592BC, since = 150) { sceAudioOutputPannedBlocking(int, int, int, int) }
 		registerFunctionSuspendInt("sceAudioOutputBlocking", 0x136CAF51, since = 150) { sceAudioOutputBlocking(int, int) }
+		registerFunctionInt("sceAudioSetChannelDataLen", 0xCB2E439E, since = 150) { sceAudioSetChannelDataLen(int, int) }
 
 		registerFunctionRaw("sceAudioOutput2Reserve", 0x01562BA3, since = 150) { sceAudioOutput2Reserve(it) }
 		registerFunctionRaw("sceAudioInputBlocking", 0x086E5895, since = 150) { sceAudioInputBlocking(it) }
@@ -134,7 +158,6 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		registerFunctionRaw("sceAudioPollInputEnd", 0xA633048E, since = 150) { sceAudioPollInputEnd(it) }
 		registerFunctionRaw("sceAudioGetInputLength", 0xA708C6A6, since = 150) { sceAudioGetInputLength(it) }
 		registerFunctionRaw("sceAudioGetChannelRestLength", 0xB011922F, since = 150) { sceAudioGetChannelRestLength(it) }
-		registerFunctionRaw("sceAudioSetChannelDataLen", 0xCB2E439E, since = 150) { sceAudioSetChannelDataLen(it) }
 		registerFunctionRaw("sceAudioSRCOutputBlocking", 0xE0727056, since = 150) { sceAudioSRCOutputBlocking(it) }
 		registerFunctionRaw("sceAudioOutputPanned", 0xE2D56B2D, since = 150) { sceAudioOutputPanned(it) }
 		registerFunctionRaw("sceAudioInputInitEx", 0xE926D3FB, since = 150) { sceAudioInputInitEx(it) }

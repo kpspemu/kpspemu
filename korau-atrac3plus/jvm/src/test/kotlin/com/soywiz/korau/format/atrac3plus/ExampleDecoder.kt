@@ -11,7 +11,7 @@ import java.io.File
 
 object ExampleDecoder {
 	@JvmStatic fun main(args: Array<String>) {
-		val fileName = args.getOrNull(0) ?: invalidOp("Must pass an atrac3+ file as argument")
+		val fileName = "c:\\temp\\bgm01.at3"
 		val s = File(fileName).readBytes().openSync()
 		val info = Atrac3PlusUtil.AtracFileInfo()
 		Atrac3PlusUtil.analyzeRiffFile(s, 0, s.length.toInt(), info)
@@ -30,7 +30,8 @@ object ExampleDecoder {
 			}
 		}
 
-		var ipos = 0x674
+		// 744 * 2
+		var ipos = 1652
 		while (true) {
 			val res = decoder.decode(mem, ipos, s.length.toInt(), out)
 			println(res)

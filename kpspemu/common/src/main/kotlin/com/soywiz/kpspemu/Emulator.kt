@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.klogger.Logger
+import com.soywiz.korau.format.util.IMemory
 import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.battery.PspBattery
@@ -39,6 +40,9 @@ class Emulator(
 	val timeManager = TimeManager(this)
 	val controller = PspController(this)
 	val fileManager = FileManager(this)
+	val imem = object : IMemory {
+		override fun read8(addr: Int): Int = mem.lbu(addr)
+	}
 
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
 
@@ -67,6 +71,7 @@ interface WithEmulator {
 }
 
 val WithEmulator.mem: Memory get() = emulator.mem
+val WithEmulator.imem: IMemory get() = emulator.imem
 val WithEmulator.ge: Ge get() = emulator.ge
 val WithEmulator.gpu: Gpu get() = emulator.gpu
 val WithEmulator.controller: PspController get() = emulator.controller

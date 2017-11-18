@@ -19,6 +19,7 @@ import com.soywiz.kpspemu.hle.manager.thread
 import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.Ptr32
 import com.soywiz.kpspemu.threadManager
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.startCoroutine
@@ -44,6 +45,7 @@ class RegisterReader {
 			return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
 		}
 	val ptr: Ptr get() = MemPtr(mem, int)
+	val ptr32: Ptr32 get() = Ptr32(ptr)
 	val str: String? get() = mem.readStringzOrNull(int)
 	val istr: String get() = mem.readStringzOrNull(int) ?: ""
 }
