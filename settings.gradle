@@ -5,9 +5,9 @@ include(
         'kpspemu',
         'kpspemu-js',
 
-        'dynarek-common',
-        'dynarek',
-        'dynarek-js',
+        'korau-atrac3plus-common',
+        'korau-atrac3plus',
+        'korau-atrac3plus-js',
 )
 
 def register(String base) {
@@ -17,4 +17,4 @@ def register(String base) {
 }
 
 register('kpspemu')
-register('dynarek')
+register('korau-atrac3plus')

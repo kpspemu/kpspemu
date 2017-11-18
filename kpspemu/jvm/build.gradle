@@ -16,6 +16,8 @@ dependencies {
     compile "com.soywiz:korio:$korioVersion"
     compile "com.soywiz:korge:$korgeVersion"
     compile "com.soywiz:korui:$koruiVersion"
+
+    compile project(":korau-atrac3plus")
 }
 
 task runApp(type: JavaExec) {
