@@ -11,8 +11,11 @@ import com.soywiz.kpspemu.util.*
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate", "FunctionName")
 class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010011, "utility.prx", "sceUtility_Driver") {
-	fun sceUtilitySavedataInitStart(params: Ptr): Int {
-		logger.error { "sceUtilitySavedataInitStart: $params" }
+	fun sceUtilitySavedataInitStart(paramsPtr: Ptr): Int {
+		logger.error { "sceUtilitySavedataInitStart: $paramsPtr" }
+		paramsPtr.capture(SceUtilitySavedataParam) { params ->
+			params.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA
+		}
 		//return Promise2.resolve(this._sceUtilitySavedataInitStart(paramsPtr.clone())).then(result => {
 		//	var params = SceUtilitySavedataParam.struct.read(paramsPtr.clone());
 		//	params.base.result = result;

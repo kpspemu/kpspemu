@@ -109,6 +109,10 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 			gcpustate.insideInterrupt = oldInsideInterrupt
 		}
 	}
+
+	fun delayThread(micros: Int) {
+		// @TODO:
+	}
 }
 
 sealed class WaitObject {
@@ -292,6 +296,11 @@ data class PspEventFlag(override val id: Int) : ResourceItem {
 		//		waitingThread.wakeUp();
 		//	}
 		//});
+	}
+
+	fun setBits(bits: Int, doUpdateWaitingThreads: Boolean = true) {
+		this.currentPattern = this.currentPattern or bits
+		if (doUpdateWaitingThreads) this.updateWaitingThreads()
 	}
 }
 

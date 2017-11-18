@@ -105,7 +105,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	}
 
 	suspend fun _sceIoLseek(fileId: Int, offset: Long, whence: Int): Long {
-		logger.warn { "WIP: _sceIoLseek: $fileId, $offset, $whence" }
+		logger.trace { "WIP: _sceIoLseek: $fileId, $offset, $whence" }
 		val stream = fileDescriptors[fileId].stream
 		stream.position = when (whence) {
 			SeekType.Set -> offset

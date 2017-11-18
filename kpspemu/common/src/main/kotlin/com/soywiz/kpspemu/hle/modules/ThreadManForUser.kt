@@ -49,6 +49,12 @@ class ThreadManForUser(emulator: Emulator)
 		return 0
 	}
 
+	fun sceKernelExitThread(thread: PspThread, exitStatus: Int): Unit {
+		thread.exitStatus = exitStatus
+		thread.stop()
+		threadManager.suspend()
+	}
+
 	fun sceKernelChangeThreadPriority(threadId: Int, priority: Int): Int {
 		val thread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
 		thread.priority = priority
@@ -236,7 +242,6 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelCancelFpl(cpu: CpuState): Unit = UNIMPLEMENTED(0xA8AA591F)
 	fun sceKernelReferMbxStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xA8E8C846)
 	fun sceKernelReferMutexStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xA9C2CB9A)
-	fun sceKernelExitThread(cpu: CpuState): Unit = UNIMPLEMENTED(0xAA73C935)
 	fun sceKernelTryAllocateVpl(cpu: CpuState): Unit = UNIMPLEMENTED(0xAF36D708)
 	fun sceKernelLockMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0xB011B11F)
 	fun sceKernelSetSysClockAlarm(cpu: CpuState): Unit = UNIMPLEMENTED(0xB2C25152)
@@ -302,6 +307,7 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionInt("sceKernelGetThreadId", 0x293B45B8, since = 150) { sceKernelGetThreadId(thread) }
 		registerFunctionInt("sceKernelTerminateThread", 0x616403BA, since = 150) { sceKernelTerminateThread(int) }
 		registerFunctionInt("sceKernelDeleteThread", 0x9FA03CD3, since = 150) { sceKernelDeleteThread(int) }
+		registerFunctionVoid("sceKernelExitThread", 0xAA73C935, since = 150) { sceKernelExitThread(thread, int) }
 
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(str, ptr, int) }
@@ -382,7 +388,6 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelCancelFpl", 0xA8AA591F, since = 150) { sceKernelCancelFpl(it) }
 		registerFunctionRaw("sceKernelReferMbxStatus", 0xA8E8C846, since = 150) { sceKernelReferMbxStatus(it) }
 		registerFunctionRaw("sceKernelReferMutexStatus", 0xA9C2CB9A, since = 150) { sceKernelReferMutexStatus(it) }
-		registerFunctionRaw("sceKernelExitThread", 0xAA73C935, since = 150) { sceKernelExitThread(it) }
 		registerFunctionRaw("sceKernelTryAllocateVpl", 0xAF36D708, since = 150) { sceKernelTryAllocateVpl(it) }
 		registerFunctionRaw("sceKernelLockMutex", 0xB011B11F, since = 150) { sceKernelLockMutex(it) }
 		registerFunctionRaw("sceKernelSetSysClockAlarm", 0xB2C25152, since = 150) { sceKernelSetSysClockAlarm(it) }
