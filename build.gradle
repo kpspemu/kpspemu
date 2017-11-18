@@ -8,7 +8,7 @@ buildscript {
     ext.korauVersion = "0.17.2"
     ext.korioVersion = "0.17.1"
     ext.korgeVersion = "0.17.2"
-    ext.korimVersion = "0.17.3"
+    ext.korimVersion = "0.17.4"
     ext.koruiVersion = "0.17.1"
     ext.kotlinVersion = '1.2.0-rc-39'
     ext.compilerVersion = ext.kotlinVersion
