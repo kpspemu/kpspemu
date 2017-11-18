@@ -4,7 +4,7 @@ buildscript {
     ext.dynarekVersion = "0.0.3"
     ext.kloggerVersion = "0.2.1"
     ext.klockVersion = "0.2.2"
-    ext.koragVersion = "0.17.1"
+    ext.koragVersion = "0.17.4"
     ext.korauVersion = "0.17.2"
     ext.korioVersion = "0.17.1"
     ext.korgeVersion = "0.17.2"

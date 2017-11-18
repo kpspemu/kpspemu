@@ -2,6 +2,7 @@ package com.soywiz.kpspemu
 
 import com.soywiz.dynarek.Dynarek
 import com.soywiz.klock.Klock
+import com.soywiz.klogger.Klogger
 import com.soywiz.kmem.Kmem
 import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
@@ -129,6 +130,7 @@ class KpspemuMainScene(
 		println("KPSPEMU: ${Kpspemu.VERSION}")
 		println("DYNAREK: ${Dynarek.VERSION}")
 		println("KORINJECT: ${Korinject.VERSION}")
+		println("KLOGGER: ${Klogger.VERSION}")
 		println("KMEM: ${Kmem.VERSION}")
 		println("KLOCK: ${Klock.VERSION}")
 		println("KORMA: ${Korma.VERSION}")
