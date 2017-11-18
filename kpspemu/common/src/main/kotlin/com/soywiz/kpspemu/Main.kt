@@ -16,12 +16,10 @@ import com.soywiz.korge.time.seconds
 import com.soywiz.korge.tween.get
 import com.soywiz.korge.tween.tween
 import com.soywiz.korge.view.*
+import com.soywiz.korim.Korim
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.font.BitmapFontGenerator
-import com.soywiz.korim.format.SVG
-import com.soywiz.korim.format.writeTo
 import com.soywiz.korim.vector.Context2d
-import com.soywiz.korim.vector.render
 import com.soywiz.korinject.AsyncInjector
 import com.soywiz.korinject.Korinject
 import com.soywiz.korio.JvmStatic
@@ -34,7 +32,6 @@ import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.korma.Korma
@@ -136,6 +133,7 @@ class KpspemuMainScene(
 		println("KLOCK: ${Klock.VERSION}")
 		println("KORMA: ${Korma.VERSION}")
 		println("KORIO: ${Korio.VERSION}")
+		println("KORIM: ${Korim.VERSION}")
 		println("KORAG: ${Korag.VERSION}")
 		println("KORAU: ${Korau.VERSION}")
 		println("KORUI: ${Korui.VERSION}")

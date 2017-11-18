@@ -1,4 +1,5 @@
 apply plugin: 'kotlin-platform-jvm'
+apply plugin: 'application'
 
 sourceSets {
     main.resources.srcDirs += ['../common/src/main/resources']
@@ -21,11 +22,22 @@ dependencies {
     compile project(":korau-atrac3plus")
 }
 
+mainClassName = 'com.soywiz.kpspemu.MainKt'
+
 task runApp(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
 
-    main = 'com.soywiz.kpspemu.MainKt'
+    main = mainClassName
 
     // arguments to pass to the application
     workingDir rootProject.rootDir
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": mainClassName)
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
