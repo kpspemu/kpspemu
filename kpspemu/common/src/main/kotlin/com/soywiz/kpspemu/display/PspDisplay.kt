@@ -42,16 +42,11 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 
 	var vcount = 0
 
-	val onVsync = Signal<Unit>()
+	val onVsyncStart = Signal<Unit>()
 
 	fun fixedAddress(): Int {
 		//println(address.hex)
 		return address
-	}
-
-	fun dispatchVsync() {
-		vcount++
-		onVsync(Unit)
 	}
 
 	private val temp = ByteArray(512 * 272 * 4)
@@ -85,21 +80,25 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		//mem.fill(0, Memory.VIDEOMEM.start, Memory.VIDEOMEM.size)
 	}
 
-	suspend fun waitVsyncStart() {
-		display.onVsync.waitOne()
+	suspend fun waitVblankStart() {
+		display.onVsyncStart.waitOne()
 	}
 
-	suspend fun waitVsync() {
-		// This is not completely true!
-		display.onVsync.waitOne()
+	suspend fun waitVblank() {
+		//if (!inVBlank) {
+			display.onVsyncStart.waitOne()
+		//}
 	}
 
-	suspend fun waitVsyncExtra() {
-		// This is not completely true!
+	var inVBlank = false
+
+	fun startVsync() {
+		onVsyncStart(Unit)
+		inVBlank = true
+		vcount++
 	}
 
-	suspend fun waitVsyncExtra2() {
-		// This is not completely true!
-		display.onVsync.waitOne()
+	fun endVsync() {
+		inVBlank = false
 	}
 }

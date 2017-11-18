@@ -117,6 +117,12 @@ abstract class SceModule(
 		}
 	}
 
+	fun registerFunctionFloat(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Float) {
+		registerFunctionRR(name, uid, since, syscall) {
+			this.cpu.setFpr(0, function(it))
+		}
+	}
+
 	fun registerFunctionLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Long) {
 		registerFunctionRR(name, uid, since, syscall) {
 			val ret = function(it)

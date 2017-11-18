@@ -140,7 +140,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 	fun reset() {
 		for ((_, tex) in texturesById) tex.texture.close()
+		for ((_, vtype) in programLayoutByVertexType) {
+			//vtype.dele
+			// close
+		}
 		texturesById.clear()
+		programLayoutByVertexType.clear()
 	}
 
 	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, scale: Double) {
@@ -308,8 +313,11 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	val programLayoutByVertexType = LinkedHashMap<String, ProgramLayout>()
 
 	fun getProgramLayout(state: GeState): ProgramLayout {
-		val hash = "" + state.vertexType + "_" + state.texture.effect.id + "_" + state.alphaTest.hash
-		return programLayoutByVertexType.getOrPut(hash) { createProgramLayout(state) }
+		val hash = "" + state.vertexType + "_" + state.texture.effect.id + "_" + state.alphaTest.hash + "_" + state.texture.hasAlpha + "_" + state.texture.effect + "_" + state.alphaTest.enabled
+		return programLayoutByVertexType.getOrPut(hash) {
+			logger.warn { "getProgramLayout[new]: $hash" }
+			createProgramLayout(state)
+		}
 	}
 
 	private val Operand.xy: Operand get() = Program.Swizzle(this, "xy")

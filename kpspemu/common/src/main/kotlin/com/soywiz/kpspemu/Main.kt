@@ -18,6 +18,10 @@ import com.soywiz.korge.tween.tween
 import com.soywiz.korge.view.*
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.font.BitmapFontGenerator
+import com.soywiz.korim.format.SVG
+import com.soywiz.korim.format.writeTo
+import com.soywiz.korim.vector.Context2d
+import com.soywiz.korim.vector.render
 import com.soywiz.korinject.AsyncInjector
 import com.soywiz.korinject.Korinject
 import com.soywiz.korio.JvmStatic
@@ -30,6 +34,7 @@ import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
+import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.korma.Korma
@@ -69,7 +74,8 @@ object KpspemuModule : Module() {
 	//override val clearEachFrame: Boolean = false
 	override val clearEachFrame: Boolean = true
 	override val mainScene: KClass<out Scene> = KpspemuMainScene::class
-	override val title: String = "kpspemu"
+	override val title: String = "kpspemu - ${Kpspemu.VERSION}"
+	override val iconImage: Context2d.SizedDrawable? = com.soywiz.korim.vector.format.SVG(KpspemuAssets.LOGO)
 	override val size: SizeInt get() = SizeInt(480, 272)
 	override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
 }

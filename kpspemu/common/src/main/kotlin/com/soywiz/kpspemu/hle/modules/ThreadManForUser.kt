@@ -13,9 +13,10 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.readBytes
+import com.soywiz.kpspemu.mem.write
 import com.soywiz.kpspemu.rtc
 import com.soywiz.kpspemu.threadManager
-import com.soywiz.kpspemu.util.ResourceList
+import com.soywiz.kpspemu.util.*
 import kotlin.math.min
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate")
@@ -107,7 +108,35 @@ class ThreadManForUser(emulator: Emulator)
 	suspend fun sceKernelWaitThreadEndCB(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = true)
 
 	fun sceKernelReferThreadStatus(threadId: Int, out: Ptr): Int {
-		logger.fatal("Not implemented: sceKernelReferThreadStatus")
+		val thread = threadManager.getById(threadId)
+
+		val info = SceKernelThreadInfo()
+
+		info.size = SceKernelThreadInfo.size
+
+		info.name = thread.name
+		info.attributes = thread.attributes
+		info.status = thread.status
+		info.threadPreemptionCount = thread.preemptionCount
+		info.entryPoint = thread.entryPoint
+		info.stackPointer = thread.stack.high.toInt()
+		info.stackSize = thread.stack.size.toInt()
+		info.GP = thread.state.GP
+
+		info.priorityInit = thread.initPriority
+		info.priority = thread.priority
+		info.waitType = 0
+		info.waitId = 0
+		info.wakeupCount = 0
+		info.exitStatus = thread.exitStatus
+		info.runClocksLow = 0
+		info.runClocksHigh = 0
+		info.interruptPreemptionCount = 0
+		info.threadPreemptionCount = 0
+		info.releaseCount = 0
+
+		out.write(SceKernelThreadInfo, info)
+
 		return 0
 	}
 
@@ -170,6 +199,11 @@ class ThreadManForUser(emulator: Emulator)
 		sema.active = false
 		sema.signal(Unit)
 		sema.free()
+		return 0
+	}
+
+	fun sceKernelChangeCurrentThreadAttr(currentThread: PspThread, removeAttributes: Int, addAttributes: Int): Int {
+		currentThread.attributes = (currentThread.attributes and removeAttributes.inv()) or addAttributes
 		return 0
 	}
 
@@ -273,7 +307,6 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelSysClock2USecWide(cpu: CpuState): Unit = UNIMPLEMENTED(0xE1619D7C)
 	fun sceKernelAllocateFplCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xE7282CB6)
 	fun sceKernelSendMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0xE9B3061E)
-	fun sceKernelChangeCurrentThreadAttr(cpu: CpuState): Unit = UNIMPLEMENTED(0xEA748E31)
 	fun sceKernelAllocateVplCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xEC0A693F)
 	fun sceKernelDeleteFpl(cpu: CpuState): Unit = UNIMPLEMENTED(0xED1410E0)
 	fun sceKernelDeleteCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xEDBA5844)
@@ -308,6 +341,7 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionInt("sceKernelTerminateThread", 0x616403BA, since = 150) { sceKernelTerminateThread(int) }
 		registerFunctionInt("sceKernelDeleteThread", 0x9FA03CD3, since = 150) { sceKernelDeleteThread(int) }
 		registerFunctionVoid("sceKernelExitThread", 0xAA73C935, since = 150) { sceKernelExitThread(thread, int) }
+		registerFunctionInt("sceKernelChangeCurrentThreadAttr", 0xEA748E31, since = 150) { sceKernelChangeCurrentThreadAttr(thread, int, int) }
 
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(str, ptr, int) }
@@ -419,7 +453,6 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelSysClock2USecWide", 0xE1619D7C, since = 150) { sceKernelSysClock2USecWide(it) }
 		registerFunctionRaw("sceKernelAllocateFplCB", 0xE7282CB6, since = 150) { sceKernelAllocateFplCB(it) }
 		registerFunctionRaw("sceKernelSendMbx", 0xE9B3061E, since = 150) { sceKernelSendMbx(it) }
-		registerFunctionRaw("sceKernelChangeCurrentThreadAttr", 0xEA748E31, since = 150) { sceKernelChangeCurrentThreadAttr(it) }
 		registerFunctionRaw("sceKernelAllocateVplCB", 0xEC0A693F, since = 150) { sceKernelAllocateVplCB(it) }
 		registerFunctionRaw("sceKernelDeleteFpl", 0xED1410E0, since = 150) { sceKernelDeleteFpl(it) }
 		registerFunctionRaw("sceKernelDeleteCallback", 0xEDBA5844, since = 150) { sceKernelDeleteCallback(it) }

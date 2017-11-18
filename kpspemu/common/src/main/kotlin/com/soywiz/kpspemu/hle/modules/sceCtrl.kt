@@ -25,7 +25,7 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = _sceCtrlPeekBuffer(sceCtrlDataPtr, count, true)
 	suspend fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
-		display.waitVsyncExtra()
+		//display.waitVblank()
 		return sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
 	}
 

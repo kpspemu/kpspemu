@@ -11,6 +11,7 @@ dependencies {
     compile "com.soywiz:dynarek-js:$dynarekVersion"
     compile "com.soywiz:klogger-js:$kloggerVersion"
     compile "com.soywiz:klock-js:$klockVersion"
+    compile "com.soywiz:korim-js:$korimVersion"
     compile "com.soywiz:korag-js:$koragVersion"
     compile "com.soywiz:korau-js:$korauVersion"
     compile "com.soywiz:korio-js:$korioVersion"
@@ -20,7 +21,7 @@ dependencies {
     compile project(":korau-atrac3plus-js")
 }
 
-// Cause problems with mocha
+// Cause problems with mocha (but required for browser)
 ///*
 compileKotlin2Js {
     kotlinOptions.outputFile = "${projectDir}/web/kpspemu.js"

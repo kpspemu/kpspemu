@@ -13,7 +13,7 @@ import com.soywiz.kpspemu.cpu.RA
 import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.*
-import com.soywiz.kpspemu.util.ResourceItem
+import com.soywiz.kpspemu.util.*
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
 //const val INSTRUCTIONS_PER_STEP = 1_000_000
@@ -39,34 +39,43 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		throw CpuBreakException(CpuBreakException.THREAD_WAIT)
 	}
 
-	fun vblank() {
+	fun step() {
+		var startTime = rtc.getTimeInMicrosecondsDouble()
+		var vsyncStarted = true
+
+		display.startVsync()
+		emulator.interruptManager.dispatchVsync()
 		for (t in resourcesById.values.filter { it.waitObject is WaitObject.VBLANK }) {
 			t.resume()
 			//println("RESUMED WAITING THREAD!")
 		}
+
+		while ((rtc.getTimeInMicrosecondsDouble() - startTime) < 16.0) { // Max 16 milliseconds
+			stepOne()
+			emulator.eventLoop.step(0)
+
+			// This is trick to simulate vsync start
+			if (vsyncStarted) {
+				display.endVsync();
+				vsyncStarted = false
+			}
+		}
 	}
 
-	fun step() {
-		var startTime = rtc.getTimeInMicrosecondsDouble()
-		while ((rtc.getTimeInMicrosecondsDouble() - startTime) < 16.0) { // Max 16 milliseconds
+	fun stepOne() {
+		val now: Double = timeManager.getTimeInMicrosecondsDouble()
 
-			val now: Double = timeManager.getTimeInMicrosecondsDouble()
-
-			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-				val time = (t.waitObject as WaitObject.TIME).instant
-				if (now >= time) {
-					t.resume()
-				}
+		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+			val time = (t.waitObject as WaitObject.TIME).instant
+			if (now >= time) {
+				t.resume()
 			}
+		}
 
-			val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
-			for (t in availableThreads) {
-				t.step(now)
-			}
-
+		val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
+		for (t in availableThreads) {
+			t.step(now)
 			if (availableThreads.isEmpty()) break
-
-			emulator.eventLoop.step(0)
 		}
 	}
 
@@ -129,14 +138,28 @@ class PspThread internal constructor(
 	val entryPoint: Int,
 	val stack: MemoryPartition,
 	val initPriority: Int,
-	val attributes: Int,
+	var attributes: Int,
 	val optionPtr: Ptr
 ) : Resource(threadManager, id, name), WithEmulator {
+	var preemptionCount: Int = 0
 	val totalExecutedInstructions: Long get() = state.totalExecuted
 	val onEnd = Signal<Unit>()
 	val logger = Logger("PspThread")
 
-	enum class Phase { STOPPED, RUNNING, WAITING, DELETED }
+	enum class Phase {
+		STOPPED,
+		RUNNING,
+		WAITING,
+		DELETED
+	}
+
+	val status: Int get() {
+		var out: Int = 0
+		if (running) out = out or ThreadStatus.RUNNING
+		if (waiting) out = out or ThreadStatus.WAIT
+		if (phase == Phase.DELETED) out = out or ThreadStatus.DEAD
+		return out
+	}
 
 	var acceptingCallbacks: Boolean = false
 	var waitObject: WaitObject? = null
@@ -225,6 +248,7 @@ class PspThread internal constructor(
 	}
 
 	fun step(now: Double) {
+		preemptionCount++
 		try {
 			interpreter.steps(INSTRUCTIONS_PER_STEP)
 		} catch (e: CpuBreakException) {
@@ -311,3 +335,58 @@ object EventFlagWaitTypeSet {
 	val Clear = 0x20
 	val MaskValidBits = Or or Clear or ClearAll
 }
+
+object ThreadStatus {
+	val RUNNING = 1
+	val READY = 2
+	val WAIT = 4
+	val SUSPEND = 8
+	val DORMANT = 16
+	val DEAD = 32
+	val WAITSUSPEND = WAIT or SUSPEND
+}
+
+class SceKernelThreadInfo(
+	var size: Int = 0,
+	var name: String = "",
+	var attributes: Int = 0,
+	var status: Int = 0, // ThreadStatus
+	var entryPoint: Int = 0,
+	var stackPointer: Int = 0,
+	var stackSize: Int = 0,
+	var GP: Int = 0,
+	var priorityInit: Int = 0,
+	var priority: Int = 0,
+	var waitType: Int = 0,
+	var waitId: Int = 0,
+	var wakeupCount: Int = 0,
+	var exitStatus: Int = 0,
+	var runClocksLow: Int = 0,
+	var runClocksHigh: Int = 0,
+	var interruptPreemptionCount: Int = 0,
+	var threadPreemptionCount: Int = 0,
+	var releaseCount: Int = 0
+) {
+	companion object : Struct<SceKernelThreadInfo>({ SceKernelThreadInfo() },
+		SceKernelThreadInfo::size AS INT32,
+		SceKernelThreadInfo::name AS STRINGZ(32),
+		SceKernelThreadInfo::attributes AS INT32,
+		SceKernelThreadInfo::status AS INT32,
+		SceKernelThreadInfo::entryPoint AS INT32,
+		SceKernelThreadInfo::stackPointer AS INT32,
+		SceKernelThreadInfo::stackSize AS INT32,
+		SceKernelThreadInfo::GP AS INT32,
+		SceKernelThreadInfo::priorityInit AS INT32,
+		SceKernelThreadInfo::priority AS INT32,
+		SceKernelThreadInfo::waitType AS INT32,
+		SceKernelThreadInfo::waitId AS INT32,
+		SceKernelThreadInfo::wakeupCount AS INT32,
+		SceKernelThreadInfo::exitStatus AS INT32,
+		SceKernelThreadInfo::runClocksLow AS INT32,
+		SceKernelThreadInfo::runClocksHigh AS INT32,
+		SceKernelThreadInfo::interruptPreemptionCount AS INT32,
+		SceKernelThreadInfo::threadPreemptionCount AS INT32,
+		SceKernelThreadInfo::releaseCount AS INT32
+	)
+}
+

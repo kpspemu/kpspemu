@@ -2,12 +2,13 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
     ext.dynarekVersion = "0.0.3"
-    ext.kloggerVersion = "0.1.0"
+    ext.kloggerVersion = "0.2.1"
     ext.klockVersion = "0.2.2"
     ext.koragVersion = "0.17.1"
     ext.korauVersion = "0.17.2"
     ext.korioVersion = "0.17.1"
-    ext.korgeVersion = "0.17.1"
+    ext.korgeVersion = "0.17.2"
+    ext.korimVersion = "0.17.3"
     ext.koruiVersion = "0.17.1"
     ext.kotlinVersion = '1.2.0-rc-39'
     ext.compilerVersion = ext.kotlinVersion
@@ -35,7 +36,7 @@ allprojects {
     }
 
     group 'com.soywiz'
-    version '0.3.1-SNAPSHOT'
+    version '0.3.2-SNAPSHOT'
 
     if (project == rootProject) {
         new File(rootProject.rootDir, "kpspemu/common/src/main/kotlin/com/soywiz/kpspemu/KpspemuVersion.kt").write(
@@ -137,8 +138,7 @@ allprojects {
                 }
             }
 
-            // Disabled mocha for now. It hangs.
-            //test.dependsOn runMocha
+            // test.dependsOn runMocha // @TODO: Hangs!
         }
     }
 

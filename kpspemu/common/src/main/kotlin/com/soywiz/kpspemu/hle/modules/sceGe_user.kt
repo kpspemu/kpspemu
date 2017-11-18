@@ -60,7 +60,7 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		//println("WIP: sceGeDrawSync")
 		//thread.suspend(WaitObject.PROMISE(ge.syncAsync(syncType)), cb = false)
 		ge.sync(syncType)
-		display.waitVsyncExtra2()
+		//display.waitVblank()
 		return 0
 	}
 

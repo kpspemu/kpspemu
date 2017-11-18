@@ -48,9 +48,6 @@ class Emulator(
 
 	fun frameStep() {
 		controller.startFrame(timeManager.getTimeInMicrosecondsInt())
-		threadManager.vblank()
-		display.dispatchVsync()
-		interruptManager.dispatchVsync()
 		threadManager.step()
 		ge.run()
 		gpu.render()

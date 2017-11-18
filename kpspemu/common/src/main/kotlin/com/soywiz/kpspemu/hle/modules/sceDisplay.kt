@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.async.waitOne
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
@@ -20,13 +19,13 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 
 	suspend fun sceDisplayWaitVblankStart(): Int {
 		//thread.suspend(WaitObject.VBLANK, cb = cb)
-		display.waitVsyncStart()
+		display.waitVblankStart()
 		return 0
 	}
 
 	suspend fun sceDisplayWaitVblank(): Int {
 		//thread.suspend(WaitObject.VBLANK, cb = cb)
-		display.waitVsync()
+		display.waitVblank()
 		return 0
 	}
 

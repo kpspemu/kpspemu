@@ -1,3 +1,3 @@
 package com.soywiz.kpspemu
 
-val KPSPEMU_VERSION = "0.3.1-SNAPSHOT"
+val KPSPEMU_VERSION = "0.3.2-SNAPSHOT"
