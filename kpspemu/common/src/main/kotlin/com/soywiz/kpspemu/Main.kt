@@ -3,6 +3,7 @@ package com.soywiz.kpspemu
 import com.soywiz.dynarek.Dynarek
 import com.soywiz.klock.Klock
 import com.soywiz.klogger.Klogger
+import com.soywiz.klogger.Logger
 import com.soywiz.kmem.Kmem
 import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
@@ -35,9 +36,7 @@ import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.localCurrentDirVfs
-import com.soywiz.korio.vfs.openAsZip
+import com.soywiz.korio.vfs.*
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -87,6 +86,8 @@ object KpspemuModule : Module() {
 class KpspemuMainScene(
 	val browser: Browser
 ) : Scene(), WithEmulator {
+	val logger = Logger("KpspemuMainScene")
+
 	//lateinit var exeFile: VfsFile
 	lateinit override var emulator: Emulator
 	val tex by lazy { views.texture(display.bmp) }
@@ -194,7 +195,9 @@ class KpspemuMainScene(
 				39 -> controller.updateButton(PspCtrlButtons.right, pressed) // RIGHT
 				40 -> controller.updateButton(PspCtrlButtons.down, pressed) // DOWN
 				in 73..76 -> Unit // IJKL (analog)
-				else -> println("UnhandledKey($pressed): $keyCode")
+				else -> {
+					logger.trace { "UnhandledKey($pressed): $keyCode" }
+				}
 			}
 
 			if (pressed) {
@@ -242,14 +245,14 @@ class KpspemuMainScene(
 
 		val loadButton = views.simpleButton("Load...", font = hudFont).apply {
 			x = 8.0
-			y = 272.0 - 32.0 * 1
+			y = 272.0 - 24.0 * 1
 		}.onClick {
 			createEmulatorWithExe(browser.openFile())
 		}
 
 		val directButton = views.simpleButton("Auto", font = hudFont).apply {
 			x = 8.0
-			y = 272.0 - 32.0 * 2
+			y = 272.0 - 24.0 * 2
 		}.onClick {
 			agRenderer.renderMode = when (agRenderer.renderMode) {
 				AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
@@ -277,17 +280,26 @@ class KpspemuMainScene(
 
 		pauseButton = views.simpleButton("Pause", font = hudFont).apply {
 			x = 8.0
-			y = 272.0 - 32.0 * 3
+			y = 272.0 - 24.0 * 3
 		}.onClick {
 			pause(!paused)
 		}!!
 
 		val stepButton = views.simpleButton("Step", font = hudFont).apply {
 			x = 8.0
-			y = 272.0 - 32.0 * 4
+			y = 272.0 - 24.0 * 4
 		}.onClick {
 			pause(true)
 			forceSteps++
+		}
+
+		val memdumpButton = views.simpleButton("memdump", font = hudFont).apply {
+			x = 8.0
+			y = 272.0 - 24.0 * 5
+		}.onClick {
+			val outFile = applicationVfs["memdump.bin"]
+			outFile.writeBytes(mem.readBytes(Memory.MAINMEM.start, Memory.MAINMEM.size))
+			logger.warn { "Writted memory to $outFile" }
 		}
 
 		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
@@ -296,6 +308,7 @@ class KpspemuMainScene(
 		hud += directButton
 		hud += pauseButton
 		hud += stepButton
+		hud += memdumpButton
 
 		val displayView = object : View(views) {
 			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
@@ -458,15 +471,15 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 	}
 }
 
-fun Views.simpleButton(text: String, width: Int = 80, height: Int = 24, font: BitmapFont = this.defaultFont): View {
+fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = this.defaultFont): View {
 	val button = container()
 	val colorOver = RGBA(0xA0, 0xA0, 0xA0, 0xFF)
 	val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
 
 	val bg = solidRect(width, height, colorOut)
-	val txt = text(text, font = font).apply {
+	val txt = text(text, font = font, textSize = 14.0).apply {
 		this.x = 4.0
-		this.y = 4.0
+		this.y = 2.0
 		this.autoSize = true
 		//this.textBounds.setBounds(0, 0, width - 8, height - 8)
 		//this.width = width - 8.0

@@ -50,8 +50,10 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun _sceIoOpen(fileId: Int, fileName: String?, flags: Int, mode: Int): Int {
 		logger.warn { "WIP: _sceIoOpen: $fileId, $fileName, $flags, $mode" }
+		if (fileName == null) return SceKernelErrors.ERROR_ERROR
 		try {
 			val file = fileDescriptors[fileId]
+			file.fileName = fileName
 			file.file = resolve(fileName)
 			val flags2 = when {
 				(flags and FileOpenFlags.Truncate) != 0 -> VfsOpenMode.CREATE_OR_TRUNCATE
@@ -120,10 +122,13 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoRead(fileId: Int, dst: Ptr, dstLen: Int): Int {
 		logger.warn { "WIP: sceIoRead: $fileId, $dst, $dstLen" }
-		val stream = fileDescriptors[fileId].stream
+		val fd = fileDescriptors[fileId]
+		val stream = fd.stream
 		val adstLen = max(0, dstLen)
 		val out = ByteArray(adstLen)
+		val initPosition = stream.position
 		val read = stream.read(out, 0, adstLen)
+		logger.warn { " --> $fileId, $dst, $dstLen : POS($initPosition -> ${stream.position}) LEN(${stream.getLength()}) AVAILABLE(${stream.getAvailable()}) // ${fd.fileName} // read=$read" }
 		dst.writeBytes(out, 0, read)
 		return read
 	}
@@ -194,7 +199,8 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			dd.directory = dir
 			dd.pos = 0
 
-			dd.files = listOf(VfsFile(dir.vfs, dir.fullname + "/."), VfsFile(dir.vfs, dir.fullname + "/..")) + dd.directory.list().toList()
+			//dd.files = listOf(VfsFile(dir.vfs, dir.fullname + "/."), VfsFile(dir.vfs, dir.fullname + "/..")) + dd.directory.list().toList()
+			dd.files = dd.directory.list().toList()
 			return dd.id
 		} catch (e: Throwable) {
 			e.printStackTrace()

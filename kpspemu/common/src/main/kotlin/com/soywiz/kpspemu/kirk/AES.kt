@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.kirk
 
+@Suppress("UNUSED_CHANGED_VALUE")
 /**
  * Based on CryptoJS v3.1.2
  * code.google.com/p/crypto-js
@@ -127,7 +128,7 @@ class AES(val keyWords: IntArray) {
 			}
 		}
 
-		fun ByteArray.toIntArray(): IntArray {
+		private fun ByteArray.toIntArray(): IntArray {
 			val out = IntArray(size / 4)
 			var m = 0
 			for (n in 0 until out.size) {
@@ -140,7 +141,7 @@ class AES(val keyWords: IntArray) {
 			return out
 		}
 
-		fun IntArray.toByteArray(): ByteArray {
+		private fun IntArray.toByteArray(): ByteArray {
 			val out = ByteArray(size * 4)
 			var m = 0
 			for (n in 0 until size) {

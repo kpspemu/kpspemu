@@ -36,6 +36,7 @@ class FileManager(val emulator: Emulator) {
 }
 
 class FileDescriptor(override val id: Int) : ResourceItem {
+	lateinit var fileName: String
 	lateinit var file: VfsFile
 	lateinit var stream: AsyncStream
 

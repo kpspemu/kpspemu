@@ -78,6 +78,14 @@ object INT32 : StructType<Int> {
 	override fun read(s: SyncStream): Int = s.readS32_le()
 }
 
+fun <T, TR> StructType<T>.map(map: (T) -> TR, invMap: (TR) -> T): StructType<TR> = object : StructType<TR> {
+	override val size: Int = this@map.size
+	override fun write(s: SyncStream, value: TR) = this@map.write(s, invMap(value))
+	override fun read(s: SyncStream): TR = map(this@map.read(s))
+}
+
+fun <TR : IdEnum> StructType<Int>.asEnum(e: BaseEnum<TR>): StructType<TR> = this.map({ e(it) }, { it.id })
+
 object INT64 : StructType<Long> {
 	override val size = 8
 	override fun write(s: SyncStream, value: Long) = s.write64_le(value)
@@ -92,6 +100,7 @@ object FLOAT32 : StructType<Float> {
 
 class STRINGZ(val charset: Charset, val len: Int? = null) : StructType<String> {
 	override val size = len ?: 0
+
 	constructor(size: Int? = null) : this(UTF8, size)
 
 	override fun write(s: SyncStream, value: String) = when {
@@ -133,8 +142,24 @@ class INTARRAY(val etype: StructType<Int>, val len: Int) : StructType<IntArray> 
 	}
 }
 
-open class INT32_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T> {
-	override val size: Int = 4 * values.size
+class BYTEARRAY(val len: Int) : StructType<ByteArray> {
+	override val size: Int = len
+
+	override fun write(s: SyncStream, value: ByteArray) {
+		s.writeBytes(value)
+	}
+
+	override fun read(s: SyncStream): ByteArray {
+		return s.readBytes(size)
+	}
+}
+
+interface BaseEnum<T : IdEnum> {
+	operator fun invoke(id: Int): T
+}
+
+open class INT32_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T>, BaseEnum<T> {
+	override val size: Int = 4
 
 	override fun write(s: SyncStream, value: T) = s.write32_le(value.id)
 	override fun read(s: SyncStream): T = invoke(s.readS32_le())
@@ -147,5 +172,22 @@ open class INT32_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T> {
 		for (v in values) valuesById[v.id] = v
 	}
 
-	operator fun invoke(id: Int): T = valuesById.getOrElse(id) { defaultValue } as T
+	operator override fun invoke(id: Int): T = valuesById.getOrElse(id) { defaultValue } as T
+}
+
+open class UINT8_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T>, BaseEnum<T> {
+	override val size: Int = 1
+
+	override fun write(s: SyncStream, value: T) = s.write8(value.id)
+	override fun read(s: SyncStream): T = invoke(s.readU8())
+
+	private val defaultValue: T = values.first()
+	private val MAX_ID = values.map { it.id }.max() ?: 0
+	private val valuesById = Array<Any>(MAX_ID + 1) { defaultValue }
+
+	init {
+		for (v in values) valuesById[v.id] = v
+	}
+
+	operator override fun invoke(id: Int): T = valuesById.getOrElse(id) { defaultValue } as T
 }
