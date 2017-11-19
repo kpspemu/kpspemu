@@ -4,6 +4,7 @@ import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.asyncGenerate
 import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.ASCII
 import com.soywiz.korio.lang.LATIN1
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.format
@@ -20,6 +21,9 @@ suspend fun VfsFile.openAsIso2() = IsoVfs2(this)
 
 object ISO2 {
 	val logger = Logger("ISO2")
+
+	val CHARSET = ASCII
+	//val CHARSET = UTF8
 
 	const val SECTOR_SIZE = 0x800L
 
@@ -175,7 +179,7 @@ object ISO2 {
 
 	fun SyncStream.readTextWithLength(): String {
 		val len = readU8()
-		return readStringz(len)
+		return readStringz(len, CHARSET)
 	}
 
 	fun SyncStream.readU16_le_be(): Int {
@@ -259,7 +263,7 @@ object ISO2 {
 	) {
 		constructor(s: SyncStream) : this(
 			characterSetType = s.readU8(),
-			characterSetInfo = s.readStringz(63, UTF8)
+			characterSetInfo = s.readStringz(63, CHARSET)
 		)
 	}
 
@@ -270,8 +274,8 @@ object ISO2 {
 	) {
 		constructor(s: SyncStream) : this(
 			flags = s.readU8(),
-			identifier = s.readStringz(23, UTF8),
-			identifierSuffix = s.readStringz(8, UTF8)
+			identifier = s.readStringz(23, CHARSET),
+			identifierSuffix = s.readStringz(8, CHARSET)
 		)
 	}
 
@@ -400,13 +404,13 @@ object ISO2 {
 			typeMPathTable = s.readS32_le(),
 			optTypeMPathTable = s.readS32_le(),
 			rootDirectoryRecord = DirectoryRecord(s)!!,
-			volumeSetId = s.readStringz(0x80),
-			publisherId = s.readStringz(0x80),
-			preparerId = s.readStringz(0x80),
-			applicationId = s.readStringz(0x80),
-			copyrightFileId = s.readStringz(37),
-			abstractFileId = s.readStringz(37),
-			bibliographicFileId = s.readStringz(37),
+			volumeSetId = s.readStringz(0x80, CHARSET),
+			publisherId = s.readStringz(0x80, CHARSET),
+			preparerId = s.readStringz(0x80, CHARSET),
+			applicationId = s.readStringz(0x80, CHARSET),
+			copyrightFileId = s.readStringz(37, CHARSET),
+			abstractFileId = s.readStringz(37, CHARSET),
+			bibliographicFileId = s.readStringz(37, CHARSET),
 			creationDate = IsoDate(s),
 			modificationDate = IsoDate(s),
 			expirationDate = IsoDate(s),
@@ -439,13 +443,13 @@ object ISO2 {
 
 		constructor(s: SyncStream) : this(
 			type = TypeEnum(s.readU8()),
-			id = s.readStringz(5),
+			id = s.readStringz(5, CHARSET),
 			version = s.readU8()
 		)
 	}
 
 	data class IsoDate(val data: String) {
-		constructor(s: SyncStream) : this(data = s.readString(17, LATIN1))
+		constructor(s: SyncStream) : this(data = s.readString(17, ASCII))
 
 		val year = data.substring(0, 4).toIntOrNull() ?: 0
 		val month = data.substring(4, 6).toIntOrNull() ?: 0

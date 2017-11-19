@@ -27,11 +27,16 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		var volumeLeft: Double = 1.0
 		var volumeRight: Double = 1.0
 		var sampleCount: Int = 0
-			set(value) {
+			private set(value) {
 				field = value
 				line = ShortArray(sampleCount * shortsPerSamples)
 				lineEx = ShortArray(sampleCount * 2)
 			}
+
+		fun reconfigure(audioFormat: Int = this.audioFormat, sampleCount: Int = this.sampleCount) {
+			this.audioFormat = audioFormat
+			this.sampleCount = sampleCount
+		}
 
 		fun ensureInitStream() = stream
 		//var started = 0.0
@@ -52,8 +57,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		//channel.started = timeManager.getTimeInMillisecondsDouble()
 		//channel.msBuffered = 0.0
 		channel.reserved = true
-		channel.audioFormat = audioFormat
-		channel.sampleCount = sampleCount
+		channel.reconfigure(audioFormat = audioFormat, sampleCount = sampleCount)
 		return actualChannelId
 	}
 
@@ -103,7 +107,13 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 
 	fun sceAudioSetChannelDataLen(channelId: Int, sampleCount: Int): Int {
 		val channel = channels[channelId]
-		channel.sampleCount = sampleCount
+		channel.reconfigure(sampleCount = sampleCount)
+		return 0
+	}
+
+	fun sceAudioChangeChannelConfig(channelId: Int, format: Int): Int {
+		val channel = channels[channelId]
+		channel.reconfigure(audioFormat = format)
 		return 0
 	}
 
@@ -123,7 +133,6 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 	fun sceAudioInputInit(cpu: CpuState): Unit = UNIMPLEMENTED(0x7DE61688)
 	fun sceAudioWaitInputEnd(cpu: CpuState): Unit = UNIMPLEMENTED(0x87B2E651)
 	fun sceAudioOutput(cpu: CpuState): Unit = UNIMPLEMENTED(0x8C1009B2)
-	fun sceAudioChangeChannelConfig(cpu: CpuState): Unit = UNIMPLEMENTED(0x95FD0C2D)
 	fun sceAudioPollInputEnd(cpu: CpuState): Unit = UNIMPLEMENTED(0xA633048E)
 	fun sceAudioGetInputLength(cpu: CpuState): Unit = UNIMPLEMENTED(0xA708C6A6)
 	fun sceAudioGetChannelRestLength(cpu: CpuState): Unit = UNIMPLEMENTED(0xB011922F)
@@ -139,6 +148,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		registerFunctionSuspendInt("sceAudioOutputPannedBlocking", 0x13F592BC, since = 150) { sceAudioOutputPannedBlocking(int, int, int, int) }
 		registerFunctionSuspendInt("sceAudioOutputBlocking", 0x136CAF51, since = 150) { sceAudioOutputBlocking(int, int) }
 		registerFunctionInt("sceAudioSetChannelDataLen", 0xCB2E439E, since = 150) { sceAudioSetChannelDataLen(int, int) }
+		registerFunctionInt("sceAudioChangeChannelConfig", 0x95FD0C2D, since = 150) { sceAudioChangeChannelConfig(int, int) }
 
 		registerFunctionRaw("sceAudioOutput2Reserve", 0x01562BA3, since = 150) { sceAudioOutput2Reserve(it) }
 		registerFunctionRaw("sceAudioInputBlocking", 0x086E5895, since = 150) { sceAudioInputBlocking(it) }
@@ -154,7 +164,6 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 		registerFunctionRaw("sceAudioInputInit", 0x7DE61688, since = 150) { sceAudioInputInit(it) }
 		registerFunctionRaw("sceAudioWaitInputEnd", 0x87B2E651, since = 150) { sceAudioWaitInputEnd(it) }
 		registerFunctionRaw("sceAudioOutput", 0x8C1009B2, since = 150) { sceAudioOutput(it) }
-		registerFunctionRaw("sceAudioChangeChannelConfig", 0x95FD0C2D, since = 150) { sceAudioChangeChannelConfig(it) }
 		registerFunctionRaw("sceAudioPollInputEnd", 0xA633048E, since = 150) { sceAudioPollInputEnd(it) }
 		registerFunctionRaw("sceAudioGetInputLength", 0xA708C6A6, since = 150) { sceAudioGetInputLength(it) }
 		registerFunctionRaw("sceAudioGetChannelRestLength", 0xB011922F, since = 150) { sceAudioGetChannelRestLength(it) }

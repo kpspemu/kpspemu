@@ -57,28 +57,15 @@ object Kirk {
 
 	enum class KirkMode(override val id: Int) : IdEnum {
 		Invalid0(0), Cmd1(1), Cmd2(2), Cmd3(3), EncryptCbc(4), DecryptCbc(5);
+
 		companion object : UINT8_ENUM<KirkMode>(values())
 	}
 
 	enum class CommandEnum(override val id: Int) : IdEnum {
-		DECRYPT_PRIVATE(0x1), // Master decryption command, used by firmware modules. Applies CMAC checking. Super-Duper decryption (no inverse) Private Sig + Cipher PSP_KIRK_CMD_DECRYPT_PRIVATE Code: 1, 0x01
-		ENCRYPT_SIGN(0x2), // Used for key type 3 (blacklisting), encrypts and signs data with a ECDSA signature. Encrypt Operation (inverse of 0x03) Private Sig + Cipher Code: 2, 0x02
-		DECRYPT_SIGN(0x3), // Used for key type 3 (blacklisting), decrypts and signs data with a ECDSA signature. Decrypt Operation (inverse of 0x02) Private Sig + Cipher Code: 3, 0x03
-		ENCRYPT_IV_0(0x4), // Key table based encryption used for general purposes by several modules. Encrypt Operation (inverse of 0x07) (IV=0) Cipher KIRK_CMD_ENCRYPT_IV_0 Code: 4, 0x04
-		ENCRYPT_IV_FUSE(0x5), // Fuse ID based encryption used for general purposes by several modules. Encrypt Operation (inverse of 0x08) (IV=FuseID) Cipher KIRK_CMD_ENCRYPT_IV_FUSE Code: 5, 0x05
-		ENCRYPT_IV_USER(0x6), // User specified ID based encryption used for general purposes by several modules. Encrypt Operation (inverse of 0x09) (IV=UserDefined) Cipher KIRK_CMD_ENCRYPT_IV_USER Code: 6, 0x06
-		DECRYPT_IV_0(0x7), // Key table based decryption used for general purposes by several modules.Decrypt Operation(inverse of 0x04) Cipher KIRK_CMD_DECRYPT_IV_0 Code: 7, 0x07
-		DECRYPT_IV_FUSE(0x8), // Fuse ID based decryption used for general purposes by several modules. Decrypt Operation (inverse of 0x05) Cipher KIRK_CMD_DECRYPT_IV_FUSE Code: 8, 0x08
-		DECRYPT_IV_USER(0x9), // User specified ID based decryption used for general purposes by several modules. Decrypt Operation (inverse of 0x06) Cipher PSP_KIRK_CMD_DECRYPT_IV_USER Code: 9, 0x09
-		PRIV_SIG_CHECK(0xA), // Private signature (SCE) checking command. Private Signature Check (checks for private SCE sig) Sig Gens KIRK_CMD_PRIV_SIG_CHECK Code: 10, 0x0A
-		SHA1_HASH(0xB), // SHA1 hash generating command. SHA1 Hash Sig Gens PSP_KIRK_CMD_SHA1_HASH Code: 11, 0x0B
-		ECDSA_GEN_KEYS(0xC), // ECDSA key generating mul1 command.  Mul1 Sig Gens Code: 12, 0x0C
-		ECDSA_MULTIPLY_POINT(0xD), // ECDSA key generating mul2 command.  Mul2 Sig Gens Code: 13, 0x0D
-		PRNG(0xE), // Random number generating command.  Random Number Gen Sig Gens Code: 14, 0x0E
-		INIT(0xF), // KIRK initialization command. (absolutely no idea? could be KIRK initialization) Sig Gens Code: 15, 0x0F
-		ECDSA_SIGN(0x10), // ECDSA signing command. Signature Gen Code: 16, 0x10
-		ECDSA_VERIFY(0x11), // ECDSA checking command. Signature Check (checks for generated sigs) Sig Checks Code: 17, 0x11
-		CERT_VERIFY(0x12); // Certificate checking command. Certificate Check (idstorage signatures) Sig Checks Code: 18, 0x12
+		DECRYPT_PRIVATE(0x1), ENCRYPT_SIGN(0x2), DECRYPT_SIGN(0x3), ENCRYPT_IV_0(0x4), ENCRYPT_IV_FUSE(0x5),
+		ENCRYPT_IV_USER(0x6), DECRYPT_IV_0(0x7), DECRYPT_IV_FUSE(0x8), DECRYPT_IV_USER(0x9), PRIV_SIG_CHECK(0xA),
+		SHA1_HASH(0xB), ECDSA_GEN_KEYS(0xC), ECDSA_MULTIPLY_POINT(0xD), PRNG(0xE), INIT(0xF), ECDSA_SIGN(0x10),
+		ECDSA_VERIFY(0x11), CERT_VERIFY(0x12);
 
 		companion object : UINT8_ENUM<CommandEnum>(values())
 	}
