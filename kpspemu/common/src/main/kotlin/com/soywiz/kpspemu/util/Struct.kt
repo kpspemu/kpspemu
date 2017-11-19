@@ -29,6 +29,8 @@ open class Struct<T>(val create: () -> T, vararg val items: Item<T, *>) : Struct
 		}
 		return value
 	}
+
+	fun toByteArray(value: T): ByteArray = MemorySyncStream().apply { write(this, value) }.toByteArray()
 }
 
 infix fun <T1, V> KMutableProperty1<T1, V>.AS(type: StructType<V>) = Struct.Item(type, this)

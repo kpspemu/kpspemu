@@ -10,7 +10,8 @@ import com.soywiz.kpspemu.util.*
 
 class FileManager(val emulator: Emulator) {
 	val deviceManager get() = emulator.deviceManager
-	var currentDirectory = "umd0:/"
+	var currentDirectory = "umd0:"
+	var executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
 
 	val fileDescriptors = ResourceList<FileDescriptor>("FileDescriptor") { FileDescriptor(it) }
 	val directoryDescriptors = ResourceList<DirectoryDescriptor>("DirectoryDescriptor") { DirectoryDescriptor(it) }

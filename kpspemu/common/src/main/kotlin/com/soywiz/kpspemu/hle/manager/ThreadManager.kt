@@ -5,6 +5,9 @@ import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.format
+import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.util.hasFlag
 import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuBreakException
@@ -14,6 +17,7 @@ import com.soywiz.kpspemu.cpu.SP
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import kotlin.math.max
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
 //const val INSTRUCTIONS_PER_STEP = 1_000_000
@@ -24,6 +28,9 @@ const val INSTRUCTIONS_PER_STEP = 5_000_000
 //const val INSTRUCTIONS_PER_STEP = 100_000_000
 
 class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator) {
+	val logger = Logger("ThreadManager").apply {
+		//level = LogLevel.TRACE
+	}
 	val threads get() = resourcesById.values
 	val waitingThreads: Int get() = resourcesById.count { it.value.waiting }
 	val activeThreads: Int get() = resourcesById.count { it.value.running }
@@ -31,8 +38,22 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
 
 	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
-		val stack = memoryManager.userPartition.allocateHigh(stackSize, "${name}_stack")
-		return PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
+		var attr = attributes
+		val ssize = max(stackSize, 0x200).nextAlignedTo(0x100)
+		val stack = memoryManager.userPartition.allocateHigh(ssize, "${name}_stack")
+		val thread = PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
+		logger.info { "stack:%08X-%08X (%d)".format(stack.low.toInt(), stack.high.toInt(), stack.size.toInt()) }
+
+		attr = attr or PspThreadAttributes.User
+		attr = attr or PspThreadAttributes.LowFF
+
+		if (!(attr hasFlag PspThreadAttributes.NoFillStack)) {
+			logger.trace { "FILLING: $stack" }
+			mem.fill(-1, stack.low.toInt(), stack.size.toInt())
+		} else {
+			logger.trace { "NOT FILLING: $stack" }
+		}
+		return thread
 	}
 
 	fun suspend() {
@@ -40,7 +61,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	}
 
 	fun step() {
-		var startTime = rtc.getTimeInMicrosecondsDouble()
+		val startTime = rtc.getTimeInMicrosecondsDouble()
 		var vsyncStarted = true
 
 		display.startVsync()
@@ -59,8 +80,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 				display.endVsync();
 				vsyncStarted = false
 			}
+
+			if (availableThreadCount <= 0) break
 		}
 	}
+
+	val availableThreadCount get() = resourcesById.values.count { it.running }
+	val availableThreads get() = resourcesById.values.filter { it.running }.sortedBy { it.priority }
 
 	fun stepOne() {
 		val now: Double = timeManager.getTimeInMicrosecondsDouble()
@@ -72,10 +98,10 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 			}
 		}
 
-		val availableThreads = resourcesById.values.filter { it.running }.sortedBy { it.priority }
+		val availableThreads = this.availableThreads
 		for (t in availableThreads) {
+			logger.trace { "Step for ${t.id} : '${t.name}' : ${t.phase}" }
 			t.step(now)
-			if (availableThreads.isEmpty()) break
 		}
 	}
 
@@ -108,8 +134,6 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 			cpu.setPC(address)
 			cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
 			cpu.r4 = argument
-			mem.sw(CpuBreakException.INTERRUPT_RETURN_RA, 0b000000_00000000000000000000_001101 or (CpuBreakException.INTERRUPT_RETURN shl 6))
-
 			thread.step(timeManager.getTimeInMicrosecondsDouble())
 		} catch (e: CpuBreakException) {
 			// END OF INTERRUPT
@@ -122,11 +146,15 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	fun delayThread(micros: Int) {
 		// @TODO:
 	}
+
+	val summary: String
+		get() = "[" + threads.map { "'${it.name}'#${it.id} P${it.priority} : ${it.phase}" }.joinToString(", ") + "]"
 }
 
 sealed class WaitObject {
 	data class TIME(val instant: Double) : WaitObject()
 	data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
+	data class COROUTINE(val reason: String) : WaitObject()
 	object SLEEP : WaitObject()
 	object VBLANK : WaitObject()
 }
@@ -153,13 +181,14 @@ class PspThread internal constructor(
 		DELETED
 	}
 
-	val status: Int get() {
-		var out: Int = 0
-		if (running) out = out or ThreadStatus.RUNNING
-		if (waiting) out = out or ThreadStatus.WAIT
-		if (phase == Phase.DELETED) out = out or ThreadStatus.DEAD
-		return out
-	}
+	val status: Int
+		get() {
+			var out: Int = 0
+			if (running) out = out or ThreadStatus.RUNNING
+			if (waiting) out = out or ThreadStatus.WAIT
+			if (phase == Phase.DELETED) out = out or ThreadStatus.DEAD
+			return out
+		}
 
 	var acceptingCallbacks: Boolean = false
 	var waitObject: WaitObject? = null
@@ -175,6 +204,7 @@ class PspThread internal constructor(
 		_thread = this@PspThread
 		setPC(entryPoint)
 		SP = stack.high.toInt()
+		RA = CpuBreakException.THREAD_EXIT_KIL_RA
 	}
 	val interpreter = CpuInterpreter(state)
 	//val interpreter = FastCpuInterpreter(state)
@@ -187,32 +217,22 @@ class PspThread internal constructor(
 		interpreter.trace = threadManager.traces[name] == true
 	}
 
-	init {
-		//val ptr = putWordInStack(0b000000_00000000000000000000_001101 or (77 shl 6)) // break 77
-		state.RA = putWordsInStack(
-			0b000000_00000000000000000000_001101 or (CpuBreakException.THREAD_EXIT_KILL shl 6), // break 77
-			0b000000_00000000000000000000_000000, // nop
-			0b000000_00000000000000000000_000000, // nop
-			0b000000_00000000000000000000_000000  // nop
-		).addr
-	}
-
-	fun putDataInStack(bytes: ByteArray): PtrArray {
-		val blockSize = bytes.size.nextAlignedTo(16)
+	fun putDataInStack(bytes: ByteArray, alignment: Int = 0x10): PtrArray {
+		val blockSize = bytes.size.nextAlignedTo(alignment)
 		state.SP -= blockSize
 		mem.write(state.SP, bytes)
 		return PtrArray(mem.ptr(state.SP), bytes.size)
 	}
 
-	fun putWordInStack(word: Int): PtrArray {
-		val blockSize = 4.nextAlignedTo(16)
+	fun putWordInStack(word: Int, alignment: Int = 0x10): PtrArray {
+		val blockSize = 4.nextAlignedTo(alignment)
 		state.SP -= blockSize
 		mem.sw(state.SP, word)
 		return mem.ptr(state.SP).array(4)
 	}
 
-	fun putWordsInStack(vararg words: Int): PtrArray {
-		val blockSize = (words.size * 4).nextAlignedTo(16)
+	fun putWordsInStack(vararg words: Int, alignment: Int = 0x10): PtrArray {
+		val blockSize = (words.size * 4).nextAlignedTo(alignment)
 		state.SP -= blockSize
 		for (n in 0 until words.size) mem.sw(state.SP + n * 4, words[n])
 		return mem.ptr(state.SP).array(words.size * 4)
@@ -254,12 +274,20 @@ class PspThread internal constructor(
 		} catch (e: CpuBreakException) {
 			when (e.id) {
 				CpuBreakException.THREAD_EXIT_KILL -> {
-					logger.info("BREAK: THREAD_EXIT_KILL ('${this.name}', ${this.id})")
+					logger.info { "BREAK: THREAD_EXIT_KILL ('${this.name}', ${this.id})" }
 					exitAndKill()
 				}
 				CpuBreakException.THREAD_WAIT -> {
+					// Do nothing
 				}
-				else -> throw e
+				CpuBreakException.INTERRUPT_RETURN -> {
+					// Do nothing
+				}
+				else -> {
+					println("CPU: ${state.summary}")
+					e.printStackTrace()
+					throw e
+				}
 			}
 		}
 	}
@@ -390,3 +418,22 @@ class SceKernelThreadInfo(
 	)
 }
 
+object PspThreadAttributes {
+	val None = 0
+	val LowFF = 0x000000FF.toInt()
+	val Vfpu = 0x00004000.toInt() // Enable VFPU access for the thread.
+	val V0x2000 = 0x2000.toInt()
+	val V0x4000 = 0x4000.toInt()
+	val V0x400000 = 0x400000.toInt()
+	val V0x800000 = 0x800000.toInt()
+	val V0xf00000 = 0xf00000.toInt()
+	val V0x8000000 = 0x8000000.toInt()
+	val V0xf000000 = 0xf000000.toInt()
+	val User = 0x80000000.toInt() // Start the thread in user mode (done automatically if the thread creating it is in user mode).
+	val UsbWlan = 0xa0000000.toInt() // Thread is part of the USB/WLAN API.
+	val Vsh = 0xc0000000.toInt() // Thread is part of the VSH API.
+	//val ScratchRamEnable = 0x00008000, // Allow using scratchpad memory for a thread, NOT USABLE ON V1.0
+	val NoFillStack = 0x00100000.toInt() // Disables filling the stack with 0xFF on creation
+	val ClearStack = 0x00200000.toInt() // Clear the stack when the thread is deleted
+	val ValidMask = (LowFF or Vfpu or User or UsbWlan or Vsh or /*ScratchRamEnable |*/ NoFillStack or ClearStack or V0x2000 or V0x4000 or V0x400000 or V0x800000 or V0xf00000 or V0x8000000 or V0xf000000).toInt()
+}

@@ -163,7 +163,7 @@ class KpspemuMainScene(
 					if (!ended) {
 						ended = true
 						println("COMPLETED")
-						display.clear()
+						display.crash()
 					}
 				}
 			}
@@ -397,7 +397,10 @@ suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile, magic: SyncSt
 		else -> file.extensionLC
 	}
 	when (extension) {
-		"elf", "prx", "bin" -> return loadElfAndSetRegisters(file.readAll().openSync())
+		"elf", "prx", "bin" -> {
+			logger.warn { "Loading executable mounted at ${fileManager.currentDirectory}..." }
+			return loadElfAndSetRegisters(file.readAll().openSync(), listOf(fileManager.executableFile))
+		}
 		"pbp" -> return loadExecutableAndStartInternal(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
 		"cso", "ciso" -> return loadExecutableAndStartInternal(file.openAsCso().asVfsFile(file.pathInfo.pathWithExtension("cso.iso")))
 		"iso", "zip" -> {
@@ -419,9 +422,11 @@ suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile, magic: SyncSt
 				logger.info { "ebootInRoot: $ebootInRoot" }
 				if (ebootInRoot) {
 					fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
+					fileManager.executableFile = "ms0:/PSP/GAME/virtual/EBOOT.PBP"
 					deviceManager.mount(fileManager.currentDirectory, iso)
 				} else {
 					fileManager.currentDirectory = "umd0:"
+					fileManager.executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
 					deviceManager.mount("game0:", iso)
 					deviceManager.mount("disc0:", iso)
 					deviceManager.mount(fileManager.currentDirectory, iso)

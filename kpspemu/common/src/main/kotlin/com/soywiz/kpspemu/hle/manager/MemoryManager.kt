@@ -51,12 +51,13 @@ class OutOfMemoryError(message: String) : Exception(message)
 
 data class MemoryPartition(
 	var name: String,
-	val low: Double,
-	val high: Double,
+	val low: Long,
+	val high: Long,
 	var allocated: Boolean,
 	val parent: MemoryPartition? = null
 ) {
 	companion object {
+		val ZERO = 0L
 		val DUMMY = MemoryPartition("dummy", 0.0, 0.0, false, null)
 
 		inline operator fun invoke(
@@ -65,17 +66,17 @@ data class MemoryPartition(
 			high: Number,
 			allocated: Boolean,
 			parent: MemoryPartition? = null
-		) = MemoryPartition(name, low.toDouble(), high.toDouble(), allocated, parent)
+		) = MemoryPartition(name, low.toLong(), high.toLong(), allocated, parent)
 	}
 
 	// Actual address
-	var address: Double = low
+	var address: Long = low
 
 	private val _childPartitions = arrayListOf<MemoryPartition>()
 
 	val free: Boolean get() = !allocated
 
-	val size: Double get() = this.high - this.low
+	val size: Long get() = this.high - this.low
 	val root: MemoryPartition get() = this.parent?.root ?: this
 
 	val childPartitions: ArrayList<MemoryPartition>
@@ -86,14 +87,14 @@ data class MemoryPartition(
 			return this._childPartitions
 		}
 
-	fun contains(address: Double): Boolean = address >= this.low && address < this.high
+	fun contains(address: Long): Boolean = address >= this.low && address < this.high
 
 	fun deallocate() {
 		this.allocated = false
 		this.parent?.cleanup()
 	}
 
-	fun allocate(size: Double, anchor: MemoryAnchor, address: Double = 0.0, name: String = ""): MemoryPartition {
+	fun allocate(size: Long, anchor: MemoryAnchor, address: Long = ZERO, name: String = ""): MemoryPartition {
 		when (anchor) {
 			MemoryAnchor.LowAligned, // @TODO: aligned!
 			MemoryAnchor.Low -> return this.allocateLow(size, name)
@@ -103,11 +104,12 @@ data class MemoryPartition(
 		}
 	}
 
-	inline fun allocateSet(size: Number, addressLow: Number, name: String = ""): MemoryPartition = allocateSet(size.toDouble(), addressLow.toDouble(), name)
-	inline fun allocateLow(size: Number, name: String = ""): MemoryPartition = this.allocateLow(size.toDouble(), name)
-	inline fun allocateHigh(size: Number, name: String = "", alignment: Int = 1): MemoryPartition = this.allocateHigh(size.toDouble(), name)
+	inline fun allocate(size: Number, anchor: MemoryAnchor, address: Number = ZERO, name: String = ""): MemoryPartition = allocate(size.toLong(), anchor, address.toLong(), name)
+	inline fun allocateSet(size: Number, addressLow: Number, name: String = ""): MemoryPartition = allocateSet(size.toLong(), addressLow.toLong(), name)
+	inline fun allocateLow(size: Number, name: String = ""): MemoryPartition = this.allocateLow(size.toLong(), name)
+	inline fun allocateHigh(size: Number, name: String = "", alignment: Int = 1): MemoryPartition = this.allocateHigh(size.toLong(), name)
 
-	fun allocateSet(size: Double, addressLow: Double, name: String = ""): MemoryPartition {
+	fun allocateSet(size: Long, addressLow: Long, name: String = ""): MemoryPartition {
 		var childs = this.childPartitions
 		var addressHigh = addressLow + size
 
@@ -136,8 +138,8 @@ data class MemoryPartition(
 		return p2
 	}
 
-	fun allocateLow(size: Double, name: String = ""): MemoryPartition = this.allocateLowHigh(size, true, name)
-	fun allocateHigh(size: Double, name: String = "", alignment: Int = 1): MemoryPartition = this.allocateLowHigh(size, false, name)
+	fun allocateLow(size: Long, name: String = ""): MemoryPartition = this.allocateLowHigh(size, true, name)
+	fun allocateHigh(size: Long, name: String = "", alignment: Int = 1): MemoryPartition = this.allocateLowHigh(size, false, name)
 
 	private fun _validateChilds() {
 		var childs = this.childPartitions
@@ -150,7 +152,7 @@ data class MemoryPartition(
 		}
 	}
 
-	private fun allocateLowHigh(size: Double, low: Boolean, name: String = ""): MemoryPartition {
+	private fun allocateLowHigh(size: Long, low: Boolean, name: String = ""): MemoryPartition {
 		var childs = this.childPartitions
 
 		val index = childs.indexOfFirst { it.free && it.size >= size }
@@ -215,7 +217,7 @@ data class MemoryPartition(
 			var n = 0
 			while (n < childs.size) {
 				var child = childs[n]
-				if (!child.allocated && child.size == 0.0) {
+				if (!child.allocated && child.size == ZERO) {
 					childs.splice(n, 1)
 				} else {
 					n++
@@ -233,8 +235,8 @@ data class MemoryPartition(
 	}
 
 	val nonAllocatedPartitions get() = this.childPartitions.filter { !it.allocated }
-	fun getTotalFreeMemory(): Double = this.nonAllocatedPartitions.reduceAcumulate(0.0) { prev, item -> item.size + prev }
-	fun getMaxContiguousFreeMemory(): Double = this.nonAllocatedPartitions.maxBy { it.size }?.size ?: 0.0
+	fun getTotalFreeMemory(): Long = this.nonAllocatedPartitions.reduceAcumulate(ZERO) { prev, item -> item.size + prev }
+	fun getMaxContiguousFreeMemory(): Long = this.nonAllocatedPartitions.maxBy { it.size }?.size ?: ZERO
 
 	fun getTotalFreeMemoryInt(): Int = this.getTotalFreeMemory().toInt()
 	fun getMaxContiguousFreeMemoryInt(): Int = this.getMaxContiguousFreeMemory().toInt()

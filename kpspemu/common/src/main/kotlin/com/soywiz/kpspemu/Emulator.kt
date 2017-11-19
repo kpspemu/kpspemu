@@ -5,6 +5,7 @@ import com.soywiz.korau.format.util.IMemory
 import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.battery.PspBattery
+import com.soywiz.kpspemu.cpu.CpuBreakException
 import com.soywiz.kpspemu.cpu.GlobalCpuState
 import com.soywiz.kpspemu.ctrl.PspController
 import com.soywiz.kpspemu.display.PspDisplay
@@ -45,6 +46,10 @@ class Emulator(
 	}
 
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
+
+	init {
+		CpuBreakException.initialize(mem)
+	}
 
 	fun frameStep() {
 		controller.startFrame(timeManager.getTimeInMicrosecondsInt())

@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle
 
 import com.soywiz.kds.IntMap
+import com.soywiz.klogger.LogLevel
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.coroutine.Continuation
@@ -59,7 +60,12 @@ abstract class SceModule(
 	val prxFile: String = "",
 	val prxName: String = ""
 ) : WithEmulator {
-	val logger = Logger("SceModule.$name")
+	val loggerSuspend = Logger("SceModuleSuspend").apply {
+		//level = LogLevel.TRACE
+	}
+	val logger = Logger("SceModule.$name").apply {
+		//level = LogLevel.TRACE
+	}
 
 	fun registerPspModule() {
 		registerModule()
@@ -136,16 +142,17 @@ abstract class SceModule(
 	fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
 		val fullName = "${this.name}:$name"
 		registerFunctionRR(name, uid, since, syscall) {
+			loggerSuspend.trace { "Suspend $name (${threadManager.summary}) : ${cpu.summary}" }
 			val mfunction: suspend (RegisterReader) -> Int = { function(it, it.cpu) }
 			var completed = false
 			mfunction.startCoroutine(this, object : Continuation<Int> {
 				override val context: CoroutineContext = coroutineContext
 
 				override fun resume(value: Int) {
-					logger.trace { "Resumed $name with value: $value" }
 					cpu.r2 = value
 					completed = true
 					it.thread.resume()
+					loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${cpu.summary}" }
 				}
 
 				override fun resumeWithException(exception: Throwable) {
@@ -159,7 +166,7 @@ abstract class SceModule(
 			})
 
 			if (!completed) {
-				it.thread.markWaiting(WaitObject.PROMISE(Promise(), fullName), cb = cb)
+				it.thread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
 				threadManager.suspend()
 			}
 		}
@@ -168,12 +175,14 @@ abstract class SceModule(
 	fun registerFunctionSuspendLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Long) {
 		val fullName = "${this.name}:$name"
 		registerFunctionRR(name, uid, since, syscall) {
+			loggerSuspend.trace { "Suspend $name" }
 			val mfunction: suspend (RegisterReader) -> Long = { function(it, it.cpu) }
 			var completed = false
 			mfunction.startCoroutine(this, object : Continuation<Long> {
 				override val context: CoroutineContext = coroutineContext
 
 				override fun resume(value: Long) {
+					loggerSuspend.trace { "Resumed $name with value: $value" }
 					cpu.r2 = (value ushr 0).toInt()
 					cpu.r3 = (value ushr 32).toInt()
 					completed = true
@@ -187,7 +196,7 @@ abstract class SceModule(
 			})
 
 			if (!completed) {
-				it.thread.markWaiting(WaitObject.PROMISE(Promise(), fullName), cb = cb)
+				it.thread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
 				threadManager.suspend()
 			}
 		}

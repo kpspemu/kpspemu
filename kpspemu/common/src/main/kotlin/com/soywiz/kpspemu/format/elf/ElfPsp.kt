@@ -121,7 +121,8 @@ class InstructionReader(
 
 fun Emulator.loadElf(file: SyncStream): PspElf = PspElf.loadInto(file, this)
 
-fun Emulator.loadElfAndSetRegisters(file: SyncStream, args: List<String> = listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP")): PspElf {
+fun Emulator.loadElfAndSetRegisters(file: SyncStream, args: List<String>): PspElf {
+	logger.warn { "loadElfAndSetRegisters: $args" }
 	val elf = loadElf(file)
 	val thread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
 	val data = thread.putDataInStack(args.map { it.toByteArray(UTF8) + byteArrayOf(0) }.join() + byteArrayOf(0))

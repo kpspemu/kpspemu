@@ -120,7 +120,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	fun readStringzOrNull(offset: Int): String? = if (offset != 0) readStringz(offset) else null
 
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
-	fun fill(value: Int, offset: Int, size: Int) {
+	open fun fill(value: Int, offset: Int, size: Int) {
 		for (n in 0 until offset) sb(offset + n, value)
 	}
 }
@@ -232,6 +232,12 @@ abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(t
 	override fun read(srcPos: Int, dst: IntArray, dstPos: Int, len: Int): Unit = fmem.getAlignedArrayInt32(index(srcPos) ushr 2, dst, dstPos, len)
 	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = fmem.setAlignedArrayInt8(index(dstPos), src, srcPos, len)
 	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = fmem.setAlignedArrayInt32(index(dstPos) ushr 2, src, srcPos, len)
+
+	override fun fill(value: Int, offset: Int, size: Int) {
+		val m = this.i8
+		val start = index(offset)
+		for (n in 0 until size) m[start + n] = value.toByte() // @TODO: Use native fill!
+	}
 
 	override fun getFastMem(): com.soywiz.kmem.FastMemory? = fmem
 	override fun getFastMemOffset(addr: Int): Int = index(addr)

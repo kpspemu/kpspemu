@@ -73,7 +73,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		}
 	}
 
-	fun clear() {
+	fun crash() {
 		for (n in 0 until 512 * 272) {
 			mem.sw(address + n * 4, mem.lw(address + n * 4).inv())
 		}

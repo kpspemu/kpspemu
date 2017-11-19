@@ -3,32 +3,38 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.waitOne
 import com.soywiz.korio.util.hex
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.callbackManager
+import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.GP
+import com.soywiz.kpspemu.cpu.K0
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.error.sceKernelException
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.write
-import com.soywiz.kpspemu.rtc
-import com.soywiz.kpspemu.threadManager
 import com.soywiz.kpspemu.util.*
 import kotlin.math.min
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate")
 class ThreadManForUser(emulator: Emulator)
 	: SceModule(emulator, "ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager"),
-	ThreadManForUser_EventFlags
-{
+	ThreadManForUser_EventFlags {
 	val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }
 
 	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): Int {
 		logger.trace { "sceKernelCreateThread: '$name', ${entryPoint.hex}, $initPriority, $stackSize, ${attributes.hex}, $optionPtr" }
 		val thread = threadManager.create(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
+		val k0Struct = K0Structure(
+			threadId = thread.id,
+			stackAddr = thread.stack.low.toInt(),
+			f1 = -1,
+			f2 = -1
+		)
+		mem.sw(thread.stack.low.toInt(), thread.id)
+		thread.state.K0 = thread.putDataInStack(K0Structure.toByteArray(k0Struct)).low
 		//println("sceKernelCreateThread: ${thread.id}")
 		return thread.id
 	}
@@ -63,7 +69,8 @@ class ThreadManForUser(emulator: Emulator)
 	}
 
 	fun sceKernelDeleteThread(threadId: Int): Int {
-		threadManager.getById(threadId).delete()
+		val thread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+		thread.delete()
 		return 0
 	}
 
@@ -107,8 +114,9 @@ class ThreadManForUser(emulator: Emulator)
 	suspend fun sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = false)
 	suspend fun sceKernelWaitThreadEndCB(currentThread: PspThread, threadId: Int, timeout: Ptr): Int = _sceKernelWaitThreadEnd(currentThread, threadId, timeout, cb = true)
 
-	fun sceKernelReferThreadStatus(threadId: Int, out: Ptr): Int {
-		val thread = threadManager.getById(threadId)
+	fun sceKernelReferThreadStatus(currentThread: PspThread, threadId: Int, out: Ptr): Int {
+		val actualThreadId = if (threadId == -1) currentThread.id else threadId
+		val thread = threadManager.tryGetById(actualThreadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
 
 		val info = SceKernelThreadInfo()
 
@@ -152,6 +160,7 @@ class ThreadManForUser(emulator: Emulator)
 	class Semaphore(
 		manager: SemaphoreManager, id: Int, name: String
 	) : Resource(manager, id, name) {
+		var waitingThreads: Int = 0
 		var attribute: Int = 0
 		var initialCount: Int = 0
 		var count: Int = 0
@@ -179,7 +188,12 @@ class ThreadManForUser(emulator: Emulator)
 	suspend fun _sceKernelWaitSema(currentThread: PspThread, id: Int, expectedCount: Int, timeout: Ptr): Int {
 		val sema = semaphoreManager.getById(id)
 		while (sema.active && sema.count < expectedCount) {
-			sema.signal.waitOne()
+			sema.waitingThreads++
+			try {
+				sema.signal.waitOne()
+			} finally {
+				sema.waitingThreads--
+			}
 		}
 		sema.count -= expectedCount
 		return 0
@@ -199,6 +213,20 @@ class ThreadManForUser(emulator: Emulator)
 		sema.active = false
 		sema.signal(Unit)
 		sema.free()
+		return 0
+	}
+
+	fun sceKernelReferSemaStatus(id: Int, infoStream: Ptr): Int {
+		val semaphore: Semaphore = semaphoreManager.tryGetById(id) ?: sceKernelException(SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE)
+		val semaphoreInfo = SceKernelSemaInfo()
+		semaphoreInfo.size = SceKernelSemaInfo.size
+		semaphoreInfo.attributes = semaphore.attribute
+		semaphoreInfo.currentCount = semaphore.count
+		semaphoreInfo.initialCount = semaphore.initialCount
+		semaphoreInfo.maximumCount = semaphore.maxCount
+		semaphoreInfo.name = semaphore.name
+		semaphoreInfo.numberOfWaitingThreads = semaphore.waitingThreads
+		infoStream.write(SceKernelSemaInfo, semaphoreInfo)
 		return 0
 	}
 
@@ -285,7 +313,6 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelCreateMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0xB7D098C6)
 	fun sceKernelCancelCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xBA4051D6)
 	fun sceKernelSysClock2USec(cpu: CpuState): Unit = UNIMPLEMENTED(0xBA6B92E2)
-	fun sceKernelReferSemaStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xBC6FEBC5)
 	fun sceKernelDelaySysClockThread(cpu: CpuState): Unit = UNIMPLEMENTED(0xBD123D9E)
 	fun sceKernelAllocateVpl(cpu: CpuState): Unit = UNIMPLEMENTED(0xBED27435)
 	fun ThreadManForUser_BEED3A47(cpu: CpuState): Unit = UNIMPLEMENTED(0xBEED3A47)
@@ -336,12 +363,13 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionInt("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(thread, int) }
 		registerFunctionSuspendInt("sceKernelWaitThreadEnd", 0x278C0DF5, since = 150) { sceKernelWaitThreadEnd(thread, int, ptr) }
 		registerFunctionSuspendInt("sceKernelWaitThreadEndCB", 0x840E8133, since = 150) { sceKernelWaitThreadEndCB(thread, int, ptr) }
-		registerFunctionInt("sceKernelReferThreadStatus", 0x17C1684E, since = 150) { sceKernelReferThreadStatus(int, ptr) }
+		registerFunctionInt("sceKernelReferThreadStatus", 0x17C1684E, since = 150) { sceKernelReferThreadStatus(thread, int, ptr) }
 		registerFunctionInt("sceKernelGetThreadId", 0x293B45B8, since = 150) { sceKernelGetThreadId(thread) }
 		registerFunctionInt("sceKernelTerminateThread", 0x616403BA, since = 150) { sceKernelTerminateThread(int) }
 		registerFunctionInt("sceKernelDeleteThread", 0x9FA03CD3, since = 150) { sceKernelDeleteThread(int) }
 		registerFunctionVoid("sceKernelExitThread", 0xAA73C935, since = 150) { sceKernelExitThread(thread, int) }
 		registerFunctionInt("sceKernelChangeCurrentThreadAttr", 0xEA748E31, since = 150) { sceKernelChangeCurrentThreadAttr(thread, int, int) }
+		registerFunctionInt("sceKernelChangeThreadPriority", 0x71BC9871, since = 150) { sceKernelChangeThreadPriority(int, int) }
 
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(str, ptr, int) }
@@ -352,7 +380,7 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionSuspendInt("sceKernelWaitSemaCB", 0x6D212BAC, since = 150, cb = true) { _sceKernelWaitSema(thread, int, int, ptr) }
 		registerFunctionInt("sceKernelSignalSema", 0x3F53E640, since = 150) { sceKernelSignalSema(thread, int, int) }
 		registerFunctionInt("sceKernelDeleteSema", 0x28B6489C, since = 150) { sceKernelDeleteSema(int) }
-		registerFunctionInt("sceKernelChangeThreadPriority", 0x71BC9871, since = 150) { sceKernelChangeThreadPriority(int, int) }
+		registerFunctionInt("sceKernelReferSemaStatus", 0xBC6FEBC5, since = 150) { sceKernelReferSemaStatus(int, ptr) }
 
 		registerFunctionRaw("sceKernelGetVTimerTime", 0x034A921F, since = 150) { sceKernelGetVTimerTime(it) }
 		registerFunctionRaw("sceKernelRegisterThreadEventHandler", 0x0C106E53, since = 150) { sceKernelRegisterThreadEventHandler(it) }
@@ -431,7 +459,6 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelCreateMutex", 0xB7D098C6, since = 150) { sceKernelCreateMutex(it) }
 		registerFunctionRaw("sceKernelCancelCallback", 0xBA4051D6, since = 150) { sceKernelCancelCallback(it) }
 		registerFunctionRaw("sceKernelSysClock2USec", 0xBA6B92E2, since = 150) { sceKernelSysClock2USec(it) }
-		registerFunctionRaw("sceKernelReferSemaStatus", 0xBC6FEBC5, since = 150) { sceKernelReferSemaStatus(it) }
 		registerFunctionRaw("sceKernelDelaySysClockThread", 0xBD123D9E, since = 150) { sceKernelDelaySysClockThread(it) }
 		registerFunctionRaw("sceKernelAllocateVpl", 0xBED27435, since = 150) { sceKernelAllocateVpl(it) }
 		registerFunctionRaw("ThreadManForUser_BEED3A47", 0xBEED3A47, since = 150) { ThreadManForUser_BEED3A47(it) }
@@ -465,4 +492,44 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelCancelWakeupThread", 0xFCCFAD26, since = 150) { sceKernelCancelWakeupThread(it) }
 		registerFunctionRaw("sceKernelReferThreadRunStatus", 0xFFC36A14, since = 150) { sceKernelReferThreadRunStatus(it) }
 	}
+}
+
+class SceKernelSemaInfo(
+	var size: Int = 0,
+	var name: String = "",
+	var attributes: Int = 0, // SemaphoreAttribute
+	var initialCount: Int = 0,
+	var currentCount: Int = 0,
+	var maximumCount: Int = 0,
+	var numberOfWaitingThreads: Int = 0
+) {
+	companion object : Struct<SceKernelSemaInfo>({ SceKernelSemaInfo() },
+		SceKernelSemaInfo::size AS INT32,
+		SceKernelSemaInfo::name AS STRINGZ(32),
+		SceKernelSemaInfo::attributes AS INT32,
+		SceKernelSemaInfo::initialCount AS INT32,
+		SceKernelSemaInfo::currentCount AS INT32,
+		SceKernelSemaInfo::maximumCount AS INT32,
+		SceKernelSemaInfo::numberOfWaitingThreads AS INT32
+	)
+}
+
+class K0Structure(
+	var unk: IntArray = IntArray(48), // +0000
+	var threadId: Int = 0, // +00C0
+	var unk1: Int = 0, // +00C4
+	var stackAddr: Int = 0, // +00C8
+	var unk3: IntArray = IntArray(11),// +00CC
+	var f1: Int = 0, // +00F8
+	var f2: Int = 0 // +00FC
+) {
+	companion object : Struct<K0Structure>({ K0Structure() },
+		K0Structure::unk AS INTARRAY(INT32, 48),
+		K0Structure::threadId AS INT32,
+		K0Structure::unk1 AS INT32,
+		K0Structure::stackAddr AS INT32,
+		K0Structure::unk3 AS INTARRAY(INT32, 11),
+		K0Structure::f1 AS INT32,
+		K0Structure::f2 AS INT32
+	)
 }

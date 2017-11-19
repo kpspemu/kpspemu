@@ -1,14 +1,12 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.dynarek.JsName
 import com.soywiz.dynarek.JvmField
 import com.soywiz.kds.Extra
 import com.soywiz.kmem.*
 import com.soywiz.korio.error.invalidArg
-import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
-import com.soywiz.kpspemu.hle.modules.sceWlanDrv
 import com.soywiz.kpspemu.mem.Memory
 
 data class CpuBreakException(val id: Int) : Exception() {
@@ -16,7 +14,16 @@ data class CpuBreakException(val id: Int) : Exception() {
 		val THREAD_WAIT = 10001
 		val THREAD_EXIT_KILL = 10002
 		val INTERRUPT_RETURN = 10003
-		val INTERRUPT_RETURN_RA = Memory.MAIN_OFFSET
+
+		val THREAD_WAIT_RA = Memory.MAIN_OFFSET + 0
+		val THREAD_EXIT_KIL_RA = Memory.MAIN_OFFSET + 4
+		val INTERRUPT_RETURN_RA = Memory.MAIN_OFFSET + 8
+
+		fun initialize(mem: Memory) {
+			mem.sw(THREAD_WAIT_RA, 0b000000_00000000000000000000_001101 or (CpuBreakException.THREAD_WAIT shl 6))
+			mem.sw(THREAD_EXIT_KIL_RA, 0b000000_00000000000000000000_001101 or (CpuBreakException.THREAD_EXIT_KILL shl 6))
+			mem.sw(INTERRUPT_RETURN_RA, 0b000000_00000000000000000000_001101 or (CpuBreakException.INTERRUPT_RETURN shl 6))
+		}
 	}
 }
 
@@ -29,6 +36,19 @@ var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
 var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
 class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
+	companion object {
+		var lastId = 0
+
+		fun getReg(index: Int) = when (index) {
+			0 -> CpuState::r0;1 -> CpuState::r1;2 -> CpuState::r2;3 -> CpuState::r3;4 -> CpuState::r4;5 -> CpuState::r5;6 -> CpuState::r6;7 -> CpuState::r7;
+			8 -> CpuState::r8;9 -> CpuState::r9;10 -> CpuState::r10;11 -> CpuState::r11;12 -> CpuState::r12;13 -> CpuState::r13;14 -> CpuState::r14;15 -> CpuState::r15;
+			16 -> CpuState::r16;17 -> CpuState::r17;18 -> CpuState::r18;19 -> CpuState::r19;20 -> CpuState::r20;21 -> CpuState::r21;22 -> CpuState::r22;23 -> CpuState::r23;
+			24 -> CpuState::r24;25 -> CpuState::r25;26 -> CpuState::r26;27 -> CpuState::r27;28 -> CpuState::r28;29 -> CpuState::r29;30 -> CpuState::r30;31 -> CpuState::r31;
+			else -> invalidArg("Invalid register $index")
+		}
+	}
+
+	val id = lastId++
 	var totalExecuted: Long = 0L
 
 	val _FMem = MemBufferAlloc(32 * 4)
@@ -55,16 +75,6 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	var fcr31_cc: Boolean set(value) = run { fcr31 = fcr31.insert(value, 23) }; get() = fcr31.extract(23)
 	var fcr31_fs: Boolean set(value) = run { fcr31 = fcr31.insert(value, 24) }; get() = fcr31.extract(24)
 	var fcr31_25_7: Int set(value) = run { fcr31 = fcr31.insert(value, 25, 7) }; get() = fcr31.extract(25, 7)
-
-	companion object {
-		fun getReg(index: Int) = when (index) {
-			0 -> CpuState::r0;1 -> CpuState::r1;2 -> CpuState::r2;3 -> CpuState::r3;4 -> CpuState::r4;5 -> CpuState::r5;6 -> CpuState::r6;7 -> CpuState::r7;
-			8 -> CpuState::r8;9 -> CpuState::r9;10 -> CpuState::r10;11 -> CpuState::r11;12 -> CpuState::r12;13 -> CpuState::r13;14 -> CpuState::r14;15 -> CpuState::r15;
-			16 -> CpuState::r16;17 -> CpuState::r17;18 -> CpuState::r18;19 -> CpuState::r19;20 -> CpuState::r20;21 -> CpuState::r21;22 -> CpuState::r22;23 -> CpuState::r23;
-			24 -> CpuState::r24;25 -> CpuState::r25;26 -> CpuState::r26;27 -> CpuState::r27;28 -> CpuState::r28;29 -> CpuState::r29;30 -> CpuState::r30;31 -> CpuState::r31;
-			else -> invalidArg("Invalid register $index")
-		}
-	}
 
 	// @TODO: Fast version for dynarek
 
@@ -241,6 +251,10 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 		for (n in 0 until 32) dst.setFpr(n, src.getFpr(n))
 		for (n in 0 until 128) dst.setVfpr(n, src.getVfpr(n))
 	}
+
+	val summary: String
+		//get() = "REGS($id)[" + (0 until 32).map { "r%d=%d".format(it, getGpr(it)) }.joinToString(", ") + "]"
+		get() = "REGS($id)[" + (0 until 32).map { "r%d=0x%08X".format(it, getGpr(it)) }.joinToString(", ") + "]"
 }
 
 /*

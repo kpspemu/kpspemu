@@ -63,7 +63,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			return file.id
 		} catch (e: Throwable) {
 			println("Error openingfile: $fileName : '${e.message}'")
-			e.printStackTrace()
 			//e.printStackTrace()
 			return SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND
 		}
@@ -179,7 +178,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			}
 		}
 
-		logger.error("WIP: sceIoDevctl: $deviceName, $command, $inputPointer, $inputLength, $outputPointer, $outputLength")
+		logger.error { "WIP: sceIoDevctl: $deviceName, $command, $inputPointer, $inputLength, $outputPointer, $outputLength" }
 
 		return -1
 	}

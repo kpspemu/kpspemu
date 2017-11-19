@@ -9,8 +9,10 @@ import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.stream.SyncStream
+import com.soywiz.korio.stream.toAsync
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.quote
+import com.soywiz.korio.vfs.MemoryVfsMix
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.hle.registerNativeModules
 import org.junit.Test
@@ -43,7 +45,7 @@ class IntegrationTests {
 
 	@Test fun testRtc() = testFile("rtc/rtc")
 
-	//@Test fun testThreadsK0() = testFile("threads/k0/k0")
+	@Test fun testThreadsK0() = testFile("threads/k0/k0")
 
 	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
@@ -61,7 +63,10 @@ class IntegrationTests {
 		emulator.display.exposeDisplay = false
 		emulator.registerNativeModules()
 		//val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
-		val info = emulator.loadElfAndSetRegisters(elf)
+		emulator.fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
+		emulator.fileManager.executableFile = "ms0:/PSP/GAME/virtual/EBOOT.PBP"
+		emulator.deviceManager.mount(emulator.fileManager.currentDirectory, MemoryVfsMix("EBOOT.PBP" to elf.clone().toAsync()))
+		val info = emulator.loadElfAndSetRegisters(elf, listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP"))
 
 		if (TRACE1) {
 			LoggerManager.defaultLevel = LogLevel.TRACE

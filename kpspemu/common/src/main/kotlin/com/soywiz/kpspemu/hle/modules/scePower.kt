@@ -56,7 +56,7 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 	}
 
 	fun scePowerSetClockFrequency(pllFreq: Int, cpuFreq: Int, busFreq: Int): Int {
-		logger.warn { "Unimplemented scePowerSetClockFrequency" }
+		logger.warn { "Unimplemented scePowerSetClockFrequency($pllFreq, $cpuFreq, $busFreq)" }
 		return 0
 	}
 
