@@ -4,6 +4,7 @@ import com.soywiz.kmem.UByteArray
 import com.soywiz.kmem.fill
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.toUnsigned
 import com.soywiz.kpspemu.kirk.Kirk
 import com.soywiz.kpspemu.util.*
 
@@ -90,7 +91,7 @@ object CryptedElf {
 		pbOut.sliceWithStart(0x40).writeStream(buffer1.sliceWithSize(0x40, 0x40))
 
 		for (iXOR in 0 until 0x70) {
-			_pbOutU[0x40 + iXOR] = ((_pbOutU[0x40 + iXOR] xor pti.key[0x14 + iXOR]) and 0xFF)
+			_pbOutU[0x40 + iXOR] = ((_pbOutU[0x40 + iXOR] xor pti.skey[0x14 + iXOR].toUnsigned()) and 0xFF)
 		}
 
 		Kirk.hleUtilsBufferCopyWithRange(
@@ -101,7 +102,7 @@ object CryptedElf {
 
 		var iXOR = 0x6F
 		while (iXOR >= 0) {
-			_pbOutU[0x40 + iXOR] = (_pbOutU[0x2C + iXOR] xor pti.key[0x20 + iXOR]) and 0xFF
+			_pbOutU[0x40 + iXOR] = (_pbOutU[0x2C + iXOR] xor pti.skey[0x20 + iXOR].toUnsigned()) and 0xFF
 			iXOR--
 		}
 

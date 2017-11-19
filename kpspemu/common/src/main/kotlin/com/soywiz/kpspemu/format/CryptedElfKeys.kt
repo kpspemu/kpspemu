@@ -1,14 +1,11 @@
 package com.soywiz.kpspemu.format
 
-import com.soywiz.kmem.UByteArray
 import com.soywiz.korio.crypto.Hex
 
 @Suppress("RemoveRedundantCallsOfConversionMethods", "MemberVisibilityCanPrivate", "unused")
 object CryptedPrxKeys144 {
 	@Suppress("ArrayInDataClass")
-	data class TagInfo(val tag: Int, val skey: ByteArray, val code: Int, val codeExtra: Int) {
-		val key: UByteArray = UByteArray(skey)
-	}
+	data class TagInfo(val tag: Int, val skey: ByteArray, val code: Int, val codeExtra: Int)
 
 	val g_tagInfo = listOf(
 		TagInfo(tag = 0x00000000.toInt(), skey = Hex.decode("bef3217b1d5e9c29715e9c1c4546cb96e01b9b3c3dde85eb22207f4aaa6e20c265320bd5670577554008083cf2551d98f3f6d85fc5b08eee52814d94518627f8faba052733e52084e94a152732aa194840aaa35965cfb32c6d4674f20556653a8ff8b021268db1c55190c1644ec969d6f23570e809593a9d02714e6fce46a9dc1b881684a597b0bac625912472084cb3"), code = 0x00000042, codeExtra = 0x00000000),
@@ -27,7 +24,6 @@ object CryptedPrxKeys144 {
 		TagInfo(tag = 0x207BBF2F.toInt(), skey = Hex.decode("0008b533cd5f2ff31f88143c952a8a6ed5effe29e3ea941343d46bbd83c02108d379b3fa65e113e6d354a7f552298b10151e4b0abadeea61df6575550153463bc3ec54ae0933426119ffc970ece50a5b26f19d985f7a989d0e75bc5527ba6ec6e888e92dda0066f7cbdc8203f2f569556212438ed3e38f2887216f659c2ed137b49e532f8e9992a4f75839ed2365e939"), code = 0x0000005A, codeExtra = 0x0000005A),
 		TagInfo(tag = 0x09000000.toInt(), skey = Hex.decode("e8531b72c6313efca2a25bf872acf03caba7ee54cbbf59596b83b854131343bccff29e98b236cef0f84cba9831c971e9c85d37a0a02fe50826d40dac01d6e457c7616ec58ab91aeff4f8d9d108a7e95f079df03e8c1a0cfa5cea1ea9c582f4580203802cc3f6e67ebbbb6affd0d01021887a29d3d31200987bc859dc9257dc7fa65d3fdb87b723fcd38e692212e880b6"), code = 0x0000004C, codeExtra = 0x00000000),
 		TagInfo(tag = 0xBB67C59F.toInt(), skey = Hex.decode("c757a7943398d39f718350f8290b8b32dab9bc2cc6b91829ba504c94d0e7dcf166390c64083d0bc9ba17adf44bf8a06c677c76f75aa5d3a46a5c084a7170b26bfb388bfab831db3ff296718b4aed9bdb845b6251b481144c08f584f67047b430748eaa93bc79c5908dc86e240212052e2e8474c797d985a1dd3a2b7a6d5b83fe4d188f50134f4cebd393190ed2df96ba"), code = 0x0000005E, codeExtra = 0x0000005E)
-
 	)
 }
 
@@ -36,149 +32,76 @@ object CryptedPrxKeys16 {
 	@Suppress("ArrayInDataClass")
 	data class TagInfo2(val tag: Int, val key: ByteArray, val code: Int)
 
-	val keys260_0 = Hex.decode("C32489D38087B24E4CD749E49D1D34D1") // kernel modules 2.60-2.71
-	val keys260_1 = Hex.decode("F3AC6E7C040A23E70D33D82473392B4A") // user modules 2.60-2.71
-	val keys260_2 = Hex.decode("72B439FF349BAE8230344A1DA2D8B43C") // vshmain 2.60-2.71
-	val keys280_0 = Hex.decode("CAFBBFC750EAB4408E445C6353CE80B1") // kernel modules 2.80
-	val keys280_1 = Hex.decode("409BC69BA9FB847F7221D23696550974") // user modules 2.80
-	val keys280_2 = Hex.decode("03A7CC4A5B91C207FFFC26251E424BB5") // vshmain executable 2.80
-	val keys300_0 = Hex.decode("9F671A7A22F3590BAA6DA4C68BD00377") // kernel modules 3.00
-	val keys300_1 = Hex.decode("15076326DBE2693456082A934E4B8AB2") // user modules 3.00
-	val keys300_2 = Hex.decode("563B69F729882F4CDBD5DE80C65CC873") // vshmain 3.00
-	val keys303_0 = Hex.decode("7ba1e25a91b9d31377654ab7c28a10af") // kernel modules 3.00
-	val keys310_0 = Hex.decode("a241e839665bfabb1b2d6e0e33e5d73f") // kernel modules 3.10
-	val keys310_1 = Hex.decode("A4608FABABDEA5655D433AD15EC3FFEA") // user modules 3.10
-	val keys310_2 = Hex.decode("E75C857A59B4E31DD09ECEC2D6D4BD2B") // vshmain 3.10
-	val keys310_3 = Hex.decode("2E00F6F752CF955AA126B4849B58762F") // reboot.bin 3.10
-	val keys330_0 = Hex.decode("3B9B1A56218014ED8E8B0842FA2CDC3A") // kernel modules 3.30
-	val keys330_1 = Hex.decode("E8BE2F06B1052AB9181803E3EB647D26") // user modules 3.30
-	val keys330_2 = Hex.decode("AB8225D7436F6CC195C5F7F063733FE7") // vshmain 3.30
-	val keys330_3 = Hex.decode("A8B14777DC496A6F384C4D96BD49EC9B") // reboot.bin 3.30
-	val keys330_4 = Hex.decode("EC3BD2C0FAC1EEB99ABCFFA389F2601F") // stdio.prx 3.30
-	val demokeys_280 = Hex.decode("1299705E24076CD02D06FE7EB30C1126") // demo data.psp 2.80
-	val demokeys_3XX_1 = Hex.decode("4705D5E3561E819B092F06DB6B1292E0") // demo data.psp 3.XX
-	val demokeys_3XX_2 = Hex.decode("F662396E26224DCA026416997B9AE7B8") // demo data.psp 3.XX
-	val ebootbin_271_new = Hex.decode("F4AEF4E186DDD29C7CC542A695A08388") // new 2.7X eboot.bin
-	val ebootbin_280_new = Hex.decode("B88C458BB6E76EB85159A6537C5E8631") // new 2.8X eboot.bin
-	val ebootbin_300_new = Hex.decode("ED10E036C4FE83F375705EF6A44005F7") // new 3.XX eboot.bin
-	val ebootbin_310_new = Hex.decode("5C770CBBB4C24FA27E3B4EB4B4C870AF") // new 3.XX eboot.bin
-	val gameshare_260_271 = Hex.decode("F948380C9688A7744F65A054C276D9B8") // 2.60-2.71 gameshare
-	val gameshare_280 = Hex.decode("2D86773A56A44FDD3C167193AA8E1143") // 2.80 gameshare
-	val gameshare_300 = Hex.decode("781AD28724BDA296183F893672909285") // 3.00 gameshare
-	val gameshare_310 = Hex.decode("C97D3E0A54816EC7137499746218E7DD") // 3.10 gameshare
-	val keys360_0 = Hex.decode("3C2B51D42D8547DA2DCA18DFFE5409ED") // 3.60 common kernel modules
-	val keys360_1 = Hex.decode("311F98D57B58954532AB3AE389324B34") // 3.60 specific slim kernel modules
-	val keys370_0 = Hex.decode("26380AACA5D874D132B72ABF799E6DDB") // 3.70 common and fat kernel modules
-	val keys370_1 = Hex.decode("53E7ABB9C64A4B779217B5740ADAA9EA") // 3.70 slim specific kernel modules
-	val keys370_2 = Hex.decode("7110F0A41614D59312FF7496DF1FDA89") // some 3.70 slim user modules
-	val oneseg_310 = Hex.decode("C7277285ABA7F7F04CC186CCE37F17CA") // 1SEG.PBP keys
-	val oneseg_300 = Hex.decode("76409E08DB9B3BA1478A968EF3F76292")
-	val oneseg_280 = Hex.decode("23DC3BB5A982D6EA63A36E2B2BE9E154")
-	val oneseg_260_271 = Hex.decode("224357682F41CE654CA37CC6C4ACF360")
-	val oneseg_slim = Hex.decode("12570D8A166D8706037DC88B62A332A9")
-	val ms_app_main = Hex.decode("1E2E3849DAD41608272EF3BC37758093")
-	val keys390_0 = Hex.decode("45EF5C5DED81998412948FABE8056D7D") // 3.90 kernel
-	val keys390_1 = Hex.decode("701B082522A14D3B6921F9710AA841A9") // 3.90 slim
-	val keys500_0 = Hex.decode("EB1B530B624932581F830AF4993D75D0") // 5.00 kernel
-	val keys500_1 = Hex.decode("BAE2A31207FF041B64A51185F72F995B") // 5.00 kernel 2000 specific
-	val keys500_2 = Hex.decode("2C8EAF1DFF79731AAD96AB09EA35598B") // 5.00 kernel 3000 specific
-	val keys500_c = Hex.decode("A35D51E656C801CAE377BFCDFF24DA4D")
-	val keys505_a = Hex.decode("7B9472274CCC543BAEDF4637AC014D87") // 5.05 kernel specific
-	val keys505_0 = Hex.decode("2E8E97A28542707318DAA08AF862A2B0")
-	val keys505_1 = Hex.decode("582A4C69197B833DD26161FE14EEAA11")
-	val keys02G_E = Hex.decode("9D09FD20F38F10690DB26F00CCC5512E") // for psp 2000 file table and ipl pre-decryption
-	val keys03G_E = Hex.decode("4F445C62B353C430FC3AA45BECFE51EA") // for psp 3000 file table and ipl pre-decryption
-	val key_D91609F0 = Hex.decode("D036127580562043C430943E1C75D1BF")
-	val key_D9160AF0 = Hex.decode("10A9AC16AE19C07E3B607786016FF263")
-	val key_D9160BF0 = Hex.decode("8383F13753D0BEFC8DA73252460AC2C2")
-	val key_D91611F0 = Hex.decode("61B0C0587157D9FA74670E5C7E6E95B9")
-	val key_D91612F0 = Hex.decode("9E20E1CDD788DEC0319B10AFC5B87323") // UMD EBOOT.BIN (OPNSSMP.BIN)
-	val key_D91613F0 = Hex.decode("EBFF40D8B41AE166913B8F64B6FCB712")
-	val key_2E5E10F0 = Hex.decode("9D5C5BAF8CD8697E519F7096E6D5C4E8") // UMD EBOOT.BIN 2 (OPNSSMP.BIN)
-	val key_2E5E12F0 = Hex.decode("8A7BC9D6525888EA518360CA1679E207") // UMD EBOOT.BIN 3 (OPNSSMP.BIN)
-	val key_2E5E13F0 = Hex.decode("FFA468C331CAB74CF123FF01653D2636")
-	val keys600_u1_457B0BF0 = Hex.decode("7B9472274CCC543BAEDF4637AC014D87")
-	val keys600_u1_457B0CF0 = Hex.decode("AC34BAB1978DAE6FBAE8B1D6DFDFF1A2")
-	val keys05G_E = Hex.decode("5DAA72F226604D1CE72DC8A32F79C554") // for psp go file table and ipl pre-decryption
-	val keys570_5k = Hex.decode("6D72A4BA7FBFD1F1A9F3BB071BC0B366") // 5.70 PSPgo kernel
-	val keys620_0 = Hex.decode("D6BDCE1E12AF9AE66930DEDA88B8FFFB") // 6.00-6.20 kernel and phat
-	val keys620_1 = Hex.decode("1D13E95004733DD2E1DAB9C1E67B25A7") // 6.00-6.20 slim kernel
-	val keys620_3 = Hex.decode("A35D51E656C801CAE377BFCDFF24DA4D")
-	val keys620_e = Hex.decode("B1B37F76C3FB88E6F860D3353CA34EF3")
-	val keys620_5 = Hex.decode("F1BC1707AEB7C830D8349D406A8EDF4E") // PSPgo internal
-	val keys620_5k = Hex.decode("418A354F693ADF04FD3946A25C2DF221") // 6.XX PSPgo kernel
-	val keys620_5v = Hex.decode("F28F75A73191CE9E75BD2726B4B40C32")
-
 	val g_tagInfo2 = listOf(
-		TagInfo2(tag = 0x380228F0.toInt(), key = keys620_5v, code = 0x5A), // -- PSPgo PSPgo 6.XX vshmain
-		TagInfo2(tag = 0x4C942AF0.toInt(), key = keys620_5k, code = 0x43), // PSPgo 6.XX
-		TagInfo2(tag = 0x4C9428F0.toInt(), key = keys620_5, code = 0x43), // PSPgo
-		TagInfo2(tag = 0x4C9429F0.toInt(), key = keys570_5k, code = 0x43), // PSPgo 5.70
-		TagInfo2(tag = 0x4C941DF0.toInt(), key = keys620_1, code = 0x43), // -- 6.00-6.20
-		TagInfo2(tag = 0x4C941CF0.toInt(), key = keys620_0, code = 0x43),
-		TagInfo2(tag = 0x457B1EF0.toInt(), key = keys620_3, code = 0x5B), // pops_04g.prx
-		TagInfo2(tag = 0x457B0BF0.toInt(), key = keys600_u1_457B0BF0, code = 0x5B), // -- 5.55 user modules
-		TagInfo2(tag = 0x457B0CF0.toInt(), key = keys600_u1_457B0CF0, code = 0x5B),
-		TagInfo2(tag = 0x4C9419F0.toInt(), key = keys500_1, code = 0x43), // -- 5.00 - 5.50
-		TagInfo2(tag = 0x4C9418F0.toInt(), key = keys500_0, code = 0x43),
-		TagInfo2(tag = 0x4C941FF0.toInt(), key = keys500_2, code = 0x43),
-		TagInfo2(tag = 0x4C9417F0.toInt(), key = keys500_1, code = 0x43),
-		TagInfo2(tag = 0x4C9416F0.toInt(), key = keys500_0, code = 0x43),
-		TagInfo2(tag = 0x4C9414F0.toInt(), key = keys390_0, code = 0x43), // -- 3.90 keys
-		TagInfo2(tag = 0x4C9415F0.toInt(), key = keys390_1, code = 0x43),
-		TagInfo2(tag = 0xD82310F0.toInt(), key = keys02G_E, code = 0x51), // -- ipl and file tables
-		TagInfo2(tag = 0xD8231EF0.toInt(), key = keys03G_E, code = 0x51),
-		TagInfo2(tag = 0xD82328F0.toInt(), key = keys05G_E, code = 0x51),
-		TagInfo2(tag = 0x4C9412F0.toInt(), key = keys370_0, code = 0x43), // -- 3.60-3.7X keys
-		TagInfo2(tag = 0x4C9413F0.toInt(), key = keys370_1, code = 0x43),
-		TagInfo2(tag = 0x457B10F0.toInt(), key = keys370_2, code = 0x5B),
-		TagInfo2(tag = 0x4C940DF0.toInt(), key = keys360_0, code = 0x43),
-		TagInfo2(tag = 0x4C9410F0.toInt(), key = keys360_1, code = 0x43),
-		TagInfo2(tag = 0x4C940BF0.toInt(), key = keys330_0, code = 0x43), // -- 3.30-3.51
-		TagInfo2(tag = 0x457B0AF0.toInt(), key = keys330_1, code = 0x5B),
-		TagInfo2(tag = 0x38020AF0.toInt(), key = keys330_2, code = 0x5A),
-		TagInfo2(tag = 0x4C940AF0.toInt(), key = keys330_3, code = 0x43),
-		TagInfo2(tag = 0x4C940CF0.toInt(), key = keys330_4, code = 0x43),
-		TagInfo2(tag = 0xcfef09f0.toInt(), key = keys310_0, code = 0x62), // -- 3.10
-		TagInfo2(tag = 0x457b08f0.toInt(), key = keys310_1, code = 0x5B),
-		TagInfo2(tag = 0x380208F0.toInt(), key = keys310_2, code = 0x5A),
-		TagInfo2(tag = 0xcfef08f0.toInt(), key = keys310_3, code = 0x62),
-		TagInfo2(tag = 0xCFEF07F0.toInt(), key = keys303_0, code = 0x62), // -- 2.60-3.03
-		TagInfo2(tag = 0xCFEF06F0.toInt(), key = keys300_0, code = 0x62),
-		TagInfo2(tag = 0x457B06F0.toInt(), key = keys300_1, code = 0x5B),
-		TagInfo2(tag = 0x380206F0.toInt(), key = keys300_2, code = 0x5A),
-		TagInfo2(tag = 0xCFEF05F0.toInt(), key = keys280_0, code = 0x62),
-		TagInfo2(tag = 0x457B05F0.toInt(), key = keys280_1, code = 0x5B),
-		TagInfo2(tag = 0x380205F0.toInt(), key = keys280_2, code = 0x5A),
-		TagInfo2(tag = 0x16D59E03.toInt(), key = keys260_0, code = 0x62),
-		TagInfo2(tag = 0x76202403.toInt(), key = keys260_1, code = 0x5B),
-		TagInfo2(tag = 0x0F037303.toInt(), key = keys260_2, code = 0x5A),
-		TagInfo2(tag = 0x457B28F0.toInt(), key = keys620_e, code = 0x5B),    // -- misc ?
-		TagInfo2(tag = 0xADF305F0.toInt(), key = demokeys_280, code = 0x60),    // 2.80 demos data.psp
-		TagInfo2(tag = 0xADF306F0.toInt(), key = demokeys_3XX_1, code = 0x60),    // 3.XX demos 1
-		TagInfo2(tag = 0xADF308F0.toInt(), key = demokeys_3XX_2, code = 0x60),    // 3.XX demos 2
-		TagInfo2(tag = 0x8004FD03.toInt(), key = ebootbin_271_new, code = 0x5D),    // 2.71 eboot.bin
-		TagInfo2(tag = 0xD91605F0.toInt(), key = ebootbin_280_new, code = 0x5D),    // 2.80 eboot.bin
-		TagInfo2(tag = 0xD91606F0.toInt(), key = ebootbin_300_new, code = 0x5D),    // 3.00 eboot.bin
-		TagInfo2(tag = 0xD91608F0.toInt(), key = ebootbin_310_new, code = 0x5D),    // 3.10 eboot.bin
-		TagInfo2(tag = 0xD91609F0.toInt(), key = key_D91609F0, code = 0x5D),    // 5.00 eboot.bin
-		TagInfo2(tag = 0x2E5E10F0.toInt(), key = key_2E5E10F0, code = 0x48),    // 6.XX eboot.bin
-		TagInfo2(tag = 0x2E5E12F0.toInt(), key = key_2E5E12F0, code = 0x48),    // 6.XX eboot.bin
-		TagInfo2(tag = 0x2E5E12F0.toInt(), key = key_2E5E13F0, code = 0x48),    // 6.XX eboot.bin
-		TagInfo2(tag = 0xD9160AF0.toInt(), key = key_D9160AF0, code = 0x5D),
-		TagInfo2(tag = 0xD9160BF0.toInt(), key = key_D9160BF0, code = 0x5D),
-		TagInfo2(tag = 0xD91611F0.toInt(), key = key_D91611F0, code = 0x5D),
-		TagInfo2(tag = 0xD91612F0.toInt(), key = key_D91612F0, code = 0x5D),
-		TagInfo2(tag = 0xD91613F0.toInt(), key = key_D91613F0, code = 0x5D),
-		TagInfo2(tag = 0x0A35EA03.toInt(), key = gameshare_260_271, code = 0x5E), // 2.60-2.71 gameshare
-		TagInfo2(tag = 0x7B0505F0.toInt(), key = gameshare_280, code = 0x5E),     // 2.80 gameshare
-		TagInfo2(tag = 0x7B0506F0.toInt(), key = gameshare_300, code = 0x5E),     // 3.00 gameshare
-		TagInfo2(tag = 0x7B0508F0.toInt(), key = gameshare_310, code = 0x5E),     // 3.10+ gameshare
-		TagInfo2(tag = 0x279D08F0.toInt(), key = oneseg_310, code = 0x61),     // 3.10 1SEG
-		TagInfo2(tag = 0x279D06F0.toInt(), key = oneseg_300, code = 0x61),     // 3.00 1SEG
-		TagInfo2(tag = 0x279D05F0.toInt(), key = oneseg_280, code = 0x61),     // 2.80 1SEG
-		TagInfo2(tag = 0xD66DF703.toInt(), key = oneseg_260_271, code = 0x61),     // 2.60-2.71 1SEG
-		TagInfo2(tag = 0x279D10F0.toInt(), key = oneseg_slim, code = 0x61),     // 02g 1SEG
-		TagInfo2(tag = 0x3C2A08F0.toInt(), key = ms_app_main, code = 0x67)     // 1seg ms_application_main.prx
+		TagInfo2(tag = 0x380228F0.toInt(), key = Hex.decode("f28f75a73191ce9e75bd2726b4b40c32"), code = 0x0000005A),
+		TagInfo2(tag = 0x4C942AF0.toInt(), key = Hex.decode("418a354f693adf04fd3946a25c2df221"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9428F0.toInt(), key = Hex.decode("f1bc1707aeb7c830d8349d406a8edf4e"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9429F0.toInt(), key = Hex.decode("6d72a4ba7fbfd1f1a9f3bb071bc0b366"), code = 0x00000043),
+		TagInfo2(tag = 0x4C941DF0.toInt(), key = Hex.decode("1d13e95004733dd2e1dab9c1e67b25a7"), code = 0x00000043),
+		TagInfo2(tag = 0x4C941CF0.toInt(), key = Hex.decode("d6bdce1e12af9ae66930deda88b8fffb"), code = 0x00000043),
+		TagInfo2(tag = 0x457B1EF0.toInt(), key = Hex.decode("a35d51e656c801cae377bfcdff24da4d"), code = 0x0000005B),
+		TagInfo2(tag = 0x457B0BF0.toInt(), key = Hex.decode("7b9472274ccc543baedf4637ac014d87"), code = 0x0000005B),
+		TagInfo2(tag = 0x457B0CF0.toInt(), key = Hex.decode("ac34bab1978dae6fbae8b1d6dfdff1a2"), code = 0x0000005B),
+		TagInfo2(tag = 0x4C9419F0.toInt(), key = Hex.decode("bae2a31207ff041b64a51185f72f995b"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9418F0.toInt(), key = Hex.decode("eb1b530b624932581f830af4993d75d0"), code = 0x00000043),
+		TagInfo2(tag = 0x4C941FF0.toInt(), key = Hex.decode("2c8eaf1dff79731aad96ab09ea35598b"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9417F0.toInt(), key = Hex.decode("bae2a31207ff041b64a51185f72f995b"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9416F0.toInt(), key = Hex.decode("eb1b530b624932581f830af4993d75d0"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9414F0.toInt(), key = Hex.decode("45ef5c5ded81998412948fabe8056d7d"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9415F0.toInt(), key = Hex.decode("701b082522a14d3b6921f9710aa841a9"), code = 0x00000043),
+		TagInfo2(tag = 0xD82310F0.toInt(), key = Hex.decode("9d09fd20f38f10690db26f00ccc5512e"), code = 0x00000051),
+		TagInfo2(tag = 0xD8231EF0.toInt(), key = Hex.decode("4f445c62b353c430fc3aa45becfe51ea"), code = 0x00000051),
+		TagInfo2(tag = 0xD82328F0.toInt(), key = Hex.decode("5daa72f226604d1ce72dc8a32f79c554"), code = 0x00000051),
+		TagInfo2(tag = 0x4C9412F0.toInt(), key = Hex.decode("26380aaca5d874d132b72abf799e6ddb"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9413F0.toInt(), key = Hex.decode("53e7abb9c64a4b779217b5740adaa9ea"), code = 0x00000043),
+		TagInfo2(tag = 0x457B10F0.toInt(), key = Hex.decode("7110f0a41614d59312ff7496df1fda89"), code = 0x0000005B),
+		TagInfo2(tag = 0x4C940DF0.toInt(), key = Hex.decode("3c2b51d42d8547da2dca18dffe5409ed"), code = 0x00000043),
+		TagInfo2(tag = 0x4C9410F0.toInt(), key = Hex.decode("311f98d57b58954532ab3ae389324b34"), code = 0x00000043),
+		TagInfo2(tag = 0x4C940BF0.toInt(), key = Hex.decode("3b9b1a56218014ed8e8b0842fa2cdc3a"), code = 0x00000043),
+		TagInfo2(tag = 0x457B0AF0.toInt(), key = Hex.decode("e8be2f06b1052ab9181803e3eb647d26"), code = 0x0000005B),
+		TagInfo2(tag = 0x38020AF0.toInt(), key = Hex.decode("ab8225d7436f6cc195c5f7f063733fe7"), code = 0x0000005A),
+		TagInfo2(tag = 0x4C940AF0.toInt(), key = Hex.decode("a8b14777dc496a6f384c4d96bd49ec9b"), code = 0x00000043),
+		TagInfo2(tag = 0x4C940CF0.toInt(), key = Hex.decode("ec3bd2c0fac1eeb99abcffa389f2601f"), code = 0x00000043),
+		TagInfo2(tag = 0xCFEF09F0.toInt(), key = Hex.decode("a241e839665bfabb1b2d6e0e33e5d73f"), code = 0x00000062),
+		TagInfo2(tag = 0x457B08F0.toInt(), key = Hex.decode("a4608fababdea5655d433ad15ec3ffea"), code = 0x0000005B),
+		TagInfo2(tag = 0x380208F0.toInt(), key = Hex.decode("e75c857a59b4e31dd09ecec2d6d4bd2b"), code = 0x0000005A),
+		TagInfo2(tag = 0xCFEF08F0.toInt(), key = Hex.decode("2e00f6f752cf955aa126b4849b58762f"), code = 0x00000062),
+		TagInfo2(tag = 0xCFEF07F0.toInt(), key = Hex.decode("7ba1e25a91b9d31377654ab7c28a10af"), code = 0x00000062),
+		TagInfo2(tag = 0xCFEF06F0.toInt(), key = Hex.decode("9f671a7a22f3590baa6da4c68bd00377"), code = 0x00000062),
+		TagInfo2(tag = 0x457B06F0.toInt(), key = Hex.decode("15076326dbe2693456082a934e4b8ab2"), code = 0x0000005B),
+		TagInfo2(tag = 0x380206F0.toInt(), key = Hex.decode("563b69f729882f4cdbd5de80c65cc873"), code = 0x0000005A),
+		TagInfo2(tag = 0xCFEF05F0.toInt(), key = Hex.decode("cafbbfc750eab4408e445c6353ce80b1"), code = 0x00000062),
+		TagInfo2(tag = 0x457B05F0.toInt(), key = Hex.decode("409bc69ba9fb847f7221d23696550974"), code = 0x0000005B),
+		TagInfo2(tag = 0x380205F0.toInt(), key = Hex.decode("03a7cc4a5b91c207fffc26251e424bb5"), code = 0x0000005A),
+		TagInfo2(tag = 0x16D59E03.toInt(), key = Hex.decode("c32489d38087b24e4cd749e49d1d34d1"), code = 0x00000062),
+		TagInfo2(tag = 0x76202403.toInt(), key = Hex.decode("f3ac6e7c040a23e70d33d82473392b4a"), code = 0x0000005B),
+		TagInfo2(tag = 0x0F037303.toInt(), key = Hex.decode("72b439ff349bae8230344a1da2d8b43c"), code = 0x0000005A),
+		TagInfo2(tag = 0x457B28F0.toInt(), key = Hex.decode("b1b37f76c3fb88e6f860d3353ca34ef3"), code = 0x0000005B),
+		TagInfo2(tag = 0xADF305F0.toInt(), key = Hex.decode("1299705e24076cd02d06fe7eb30c1126"), code = 0x00000060),
+		TagInfo2(tag = 0xADF306F0.toInt(), key = Hex.decode("4705d5e3561e819b092f06db6b1292e0"), code = 0x00000060),
+		TagInfo2(tag = 0xADF308F0.toInt(), key = Hex.decode("f662396e26224dca026416997b9ae7b8"), code = 0x00000060),
+		TagInfo2(tag = 0x8004FD03.toInt(), key = Hex.decode("f4aef4e186ddd29c7cc542a695a08388"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91605F0.toInt(), key = Hex.decode("b88c458bb6e76eb85159a6537c5e8631"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91606F0.toInt(), key = Hex.decode("ed10e036c4fe83f375705ef6a44005f7"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91608F0.toInt(), key = Hex.decode("5c770cbbb4c24fa27e3b4eb4b4c870af"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91609F0.toInt(), key = Hex.decode("d036127580562043c430943e1c75d1bf"), code = 0x0000005D),
+		TagInfo2(tag = 0x2E5E10F0.toInt(), key = Hex.decode("9d5c5baf8cd8697e519f7096e6d5c4e8"), code = 0x00000048),
+		TagInfo2(tag = 0x2E5E12F0.toInt(), key = Hex.decode("8a7bc9d6525888ea518360ca1679e207"), code = 0x00000048),
+		TagInfo2(tag = 0x2E5E12F0.toInt(), key = Hex.decode("ffa468c331cab74cf123ff01653d2636"), code = 0x00000048),
+		TagInfo2(tag = 0xD9160AF0.toInt(), key = Hex.decode("10a9ac16ae19c07e3b607786016ff263"), code = 0x0000005D),
+		TagInfo2(tag = 0xD9160BF0.toInt(), key = Hex.decode("8383f13753d0befc8da73252460ac2c2"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91611F0.toInt(), key = Hex.decode("61b0c0587157d9fa74670e5c7e6e95b9"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91612F0.toInt(), key = Hex.decode("9e20e1cdd788dec0319b10afc5b87323"), code = 0x0000005D),
+		TagInfo2(tag = 0xD91613F0.toInt(), key = Hex.decode("ebff40d8b41ae166913b8f64b6fcb712"), code = 0x0000005D),
+		TagInfo2(tag = 0x0A35EA03.toInt(), key = Hex.decode("f948380c9688a7744f65a054c276d9b8"), code = 0x0000005E),
+		TagInfo2(tag = 0x7B0505F0.toInt(), key = Hex.decode("2d86773a56a44fdd3c167193aa8e1143"), code = 0x0000005E),
+		TagInfo2(tag = 0x7B0506F0.toInt(), key = Hex.decode("781ad28724bda296183f893672909285"), code = 0x0000005E),
+		TagInfo2(tag = 0x7B0508F0.toInt(), key = Hex.decode("c97d3e0a54816ec7137499746218e7dd"), code = 0x0000005E),
+		TagInfo2(tag = 0x279D08F0.toInt(), key = Hex.decode("c7277285aba7f7f04cc186cce37f17ca"), code = 0x00000061),
+		TagInfo2(tag = 0x279D06F0.toInt(), key = Hex.decode("76409e08db9b3ba1478a968ef3f76292"), code = 0x00000061),
+		TagInfo2(tag = 0x279D05F0.toInt(), key = Hex.decode("23dc3bb5a982d6ea63a36e2b2be9e154"), code = 0x00000061),
+		TagInfo2(tag = 0xD66DF703.toInt(), key = Hex.decode("224357682f41ce654ca37cc6c4acf360"), code = 0x00000061),
+		TagInfo2(tag = 0x279D10F0.toInt(), key = Hex.decode("12570d8a166d8706037dc88b62a332a9"), code = 0x00000061),
+		TagInfo2(tag = 0x3C2A08F0.toInt(), key = Hex.decode("1e2e3849dad41608272ef3bc37758093"), code = 0x00000067)
 	)
 }
