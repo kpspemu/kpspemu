@@ -511,11 +511,11 @@ class K0Structure(
 	var f2: Int = 0 // +00FC
 ) {
 	companion object : Struct<K0Structure>({ K0Structure() },
-		K0Structure::unk AS INTARRAY(INT32, 48),
+		K0Structure::unk AS INTLIKEARRAY(INT32, 48),
 		K0Structure::threadId AS INT32,
 		K0Structure::unk1 AS INT32,
 		K0Structure::stackAddr AS INT32,
-		K0Structure::unk3 AS INTARRAY(INT32, 11),
+		K0Structure::unk3 AS INTLIKEARRAY(INT32, 11),
 		K0Structure::f1 AS INT32,
 		K0Structure::f2 AS INT32
 	)

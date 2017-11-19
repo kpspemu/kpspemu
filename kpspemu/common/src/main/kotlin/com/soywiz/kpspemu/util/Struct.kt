@@ -128,7 +128,7 @@ class ARRAY<T>(val etype: StructType<T>, val len: Int) : StructType<ArrayList<T>
 	}
 }
 
-class INTARRAY(val etype: StructType<Int>, val len: Int) : StructType<IntArray> {
+class INTLIKEARRAY(val etype: StructType<Int>, val len: Int) : StructType<IntArray> {
 	override val size: Int = len * etype.size
 
 	override fun write(s: SyncStream, value: IntArray) {
@@ -144,14 +144,26 @@ class INTARRAY(val etype: StructType<Int>, val len: Int) : StructType<IntArray> 
 
 class BYTEARRAY(val len: Int) : StructType<ByteArray> {
 	override val size: Int = len
+	override fun write(s: SyncStream, value: ByteArray) = s.writeBytes(value)
+	override fun read(s: SyncStream): ByteArray = s.readBytes(len)
+}
 
-	override fun write(s: SyncStream, value: ByteArray) {
-		s.writeBytes(value)
-	}
+class SHORTARRAY(val len: Int) : StructType<ShortArray> {
+	override val size: Int = 2 * len
+	override fun write(s: SyncStream, value: ShortArray) = s.writeShortArray_le(value)
+	override fun read(s: SyncStream): ShortArray = s.readShortArray_le(len)
+}
 
-	override fun read(s: SyncStream): ByteArray {
-		return s.readBytes(size)
-	}
+class CHARARRAY(val len: Int) : StructType<CharArray> {
+	override val size: Int = 2 * len
+	override fun write(s: SyncStream, value: CharArray) = s.writeCharArray_le(value)
+	override fun read(s: SyncStream): CharArray = s.readCharArray_le(len)
+}
+
+class INTARRAY(val len: Int) : StructType<IntArray> {
+	override val size: Int = 4 * len
+	override fun write(s: SyncStream, value: IntArray) = s.writeIntArray_le(value)
+	override fun read(s: SyncStream): IntArray = s.readIntArray_le(len)
 }
 
 interface BaseEnum<T : IdEnum> {

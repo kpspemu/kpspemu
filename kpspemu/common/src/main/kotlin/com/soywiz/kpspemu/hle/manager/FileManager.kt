@@ -68,7 +68,7 @@ data class SceIoStat(
 		SceIoStat::timeCreation AS ScePspDateTime,
 		SceIoStat::timeLastAccess AS ScePspDateTime,
 		SceIoStat::timeLastModification AS ScePspDateTime,
-		SceIoStat::device AS INTARRAY(INT32, 6)
+		SceIoStat::device AS INTLIKEARRAY(INT32, 6)
 	)
 }
 

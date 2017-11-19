@@ -43,12 +43,9 @@ import com.soywiz.korma.geom.Rectangle
 import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.Korui
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
-import com.soywiz.kpspemu.format.Pbp
-import com.soywiz.kpspemu.format.PspFileFormat
-import com.soywiz.kpspemu.format.detectPspFormat
+import com.soywiz.kpspemu.format.*
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
-import com.soywiz.kpspemu.format.openAsCso
 import com.soywiz.kpspemu.ge.GeBatchData
 import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
@@ -427,7 +424,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 				var afile: VfsFile? = null
 				done@ for (folder in listOf("PSP_GAME/SYSDIR", "")) {
 					umdLikeStructure = folder.isNotEmpty()
-					for (filename in listOf("BOOT.BIN", "EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP")) {
+					for (filename in listOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")) {
 						afile = container["$folder/$filename"]
 						if (afile.exists()) break@done
 					}
@@ -441,7 +438,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 				stream = Pbp(stream).PSP_DATA ?: invalidOp("PBP doesn't contain an ELF file")
 			}
 			PspFileFormat.ENCRYPTED_ELF -> {
-				invalidOp("Unimplemented encrypted elfs")
+				stream = CryptedElf.decrypt(stream.readAll()).openAsync()
 			}
 			PspFileFormat.ELF -> {
 				when {
