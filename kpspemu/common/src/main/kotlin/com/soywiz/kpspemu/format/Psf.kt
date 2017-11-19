@@ -62,6 +62,9 @@ class Psf {
 	}
 
 	companion object {
+		operator suspend fun invoke(stream: AsyncStream): Psf = Psf().apply { load(stream.readAll().openSync()) }
+		operator fun invoke(stream: SyncStream): Psf = Psf().apply { load(stream) }
+		operator fun invoke(bytes: ByteArray): Psf = Psf().apply { load(bytes.openSync()) }
 		fun fromStream(stream: SyncStream): Psf = Psf().apply { load(stream) }
 	}
 

@@ -390,8 +390,8 @@ object ISO2 {
 		constructor(s: SyncStream) : this(
 			volumeDescriptorHeader = VolumeDescriptorHeader(s),
 			pad1 = s.readU8(),
-			systemId = s.readStringz(0x20),
-			volumeId = s.readStringz(0x20),
+			systemId = s.readStringz(0x20, CHARSET),
+			volumeId = s.readStringz(0x20, CHARSET),
 			pad2 = s.readS64_le(),
 			volumeSpaceSize = s.readU32_le_be(),
 			pad3 = s.readLongArray_le(4),

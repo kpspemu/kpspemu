@@ -11,6 +11,7 @@ import com.soywiz.korge.Korge
 import com.soywiz.korge.bitmapfont.BitmapFont
 import com.soywiz.korge.input.*
 import com.soywiz.korge.render.RenderContext
+import com.soywiz.korge.render.Texture
 import com.soywiz.korge.scene.Module
 import com.soywiz.korge.scene.Scene
 import com.soywiz.korge.service.Browser
@@ -19,8 +20,11 @@ import com.soywiz.korge.tween.get
 import com.soywiz.korge.tween.tween
 import com.soywiz.korge.view.*
 import com.soywiz.korim.Korim
+import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.font.BitmapFontGenerator
+import com.soywiz.korim.format.PNG
 import com.soywiz.korim.vector.Context2d
 import com.soywiz.korinject.AsyncInjector
 import com.soywiz.korinject.Korinject
@@ -36,7 +40,9 @@ import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korio.vfs.applicationVfs
+import com.soywiz.korio.vfs.localCurrentDirVfs
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -51,7 +57,6 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
-import com.soywiz.kpspemu.util.io.ZipVfs2
 import com.soywiz.kpspemu.util.io.openAsIso2
 import com.soywiz.kpspemu.util.io.openAsZip2
 import kotlin.math.roundToInt
@@ -113,10 +118,39 @@ class KpspemuMainScene(
 		return emulator
 	}
 
+	var icon0Texture: Texture? = null
+	val icon0Image: Image by lazy { views.image(views.transparentTexture).apply {
+		alpha = 0.5
+	} }
+	val titleText by lazy { views.text("").apply {
+		alpha = 0.5
+	} }
+
+	fun setIcon0Bitmap(bmp: Bitmap) {
+		icon0Image.tex = views.texture(bmp)
+		icon0Texture?.close()
+		icon0Texture = icon0Image.tex
+	}
+
 	suspend fun createEmulatorWithExe(exeFile: VfsFile) {
+		setIcon0Bitmap(Bitmap32(144, 80))
+		titleText.text = ""
+
 		emulator = createEmulator()
 		emulator.registerNativeModules()
-		emulator.loadExecutableAndStart(exeFile)
+		emulator.loadExecutableAndStart(exeFile, object : LoadProcess() {
+			suspend override fun readIcon0(icon0: ByteArray) {
+				setIcon0Bitmap(PNG.read(icon0, "file.png"))
+			}
+
+			suspend override fun readParamSfo(psf: Psf) {
+				logger.warn { "PARAM.SFO:" }
+				for ((key, value) in psf.entriesByName) {
+					logger.warn { "PSF: $key = $value" }
+				}
+				titleText.text = psf.entriesByName["TITLE"]?.toString() ?: ""
+			}
+		})
 	}
 
 	lateinit var hud: Container
@@ -306,6 +340,16 @@ class KpspemuMainScene(
 		hud += pauseButton
 		hud += stepButton
 		hud += memdumpButton
+		hud += icon0Image.apply {
+			scale = 0.5
+			x = 100.0
+			y = 16.0
+		}
+		hud += titleText.apply {
+			scale = 0.8
+			x = 100.0
+			y = 0.0
+		}
 
 		val displayView = object : View(views) {
 			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
@@ -395,7 +439,12 @@ class FpsCounter {
 suspend fun AsyncStream.preload() = this.readAll().openAsync()
 suspend fun AsyncStream.preloadSmall(size: Long = 4L * 1024 * 1024) = if (this.size() < size) this.preload() else this
 
-suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
+open class LoadProcess {
+	open suspend fun readIcon0(icon0: ByteArray): Unit = Unit
+	open suspend fun readParamSfo(psf: Psf): Unit = Unit
+}
+
+suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProcess = LoadProcess()): PspElf {
 	var stream = file.open().preloadSmall()
 	var umdLikeStructure = false
 	var layerName = file.basename
@@ -432,10 +481,23 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
 
 				if (afile == null) invalidOp("Can't find any suitable executable inside $format")
 
+				for (icon0 in listOf(container["PSP_GAME/ICON0.PNG"])) {
+					if (icon0.exists()) loadProcess.readIcon0(icon0.readAll())
+				}
+
+				for (paramSfo in listOf(container["PSP_GAME/PARAM.SFO"])) {
+					if (paramSfo.exists()) loadProcess.readParamSfo(Psf(paramSfo.readAll()))
+				}
+
 				stream = afile.open()
 			}
 			PspFileFormat.PBP -> {
-				stream = Pbp(stream).PSP_DATA ?: invalidOp("PBP doesn't contain an ELF file")
+				val pbp = Pbp(stream)
+				val icon0 = pbp.ICON0_PNG.readAll()
+				if (icon0.isNotEmpty()) loadProcess.readIcon0(icon0)
+				val paramSfo = pbp.PARAM_SFO.readAll()
+				if (paramSfo.isNotEmpty()) loadProcess.readParamSfo(Psf(pbp.PARAM_SFO))
+				stream = pbp.PSP_DATA
 			}
 			PspFileFormat.ENCRYPTED_ELF -> {
 				stream = CryptedElf.decrypt(stream.readAll()).openAsync()
