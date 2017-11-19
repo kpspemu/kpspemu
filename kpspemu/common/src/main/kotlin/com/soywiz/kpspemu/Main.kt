@@ -43,6 +43,7 @@ import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korio.vfs.localCurrentDirVfs
+import com.soywiz.korio.vfs.writeToFile
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -119,12 +120,16 @@ class KpspemuMainScene(
 	}
 
 	var icon0Texture: Texture? = null
-	val icon0Image: Image by lazy { views.image(views.transparentTexture).apply {
-		alpha = 0.5
-	} }
-	val titleText by lazy { views.text("").apply {
-		alpha = 0.5
-	} }
+	val icon0Image: Image by lazy {
+		views.image(views.transparentTexture).apply {
+			alpha = 0.5
+		}
+	}
+	val titleText by lazy {
+		views.text("").apply {
+			alpha = 0.5
+		}
+	}
 
 	fun setIcon0Bitmap(bmp: Bitmap) {
 		icon0Image.tex = views.texture(bmp)
@@ -140,7 +145,12 @@ class KpspemuMainScene(
 		emulator.registerNativeModules()
 		emulator.loadExecutableAndStart(exeFile, object : LoadProcess() {
 			suspend override fun readIcon0(icon0: ByteArray) {
-				setIcon0Bitmap(PNG.read(icon0, "file.png"))
+				//icon0.writeToFile("c:/temp/icon0.png")
+				try {
+					setIcon0Bitmap(PNG.read(icon0, "file.png").toBMP32())
+				} catch (e: Throwable) {
+					e.printStackTrace()
+				}
 			}
 
 			suspend override fun readParamSfo(psf: Psf) {
