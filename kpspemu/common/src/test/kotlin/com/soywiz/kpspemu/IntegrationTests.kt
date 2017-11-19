@@ -47,6 +47,10 @@ class IntegrationTests {
 
 	@Test fun testThreadsK0() = testFile("threads/k0/k0")
 
+	//@Test fun testKirk() = testFile("kirk/kirk")
+
+	@Test fun testLoaderBss() = testFile("loader/bss/bss")
+
 	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {

@@ -212,7 +212,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				clearDepth = mustClearDepth,
 				clearStencil = mustClearStencil
 			)
-			//return
+
+			return
 		}
 
 		// @TODO: Invert this since in PSP it is reversed and WebGL doesn't support it

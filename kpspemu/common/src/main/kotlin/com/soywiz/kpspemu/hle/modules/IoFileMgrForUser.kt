@@ -22,6 +22,7 @@ import com.soywiz.kpspemu.mem.readBytes
 import com.soywiz.kpspemu.mem.writeBytes
 import com.soywiz.kpspemu.util.PoolItem
 import com.soywiz.kpspemu.util.write
+import kotlin.math.max
 
 @Suppress("UNUSED_PARAMETER")
 class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUser", 0x40010011, "iofilemgr.prx", "sceIOFileManager") {
@@ -118,16 +119,17 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 
 	suspend fun sceIoRead(fileId: Int, dst: Ptr, dstLen: Int): Int {
-		logger.info { "WIP: sceIoRead: $fileId, $dst, $dstLen" }
+		logger.warn { "WIP: sceIoRead: $fileId, $dst, $dstLen" }
 		val stream = fileDescriptors[fileId].stream
-		val out = ByteArray(dstLen)
-		val read = stream.read(out, 0, dstLen)
+		val adstLen = max(0, dstLen)
+		val out = ByteArray(adstLen)
+		val read = stream.read(out, 0, adstLen)
 		dst.writeBytes(out, 0, read)
 		return read
 	}
 
 	suspend fun sceIoWrite(fileId: Int, ptr: Ptr, size: Int): Int {
-		logger.info { "WIP: sceIoWrite: $fileId, $ptr, $size" }
+		logger.warn { "WIP: sceIoWrite: $fileId, $ptr, $size" }
 		try {
 			//logger.error { "WIP: sceIoWrite: $fileId, $ptr, $size" }
 			println("----> " + ptr.readBytes(size).toString(UTF8))

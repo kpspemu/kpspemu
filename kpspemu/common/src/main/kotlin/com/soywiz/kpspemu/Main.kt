@@ -28,13 +28,16 @@ import com.soywiz.korio.Korio
 import com.soywiz.korio.async.AsyncThread
 import com.soywiz.korio.async.go
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.ASCII
 import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.stream.*
+import com.soywiz.korio.stream.AsyncStream
+import com.soywiz.korio.stream.openAsync
+import com.soywiz.korio.stream.openSync
+import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.localCurrentDirVfs
+import com.soywiz.korio.vfs.openAsZip
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -42,6 +45,8 @@ import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.Korui
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.Pbp
+import com.soywiz.kpspemu.format.PspFileFormat
+import com.soywiz.kpspemu.format.detectPspFormat
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.format.openAsCso
@@ -50,8 +55,9 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
-import com.soywiz.kpspemu.util.io.IsoVfs2
 import com.soywiz.kpspemu.util.io.ZipVfs2
+import com.soywiz.kpspemu.util.io.openAsIso2
+import com.soywiz.kpspemu.util.io.openAsZip2
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
@@ -376,67 +382,78 @@ class FpsCounter {
 	}
 }
 
+suspend fun AsyncStream.preload() = this.readAll().openAsync()
+suspend fun AsyncStream.preloadSmall(size: Long = 4L * 1024 * 1024) = if (this.size() < size) this.preload() else this
+
 suspend fun Emulator.loadExecutableAndStart(file: VfsFile): PspElf {
-	val PRELOAD_THRESHOLD = 3L * 1024 * 1024 // 3MB
-	return loadExecutableAndStartInternal(when {
-		file.size() < PRELOAD_THRESHOLD -> file.readAll().openAsync().asVfsFile(file.fullname)
-		else -> file
-	})
-}
+	var stream = file.open().preloadSmall()
+	var umdLikeStructure = false
+	var layerName = file.basename
+	var container = file.parent.jail()
 
-suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile): PspElf {
-	return loadExecutableAndStartInternal(file, file.open().readBytesUpTo(0x10).openSync())
-}
-
-suspend fun Emulator.loadExecutableAndStartInternal(file: VfsFile, magic: SyncStream): PspElf {
-	val magicId = magic.slice().readStringz(4, ASCII)
-	val extension = when (magicId) {
-		"\u007fELF" -> "elf"
-		"\u0000PBP" -> "pbp"
-		"CISO" -> "cso"
-		else -> file.extensionLC
-	}
-	when (extension) {
-		"elf", "prx", "bin" -> {
-			logger.warn { "Loading executable mounted at ${fileManager.currentDirectory}..." }
-			return loadElfAndSetRegisters(file.readAll().openSync(), listOf(fileManager.executableFile))
+	logger.warn { "Opening $file" }
+	while (true) {
+		if (stream.size() < 0x10) {
+			logger.warn { " - Layer(${stream.size()}): Format ???" }
+			invalidOp("Layer is too small")
 		}
-		"pbp" -> return loadExecutableAndStartInternal(Pbp.load(file.open())[Pbp.PSP_DATA]!!.asVfsFile("executable.elf"))
-		"cso", "ciso" -> return loadExecutableAndStartInternal(file.openAsCso().asVfsFile(file.pathInfo.pathWithExtension("cso.iso")))
-		"iso", "zip" -> {
-			val iso = when (extension) {
-				"iso" -> IsoVfs2(file)
-				"zip" -> ZipVfs2(file.open(), file)
-				else -> invalidOp("UNEXPECTED")
+		val format = stream.detectPspFormat(layerName) ?: invalidOp("Unsupported file format '$file'")
+		logger.warn { " - Layer(${stream.size()}): Format $format" }
+		when (format) {
+			PspFileFormat.CSO -> {
+				stream = stream.openAsCso()
+				layerName = "$layerName.iso"
 			}
-			val paramSfo = iso["PSP_GAME/PARAM.SFO"]
-
-			val files = listOf(
-				iso["PSP_GAME/SYSDIR/BOOT.BIN"],
-				iso["EBOOT.ELF"],
-				iso["EBOOT.PBP"]
-			)
-
-			for (f in files.filter { it.exists() }) {
-				val ebootInRoot = f.parent.path.isEmpty()
-				logger.info { "ebootInRoot: $ebootInRoot" }
-				if (ebootInRoot) {
-					fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
-					fileManager.executableFile = "ms0:/PSP/GAME/virtual/EBOOT.PBP"
-					deviceManager.mount(fileManager.currentDirectory, iso)
-				} else {
-					fileManager.currentDirectory = "umd0:"
-					fileManager.executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
-					deviceManager.mount("game0:", iso)
-					deviceManager.mount("disc0:", iso)
-					deviceManager.mount(fileManager.currentDirectory, iso)
+			PspFileFormat.ISO, PspFileFormat.ZIP -> {
+				container = when (format) {
+					PspFileFormat.ISO -> stream.openAsIso2()
+					PspFileFormat.ZIP -> stream.openAsZip2()
+					else -> TODO("Impossible!") // @TODO: Kotlin could detect this!
 				}
-				return loadExecutableAndStartInternal(f)
+
+				var afile: VfsFile? = null
+				done@ for (folder in listOf("PSP_GAME/SYSDIR", "")) {
+					umdLikeStructure = folder.isNotEmpty()
+					for (filename in listOf("BOOT.BIN", "EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP")) {
+						afile = container["$folder/$filename"]
+						if (afile.exists()) break@done
+					}
+				}
+
+				if (afile == null) invalidOp("Can't find any suitable executable inside $format")
+
+				stream = afile.open()
 			}
-			invalidOp("Can't find any possible executalbe in ISO ($files)")
-		}
-		else -> {
-			invalidOp("Don't know how to load executable file $file")
+			PspFileFormat.PBP -> {
+				stream = Pbp(stream).PSP_DATA ?: invalidOp("PBP doesn't contain an ELF file")
+			}
+			PspFileFormat.ENCRYPTED_ELF -> {
+				invalidOp("Unimplemented encrypted elfs")
+			}
+			PspFileFormat.ELF -> {
+				when {
+					umdLikeStructure -> {
+						fileManager.currentDirectory = "umd0:"
+						fileManager.executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
+						deviceManager.mount("game0:", container)
+						deviceManager.mount("disc0:", container)
+						deviceManager.mount("umd0:", container)
+					}
+					else -> {
+						val PSP_GAME_virtual = "ms0:/PSP/GAME/virtual"
+						fileManager.currentDirectory = PSP_GAME_virtual
+						fileManager.executableFile = "$PSP_GAME_virtual/EBOOT.PBP"
+						deviceManager.mount(PSP_GAME_virtual, container)
+					}
+				}
+
+				logger.warn { "Loading executable mounted at ARG0: ${fileManager.executableFile} : CWD: ${fileManager.currentDirectory}..." }
+				for (mount in deviceManager.mountable.mounts) {
+					logger.warn { "  - Mount: ${mount.key}   -->   ${mount.value}" }
+				}
+				return loadElfAndSetRegisters(stream.readAll().openSync(), listOf(fileManager.executableFile))
+			}
+			else -> invalidOp("Unhandled format $format")
 		}
 	}
 }

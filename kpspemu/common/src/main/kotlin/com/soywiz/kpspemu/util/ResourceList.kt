@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.util
 import com.soywiz.kds.IntMap
 import com.soywiz.kds.Pool
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.util.hex
 
 interface ResourceItem {
 	val id: Int
@@ -31,6 +32,6 @@ class ResourceList<T : ResourceItem>(val name: String, private val create: (id: 
 	}
 
 	fun tryGetById(id: Int): T? = items[id]
-	operator fun get(id: Int): T = tryGetById(id) ?: invalidOp("Can't find $name with id $id")
+	operator fun get(id: Int): T = tryGetById(id) ?: invalidOp("Can't find $name with id ${id.hex}")
 	operator fun contains(id: Int): Boolean = tryGetById(id) != null
 }

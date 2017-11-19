@@ -1,10 +1,22 @@
 package com.soywiz.kpspemu.format
 
 import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.stream.*
+import com.soywiz.korio.stream.AsyncStream
+import com.soywiz.korio.stream.readIntArray_le
+import com.soywiz.korio.stream.readS32_le
+import com.soywiz.korio.stream.sliceWithBounds
 
 class Pbp(val version: Int, val base: AsyncStream, val streams: List<AsyncStream>) {
 	val streamsByName = NAMES.zip(streams).toMap()
+
+	val PARAM_SFO get() = this[Pbp.PARAM_SFO]
+	val ICON0_PNG get() = this[Pbp.ICON0_PNG]
+	val ICON1_PMF get() = this[Pbp.ICON1_PMF]
+	val PIC0_PNG  get() = this[Pbp.PIC0_PNG]
+	val PIC1_PNG  get() = this[Pbp.PIC1_PNG]
+	val SND0_AT3  get() = this[Pbp.SND0_AT3]
+	val PSP_DATA  get() = this[Pbp.PSP_DATA]
+	val PSAR_DATA get() = this[Pbp.PSAR_DATA]
 
 	companion object {
 		const val PBP_MAGIC = 0x50425000
@@ -23,6 +35,8 @@ class Pbp(val version: Int, val base: AsyncStream, val streams: List<AsyncStream
 		suspend fun check(s: AsyncStream): Boolean {
 			return s.duplicate().readS32_le() == PBP_MAGIC
 		}
+
+		suspend operator fun invoke(s: AsyncStream): Pbp = load(s)
 
 		suspend fun load(s: AsyncStream): Pbp {
 			val magic = s.readS32_le()

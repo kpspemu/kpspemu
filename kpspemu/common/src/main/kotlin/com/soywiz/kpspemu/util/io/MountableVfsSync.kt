@@ -1,17 +1,22 @@
 package com.soywiz.kpspemu.util.io
 
+import com.soywiz.klogger.Logger
 import com.soywiz.korio.FileNotFoundException
 import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsUtil
 
 fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
+	val logger = Logger("MountableVfsSync")
+
 	val mount = object : Vfs.Proxy(), MountableSync {
-		private val mounts = ArrayList<Pair<String, VfsFile>>()
+		private val _mounts = ArrayList<Pair<String, VfsFile>>()
+
+		override val mounts: Map<String, VfsFile> get() = _mounts.toMap()
 
 		override fun mount(folder: String, file: VfsFile) = this.apply {
 			_unmount(folder)
-			mounts += com.soywiz.korio.vfs.VfsUtil.normalize(folder) to file
+			_mounts += com.soywiz.korio.vfs.VfsUtil.normalize(folder) to file
 			resort()
 		}
 
@@ -21,11 +26,11 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 		}
 
 		private fun _unmount(folder: String) {
-			mounts.removeAll { it.first == VfsUtil.normalize(folder) }
+			_mounts.removeAll { it.first == VfsUtil.normalize(folder) }
 		}
 
 		private fun resort() {
-			mounts.sortBy { -it.first.length }
+			_mounts.sortBy { -it.first.length }
 		}
 
 		suspend override fun transform(out: VfsFile): VfsFile {
@@ -35,12 +40,18 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 
 		override suspend fun access(path: String): VfsFile {
 			val rpath = VfsUtil.normalize(path)
-			for ((base, file) in mounts) {
+			for ((base, file) in _mounts) {
 				//println("$base/$file")
 				if (rpath.startsWith(base)) {
-					return file[rpath.substring(base.length)]
+					val nnormalizedPath = rpath.substring(base.length)
+					val subpath = VfsUtil.normalize(nnormalizedPath).trim('/')
+					logger.warn { "Accessing $file : $subpath ($nnormalizedPath)" }
+					val res = file[subpath]
+					logger.warn { " --> $res (${res.exists()})" }
+					return res
 				}
 			}
+			logger.warn { "Can't find $rpath in mounted ${_mounts.map { it.first }}" }
 			throw FileNotFoundException(path)
 		}
 	}
@@ -58,5 +69,6 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 interface MountableSync {
 	fun mount(folder: String, file: VfsFile): MountableSync
 	fun unmount(folder: String): MountableSync
+	val mounts: Map<String, VfsFile>
 }
 

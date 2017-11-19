@@ -204,3 +204,5 @@ private class DosFileDateTime(var dosTime: Int, var dosDate: Int) {
 	}
 	val utcTimestamp: Long by lazy { date.unix }
 }
+
+suspend fun AsyncStream.openAsZip2(file: VfsFile? = null) = ZipVfs2(this, file)
