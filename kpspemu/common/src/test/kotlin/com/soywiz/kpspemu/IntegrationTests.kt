@@ -16,6 +16,7 @@ import com.soywiz.korio.vfs.MemoryVfsMix
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.hle.registerNativeModules
 import org.junit.Test
+import kotlin.test.Ignore
 
 class IntegrationTests {
 	val TRACE = false
@@ -49,6 +50,7 @@ class IntegrationTests {
 
 	//@Test fun testKirk() = testFile("kirk/kirk")
 
+	@Ignore
 	@Test fun testLoaderBss() = testFile("loader/bss/bss")
 
 	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
