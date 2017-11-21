@@ -250,6 +250,6 @@ class GeBatchBuilder(val ge: Ge) {
 				ff[vpos++] = vertex.pos[2]
 			}
 		}
-		ge.emitBatch(GeBatchData(stateData, primitiveType, indexCount, vertexData.copyOf(vpos * 4), indices, texVersion))
+		ge.emitBatch(GeBatchData(stateData, primitiveType, indexCount, vertexData.copyOf(vpos * 4), indices.copyOf(), texVersion))
 	}
 }
