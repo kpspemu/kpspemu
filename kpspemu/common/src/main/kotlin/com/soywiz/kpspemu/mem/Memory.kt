@@ -117,6 +117,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	open fun copy(srcPos: Int, dstPos: Int, size: Int) = run { for (n in 0 until size) sb(dstPos + n, lb(srcPos + n)) }
 	fun getPointerStream(address: Int, size: Int): SyncStream = openSync().sliceWithSize(address, size)
+	fun getPointerStream(address: Int): SyncStream = openSync().sliceWithStart(address.toLong())
 	fun readStringzOrNull(offset: Int): String? = if (offset != 0) readStringz(offset) else null
 
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
