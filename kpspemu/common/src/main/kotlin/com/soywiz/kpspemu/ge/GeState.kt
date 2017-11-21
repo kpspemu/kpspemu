@@ -490,6 +490,10 @@ class GpuFrameBufferState(val data: IntArray) {
 }
 
 class VertexType(v: Int = 0) {
+	companion object {
+		val DUMMY = VertexType()
+	}
+
 	var v: Int = 0
 
 	init {
@@ -563,14 +567,23 @@ fun VertexType.init(state: GeState) = init(state.vertexType)
 
 @Suppress("ArrayInDataClass")
 data class VertexRaw(
+	var type: VertexType = VertexType.DUMMY,
 	var color: Int = 0,
 	val normal: FloatArray = FloatArray(3),
 	val pos: FloatArray = FloatArray(3),
 	val tex: FloatArray = FloatArray(3),
 	val weights: FloatArray = FloatArray(8)
 ) {
-	override fun toString(): String =
-		"VertexRaw(${color.hex}, normal=${normal.toList()}, pos=${pos.toList()}, tex=${tex.toList()}, weights=${weights.toList()})"
+	override fun toString(): String {
+		val parts = arrayListOf<String>()
+		if (type.hasColor) parts += "color=${color.hex}"
+		if (type.hasNormal) parts += "normal=${normal.toList()}"
+		if (type.hasPosition) parts += "pos=${pos.toList()}"
+		if (type.hasTexture) parts += "tex=${tex.toList()}"
+		if (type.hasWeight) parts += "weights=${weights.toList()}"
+		//"VertexRaw(${color.hex}, normal=${normal.toList()}, pos=${pos.toList()}, tex=${tex.toList()}, weights=${weights.toList()})"
+		return "VertexRaw(${parts.joinToString(", ")})"
+	}
 }
 
 class VertexReader {
@@ -617,7 +630,9 @@ class VertexReader {
 		}
 	}
 
-	fun readOne(s: SyncStream, type: VertexType, out: VertexRaw = VertexRaw()): VertexRaw {
+	fun readOne(s: SyncStream, type: VertexType, out: VertexRaw = VertexRaw(type)): VertexRaw {
+		out.type = type
+
 		s.safeSkipToAlign(type.weight.nbytes)
 		//println("Weight[0]: ${s.position} : align(${type.weight.nbytes})")
 		s.readNumericType(type.weightComponents, type.weight, out.weights, normalized = true)
