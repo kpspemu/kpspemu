@@ -209,4 +209,47 @@ class GeBatchBuilder(val ge: Ge) {
 		vertexCount += maxIdx
 
 	}
+
+	fun addUnoptimizedShape(primitiveType: PrimitiveType, indices: ShortArray, vertices: Array<VertexRaw>, verticesCount: Int, hasPosition: Boolean, hasColor: Boolean, hasTexture: Boolean, hasNormal: Boolean, hasWeights: Boolean) {
+		val indexCount = indices.size
+		val vtype = VertexType(0)
+		if (hasPosition) vtype.pos = NumericEnum.FLOAT
+		if (hasColor) vtype.col = ColorEnum.COLOR8888
+		if (hasTexture) vtype.tex = NumericEnum.FLOAT
+		if (hasNormal) vtype.normal = NumericEnum.FLOAT
+		if (hasWeights) vtype.weight = NumericEnum.FLOAT
+		val stateData = ge.state.data.copyOf()
+		val vertexData = ByteArray(vertices.size * 4 * 16)
+		val fmem = FastMemory.wrap(vertexData)
+		val ii = fmem.i32
+		val ff = fmem.f32
+		var vpos = 0
+		stateData[Op.VERTEXTYPE] = vtype.v
+
+		// weights, texture, color, normal, position
+		for (n in 0 until verticesCount) {
+			val vertex = vertices[n]
+			if (hasWeights) {
+				TODO("weights")
+			}
+			if (hasTexture) {
+				ff[vpos++] = vertex.tex[0]
+				ff[vpos++] = vertex.tex[1]
+			}
+			if (hasColor) {
+				ii[vpos++] = vertex.color
+			}
+			if (hasNormal) {
+				ff[vpos++] = vertex.normal[0]
+				ff[vpos++] = vertex.normal[1]
+				ff[vpos++] = vertex.normal[2]
+			}
+			if (hasPosition) {
+				ff[vpos++] = vertex.pos[0]
+				ff[vpos++] = vertex.pos[1]
+				ff[vpos++] = vertex.pos[2]
+			}
+		}
+		ge.emitBatch(GeBatchData(stateData, primitiveType, indexCount, vertexData.copyOf(vpos * 4), indices.copyOf(), texVersion))
+	}
 }

@@ -2,12 +2,16 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.util.extract
+import com.soywiz.korio.util.extract8
 import com.soywiz.korio.util.hex
+import com.soywiz.korma.ds.IntArrayList
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.callbackManager
 import com.soywiz.kpspemu.mem
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.ResourceItem
+import com.soywiz.kpspemu.util.copyOfShortArray
+import kotlin.math.max
 
 class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by ge {
 	val logger = com.soywiz.klogger.Logger("GeList")
@@ -69,8 +73,9 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 			Op.TRXDPOS -> {
 				println("TRXDPOS")
 			}
-			Op.BEZIER -> {
-				logger.info { "Not implemented BEZIER" }
+			Op.BEZIER -> bezier(p)
+			Op.SPLINE -> {
+				logger.error { "Not implemented SPLINE" }
 			}
 			Op.END -> {
 				//println("END")
@@ -116,13 +121,80 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 		stateData[op] = p
 	}
 
-	private fun prim(p: Int): PrimAction {
+	private val tempVertices = Array(4 * 4) { VertexRaw() }
+
+	private fun bezier(p: Int) {
+		// @TODO: Generate intermediate vertices
+		val vt = VertexType(state.vertexType)
+		val vr = VertexReader()
+		val ucount = max(p.extract8(0), 4) // X
+		val vcount = max(p.extract8(8), 4) // Y
+		val divs = state.patch.divs // number of divisions X
+		val divt = state.patch.divt // number of divisions Y
+		val useTexture = vt.hasTexture || state.texture.enabled
+		val generateUV = useTexture && !vt.hasTexture
+
+		// 0.1.2.3
+		// 4.5.6.7
+		// 8.9.A.B
+		// C.D.E.F
+
+		val vertices = vr.read(vt, ucount * vcount, mem.getPointerStream(state.vertexAddress), tempVertices)
+		val indices = IntArrayList()
+		val vertexCount = ucount * vcount
+
+		if (generateUV) {
+			var n = 0
+			//val coefsU = bernsteinCoeff(1f)
+
+			for (v in 0 until ucount) {
+				for (u in 0 until vcount) {
+					val vertex = vertices[n]
+					vertex.tex[0] = u.toFloat() / ((vcount - 1).toFloat())
+					vertex.tex[1] = v.toFloat() / ((ucount - 1).toFloat())
+					//println("${vertex.tex[0]},${vertex.tex[1]}")
+					n++
+				}
+			}
+		}
+
+		run {
+			for (u in 0 until ucount - 1) {
+				for (v in 0 until vcount - 1) {
+					val n = u * ucount + v
+					indices.add(n + 0)
+					indices.add(n + 1)
+					indices.add(n + ucount)
+					indices.add(n + ucount)
+					indices.add(n + 1)
+					indices.add(n + ucount + 1)
+				}
+			}
+		}
+		bb.flush()
+		bb.addUnoptimizedShape(PrimitiveType.TRIANGLES, indices.copyOfShortArray(), vertices, vertexCount, hasPosition = true, hasColor = false, hasTexture = useTexture, hasNormal = false, hasWeights = false)
+	}
+
+	// @TODO: Unused yet! Needed for bezier
+	//private fun bernsteinCoeff(u: Float, out: FloatArray = FloatArray(4)): FloatArray {
+	//	val uPow2 = u * u
+	//	val uPow3 = uPow2 * u
+	//	val u1 = 1 - u
+	//	val u1Pow2 = u1 * u1
+	//	val u1Pow3 = u1Pow2 * u1
+	//	out[0] = u1Pow3
+	//	out[1] = 3f * u * u1Pow2
+	//	out[2] = 3f * uPow2 * u1
+	//	out[3] = uPow3
+	//	return out
+	//}
+
+	private fun prim(p: Int) {
 		val primitiveType = PrimitiveType(p.extract(16, 3))
 		val vertexCount: Int = p.extract(0, 16)
 		//println("PRIM: $primitiveType, $vertexCount")
 		bb.setVertexKind(primitiveType, state)
 		bb.addIndices(vertexCount)
-		return PrimAction.FLUSH_PRIM
 	}
 
 	private fun finish(p: Int) {

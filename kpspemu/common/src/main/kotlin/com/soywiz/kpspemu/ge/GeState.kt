@@ -489,26 +489,33 @@ class GpuFrameBufferState(val data: IntArray) {
 	val lowAddress get() = param24(this.data[Op.FRAMEBUFPTR])
 }
 
+/**
+ * Psp Component Order:
+ * - weights, texture, color, normal, position
+ */
 class VertexType(v: Int = 0) {
 	companion object {
 		val DUMMY = VertexType()
 	}
 
-	var v: Int = 0
+	private var computed = false
+	var v: Int = v
+		set(value) {
+			if (field != value) {
+				computed = false
+				field = value
+			}
+		}
 
-	init {
-		init(v)
-	}
-
-	val tex: NumericEnum get() = NumericEnum(v.extract(0, 2))
-	val col: ColorEnum get() = ColorEnum(v.extract(2, 3))
-	val normal: NumericEnum get() = NumericEnum(v.extract(5, 2))
-	val pos: NumericEnum get() = NumericEnum(v.extract(7, 2))
-	val weight: NumericEnum get() = NumericEnum(v.extract(9, 2))
-	val index: IndexEnum get() = IndexEnum(v.extract(11, 2))
-	val weightComponents: Int get() = v.extract(14, 3)
-	val morphingVertexCount: Int get() = v.extract(18, 2)
-	val transform2D: Boolean get() = v.extract(23, 1) != 0
+	var tex: NumericEnum get() = NumericEnum(v.extract(0, 2)); set(vv) = run { this.v = this.v.insert(vv.id, 0, 2) }
+	var col: ColorEnum get() = ColorEnum(v.extract(2, 3)); set(vv) = run { this.v = this.v.insert(vv.id, 2, 3) }
+	var normal: NumericEnum get() = NumericEnum(v.extract(5, 2)); set(vv) = run { this.v = this.v.insert(vv.id, 5, 2) }
+	var pos: NumericEnum get() = NumericEnum(v.extract(7, 2)); set(vv) = run { this.v = this.v.insert(vv.id, 7, 2) }
+	var weight: NumericEnum get() = NumericEnum(v.extract(9, 2)); set(vv) = run { this.v = this.v.insert(vv.id, 9, 2) }
+	var index: IndexEnum get() = IndexEnum(v.extract(11, 2)); set(vv) = run { this.v = this.v.insert(vv.id, 11, 2) }
+	var weightComponents: Int get() = v.extract(14, 3); set(vv) = run { this.v = this.v.insert(vv, 13, 3) }
+	var morphingVertexCount: Int get() = v.extract(18, 2); set(vv) = run { this.v = this.v.insert(vv, 18, 2) }
+	var transform2D: Boolean get() = v.extract(23, 1) != 0; set(vv) = run { this.v = this.v.insert(vv, 23) }
 
 	val hasIndices: Boolean get() = index != IndexEnum.VOID
 	val hasTexture: Boolean get() = tex != NumericEnum.VOID
@@ -530,25 +537,35 @@ class VertexType(v: Int = 0) {
 	val textureSize: Int get() = tex.nbytes * texComponents
 	val weightSize: Int get() = weight.nbytes * weightComponents
 
-	var colOffset: Int = 0; private set
-	var normalOffset: Int = 0; private set
-	var posOffset: Int = 0; private set
-	var texOffset: Int = 0; private set
-	var weightOffset: Int = 0; private set
+	private var _colOffset: Int = 0
+	private var _normalOffset: Int = 0
+	private var _posOffset: Int = 0
+	private var _texOffset: Int = 0
+	private var _weightOffset: Int = 0
+	private var _size: Int = 0
 
-	var size: Int = 0
-	//fun size(): Int = offsetOf(Attribute.END)
+	val colOffset: Int get() = ensureComputed()._colOffset
+	val normalOffset: Int get() = ensureComputed()._normalOffset
+	val posOffset: Int get() = ensureComputed()._posOffset
+	val texOffset: Int get() = ensureComputed()._texOffset
+	val weightOffset: Int get() = ensureComputed()._weightOffset
+	val size: Int get() = ensureComputed()._size
+
+	private fun ensureComputed() = this.apply {
+		if (!computed) {
+			computed = true
+			var out = 0
+			out = out.nextAlignedTo(weight.nbytes); this._weightOffset = out; out = weightSize
+			out = out.nextAlignedTo(tex.nbytes); this._texOffset = out; out += textureSize
+			out = out.nextAlignedTo(col.nbytes); this._colOffset = out; out += colSize
+			out = out.nextAlignedTo(normal.nbytes); this._normalOffset = out; out += normalSize
+			out = out.nextAlignedTo(pos.nbytes); this._posOffset = out; out += positionSize
+			this._size = out.nextAlignedTo(max(weight.nbytes, tex.nbytes, col.nbytes, normal.nbytes, pos.nbytes))
+		}
+	}
 
 	fun init(v: Int) = this.apply {
 		this.v = v
-
-		var out = 0
-		out = out.nextAlignedTo(weight.nbytes); this.weightOffset = out; out = weightSize
-		out = out.nextAlignedTo(tex.nbytes); this.texOffset = out; out += textureSize
-		out = out.nextAlignedTo(col.nbytes); this.colOffset = out; out += colSize
-		out = out.nextAlignedTo(normal.nbytes); this.normalOffset = out; out += normalSize
-		out = out.nextAlignedTo(pos.nbytes); this.posOffset = out; out += positionSize
-		this.size = out.nextAlignedTo(max(weight.nbytes, tex.nbytes, col.nbytes, normal.nbytes, pos.nbytes))
 	}
 
 	override fun toString(): String {
@@ -584,6 +601,8 @@ data class VertexRaw(
 		//"VertexRaw(${color.hex}, normal=${normal.toList()}, pos=${pos.toList()}, tex=${tex.toList()}, weights=${weights.toList()})"
 		return "VertexRaw(${parts.joinToString(", ")})"
 	}
+
+	fun clone() = VertexRaw(type = VertexType.DUMMY, color = color, normal = normal.copyOf(), pos = pos.copyOf(), tex = tex.copyOf(), weights = weights.copyOf())
 }
 
 class VertexReader {
@@ -664,7 +683,12 @@ class VertexReader {
 		return out
 	}
 
-	fun read(type: VertexType, count: Int, s: SyncStream) = (0 until count).map { readOne(s, type) }
+	fun read(type: VertexType, count: Int, s: SyncStream, out: Array<VertexRaw> = Array(count) { VertexRaw() }): Array<VertexRaw> {
+		for (n in 0 until count) readOne(s, type, out[n])
+		return out
+	}
+
+	fun readList(type: VertexType, count: Int, s: SyncStream) = read(type, count, s).toList()
 }
 
 private fun SyncStream.safeSkipToAlign(alignment: Int) = when {
