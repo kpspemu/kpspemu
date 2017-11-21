@@ -683,7 +683,12 @@ class VertexReader {
 		return out
 	}
 
-	fun read(type: VertexType, count: Int, s: SyncStream) = (0 until count).map { readOne(s, type) }
+	fun read(type: VertexType, count: Int, s: SyncStream, out: Array<VertexRaw> = Array(count) { VertexRaw() }): Array<VertexRaw> {
+		for (n in 0 until count) readOne(s, type, out[n])
+		return out
+	}
+
+	fun readList(type: VertexType, count: Int, s: SyncStream) = read(type, count, s).toList()
 }
 
 private fun SyncStream.safeSkipToAlign(alignment: Int) = when {
