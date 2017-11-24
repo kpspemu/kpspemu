@@ -4,6 +4,9 @@ import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
+import com.soywiz.korio.async.Thread_sleep
+import com.soywiz.korio.async.eventLoop
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
@@ -38,6 +41,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
 
 	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
+		//priorities.sortBy { it.priority }
 		var attr = attributes
 		val ssize = max(stackSize, 0x200).nextAlignedTo(0x100)
 		val stack = memoryManager.userPartition.allocateHigh(ssize, "${name}_stack")
@@ -60,50 +64,32 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		throw CpuBreakException(CpuBreakException.THREAD_WAIT)
 	}
 
-	fun step() {
-		val startTime = rtc.getTimeInMicrosecondsDouble()
-		var vsyncStarted = true
+	suspend fun step() {
+		var start: Double = timeManager.getTimeInMicrosecondsDouble()
 
-		display.startVsync()
-		emulator.interruptManager.dispatchVsync()
-		for (t in resourcesById.values.filter { it.waitObject is WaitObject.VBLANK }) {
-			t.resume()
-			//println("RESUMED WAITING THREAD!")
-		}
-
-		while ((rtc.getTimeInMicrosecondsDouble() - startTime) < 16.0) { // Max 16 milliseconds
-			stepOne()
-			emulator.eventLoop.step(0)
-
-			// This is trick to simulate vsync start
-			if (vsyncStarted) {
-				display.endVsync();
-				vsyncStarted = false
+		while (true) {
+			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+				val time = (t.waitObject as WaitObject.TIME).instant
+				if (start >= time) {
+					t.resume()
+				}
 			}
-
-			if (availableThreadCount <= 0) break
+			val priority = availablePriorities.firstOrNull() ?: break
+			for (t in resourcesById.values.filter { it.running && it.priority == priority }) {
+				val now: Double = timeManager.getTimeInMicrosecondsDouble()
+				t.step(now)
+				if (now - start >= 16.0) {
+					start = now
+					getCoroutineContext().eventLoop.sleep(0)
+				}
+			}
 		}
 	}
+
+	val availablePriorities: List<Int> get() = resourcesById.values.filter { it.running }.map { it.priority }.distinct().sorted()
 
 	val availableThreadCount get() = resourcesById.values.count { it.running }
 	val availableThreads get() = resourcesById.values.filter { it.running }.sortedBy { it.priority }
-
-	fun stepOne() {
-		val now: Double = timeManager.getTimeInMicrosecondsDouble()
-
-		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-			val time = (t.waitObject as WaitObject.TIME).instant
-			if (now >= time) {
-				t.resume()
-			}
-		}
-
-		val availableThreads = this.availableThreads
-		for (t in availableThreads) {
-			logger.trace { "Step for ${t.id} : '${t.name}' : ${t.phase}" }
-			t.step(now)
-		}
-	}
 
 	val traces = hashMapOf<String, Boolean>()
 
@@ -171,7 +157,7 @@ class PspThread internal constructor(
 ) : Resource(threadManager, id, name), WithEmulator {
 	var preemptionCount: Int = 0
 	val totalExecutedInstructions: Long get() = state.totalExecuted
-	val onEnd = Signal<Unit>()
+	val onEnd = Signal2<Unit>()
 	val logger = Logger("PspThread")
 
 	enum class Phase {
@@ -333,13 +319,13 @@ data class PspEventFlag(override val id: Int) : ResourceItem {
 	}
 
 	private fun _doClear(bitsToMatch: Int, waitType: Int) {
-		if ((waitType and (EventFlagWaitTypeSet.ClearAll)) != 0) this.clearBits(-1.inv(), false);
-		if ((waitType and (EventFlagWaitTypeSet.Clear)) != 0) this.clearBits(bitsToMatch.inv(), false);
+		if ((waitType and (EventFlagWaitTypeSet.ClearAll)) != 0) this.clearBits(-1.inv(), false)
+		if ((waitType and (EventFlagWaitTypeSet.Clear)) != 0) this.clearBits(bitsToMatch.inv(), false)
 	}
 
 	fun clearBits(bitsToClear: Int, doUpdateWaitingThreads: Boolean = true) {
-		this.currentPattern = this.currentPattern and bitsToClear;
-		if (doUpdateWaitingThreads) this.updateWaitingThreads();
+		this.currentPattern = this.currentPattern and bitsToClear
+		if (doUpdateWaitingThreads) this.updateWaitingThreads()
 	}
 
 	private fun updateWaitingThreads() {

@@ -8,5 +8,4 @@ class DummyGpuRenderer : GpuRenderer {
 	override fun render(batches: List<GeBatchData>) {
 		println("BATCHES: $batches")
 	}
-
 }

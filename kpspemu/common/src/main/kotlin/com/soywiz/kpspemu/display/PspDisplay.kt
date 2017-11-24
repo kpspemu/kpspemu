@@ -3,13 +3,13 @@ package com.soywiz.kpspemu.display
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.color.RGBA_5551
-import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.waitOne
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.util.Signal2
+import com.soywiz.kpspemu.util.waitOne
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	companion object {
@@ -24,6 +24,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		const val VERTICAL_SYNC_HZ = PspDisplay.HORIZONTAL_SYNC_HZ / PspDisplay.HCOUNT_PER_VBLANK // 59.998800024
 		const val VERTICAL_SECONDS = 1 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
 	}
+
 	var exposeDisplay = true
 
 	val bmp = Bitmap32(512, 272)
@@ -42,7 +43,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 
 	var vcount = 0
 
-	val onVsyncStart = Signal<Unit>()
+	val onVsyncStart = Signal2<Unit>()
 
 	fun fixedAddress(): Int {
 		//println(address.hex)
@@ -86,7 +87,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 
 	suspend fun waitVblank() {
 		//if (!inVBlank) {
-			display.onVsyncStart.waitOne()
+		display.onVsyncStart.waitOne()
 		//}
 	}
 

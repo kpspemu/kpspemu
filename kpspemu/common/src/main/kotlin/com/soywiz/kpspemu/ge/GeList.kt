@@ -10,6 +10,7 @@ import com.soywiz.kpspemu.callbackManager
 import com.soywiz.kpspemu.mem
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.ResourceItem
+import com.soywiz.kpspemu.util.Signal2
 import com.soywiz.kpspemu.util.copyOfShortArray
 import kotlin.math.max
 
@@ -23,13 +24,13 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 	var PC: Int = start
 	var completed: Boolean = false
 	val bb = GeBatchBuilder(ge)
-	var onCompleted = Signal<Unit>()
+	var onCompleted = Signal2<Unit>()
 	var phase = ListSyncKind.QUEUED
 
 	fun reset() {
 		completed = false
 		bb.reset()
-		onCompleted = Signal<Unit>()
+		onCompleted = Signal2<Unit>()
 		phase = ListSyncKind.QUEUED
 	}
 
