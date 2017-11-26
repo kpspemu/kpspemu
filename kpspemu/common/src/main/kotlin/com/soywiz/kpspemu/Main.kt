@@ -14,6 +14,8 @@ import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.render.Texture
 import com.soywiz.korge.scene.Module
 import com.soywiz.korge.scene.Scene
+import com.soywiz.korge.scene.SceneContainer
+import com.soywiz.korge.scene.sceneContainer
 import com.soywiz.korge.service.Browser
 import com.soywiz.korge.time.seconds
 import com.soywiz.korge.tween.get
@@ -32,6 +34,7 @@ import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.Korio
 import com.soywiz.korio.async.AsyncThread
 import com.soywiz.korio.async.go
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.AsyncStream
@@ -58,8 +61,10 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
+import com.soywiz.kpspemu.ui.simpleButton
 import com.soywiz.kpspemu.util.io.openAsIso2
 import com.soywiz.kpspemu.util.io.openAsZip2
+import kotlin.coroutines.experimental.EmptyCoroutineContext
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
@@ -69,7 +74,9 @@ object Main {
 	@JvmStatic
 	fun main(args: Array<String>) {
 		Korge(KpspemuModule, injector = AsyncInjector()
-			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class)) }
+			.mapSingleton(EmulatorContainer::class) { EmulatorContainer(getCoroutineContext()) }
+			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(EmulatorContainer::class)) }
+			.mapPrototype(DebugScene::class) { DebugScene(get(), get()) }
 			.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
 			//, debug = true
 		)
@@ -87,12 +94,13 @@ object KpspemuModule : Module() {
 }
 
 class KpspemuMainScene(
-	val browser: Browser
+	val browser: Browser,
+	val emulatorContainer: EmulatorContainer
 ) : Scene(), WithEmulator {
 	val logger = Logger("KpspemuMainScene")
 
 	//lateinit var exeFile: VfsFile
-	lateinit override var emulator: Emulator
+	override val emulator: Emulator get() = emulatorContainer.emulator
 	val tex by lazy { views.texture(display.bmp) }
 	val agRenderer by lazy { AGRenderer(this, tex) }
 	val hudFont by lazy { BitmapFont(views.ag, "Lucida Console", 32, BitmapFontGenerator.LATIN_ALL, mipmaps = false) }
@@ -101,10 +109,10 @@ class KpspemuMainScene(
 	var paused = false
 	var forceSteps = 0
 
-	suspend fun createEmulator(): Emulator {
+	suspend fun createEmulator() {
 		running = true
 		ended = false
-		emulator = Emulator(
+		emulatorContainer.emulator = Emulator(
 			coroutineContext,
 			mem = Memory(),
 			gpuRenderer = object : GpuRenderer {
@@ -116,7 +124,6 @@ class KpspemuMainScene(
 		)
 		agRenderer.anyBatch = false
 		agRenderer.reset()
-		return emulator
 	}
 
 	var icon0Texture: Texture? = null
@@ -141,7 +148,7 @@ class KpspemuMainScene(
 		setIcon0Bitmap(Bitmap32(144, 80))
 		titleText.text = ""
 
-		emulator = createEmulator()
+		createEmulator()
 		emulator.registerNativeModules()
 		emulator.loadExecutableAndStart(exeFile, object : LoadProcess() {
 			suspend override fun readIcon0(icon0: ByteArray) {
@@ -174,7 +181,7 @@ class KpspemuMainScene(
 		//val result = func(cpuState)
 		//println("PC: ${cpuState.PC.hex}")
 
-		emulator = createEmulator()
+		createEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
 		println("DYNAREK: ${Dynarek.VERSION}")
 		println("KORINJECT: ${Korinject.VERSION}")
@@ -343,6 +350,7 @@ class KpspemuMainScene(
 			logger.warn { "Writted memory to $outFile" }
 		}
 
+
 		hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
 		hud += infoText
 		hud += loadButton
@@ -374,6 +382,12 @@ class KpspemuMainScene(
 		}
 
 		sceneView += displayView
+
+		debugSceneContainer = views.sceneContainer().apply {
+			changeTo<DebugScene>()
+		}
+		sceneView += debugSceneContainer
+
 		sceneView += hud
 
 		//sceneView.onMove { hudOpen() }
@@ -393,6 +407,8 @@ class KpspemuMainScene(
 			}
 		}
 	}
+
+	lateinit var debugSceneContainer: SceneContainer
 
 	val fpsCounter = FpsCounter()
 	val hudQueue = AsyncThread()
@@ -540,27 +556,3 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 	}
 }
 
-fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = this.defaultFont): View {
-	val button = container()
-	val colorOver = RGBA(0xA0, 0xA0, 0xA0, 0xFF)
-	val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
-
-	val bg = solidRect(width, height, colorOut)
-	val txt = text(text, font = font, textSize = 14.0).apply {
-		this.x = 4.0
-		this.y = 2.0
-		this.autoSize = true
-		//this.textBounds.setBounds(0, 0, width - 8, height - 8)
-		//this.width = width - 8.0
-		//this.height = height - 8.0
-		//this.enabled = false
-		//this.mouseEnabled = false
-		//this.enabled = false
-	}
-	button += bg
-	button += txt
-	button.onOut { bg.colorMul = colorOut }
-	button.onOver { bg.colorMul = colorOver }
-	//txt.textBounds.setBounds(0, 0, 50, 50)
-	return button
-}

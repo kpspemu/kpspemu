@@ -206,7 +206,7 @@ class PspThread internal constructor(
 		SP = stack.high.toInt()
 		RA = CpuBreakException.THREAD_EXIT_KIL_RA
 	}
-	val interpreter = CpuInterpreter(state)
+	val interpreter = CpuInterpreter(state, emulator.breakpoints)
 	//val interpreter = FastCpuInterpreter(state)
 
 	init {

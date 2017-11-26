@@ -13,7 +13,7 @@ import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.math.sqrt
 
-class CpuInterpreter(var cpu: CpuState, var trace: Boolean = false) {
+class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun steps(count: Int): Int {
