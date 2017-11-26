@@ -21,12 +21,12 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 	fun StmBuilder<Unit, CpuState, Unit>.getRegister(n: Int): DExpr<Int> {
 		return when (n) {
 			0 -> 0.lit
-			else -> p0[CpuState.getReg(n)]
+			else -> p0[CpuState.getGprProp(n)]
 		}
 	}
 
 	fun StmBuilder<Unit, CpuState, Unit>.setRegister(n: Int, value: DExpr<Int>) {
-		if (n != 0) SET(p0[CpuState.getReg(n)], value)
+		if (n != 0) SET(p0[CpuState.getGprProp(n)], value)
 	}
 
 	var InstructionInfo.RD: DExpr<Int>

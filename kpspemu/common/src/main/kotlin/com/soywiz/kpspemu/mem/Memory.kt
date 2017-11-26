@@ -126,7 +126,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	}
 }
 
-class DummyMemory : Memory(true) {
+object DummyMemory : Memory(true) {
 	override fun sb(address: Int, value: Int) = Unit
 	override fun sh(address: Int, value: Int) = Unit
 	override fun sw(address: Int, value: Int) = Unit

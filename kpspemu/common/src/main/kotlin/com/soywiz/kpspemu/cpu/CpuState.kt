@@ -7,6 +7,7 @@ import com.soywiz.korio.error.invalidArg
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
+import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 
 data class CpuBreakException(val id: Int) : Exception() {
@@ -35,17 +36,67 @@ var CpuState.SP: Int; set(value) = run { r29 = value }; get() = r29
 var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
 var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
+data class RegInfo(val index: Int, val name: String, val mnemonic: String, val desc: String)
+
 class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
 	companion object {
+		val gprInfos = listOf(
+			RegInfo( 0, "r0", "zero", "Permanently 0"),
+			RegInfo( 1, "r1", "at", "Assembler Temporaty"),
+			RegInfo( 2, "r2", "v0", "Value returned by a subroutine"),
+			RegInfo( 3, "r3", "v1", "Value returned by a subroutine"),
+			RegInfo( 4, "r4", "a0", "Subroutine Arguments"),
+			RegInfo( 5, "r5", "a1", "Subroutine Arguments"),
+			RegInfo( 6, "r6", "a2", "Subroutine Arguments"),
+			RegInfo( 7, "r7", "a3", "Subroutine Arguments"),
+			RegInfo( 8, "r8", "t0", "Temporary"),
+			RegInfo( 9, "r9", "t1", "Temporary"),
+			RegInfo(10, "r10", "t2", "Temporary"),
+			RegInfo(11, "r11", "t3", "Temporary"),
+			RegInfo(12, "r12", "t4", "Temporary"),
+			RegInfo(13, "r13", "t5", "Temporary"),
+			RegInfo(14, "r14", "t6", "Temporary"),
+			RegInfo(15, "r15", "t7", "Temporary"),
+			RegInfo(16, "r16", "s0", "Saved registers"),
+			RegInfo(17, "r17", "s1", "Saved registers"),
+			RegInfo(18, "r18", "s2", "Saved registers"),
+			RegInfo(19, "r19", "s3", "Saved registers"),
+			RegInfo(20, "r20", "s4", "Saved registers"),
+			RegInfo(21, "r21", "s5", "Saved registers"),
+			RegInfo(22, "r22", "s6", "Saved registers"),
+			RegInfo(23, "r23", "s7", "Saved registers"),
+			RegInfo(24, "r24", "t8", "Temporary"),
+			RegInfo(25, "r25", "t9", "Temporary"),
+			RegInfo(26, "r26", "k0", "Kernel"),
+			RegInfo(27, "r27", "k1", "Kernel"),
+			RegInfo(28, "r28", "gp", "Global Pointer"),
+			RegInfo(29, "r29", "sp", "Stack Pointer"),
+			RegInfo(30, "r30", "fp", "Frame Pointer"),
+			RegInfo(31, "r31", "fp", "Return Address")
+		)
+
+		val gprInfosByMnemonic = (gprInfos.map { it.mnemonic to it } + gprInfos.map { it.name to it }).toMap()
+
+		val dummy = CpuState(GlobalCpuState.dummy, DummyMemory)
+
 		var lastId = 0
 
-		fun getReg(index: Int) = when (index) {
+
+		fun getGprProp(index: Int) = when (index) {
 			0 -> CpuState::r0;1 -> CpuState::r1;2 -> CpuState::r2;3 -> CpuState::r3;4 -> CpuState::r4;5 -> CpuState::r5;6 -> CpuState::r6;7 -> CpuState::r7;
 			8 -> CpuState::r8;9 -> CpuState::r9;10 -> CpuState::r10;11 -> CpuState::r11;12 -> CpuState::r12;13 -> CpuState::r13;14 -> CpuState::r14;15 -> CpuState::r15;
 			16 -> CpuState::r16;17 -> CpuState::r17;18 -> CpuState::r18;19 -> CpuState::r19;20 -> CpuState::r20;21 -> CpuState::r21;22 -> CpuState::r22;23 -> CpuState::r23;
 			24 -> CpuState::r24;25 -> CpuState::r25;26 -> CpuState::r26;27 -> CpuState::r27;28 -> CpuState::r28;29 -> CpuState::r29;30 -> CpuState::r30;31 -> CpuState::r31;
 			else -> invalidArg("Invalid register $index")
 		}
+	}
+
+	fun getGprProp(index: Int) = when (index) {
+		0 -> ::r0;1 -> ::r1;2 -> ::r2;3 -> ::r3;4 -> ::r4;5 -> ::r5;6 -> ::r6;7 -> ::r7;
+		8 -> ::r8;9 -> ::r9;10 -> ::r10;11 -> ::r11;12 -> ::r12;13 -> ::r13;14 -> ::r14;15 -> ::r15;
+		16 -> ::r16;17 -> ::r17;18 -> ::r18;19 -> ::r19;20 -> ::r20;21 -> ::r21;22 -> ::r22;23 -> ::r23;
+		24 -> ::r24;25 -> ::r25;26 -> ::r26;27 -> ::r27;28 -> ::r28;29 -> ::r29;30 -> ::r30;31 -> ::r31;
+		else -> invalidArg("Invalid register $index")
 	}
 
 	val id = lastId++
@@ -186,6 +237,10 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	@JvmField var LO: Int = 0
 	@JvmField var HI: Int = 0
 	@JvmField var IC: Int = 0
+
+	fun getPCRef() = ::sPC
+
+	var sPC get() = PC; set(value) = run { setPC(value) }
 
 	val PC: Int get() = _PC
 

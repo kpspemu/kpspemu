@@ -5,6 +5,7 @@ import com.soywiz.korau.format.util.IMemory
 import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.battery.PspBattery
+import com.soywiz.kpspemu.cpu.Breakpoints
 import com.soywiz.kpspemu.cpu.CpuBreakException
 import com.soywiz.kpspemu.cpu.GlobalCpuState
 import com.soywiz.kpspemu.ctrl.PspController
@@ -16,6 +17,12 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.experimental.EmptyCoroutineContext
+
+class EmulatorContainer(
+	val coroutineContext: CoroutineContext,
+	override var emulator: Emulator = Emulator(coroutineContext)
+) : WithEmulator
 
 class Emulator(
 	val coroutineContext: CoroutineContext,
@@ -23,6 +30,7 @@ class Emulator(
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	val breakpoints = Breakpoints()
 	val eventLoop = coroutineContext.eventLoop
 	val globalCpuState = GlobalCpuState()
 	val logger = Logger("Emulator")
@@ -86,3 +94,4 @@ val WithEmulator.fileManager: FileManager get() = emulator.fileManager
 val WithEmulator.rtc: TimeManager get() = emulator.timeManager
 val WithEmulator.threadManager: ThreadManager get() = emulator.threadManager
 val WithEmulator.callbackManager: CallbackManager get() = emulator.callbackManager
+val WithEmulator.breakpoints: Breakpoints get() = emulator.breakpoints

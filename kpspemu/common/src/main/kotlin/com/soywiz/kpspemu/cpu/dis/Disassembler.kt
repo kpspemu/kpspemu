@@ -29,11 +29,17 @@ object Disassembler : InstructionDecoder() {
 			//"%j" -> "0x%08X".format((pc and 0xF0000000.toInt()) or i.jump_address)
 				"%j" -> "0x%08X".format((pc and (-268435456)) or i.jump_address)
 				"%J" -> gprStr(i.rs)
+
 				"%d" -> gprStr(i.rd)
 				"%s" -> gprStr(i.rs)
+				"%t" -> gprStr(i.rt)
+
+				"%D" -> fprStr(i.fd)
+				"%S" -> fprStr(i.fs)
+				"%T" -> fprStr(i.ft)
+
 				"%a" -> "${i.pos}"
 				"%O" -> "PC + ${i.s_imm16}"
-				"%t" -> gprStr(i.rt)
 				"%C" -> "0x%04X".format(i.syscall)
 				"%I" -> "${i.u_imm16}"
 				"%i" -> "${i.s_imm16}"
