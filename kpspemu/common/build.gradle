@@ -7,10 +7,9 @@ dependencies {
     compile "com.soywiz:korag-common:$koragVersion"
     compile "com.soywiz:korim-common:$korimVersion"
     compile "com.soywiz:korau-common:$korauVersion"
+    compile "com.soywiz:korau-atrac3plus-common:$korauAtrac3plusVersion"
     compile "com.soywiz:korio-common:$korioVersion"
     compile "com.soywiz:korge-common:$korgeVersion"
     compile "com.soywiz:korui-common:$koruiVersion"
     compile "com.soywiz:krypto-common:$kryptoVersion"
-
-    compile project(":korau-atrac3plus-common")
 }

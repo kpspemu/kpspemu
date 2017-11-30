@@ -14,12 +14,11 @@ dependencies {
     compile "com.soywiz:korag-js:$koragVersion"
     compile "com.soywiz:korim-js:$korimVersion"
     compile "com.soywiz:korau-js:$korauVersion"
+    compile "com.soywiz:korau-atrac3plus-js:$korauAtrac3plusVersion"
     compile "com.soywiz:korio-js:$korioVersion"
     compile "com.soywiz:korge-js:$korgeVersion"
     compile "com.soywiz:korui-js:$koruiVersion"
     compile "com.soywiz:krypto-js:$kryptoVersion"
-
-    compile project(":korau-atrac3plus-js")
 }
 
 // Cause problems with mocha (but required for browser)

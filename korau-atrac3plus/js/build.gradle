@@ -1,8 +1,0 @@
-apply plugin: 'kotlin-platform-js'
-
-dependencies {
-    expectedBy project(":korau-atrac3plus-common")
-
-    compile "com.soywiz:korag-js:$koragVersion"
-    compile "com.soywiz:klogger-js:$kloggerVersion"
-}

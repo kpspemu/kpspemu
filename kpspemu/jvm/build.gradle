@@ -15,12 +15,11 @@ dependencies {
     compile "com.soywiz:korag:$koragVersion"
     compile "com.soywiz:korim:$korimVersion"
     compile "com.soywiz:korau:$korauVersion"
+    compile "com.soywiz:korau-atrac3plus:$korauAtrac3plusVersion"
     compile "com.soywiz:korio:$korioVersion"
     compile "com.soywiz:korge:$korgeVersion"
     compile "com.soywiz:korui:$koruiVersion"
     compile "com.soywiz:krypto:$kryptoVersion"
-
-    compile project(":korau-atrac3plus")
 }
 
 mainClassName = 'com.soywiz.kpspemu.MainKt'
