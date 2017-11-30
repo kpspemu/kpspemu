@@ -4,6 +4,7 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.IdEnum
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.AES
 
 object Kirk {
 	fun hleUtilsBufferCopyWithRange(output: SyncStream, input: SyncStream, command: CommandEnum): Unit = when (command) {

@@ -10,6 +10,7 @@ dependencies {
     compile "com.soywiz:korio-common:$korioVersion"
     compile "com.soywiz:korge-common:$korgeVersion"
     compile "com.soywiz:korui-common:$koruiVersion"
+    compile "com.soywiz:krypto-common:$kryptoVersion"
 
     compile project(":korau-atrac3plus-common")
 }
