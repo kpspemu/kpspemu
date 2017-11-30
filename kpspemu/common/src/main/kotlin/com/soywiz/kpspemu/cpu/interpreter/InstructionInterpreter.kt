@@ -4,20 +4,17 @@ import com.soywiz.kmem.FastMemory
 import com.soywiz.kmem.get
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Console
-import com.soywiz.korio.lang.Debugger
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.*
-import com.soywiz.korio.vfs.tempVfs
 import com.soywiz.korma.math.Math
 import com.soywiz.korma.math.isAlmostZero
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
-import com.soywiz.kpspemu.cpu.interpreter.InstructionInterpreter.one_two
 import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.util.FloatArray2
 import com.soywiz.kpspemu.util.cosv1
-import com.soywiz.kpspemu.util.expr.Dynamic2.unop
 import com.soywiz.kpspemu.util.sinv1
-import kotlin.math.absoluteValue
+import kotlin.math.*
 
 class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
@@ -321,15 +318,20 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		}
 	}
 
-	override fun vmzero(s: CpuState) = s { setMatrixRegsVD(IR.vd) { _, _ -> 0f } }
-	override fun vmone(s: CpuState) = s { setMatrixRegsVD(IR.vd) { _, _ -> 1f } }
-	override fun lvl_q(s: CpuState) = s { println("lvl.q") }
-	override fun lvr_q(s: CpuState) = s { println("lvr.q") }
-	override fun vcst(s: CpuState) = s { println("vcst") }
+	val tempInts = IntArray(16)
+
+	override fun lvl_q(s: CpuState) = s {
+		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> tempInts[i] = getVfprI(r) }
+		mem.lvl_q(RS_IMM14, tempInts)
+	}
+	override fun lvr_q(s: CpuState) = s {
+		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> tempInts[i] = getVfprI(r) }
+		mem.lvr_q(RS_IMM14, tempInts)
+	}
 	override fun sv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> mem.sw(start + i * 4, s.getVfprI(r)) } }
 	override fun lv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> s.setVfprI(r, mem.lw(start + i * 4 + 4)) } }
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
-	override fun vmidt(s: CpuState) = s { setMatrixRegsVD(IR.vd) { r, c -> if (r == c) 1f else 0f } }
+	override fun vcst(s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
 	override fun mtv(s: CpuState) = s { VD_I = RT }
 	override fun vpfxt(s: CpuState) = s { vpfxt = IR; vpfxtEnabled = true }
 	override fun vpfxd(s: CpuState) = s { vpfxd = IR; vpfxdEnabled = true }
@@ -359,13 +361,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			}
 		}
 	}
-	override fun vmmul(s: CpuState) = s {
-		println("vmmul")
-	}
 
-	override fun vmmov(s: CpuState) = s {
-		println("vmmov")
-	}
+	override fun vmzero(s: CpuState) = s { setMatrixVD { 0f } }
+	override fun vmone(s: CpuState) = s { setMatrixVD { 1f } }
+	override fun vmidt(s: CpuState) = s { setMatrixVD { if (row == col) 1f else 0f } }
+	override fun vmmov(s: CpuState) = s { setMatrixVD_VS { ms[col, row] } }
+	override fun vmmul(s: CpuState) = s { setMatrixVD_VSVT { (0 until side).map { ms[col, row] * mt[row, col] }.sum() } }
 
 	// Missing
 
@@ -482,12 +483,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Vectorial utilities
 
-	enum class VectorSize(val id: Int) {
-		Single(1), Pair(2), Triple(3), Quad(4)
-	}
-
-	enum class MatrixSize(val id: Int) {
-		M_2x2(2), M_3x3(3), M_4x4(4);
+	enum class VectorSize(val id: Int) { Single(1), Pair(2), Triple(3), Quad(4) }
+	enum class MatrixSize(val id: Int) { M_2x2(2), M_3x3(3), M_4x4(4);
 
 		companion object {
 			val items = arrayListOf(M_2x2, M_2x2, M_2x2, M_3x3, M_4x4)
@@ -504,12 +501,17 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 		when (N) {
 			MatrixSize.M_2x2 -> {
-				row = (matrixReg ushr 5) and 2; side = 2; }
+				row = (matrixReg ushr 5) and 2
+				side = 2
+			}
 			MatrixSize.M_3x3 -> {
-				row = (matrixReg ushr 6) and 1; side = 3; }
+				row = (matrixReg ushr 6) and 1
+				side = 3
+			}
 			MatrixSize.M_4x4 -> {
-				row = (matrixReg ushr 5) and 2; side = 4; }
-			else -> Debugger.enterDebugger()
+				row = (matrixReg ushr 5) and 2
+				side = 4
+			}
 		}
 
 		val transpose = ((matrixReg ushr 5) and 1) != 0
@@ -529,12 +531,33 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		return regs
 	}
 
-	fun matrixRegsVD(IR: Int, callback: (col: Int, row: Int, r: Int) -> Unit) = matrixRegs(IR.vd, MatrixSize.items[IR.one_two], callback)
+	fun matrixRegsVD(ir: Int, callback: (col: Int, row: Int, r: Int) -> Unit) = matrixRegs(ir.vd, MatrixSize.items[ir.one_two], callback)
 
-	fun CpuState.setMatrixRegsVD(IR: Int, callback: (col: Int, row: Int) -> Float) {
+	class MatrixContext {
+		var side: Int = 0
+		var col: Int = 0
+		var row: Int = 0
+		val ms = FloatArray2(4, 4)
+		val md = FloatArray2(4, 4)
+		val mt = FloatArray2(4, 4)
+	}
+
+	private val mc = MatrixContext()
+
+	fun CpuState.setMatrixVD(callback: MatrixContext.() -> Float) {
 		matrixRegsVD(IR) { col, row, r ->
-			setVfpr(r, callback(col, row))
+			mc.col = col
+			mc.row = row
+			setVfpr(r, callback(mc))
 		}
+	}
+
+	fun CpuState.setMatrixVD_VS(callback: MatrixContext.() -> Float) {
+		println("setMatrixVD_VS")
+	}
+
+	fun CpuState.setMatrixVD_VSVT(callback: MatrixContext.() -> Float) {
+		println("setMatrixVD_VSVT")
 	}
 
 	//fun CpuState.setMatrix(leftList: IntArray, generator: (column: Int, row: Int, index: Int) -> Float) {
@@ -546,7 +569,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	//		}
 	//	}
 	//}
-
 
 	// @TODO: Precalculate this! & mark as inline once this is simplified!
 	fun vectorRegisters(vectorReg: Int, N: VectorSize, callback: (index: Int, r: Int) -> Unit) {
@@ -574,7 +596,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 				row = (vectorReg ushr 5) and 2
 				length = 4
 			}
-			else -> invalidOp
 		}
 
 		for (i in 0 until length) {
@@ -591,6 +612,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		val tempVD = FloatArray(16)
 		val tempVT = FloatArray(16)
 
+		var vectorSize: Int = 0
 		val vs = tempVS
 		val vd = tempVD
 		val vt = tempVT
@@ -671,5 +693,35 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	//}
 
 	//fun getMatrixRegsVD(i: Int) = getMatrixRegs(i.vd, i.one_two)
+
+	enum class VfpuConstants(val value: Float) {
+		VFPU_ZERO(0f),
+		VFPU_HUGE(340282346638528859811704183484516925440f),
+		VFPU_SQRT2(sqrt(2f)),
+		VFPU_SQRT1_2(sqrt(1f / 2f)),
+		VFPU_2_SQRTPI(2f / sqrt(PI)),
+		VFPU_2_PI((2f / PI).toFloat()),
+		VFPU_1_PI((1f / PI).toFloat()),
+		VFPU_PI_4(PI / 4f),
+		VFPU_PI_2(PI / 2f),
+		VFPU_PI(PI),
+		VFPU_E(E),
+		VFPU_LOG2E(log2(E)),
+		VFPU_LOG10E(log10(E)),
+		VFPU_LN2(log(2.0, E)),
+		VFPU_LN10(log(10.0, E)),
+		VFPU_2PI(2f * PI),
+		VFPU_PI_6(PI / 6.0),
+		VFPU_LOG10TWO(log10(2f)),
+		VFPU_LOG2TEN(log2(10f)),
+		VFPU_SQRT3_2(sqrt(3f) / 2f);
+
+		constructor(value: Double) : this(value.toFloat())
+
+		companion object {
+			val values = values()
+			operator fun get(index: Int) = values[index]
+		}
+	}
 }
 

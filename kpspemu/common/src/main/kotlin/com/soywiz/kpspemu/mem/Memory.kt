@@ -109,6 +109,42 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	abstract fun lh(address: Int): Int
 	abstract fun lw(address: Int): Int
 
+	fun svl_q(address: Int, values: IntArray) {
+		val k = (3 - ((address ushr 2) and 3))
+		var addr = address and 0xF.inv()
+		for (n in k until 4) {
+			sw(addr, values[n])
+			addr += 4
+		}
+	}
+
+	fun svr_q(address: Int, values: IntArray) {
+		val k = (4 - ((address ushr 2) and 3))
+		var addr = address
+		for (n in 0 until k) {
+			sw(addr, values[n])
+			addr += 4
+		}
+	}
+
+	fun lvl_q(address: Int, values: IntArray) {
+		val k = (3 - ((address ushr 2) and 3))
+		var addr = address and 0xF.inv()
+		for (n in k until 4) {
+			values[n] = lw(addr)
+			addr += 4
+		}
+	}
+
+	fun lvr_q(address: Int, values: IntArray) {
+		val k = (4 - ((address ushr 2) and 3))
+		var addr = address
+		for (n in 0 until k) {
+			values[n] = lw(addr)
+			addr += 4
+		}
+	}
+
 	// Unsigned
 	fun lbu(address: Int): Int = lb(address) and 0xFF
 
