@@ -117,6 +117,13 @@ class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls
 	var fcr28: Int = 0
 	var fcr31: Int = 0x00000e00
 
+	var vpfxsEnabled = false
+	var vpfxtEnabled = false
+	var vpfxdEnabled = false
+	var vpfxs: Int = 0xDC0000E4.toInt()
+	var vpfxt: Int = 0xDC0000E4.toInt()
+	var vpfxd: Int = 0x00000000
+
 	fun updateFCR31(value: Int) {
 		fcr31 = value and 0x0183FFFF
 	}

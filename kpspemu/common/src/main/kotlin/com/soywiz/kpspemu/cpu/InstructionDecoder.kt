@@ -1,6 +1,8 @@
 package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korio.util.extract
+import com.soywiz.korio.util.insert
+import com.soywiz.korio.util.signExtend
 
 // https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
 // http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
@@ -32,14 +34,28 @@ open class InstructionDecoder {
 	inline val Int.vd: Int get() = (this ushr 0) and 0x7F
 	inline val Int.vs: Int get() = (this ushr 8) and 0x7F
 	inline val Int.vt: Int get() = (this ushr 16) and 0x7F
+	inline val Int.vt1: Int get() = this.extract(0, 1)
+	inline val Int.vt2: Int get() = this.extract(0, 2)
+	inline val Int.vt5: Int get() = this.extract(16, 5)
+	inline val Int.vt5_1: Int get() = vt5 or (vt1 shl 5)
+	inline val Int.vt5_2: Int get() = vt5 or (vt2 shl 5)
+
+	val Int.imm8: Int get() =this.extract(16, 8)
+	val Int.imm5: Int get() =this.extract(16, 5)
+	val Int.imm3: Int get() =this.extract(18, 3)
+	val Int.imm7: Int get() =this.extract(0, 7)
+	val Int.imm4: Int get() =this.extract(0, 4)
+
 
 	inline val Int.one: Int get() = this.extract(7, 1)
 	inline val Int.two: Int get() = this.extract(15, 1)
-	val Int.one_two: Int get() = (1 + 1 * this.one + 2 * this.two)
+	inline val Int.one_two: Int get() = (1 + 1 * this.one + 2 * this.two)
 
 	inline val Int.syscall: Int get() = this.extract(6, 20)
 	inline val Int.s_imm16: Int get() = ((this and 0xFFFF) shl 16) shr 16
 	inline val Int.u_imm16: Int get() = this and 0xFFFF
+
+	inline val Int.s_imm14: Int get() = this.extract(2, 14).signExtend(14)
 
 	inline val Int.u_imm26: Int get() = this.extract(0, 26)
 	inline val Int.jump_address: Int get() = u_imm26 * 4
@@ -86,6 +102,14 @@ open class InstructionDecoder {
 		}
 	}
 
+	inline var CpuState.VT: Float; get() = getVfpr(IR.vt); set(value) = run { setVfpr(IR.vt, value) }
+	inline var CpuState.VD: Float; get() = getVfpr(IR.vd); set(value) = run { setVfpr(IR.vd, value) }
+	inline var CpuState.VS: Float; get() = getVfpr(IR.vs); set(value) = run { setVfpr(IR.vs, value) }
+
+	inline var CpuState.VT_I: Int; get() = getVfprI(IR.vt); set(value) = run { setVfprI(IR.vt, value) }
+	inline var CpuState.VD_I: Int; get() = getVfprI(IR.vd); set(value) = run { setVfprI(IR.vd, value) }
+	inline var CpuState.VS_I: Int; get() = getVfprI(IR.vs); set(value) = run { setVfprI(IR.vs, value) }
+
 	inline var CpuState.RD: Int; get() = getGpr(IR.rd); set(value) = run { setGpr(IR.rd, value) }
 	inline var CpuState.RT: Int; get() = getGpr(IR.rt); set(value) = run { setGpr(IR.rt, value) }
 	inline var CpuState.RS: Int; get() = getGpr(IR.rs); set(value) = run { setGpr(IR.rs, value) }
@@ -100,9 +124,12 @@ open class InstructionDecoder {
 
 	inline val CpuState.RS_IMM16: Int; get() = RS + S_IMM16
 
+	inline val CpuState.RS_IMM14: Int; get() = RS + S_IMM14 * 4
+
 	//val CpuState.IMM16: Int; get() = I.extract()
 	//val CpuState.U_IMM16: Int get() = TODO()
 
+	inline val CpuState.S_IMM14: Int; get() = IR.s_imm14
 	inline val CpuState.S_IMM16: Int; get() = IR.s_imm16
 	inline val CpuState.U_IMM16: Int get() = IR.u_imm16
 	inline val CpuState.POS: Int get() = IR.pos
