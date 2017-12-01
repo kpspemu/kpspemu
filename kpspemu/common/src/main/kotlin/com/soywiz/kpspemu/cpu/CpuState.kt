@@ -36,6 +36,13 @@ var CpuState.SP: Int; set(value) = run { r29 = value }; get() = r29
 var CpuState.FP: Int; set(value) = run { r30 = value }; get() = r30
 var CpuState.RA: Int; set(value) = run { r31 = value }; get() = r31
 
+var CpuState.V0: Int; set(value) = run { r2 = value }; get() = r2
+var CpuState.V1: Int; set(value) = run { r3 = value }; get() = r3
+var CpuState.A0: Int; set(value) = run { r4 = value }; get() = r4
+var CpuState.A1: Int; set(value) = run { r5 = value }; get() = r5
+var CpuState.A2: Int; set(value) = run { r6 = value }; get() = r6
+var CpuState.A3: Int; set(value) = run { r7 = value }; get() = r7
+
 data class RegInfo(val index: Int, val name: String, val mnemonic: String, val desc: String)
 
 class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
