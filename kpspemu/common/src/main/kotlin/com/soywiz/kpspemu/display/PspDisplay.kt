@@ -44,6 +44,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var vcount = 0
 
 	val onVsyncStart = Signal2<Unit>()
+	val onVsyncEnd = Signal2<Unit>()
 
 	fun fixedAddress(): Int {
 		//println(address.hex)
@@ -86,20 +87,21 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	}
 
 	suspend fun waitVblank() {
-		//if (!inVBlank) {
-		display.onVsyncStart.waitOne()
-		//}
+		if (!inVBlank) {
+			display.onVsyncStart.waitOne()
+		}
 	}
 
 	var inVBlank = false
 
 	fun startVsync() {
-		onVsyncStart(Unit)
 		inVBlank = true
 		vcount++
+		onVsyncStart(Unit)
 	}
 
 	fun endVsync() {
 		inVBlank = false
+		onVsyncEnd(Unit)
 	}
 }

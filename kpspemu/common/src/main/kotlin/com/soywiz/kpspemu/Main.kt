@@ -113,10 +113,10 @@ class KpspemuMainScene(
 ) : SceneWithProcess(), WithEmulator {
 	companion object {
 		val logger = Logger("KpspemuMainScene")
-		val ZERO_MILLISECONDS = 0.milliseconds
-		val ONE_MILLISECOND = 1.milliseconds
-		val TEN_MILLISECONDS = 10.milliseconds
-		val FIVETEEN_MILLISECONDS15 = 15.milliseconds
+		val MS_0 = 0.milliseconds
+		val MS_1 = 1.milliseconds
+		val MS_10 = 10.milliseconds
+		val MS_15 = 15.milliseconds
 	}
 
 	//lateinit var exeFile: VfsFile
@@ -194,7 +194,7 @@ class KpspemuMainScene(
 
 	suspend fun cpuProcess() {
 		while (true) {
-			if (::emulator.isInitialized && !paused || forceSteps > 0) {
+			if (!paused || forceSteps > 0) {
 				if (forceSteps > 0) forceSteps--
 				if (running && emulator.running) {
 					val startTime = Klock.currentTimeMillis()
@@ -214,41 +214,33 @@ class KpspemuMainScene(
 					}
 				}
 				//emulator.frameStep()
-				sleep(ZERO_MILLISECONDS)
+				sleep(MS_0)
 			} else {
-				sleep(TEN_MILLISECONDS)
+				sleep(MS_10)
 			}
 		}
 	}
 
 	suspend fun geProcess() {
 		while (true) {
-			if (::emulator.isInitialized) {
-				emulator.ge.run()
-				gpu.flush()
-				agRenderer.stats.reset()
-				agRenderer.updateStats()
-				sleep(ONE_MILLISECOND)
-			} else {
-				sleep(TEN_MILLISECONDS)
-			}
+			emulator.ge.run()
+			gpu.flush()
+			agRenderer.stats.reset()
+			agRenderer.updateStats()
+			sleep(MS_1)
 		}
 	}
 
 	suspend fun displayProcess() {
 		while (true) {
-			if (::emulator.isInitialized) {
-				controller.startFrame(timeManager.getTimeInMicrosecondsInt())
-				sleep(FIVETEEN_MILLISECONDS15)
-				emulator.interruptManager.dispatchVsync()
-				emulator.display.startVsync()
-				controller.endFrame()
-				sleep(ONE_MILLISECOND)
-				emulator.display.endVsync()
-				controller.endFrame()
-			} else {
-				sleep(TEN_MILLISECONDS)
-			}
+			controller.startFrame(timeManager.getTimeInMicrosecondsInt())
+			sleep(MS_15)
+			emulator.interruptManager.dispatchVsync()
+			emulator.display.startVsync()
+			controller.endFrame()
+			sleep(MS_1)
+			emulator.display.endVsync()
+			controller.endFrame()
 		}
 	}
 
