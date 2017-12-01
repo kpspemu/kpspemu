@@ -5,8 +5,17 @@ import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.InstructionDispatcher
 import com.soywiz.kpspemu.cpu.InstructionEvaluator
 
+class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
+	override fun add(s: InstructionInfo) = s { RD = RS + RT }
+	override fun addiu(s: InstructionInfo) = s { RT = RS + S_IMM16 }
+	override fun sll(s: InstructionInfo) = s { RD = RT shl POS }
+	override fun lui(s: InstructionInfo) = s { RT = (U_IMM16_V shl 16).lit }
+}
+
+data class InstructionInfo(var PC: Int, var IR: Int)
+
 open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
-	val stms = StmBuilder<Unit, CpuState, Unit>(Unit::class, CpuState::class, Unit::class)
+	val stms = StmBuilder(Unit::class, CpuState::class, Unit::class)
 	val dispatcher = InstructionDispatcher(this)
 
 	fun generateFunction() = DFunction1(DVOID, DClass(CpuState::class), stms.build())
@@ -55,12 +64,3 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 
 	operator inline fun InstructionInfo.invoke(callback: InstructionInfo.() -> Unit) = callback(this)
 }
-
-class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
-	override fun add(s: InstructionInfo) = s { RD = RS + RT }
-	override fun addiu(s: InstructionInfo) = s { RT = RS + S_IMM16 }
-	override fun sll(s: InstructionInfo) = s { RD = RT shl POS }
-	override fun lui(s: InstructionInfo) = s { RT = (U_IMM16_V shl 16).lit }
-}
-
-data class InstructionInfo(var PC: Int, var IR: Int)
