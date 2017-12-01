@@ -59,14 +59,6 @@ class Emulator(
 		CpuBreakException.initialize(mem)
 	}
 
-	fun frameStep() {
-		controller.startFrame(timeManager.getTimeInMicrosecondsInt())
-		threadManager.step()
-		ge.run()
-		gpu.render()
-		controller.endFrame()
-	}
-
 	fun invalidateIcache(ptr: Int, size: Int) {
 		logger.trace { "invalidateIcache(${ptr.hex}, $size)" }
 	}

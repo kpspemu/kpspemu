@@ -168,7 +168,7 @@ class ThreadManForUser(emulator: Emulator)
 		var count: Int = 0
 		var maxCount: Int = 0
 		var active: Boolean = false
-		val signal = Signal<Unit>()
+		val signal = Signal2<Unit>()
 	}
 
 	class SemaphoreManager(emulator: Emulator) : Manager<Semaphore>("SemaphoreManager", emulator)

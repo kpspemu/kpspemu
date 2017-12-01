@@ -9,14 +9,15 @@ import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
 import com.soywiz.korge.Korge
 import com.soywiz.korge.bitmapfont.BitmapFont
-import com.soywiz.korge.input.*
+import com.soywiz.korge.input.onClick
+import com.soywiz.korge.input.onKeyDown
+import com.soywiz.korge.input.onKeyUp
+import com.soywiz.korge.input.onOut
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.render.Texture
-import com.soywiz.korge.scene.Module
-import com.soywiz.korge.scene.Scene
-import com.soywiz.korge.scene.SceneContainer
-import com.soywiz.korge.scene.sceneContainer
+import com.soywiz.korge.scene.*
 import com.soywiz.korge.service.Browser
+import com.soywiz.korge.time.milliseconds
 import com.soywiz.korge.time.seconds
 import com.soywiz.korge.tween.get
 import com.soywiz.korge.tween.tween
@@ -33,6 +34,7 @@ import com.soywiz.korinject.Korinject
 import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.Korio
 import com.soywiz.korio.async.AsyncThread
+import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.go
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
@@ -46,7 +48,6 @@ import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
 import com.soywiz.korio.vfs.localCurrentDirVfs
-import com.soywiz.korio.vfs.writeToFile
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -64,7 +65,6 @@ import com.soywiz.kpspemu.native.KPspEmuNative
 import com.soywiz.kpspemu.ui.simpleButton
 import com.soywiz.kpspemu.util.io.openAsIso2
 import com.soywiz.kpspemu.util.io.openAsZip2
-import kotlin.coroutines.experimental.EmptyCoroutineContext
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
@@ -85,6 +85,7 @@ object Main {
 
 object KpspemuModule : Module() {
 	//override val clearEachFrame: Boolean = false
+
 	override val clearEachFrame: Boolean = true
 	override val mainScene: KClass<out Scene> = KpspemuMainScene::class
 	override val title: String = "kpspemu - ${Kpspemu.VERSION}"
@@ -93,11 +94,30 @@ object KpspemuModule : Module() {
 	override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
 }
 
+abstract class SceneWithProcess() : Scene() {
+	private val processes = arrayListOf<Promise<Unit>>()
+
+	fun registerSceneProcess(callback: suspend () -> Unit) {
+		processes += go { callback() }
+	}
+
+	override suspend fun sceneDestroy() {
+		super.sceneDestroy()
+		for (process in processes) process.cancel()
+	}
+}
+
 class KpspemuMainScene(
 	val browser: Browser,
 	val emulatorContainer: EmulatorContainer
-) : Scene(), WithEmulator {
-	val logger = Logger("KpspemuMainScene")
+) : SceneWithProcess(), WithEmulator {
+	companion object {
+		val logger = Logger("KpspemuMainScene")
+		val MS_0 = 0.milliseconds
+		val MS_1 = 1.milliseconds
+		val MS_10 = 10.milliseconds
+		val MS_15 = 15.milliseconds
+	}
 
 	//lateinit var exeFile: VfsFile
 	override val emulator: Emulator get() = emulatorContainer.emulator
@@ -172,7 +192,62 @@ class KpspemuMainScene(
 
 	lateinit var hud: Container
 
+	suspend fun cpuProcess() {
+		while (true) {
+			if (!paused || forceSteps > 0) {
+				if (forceSteps > 0) forceSteps--
+				if (running && emulator.running) {
+					val startTime = Klock.currentTimeMillis()
+					try {
+						emulator.threadManager.step()
+					} catch (e: Throwable) {
+						e.printStackTrace()
+						running = false
+					}
+					val endTime = Klock.currentTimeMillis()
+					agRenderer.stats.cpuTime = (endTime - startTime).toInt()
+				} else {
+					if (!ended) {
+						ended = true
+						println("COMPLETED")
+						display.crash()
+					}
+				}
+				//emulator.frameStep()
+				sleep(MS_0)
+			} else {
+				sleep(MS_10)
+			}
+		}
+	}
+
+	suspend fun geProcess() {
+		while (true) {
+			emulator.ge.run()
+			gpu.flush()
+			agRenderer.stats.reset()
+			agRenderer.updateStats()
+			sleep(MS_1)
+		}
+	}
+
+	suspend fun displayProcess() {
+		while (true) {
+			controller.startFrame(timeManager.getTimeInMicrosecondsInt())
+			sleep(MS_15)
+			emulator.interruptManager.dispatchVsync()
+			emulator.display.startVsync()
+			controller.endFrame()
+			sleep(MS_1)
+			emulator.display.endVsync()
+			controller.endFrame()
+		}
+	}
+
 	suspend override fun sceneInit(sceneView: Container) {
+		registerSceneProcess { cpuProcess() }
+		registerSceneProcess { geProcess() }
+		registerSceneProcess { displayProcess() }
 		//val func = function(DClass(CpuState::class), DVOID) {
 		//	SET(p0[CpuState::_PC], 7.lit)
 		//}.generateDynarek()
@@ -198,31 +273,6 @@ class KpspemuMainScene(
 
 		hud = views.container()
 		//createEmulatorWithExe(exeFile)
-
-		sceneView.addUpdatable {
-			//controller.updateButton(PspCtrlButtons.cross, true) // auto press X
-			if (!paused || forceSteps > 0) {
-				if (forceSteps > 0) forceSteps--
-				if (running && emulator.running) {
-					val startTime = Klock.currentTimeMillis()
-					try {
-						emulator.frameStep()
-					} catch (e: Throwable) {
-						e.printStackTrace()
-						running = false
-					}
-					val endTime = Klock.currentTimeMillis()
-					agRenderer.stats.cpuTime = (endTime - startTime).toInt()
-					agRenderer.updateStats()
-				} else {
-					if (!ended) {
-						ended = true
-						println("COMPLETED")
-						display.crash()
-					}
-				}
-			}
-		}
 
 		val keys = BooleanArray(256)
 
@@ -323,7 +373,6 @@ class KpspemuMainScene(
 		fun pause(set: Boolean) {
 			paused = set
 			pauseButton.setText(if (paused) "Resume" else "Pause")
-
 		}
 
 		pauseButton = views.simpleButton("Pause", font = hudFont).apply {

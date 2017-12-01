@@ -1,19 +1,18 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.waitOne
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.gpu
 import com.soywiz.kpspemu.util.ResourceItem
 import com.soywiz.kpspemu.util.ResourceList
+import com.soywiz.kpspemu.util.Signal2
 
 class Ge(override val emulator: Emulator) : WithEmulator {
 	val state = GeState()
 	val queue = arrayListOf<GeList>()
 	val lists = ResourceList<GeList>("GeList") { GeList(this, it) }
-	val onCompleted = Signal<Unit>()
+	val onCompleted = Signal2<Unit>()
 
 	fun listEnqueue(start: Int, stall: Int, callback: GeCallback, pspGeListArgs: Int): GeList {
 		val list = lists.alloc().apply {
@@ -45,7 +44,7 @@ class Ge(override val emulator: Emulator) : WithEmulator {
 	}
 
 	fun emitBatch(batch: GeBatchData) {
-		gpu.batchQueue += batch
+		gpu.addBatch(batch)
 		//println("BATCH: $batch")
 	}
 

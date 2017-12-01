@@ -89,8 +89,10 @@ class IntegrationTests {
 			//println("[1]")
 			while (emulator.running) {
 				//println("[2] : ${emulator.running}")
-				emulator.frameStep()
+				emulator.threadManager.step() // UPDATE THIS
+				emulator.display.startVsync()
 				getCoroutineContext().eventLoop.step(10)
+				emulator.display.startVsync()
 				//println("[3]")
 				if (TRACE) {
 					for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
