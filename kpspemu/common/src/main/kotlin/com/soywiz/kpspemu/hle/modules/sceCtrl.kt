@@ -25,7 +25,7 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = _sceCtrlPeekBuffer(sceCtrlDataPtr, count, true)
 	suspend fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
-		//display.waitVblank()
+		display.waitVblank("sceCtrlReadBufferPositive")
 		return sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
 	}
 
@@ -52,7 +52,8 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		controller.lastLatchData.setTo(controller.currentFrame)
 	}
 
-	fun sceCtrlReadLatch(currentLatchPtr: Ptr): Int {
+	suspend fun sceCtrlReadLatch(currentLatchPtr: Ptr): Int {
+		display.waitVblank("sceCtrlReadLatch")
 		_peekLatch(currentLatchPtr)
 		return 0
 	}
@@ -76,7 +77,7 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		registerFunctionSuspendInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(ptr, int) }
 		registerFunctionInt("sceCtrlSetSamplingCycle", 0x6A2774F3, since = 150) { sceCtrlSetSamplingCycle(int) }
 		registerFunctionInt("sceCtrlSetSamplingMode", 0x1F4011E6, since = 150) { sceCtrlSetSamplingMode(int) }
-		registerFunctionInt("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(ptr) }
+		registerFunctionSuspendInt("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(ptr) }
 
 		registerFunctionRaw("sceCtrlGetSamplingCycle", 0x02BAAD91, since = 150) { sceCtrlGetSamplingCycle(it) }
 		registerFunctionRaw("sceCtrl_348D99D4", 0x348D99D4, since = 150) { sceCtrl_348D99D4(it) }

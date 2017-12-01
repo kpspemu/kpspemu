@@ -52,10 +52,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
-			if (e !is EmulatorControlFlowException) {
-				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
-			}
-			throw e
+			checkException(sPC, e)
 		} finally {
 			cpu.totalExecuted += n
 		}
@@ -78,15 +75,21 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
-			if (e !is EmulatorControlFlowException) {
-				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
-			}
-			throw e
+			checkException(sPC, e)
 		} finally {
 			cpu.totalExecuted += n
 		}
 		return n
 	}
+
+	private fun checkException(sPC: Int, e: Throwable) {
+		if (e !is EmulatorControlFlowException) {
+			Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
+			Console.error(" - RA at %08X: %s".format(cpu.RA, cpu.mem.disasmMacro(cpu.RA, nameProvider)))
+		}
+		throw e
+	}
+
 
 	private fun tracePC() {
 		println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC, nameProvider)))

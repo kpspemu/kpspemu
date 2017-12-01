@@ -214,7 +214,7 @@ class KpspemuMainScene(
 					}
 				}
 				//emulator.frameStep()
-				sleep(MS_0)
+				sleep(MS_1)
 			} else {
 				sleep(MS_10)
 			}
