@@ -336,12 +336,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vpfxt(s: CpuState) = s { vpfxt = IR; vpfxtEnabled = true }
 	override fun vpfxd(s: CpuState) = s { vpfxd = IR; vpfxdEnabled = true }
 	override fun vpfxs(s: CpuState) = s { vpfxs = IR; vpfxsEnabled = true }
-	override fun vmov(s: CpuState) = s { setVD_VS(IR) { vs[it] } }
-	override fun vrcp(s: CpuState) = s { setVD_VS(IR) { 1f / vs[it] } }
-	override fun vmul(s: CpuState) = s { setVD_VSVT(IR) { vs[it] * vt[it] } }
-	override fun vdiv(s: CpuState) = s { setVD_VSVT(IR) { vs[it] / vt[it] } }
-	override fun vadd(s: CpuState) = s { setVD_VSVT(IR) { vs[it] + vt[it] } }
-	override fun vsub(s: CpuState) = s { setVD_VSVT(IR) { vs[it] - vt[it] } }
+	override fun vmov(s: CpuState) = s { setVD_VS { vs[it] } }
+	override fun vrcp(s: CpuState) = s { setVD_VS { 1f / vs[it] } }
+	override fun vmul(s: CpuState) = s { setVD_VSVT { vs[it] * vt[it] } }
+	override fun vdiv(s: CpuState) = s { setVD_VSVT { vs[it] / vt[it] } }
+	override fun vadd(s: CpuState) = s { setVD_VSVT { vs[it] + vt[it] } }
+	override fun vsub(s: CpuState) = s { setVD_VSVT { vs[it] - vt[it] } }
 	override fun vrot(s: CpuState) = s {
 		val vectorSize = IR.one_two
 		val imm5 = IR.imm5
@@ -349,7 +349,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		val sinIndex = imm5.extract(2, 2)
 		val negateSin = imm5.extractBool(4)
 
-		setVD_VS(IR, vectorSize, 1) {
+		setVD_VS(vectorSize, 1) {
 			var sine = sinv1(vs[0])
 			val cosine = cosv1(vs[0])
 			if (negateSin) sine = -sine
@@ -626,11 +626,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	fun writeVD() {
 	}
 
-	fun setVD_VS(ir: Int, destSize: Int = ir.one_two, srcSize: Int = ir.one_two, callback: VfpuContext.(i: Int) -> Float) {
+	fun CpuState.setVD_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Float) {
 		println("setVD_VS")
 	}
 
-	fun setVD_VSVT(ir: Int, destSize: Int = ir.one_two, srcSize: Int = ir.one_two, callback: VfpuContext.(i: Int) -> Float) {
+	fun CpuState.setVD_VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Float) {
 		println("setVD_VSVT")
 	}
 
