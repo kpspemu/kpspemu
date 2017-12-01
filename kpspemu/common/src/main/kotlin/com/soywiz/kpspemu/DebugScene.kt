@@ -269,7 +269,7 @@ class DebugScene(
 			}
 		}
 
-		fun update(addr: Int, memory: Memory, state: CpuState) {
+		fun update(addr: Int, memory: Memory, state: CpuState, emulator: Emulator) {
 			this.addr = addr
 			val atPC = addr == state.PC
 			text.bgcolor = when {
@@ -284,7 +284,7 @@ class DebugScene(
 			val prefix = if (atPC) "*" else " "
 
 			text.text = "$prefix${addr.shex}:" + try {
-				Disassembler.disasm(addr, memory.lwSafe(addr))
+				Disassembler.disasm(addr, memory.lwSafe(addr), emulator.nameProvider)
 			} catch (e: Throwable) {
 				//e.printStackTrace()
 				"ERROR"
@@ -307,7 +307,7 @@ class DebugScene(
 		fun update(startAddress: Int, memory: Memory, state: CpuState) {
 			for ((n, text) in texts.withIndex()) {
 				val address = startAddress + n * 4
-				text.update(address, memory, state)
+				text.update(address, memory, state, emulatorContainer.emulator)
 			}
 		}
 	}

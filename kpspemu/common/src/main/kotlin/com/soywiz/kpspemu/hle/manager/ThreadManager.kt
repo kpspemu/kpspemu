@@ -12,11 +12,9 @@ import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.util.hasFlag
 import com.soywiz.korio.util.nextAlignedTo
+import com.soywiz.korio.util.umod
 import com.soywiz.kpspemu.*
-import com.soywiz.kpspemu.cpu.CpuBreakException
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.RA
-import com.soywiz.kpspemu.cpu.SP
+import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
@@ -64,26 +62,55 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		throw CpuBreakException(CpuBreakException.THREAD_WAIT)
 	}
 
-	suspend fun step() {
-		var start: Double = timeManager.getTimeInMicrosecondsDouble()
+	var currentThread: PspThread? = null
 
-		while (true) {
-			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-				val time = (t.waitObject as WaitObject.TIME).instant
-				if (start >= time) {
-					t.resume()
-				}
+	fun getActiveThreadPriorities(): List<Int> = threads.filter { it.running }.map { it.priority }.distinct().sorted()
+	fun getActiveThreadsWithPriority(priority: Int): List<PspThread> = threads.filter { it.running && it.priority == priority }
+	fun getFirstThread(): PspThread? = getActiveThreadPriorities().firstOrNull()?.let { getActiveThreadsWithPriority(it) }?.firstOrNull()
+
+	fun computeNextThread(prevThread: PspThread?): PspThread? {
+		if (prevThread == null) return getFirstThread()
+		val threadsWithPriority = getActiveThreadsWithPriority(prevThread.priority)
+		val threadsWithPriorityCount = threadsWithPriority.size
+		if (threadsWithPriorityCount == 0) return null
+		val index = threadsWithPriority.indexOf(prevThread) umod threadsWithPriorityCount
+		return threadsWithPriority.getOrNull((index + 1)umod threadsWithPriorityCount)
+	}
+
+	suspend fun step() {
+		val start: Double = timeManager.getTimeInMicrosecondsDouble()
+
+		do {
+			val now: Double = timeManager.getTimeInMicrosecondsDouble()
+			if (currentThread == null) currentThread = getFirstThread()
+			try {
+				currentThread?.step(now)
+				currentThread = computeNextThread(currentThread)
+			} catch (e: BreakpointException) {
+				break
 			}
-			val priority = availablePriorities.firstOrNull() ?: break
-			for (t in resourcesById.values.filter { it.running && it.priority == priority }) {
-				val now: Double = timeManager.getTimeInMicrosecondsDouble()
-				t.step(now)
-				if (now - start >= 16.0) {
-					start = now
-					getCoroutineContext().eventLoop.sleep(0)
-				}
+			if (now - start >= 16.0) {
+				break // Rest a bit
 			}
-		}
+		} while (currentThread != null)
+
+		//while (true) {
+		//	for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+		//		val time = (t.waitObject as WaitObject.TIME).instant
+		//		if (start >= time) {
+		//			t.resume()
+		//		}
+		//	}
+		//	val priority = availablePriorities.firstOrNull() ?: break
+		//	for (t in resourcesById.values.filter { it.running && it.priority == priority }) {
+		//		val now: Double = timeManager.getTimeInMicrosecondsDouble()
+		//		t.step(now)
+		//		if (now - start >= 16.0) {
+		//			start = now
+		//			getCoroutineContext().eventLoop.sleep(0)
+		//		}
+		//	}
+		//}
 	}
 
 	val availablePriorities: List<Int> get() = resourcesById.values.filter { it.running }.map { it.priority }.distinct().sorted()
@@ -192,7 +219,7 @@ class PspThread internal constructor(
 		SP = stack.high.toInt()
 		RA = CpuBreakException.THREAD_EXIT_KIL_RA
 	}
-	val interpreter = CpuInterpreter(state, emulator.breakpoints)
+	val interpreter = CpuInterpreter(state, emulator.breakpoints, emulator.nameProvider)
 	//val interpreter = FastCpuInterpreter(state)
 
 	init {

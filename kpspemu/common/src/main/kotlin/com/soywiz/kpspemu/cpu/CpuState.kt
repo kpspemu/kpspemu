@@ -10,11 +10,11 @@ import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 
+abstract class EmulatorControlFlowException : Exception()
 
-data class BreakpointException(val cpu: CpuState, val pc: Int) : Exception() {
-}
+data class BreakpointException(val cpu: CpuState, val pc: Int) : EmulatorControlFlowException()
 
-data class CpuBreakException(val id: Int) : Exception() {
+data class CpuBreakException(val id: Int) : EmulatorControlFlowException() {
 	companion object {
 		val THREAD_WAIT = 10001
 		val THREAD_EXIT_KILL = 10002

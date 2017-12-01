@@ -12,8 +12,8 @@ import com.soywiz.kpspemu.threadManager
 class LoadExecForUser(emulator: Emulator) : SceModule(emulator, "LoadExecForUser", 0x40010011, "loadexec_02g.prx", "sceLoadExec") {
 	fun sceKernelExitGame(currentThread: PspThread): Unit {
 		logger.info { "sceKernelExitGame: '${currentThread.name}'" }
-		logger.info { mem.getPrintInstructionAt(currentThread.state.PC) }
-		logger.info { mem.getPrintInstructionAt(currentThread.state.RA) }
+		logger.info { mem.getPrintInstructionAt(currentThread.state.PC, emulator.nameProvider) }
+		logger.info { mem.getPrintInstructionAt(currentThread.state.RA, emulator.nameProvider) }
 		threadManager.stopAllThreads()
 	}
 

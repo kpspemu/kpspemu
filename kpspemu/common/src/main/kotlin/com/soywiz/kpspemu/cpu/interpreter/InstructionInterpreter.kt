@@ -9,6 +9,7 @@ import com.soywiz.korio.util.*
 import com.soywiz.korma.math.Math
 import com.soywiz.korma.math.isAlmostZero
 import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.dis.NameProvider
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.FloatArray2
@@ -16,7 +17,7 @@ import com.soywiz.kpspemu.util.cosv1
 import com.soywiz.kpspemu.util.sinv1
 import kotlin.math.*
 
-class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace: Boolean = false) {
+class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val nameProvider: NameProvider, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun steps(count: Int): Int {
@@ -51,8 +52,8 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
-			if (e !is CpuBreakException) {
-				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
+			if (e !is EmulatorControlFlowException) {
+				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
 			}
 			throw e
 		} finally {
@@ -72,13 +73,13 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 				sPC = cpu._PC and 0x0FFFFFFF
 				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
 				n++
-				val IR = i32[(sPC + memOffset) ushr 2]
+				val IR = i32[(memOffset + sPC) ushr 2]
 				cpu.IR = IR
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
-			if (e !is CpuBreakException) {
-				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
+			if (e !is EmulatorControlFlowException) {
+				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
 			}
 			throw e
 		} finally {
@@ -88,7 +89,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 	}
 
 	private fun tracePC() {
-		println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
+		println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC, nameProvider)))
 	}
 }
 

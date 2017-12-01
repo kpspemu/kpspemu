@@ -7,6 +7,7 @@ import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
 import com.soywiz.korio.util.join
 import com.soywiz.korma.numeric.nextAlignedTo
+import com.soywiz.kpspemu.AddressInfo
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.GP
 import com.soywiz.kpspemu.hle.NativeFunction
@@ -136,10 +137,11 @@ fun Emulator.loadElfAndSetRegisters(file: SyncStream, args: List<String>): PspEl
 }
 
 class PspElf private constructor(
-	private var memory: Memory,
-	private var memoryManager: MemoryManager,
-	private var moduleManager: ModuleManager,
-	private var syscallManager: SyscallManager
+	private val memory: Memory,
+	private val memoryManager: MemoryManager,
+	private val moduleManager: ModuleManager,
+	private val syscallManager: SyscallManager,
+	private val addressInfo: AddressInfo
 ) {
 	private val logger = Logger("ElfPsp")
 
@@ -150,7 +152,7 @@ class PspElf private constructor(
 
 	companion object {
 		fun loadInto(stream: SyncStream, emulator: Emulator): PspElf {
-			val loader = PspElf(emulator.mem, emulator.memoryManager, emulator.moduleManager, emulator.syscalls)
+			val loader = PspElf(emulator.mem, emulator.memoryManager, emulator.moduleManager, emulator.syscalls, emulator.nameProvider)
 			loader.load(stream)
 			return loader
 		}
@@ -403,6 +405,8 @@ class PspElf private constructor(
 
 			registeredNativeFunctions.add(nfunc)
 
+			addressInfo.names[moduleImport.callAddress + n * 8] = nfunc.name
+
 			val syscallId = this.syscallManager.register(nfunc)
 			//printf("%s:%08X -> %s", moduleImport.name, nid, syscallId);
 			syscallId
@@ -411,7 +415,6 @@ class PspElf private constructor(
 		for (n in 0 until moduleImport.functionCount) {
 			val nid = nidsStream.readS32_le()
 			val syscall = registerN(nid, n)
-
 
 			//callStream.write32_le(this.assembler.assemble(0, "jr $31")[0].data)
 			//callStream.write32_le(this.assembler.assemble(0, "syscall %d".format(syscall))[0].data)

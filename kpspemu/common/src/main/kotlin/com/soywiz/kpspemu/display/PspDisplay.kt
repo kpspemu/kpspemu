@@ -75,18 +75,22 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		}
 	}
 
-	fun crash() {
+	fun crash() = invertDisplay()
+
+	fun invertDisplay() {
 		for (n in 0 until 512 * 272) {
 			mem.sw(address + n * 4, mem.lw(address + n * 4).inv())
 		}
 		//mem.fill(0, Memory.VIDEOMEM.start, Memory.VIDEOMEM.size)
 	}
 
-	suspend fun waitVblankStart() {
+	suspend fun waitVblankStart(reason: String) {
+		//println("waitVblankStart: $reason")
 		display.onVsyncStart.waitOne()
 	}
 
-	suspend fun waitVblank() {
+	suspend fun waitVblank(reason: String) {
+		//println("waitVblank: $reason")
 		if (!inVBlank) {
 			display.onVsyncStart.waitOne()
 		}
