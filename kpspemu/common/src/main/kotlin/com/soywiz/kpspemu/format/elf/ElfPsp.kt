@@ -125,7 +125,7 @@ fun Emulator.loadElfAndSetRegisters(file: SyncStream, args: List<String>): PspEl
 	logger.warn { "loadElfAndSetRegisters: $args" }
 	val elf = loadElf(file)
 	val thread = threadManager.create("_start", 0, 0, 0x1000, 0, mem.ptr(0))
-	val data = thread.putDataInStack(args.map { it.toByteArray(UTF8) + byteArrayOf(0) }.join() + byteArrayOf(0))
+	val data = thread.putDataInStack(args.map { it.toByteArray(UTF8) + byteArrayOf(0) }.join())
 	val state = thread.state
 	state.setPC(elf.moduleInfo.PC)
 	state.GP = elf.moduleInfo.GP
