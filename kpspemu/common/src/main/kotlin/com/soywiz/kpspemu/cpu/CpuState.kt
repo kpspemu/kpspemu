@@ -10,6 +10,10 @@ import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 
+
+data class BreakpointException(val pc: Int) : Exception() {
+}
+
 data class CpuBreakException(val id: Int) : Exception() {
 	companion object {
 		val THREAD_WAIT = 10001

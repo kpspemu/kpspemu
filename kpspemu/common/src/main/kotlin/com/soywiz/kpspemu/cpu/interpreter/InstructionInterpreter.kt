@@ -37,9 +37,12 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 		var sPC = 0
 		var n = 0
 		//val fast = (mem as FastMemory).buffer
+		val breakpointsEnabled = breakpoints.enabled
 		try {
-			while (n++ < count) {
+			while (n < count) {
 				sPC = cpu._PC
+				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(sPC)
+				n++
 				//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
 				if (trace) tracePC()
 				val IR = mem.lw(sPC)
@@ -63,9 +66,12 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 		val cpu = this.cpu
 		var n = 0
 		var sPC = 0
+		val breakpointsEnabled = breakpoints.enabled
 		try {
-			while (n++ < count) {
+			while (n < count) {
 				sPC = cpu._PC and 0x0FFFFFFF
+				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(sPC)
+				n++
 				val IR = i32[(sPC + memOffset) ushr 2]
 				cpu.IR = IR
 				dispatcher.dispatch(cpu, sPC, IR)
