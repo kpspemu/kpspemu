@@ -239,7 +239,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			val textureId = batch.getTextureId()
 
 			textureSlot = texturesById.getOrPut(textureId) {
-				TextureSlot(textureId, ag.createTexture())
+				TextureSlot(textureId, ag.createTexture(premultiplied = false))
 			}
 
 			if (textureSlot.frame != frameCount) {
