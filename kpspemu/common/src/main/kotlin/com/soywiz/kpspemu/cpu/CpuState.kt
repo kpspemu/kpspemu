@@ -11,7 +11,7 @@ import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 
 
-data class BreakpointException(val pc: Int) : Exception() {
+data class BreakpointException(val cpu: CpuState, val pc: Int) : Exception() {
 }
 
 data class CpuBreakException(val id: Int) : Exception() {
@@ -52,16 +52,16 @@ data class RegInfo(val index: Int, val name: String, val mnemonic: String, val d
 class CpuState(val globalCpuState: GlobalCpuState, val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) : Extra by Extra.Mixin() {
 	companion object {
 		val gprInfos = listOf(
-			RegInfo( 0, "r0", "zero", "Permanently 0"),
-			RegInfo( 1, "r1", "at", "Assembler Temporaty"),
-			RegInfo( 2, "r2", "v0", "Value returned by a subroutine"),
-			RegInfo( 3, "r3", "v1", "Value returned by a subroutine"),
-			RegInfo( 4, "r4", "a0", "Subroutine Arguments"),
-			RegInfo( 5, "r5", "a1", "Subroutine Arguments"),
-			RegInfo( 6, "r6", "a2", "Subroutine Arguments"),
-			RegInfo( 7, "r7", "a3", "Subroutine Arguments"),
-			RegInfo( 8, "r8", "t0", "Temporary"),
-			RegInfo( 9, "r9", "t1", "Temporary"),
+			RegInfo(0, "r0", "zero", "Permanently 0"),
+			RegInfo(1, "r1", "at", "Assembler Temporaty"),
+			RegInfo(2, "r2", "v0", "Value returned by a subroutine"),
+			RegInfo(3, "r3", "v1", "Value returned by a subroutine"),
+			RegInfo(4, "r4", "a0", "Subroutine Arguments"),
+			RegInfo(5, "r5", "a1", "Subroutine Arguments"),
+			RegInfo(6, "r6", "a2", "Subroutine Arguments"),
+			RegInfo(7, "r7", "a3", "Subroutine Arguments"),
+			RegInfo(8, "r8", "t0", "Temporary"),
+			RegInfo(9, "r9", "t1", "Temporary"),
 			RegInfo(10, "r10", "t2", "Temporary"),
 			RegInfo(11, "r11", "t3", "Temporary"),
 			RegInfo(12, "r12", "t4", "Temporary"),
