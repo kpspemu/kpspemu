@@ -15,7 +15,7 @@ import com.soywiz.korge.view.text
 import com.soywiz.korim.color.Colors
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.async.AsyncSignal
-import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.substr
 import com.soywiz.kpspemu.cpu.CpuState
@@ -41,7 +41,8 @@ class DebugScene(
 	var viewAddress: Int = 0
 
 	lateinit var registerList: GprListView
-	lateinit var dissasembler: DissasemblerView
+	lateinit var disassembler: DissasemblerView
+	lateinit var hexdump: HexdumpView
 	lateinit var font: BitmapFont
 
 	suspend fun askGoto() {
@@ -60,9 +61,15 @@ class DebugScene(
 				113 -> sceneView.visible = !sceneView.visible // F2
 				else -> if (sceneView.visible) when (it.keyCode) {
 					71 -> askGoto() // G
+					38 -> moveUp() // UP
+					40 -> moveDown() // DOWN
+					33 -> moveUp(16) // PGUP
+					34 -> moveDown(16) // PGDOWN
+					84 -> toggle() // T
+					114 -> toggle() // F3
+					else -> println("onKeyDown: ${it.keyCode}")
 				}
 			}
-			//println("${it.keyCode}")
 		}
 		font = DebugBitmapFont.DEBUG_BMP_FONT.convert(views.ag, mipmaps = false)
 
@@ -75,8 +82,15 @@ class DebugScene(
 		}
 
 		sceneView += DissasemblerView(emulatorContainer, views, font).apply {
-			dissasembler = this
+			disassembler = this
+			visible = true
 			x = 96.0
+			y = 8.0
+		}
+		sceneView += HexdumpView(emulatorContainer, views, font).apply {
+			hexdump = this
+			visible = false
+			x = 32.0
 			y = 8.0
 		}
 		sceneView += views.simpleButton("[G]OTO", width = 48, height = 8, font = font).apply {
@@ -86,17 +100,40 @@ class DebugScene(
 				askGoto()
 			}
 		}
+		sceneView += views.simpleButton("TOGGLE", width = 48, height = 8, font = font).apply {
+			x = 140.0
+			y = 0.0
+			onClick {
+				toggle()
+			}
+		}
 
 		sceneView.addUpdatable {
 			if (sceneView.visible) {
 				val thread = emulatorContainer.threadManager.threads.firstOrNull()
-				if (thread != null) {
-					val cpu = thread.state
-					registerList.update(cpu)
-					dissasembler.update(viewAddress, cpu.mem, cpu)
-				}
+				val cpu = thread?.state ?: CpuState.dummy
+				if (registerList.visible) registerList.update(cpu)
+				if (disassembler.visible) disassembler.update(viewAddress, cpu.mem, cpu)
+				if (hexdump.visible) hexdump.update(viewAddress, cpu.mem, cpu)
 			}
 		}
+	}
+
+	val disassemblerShowing get() = disassembler.visible
+	val displaceBytes: Int get() = if (disassemblerShowing) 4 else 16
+
+	private fun moveDir(offset: Int) {
+		viewAddress += offset
+	}
+
+	private fun moveUp(scale: Int = 1) = moveDir(-1 * displaceBytes * scale)
+	private fun moveDown(scale: Int = 1) = moveDir(+1 * displaceBytes * scale)
+
+	private fun toggle() {
+		val v = disassembler.visible
+		registerList.visible = !v
+		disassembler.visible = !v
+		hexdump.visible = v
 	}
 
 	class GprView(views: Views, val font: BitmapFont, val regName: String, val regSet: (value: Int) -> Unit, val regGet: () -> Int) : Container(views) {
@@ -168,6 +205,47 @@ class DebugScene(
 		}
 	}
 
+	class HexdumpLineView(val emulatorContainer: EmulatorContainer, views: Views, val lineNumber: Int, val font: BitmapFont) : Container(views) {
+		val text = views.text("-").apply {
+			this@HexdumpLineView += this
+			filtering = false
+			x = 0.0
+			y = (lineNumber * 8).toDouble()
+			autoSize = true
+			format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+		}
+
+		fun update(addr: Int, mem: Memory, state: CpuState) {
+			var line = ""
+			line += addr.shex
+			line += " | "
+			for (n in 0 until 16) line += "%02X".format(mem.lbuSafe(addr + n))
+			line += " | "
+			for (n in 0 until 16) {
+				val c = mem.lbuSafe(addr + n)
+				line += if (c < 32) "." else "" + c.toChar()
+			}
+			text.text = line
+		}
+	}
+
+	class HexdumpView(val emulatorContainer: EmulatorContainer, views: Views, val font: BitmapFont) : Container(views) {
+		val texts = (0 until 32).map { HexdumpLineView(emulatorContainer, views, it, font) }
+
+		init {
+			for (text in texts) {
+				this += text
+			}
+		}
+
+		fun update(startAddress: Int, memory: Memory, state: CpuState) {
+			for ((n, text) in texts.withIndex()) {
+				val address = startAddress + n * 16
+				text.update(address, memory, state)
+			}
+		}
+	}
+
 	class DissasemblerLineView(val emulatorContainer: EmulatorContainer, views: Views, val lineNumber: Int, val font: BitmapFont) : Container(views) {
 		val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
 		val BG_PC = RGBA(0, 0, 0xFF, 0x99)
@@ -206,9 +284,9 @@ class DebugScene(
 			val prefix = if (atPC) "*" else " "
 
 			text.text = "$prefix${addr.shex}:" + try {
-				Disassembler.disasm(addr, memory.lw(addr))
+				Disassembler.disasm(addr, memory.lwSafe(addr))
 			} catch (e: Throwable) {
-				e.printStackTrace()
+				//e.printStackTrace()
 				"ERROR"
 			} + " "
 		}

@@ -40,6 +40,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		val start get() = range.start
 		val end get() = range.endInclusive + 1
 		val size get() = end - start
+		operator fun contains(index: Int) = range.contains(index and MEMORY_MASK)
 	}
 
 	open fun hash(address4: Int, nwords: Int): Int {
@@ -150,6 +151,11 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	fun lhu(address: Int): Int = lh(address) and 0xFFFF
 	fun memset(address: Int, value: Int, size: Int) = run { for (n in 0 until size) sb(address, value) }
+
+	fun lwSafe(address: Int): Int = if (isValidAddress(address)) lw(address) else 0
+	fun lbuSafe(address: Int): Int = if (isValidAddress(address)) lbu(address) else 0
+
+	fun isValidAddress(address: Int): Boolean = address in MAINMEM || address in VIDEOMEM || address in SCRATCHPAD
 
 	open fun copy(srcPos: Int, dstPos: Int, size: Int) = run { for (n in 0 until size) sb(dstPos + n, lb(srcPos + n)) }
 	fun getPointerStream(address: Int, size: Int): SyncStream = openSync().sliceWithSize(address, size)
