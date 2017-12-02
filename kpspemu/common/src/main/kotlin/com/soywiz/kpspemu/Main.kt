@@ -216,9 +216,7 @@ class KpspemuMainScene(
 						display.crash()
 					}
 				}
-				//emulator.frameStep()
-				//sleep(MS_1)
-				sleep(MS_0)
+				emulator.threadManager.waitThreadChange()
 			} else {
 				sleep(MS_10)
 			}

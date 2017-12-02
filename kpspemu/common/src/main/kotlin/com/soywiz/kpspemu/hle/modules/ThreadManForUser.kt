@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.waitOne
+import com.soywiz.korio.async.sleep
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuState
@@ -22,8 +21,7 @@ import kotlin.math.min
 class ThreadManForUser(emulator: Emulator)
 	: SceModule(emulator, "ThreadManForUser", 0x40010011, "threadman.prx", "sceThreadManager")
 	, ThreadManForUser_EventFlags
-	, ThreadManForUser_Fpl
-{
+	, ThreadManForUser_Fpl {
 	val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }
 
 	fun sceKernelCreateThread(name: String?, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): Int {
@@ -76,13 +74,13 @@ class ThreadManForUser(emulator: Emulator)
 		return 0
 	}
 
-	fun _sceKernelSleepThread(currentThread: PspThread, cb: Boolean): Int {
-		currentThread.suspend(WaitObject.SLEEP, cb = cb)
+	suspend fun _sceKernelSleepThread(currentThread: PspThread, cb: Boolean): Int {
+		currentThread.onWakeUp.waitOne()
 		return 0
 	}
 
-	fun sceKernelSleepThread(currentThread: PspThread): Int = _sceKernelSleepThread(currentThread, cb = false)
-	fun sceKernelSleepThreadCB(currentThread: PspThread): Int = _sceKernelSleepThread(currentThread, cb = true)
+	suspend fun sceKernelSleepThread(currentThread: PspThread): Int = _sceKernelSleepThread(currentThread, cb = false)
+	suspend fun sceKernelSleepThreadCB(currentThread: PspThread): Int = _sceKernelSleepThread(currentThread, cb = true)
 
 	fun sceKernelGetThreadCurrentPriority(thread: PspThread): Int = thread.priority
 
@@ -94,13 +92,14 @@ class ThreadManForUser(emulator: Emulator)
 		return callback.id
 	}
 
-	fun _sceKernelDelayThread(thread: PspThread, microseconds: Int, cb: Boolean): Int {
-		thread.suspend(WaitObject.TIME(rtc.getTimeInMicrosecondsDouble() + microseconds), cb = cb)
+	suspend fun _sceKernelDelayThread(thread: PspThread, microseconds: Int, cb: Boolean): Int {
+		coroutineContext.sleep(microseconds / 1000)
+		//thread.suspend(WaitObject.TIME(rtc.getTimeInMicrosecondsDouble() + microseconds), cb = cb)
 		return 0
 	}
 
-	fun sceKernelDelayThreadCB(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = true)
-	fun sceKernelDelayThread(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = false)
+	suspend fun sceKernelDelayThreadCB(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = true)
+	suspend fun sceKernelDelayThread(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = false)
 
 	suspend fun _sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr, cb: Boolean): Int {
 		val thread = threadManager.tryGetById(threadId)
@@ -356,10 +355,10 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionInt("sceKernelCreateThread", 0x446D8DE6, since = 150) { sceKernelCreateThread(str, int, int, int, int, ptr) }
 		registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) { sceKernelStartThread(thread, int, int, ptr) }
 		registerFunctionInt("sceKernelGetThreadCurrentPriority", 0x94AA61EE, since = 150) { sceKernelGetThreadCurrentPriority(thread) }
-		registerFunctionInt("sceKernelSleepThread", 0x9ACE131E, since = 150) { sceKernelSleepThread(thread) }
-		registerFunctionInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
-		registerFunctionInt("sceKernelDelayThreadCB", 0x68DA9E36, since = 150) { sceKernelDelayThreadCB(thread, int) }
-		registerFunctionInt("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(thread, int) }
+		registerFunctionSuspendInt("sceKernelSleepThread", 0x9ACE131E, since = 150) { sceKernelSleepThread(thread) }
+		registerFunctionSuspendInt("sceKernelSleepThreadCB", 0x82826F70, since = 150) { sceKernelSleepThreadCB(thread) }
+		registerFunctionSuspendInt("sceKernelDelayThreadCB", 0x68DA9E36, since = 150) { sceKernelDelayThreadCB(thread, int) }
+		registerFunctionSuspendInt("sceKernelDelayThread", 0xCEADEB47, since = 150) { sceKernelDelayThread(thread, int) }
 		registerFunctionSuspendInt("sceKernelWaitThreadEnd", 0x278C0DF5, since = 150) { sceKernelWaitThreadEnd(thread, int, ptr) }
 		registerFunctionSuspendInt("sceKernelWaitThreadEndCB", 0x840E8133, since = 150) { sceKernelWaitThreadEndCB(thread, int, ptr) }
 		registerFunctionInt("sceKernelReferThreadStatus", 0x17C1684E, since = 150) { sceKernelReferThreadStatus(thread, int, ptr) }

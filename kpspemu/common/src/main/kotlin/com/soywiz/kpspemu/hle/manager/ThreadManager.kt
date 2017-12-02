@@ -2,7 +2,6 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
-import com.soywiz.korio.async.Promise
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
@@ -58,6 +57,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		} else {
 			logger.trace { "NOT FILLING: $stack" }
 		}
+		threadManager.onThreadChanged(thread)
 		return thread
 	}
 
@@ -80,15 +80,27 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		return threadsWithPriority.getOrNull((index + 1) umod threadsWithPriorityCount)
 	}
 
+	val onThreadChanged = Signal2<PspThread>()
+
+	suspend fun waitThreadChange() {
+		//println("[1]")
+		try {
+			onThreadChanged.waitOne(16)
+		} catch (e: TimeoutException) {
+		}
+		//println("[2]")
+		//coroutineContext.sleep(0)
+	}
+
 	suspend fun step() {
 		val start: Double = timeManager.getTimeInMicrosecondsDouble()
 
-		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-			val time = (t.waitObject as WaitObject.TIME).instant
-			if (start >= time) {
-				t.resume()
-			}
-		}
+		//for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+		//	val time = (t.waitObject as WaitObject.TIME).instant
+		//	if (start >= time) {
+		//		t.resume()
+		//	}
+		//}
 
 		do {
 			val now: Double = timeManager.getTimeInMicrosecondsDouble()
@@ -179,13 +191,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 }
 
 sealed class WaitObject {
-	data class TIME(val instant: Double) : WaitObject() {
-		override fun toString(): String = "TIME(${instant.toLong()})"
-	}
-
-	data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
+	//data class TIME(val instant: Double) : WaitObject() {
+	//	override fun toString(): String = "TIME(${instant.toLong()})"
+	//}
+	//data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
 	data class COROUTINE(val reason: String) : WaitObject()
-	object SLEEP : WaitObject()
+
+	//object SLEEP : WaitObject()
 	object VBLANK : WaitObject()
 }
 
@@ -202,6 +214,7 @@ class PspThread internal constructor(
 	var preemptionCount: Int = 0
 	val totalExecutedInstructions: Long get() = state.totalExecuted
 	val onEnd = Signal2<Unit>()
+	val onWakeUp = Signal2<Unit>()
 	val logger = Logger("PspThread")
 
 	enum class Phase {
@@ -272,6 +285,7 @@ class PspThread internal constructor(
 
 	fun start() {
 		resume()
+		threadManager.onThreadChanged(this)
 	}
 
 	fun resume() {
@@ -279,6 +293,7 @@ class PspThread internal constructor(
 		waitObject = null
 		waitInfo = null
 		acceptingCallbacks = false
+		threadManager.onThreadChanged(this)
 	}
 
 	fun stop(reason: String = "generic") {
@@ -286,6 +301,7 @@ class PspThread internal constructor(
 			phase = Phase.STOPPED
 			onEnd(Unit)
 		}
+		//threadManager.onThreadChanged(this)
 	}
 
 	fun delete() {
@@ -338,9 +354,7 @@ class PspThread internal constructor(
 
 	fun suspend(wait: WaitObject, cb: Boolean) {
 		markWaiting(wait, cb)
-		if (wait is WaitObject.PROMISE) {
-			wait.promise.then { resume() }
-		}
+		//if (wait is WaitObject.PROMISE) wait.promise.then { resume() }
 		threadManager.suspend()
 	}
 }
