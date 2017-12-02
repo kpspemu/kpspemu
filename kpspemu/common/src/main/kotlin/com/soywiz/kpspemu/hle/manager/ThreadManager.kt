@@ -25,6 +25,7 @@ const val INSTRUCTIONS_PER_STEP = 5_000_000
 //const val INSTRUCTIONS_PER_STEP = 10_000_000
 //const val INSTRUCTIONS_PER_STEP = 100_000_000
 
+
 class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator) {
 	val logger = Logger("ThreadManager").apply {
 		//level = LogLevel.TRACE
@@ -99,13 +100,6 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	suspend fun step() {
 		val start: Double = timeManager.getTimeInMicrosecondsDouble()
 
-		//for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-		//	val time = (t.waitObject as WaitObject.TIME).instant
-		//	if (start >= time) {
-		//		t.resume()
-		//	}
-		//}
-
 		do {
 			val now: Double = timeManager.getTimeInMicrosecondsDouble()
 			if (currentThread == null) currentThread = getFirstThread()
@@ -123,24 +117,6 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 				break // Rest a bit
 			}
 		} while (currentThread != null)
-
-		//while (true) {
-		//	for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-		//		val time = (t.waitObject as WaitObject.TIME).instant
-		//		if (start >= time) {
-		//			t.resume()
-		//		}
-		//	}
-		//	val priority = availablePriorities.firstOrNull() ?: break
-		//	for (t in resourcesById.values.filter { it.running && it.priority == priority }) {
-		//		val now: Double = timeManager.getTimeInMicrosecondsDouble()
-		//		t.step(now)
-		//		if (now - start >= 16.0) {
-		//			start = now
-		//			getCoroutineContext().eventLoop.sleep(0)
-		//		}
-		//	}
-		//}
 	}
 
 	val availablePriorities: List<Int> get() = resourcesById.values.filter { it.running }.map { it.priority }.distinct().sorted()

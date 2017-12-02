@@ -44,6 +44,7 @@ import com.soywiz.korio.stream.openAsync
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.util.hexString
 import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.applicationVfs
@@ -567,8 +568,11 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 					for (filename in listOf("BOOT.BIN", "EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP")) {
 						afile = container["$folder/$filename"]
 						if (afile.exists()) {
-							logger.warn { "Using $afile from iso" }
-							break@done
+							// Some BOOT.BIN files are filled with 0!
+							if (afile.readRangeBytes(0 until 4).hexString != "00000000") {
+								logger.warn { "Using $afile from iso" }
+								break@done
+							}
 						}
 					}
 				}

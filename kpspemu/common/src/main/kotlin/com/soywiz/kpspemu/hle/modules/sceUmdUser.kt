@@ -30,6 +30,10 @@ class sceUmdUser(emulator: Emulator) : SceModule(emulator, "sceUmdUser", 0x40010
 		return 0
 	}
 
+	fun sceUmdWaitDriveStatWithTimer(stat: Int, timeout: Int): Int {
+		return 0
+	}
+
 	fun sceUmdGetDriveStat(): Int = PSP_UMD_PRESENT or PSP_UMD_READY or PSP_UMD_READABLE
 
 	fun sceUmdRegisterUMDCallBack(callbackId: Int): Int {
@@ -43,7 +47,6 @@ class sceUmdUser(emulator: Emulator) : SceModule(emulator, "sceUmdUser", 0x40010
 
 	fun sceUmdGetErrorStat(cpu: CpuState): Unit = UNIMPLEMENTED(0x20628E6F)
 	fun sceUmdGetDiscInfo(cpu: CpuState): Unit = UNIMPLEMENTED(0x340B7686)
-	fun sceUmdWaitDriveStatWithTimer(cpu: CpuState): Unit = UNIMPLEMENTED(0x56202973)
 	fun sceUmdCancelWaitDriveStat(cpu: CpuState): Unit = UNIMPLEMENTED(0x6AF9B50A)
 	fun sceUmdReplaceProhibit(cpu: CpuState): Unit = UNIMPLEMENTED(0x87533940)
 	fun sceUmdReplacePermit(cpu: CpuState): Unit = UNIMPLEMENTED(0xCBE9F02A)
@@ -57,10 +60,10 @@ class sceUmdUser(emulator: Emulator) : SceModule(emulator, "sceUmdUser", 0x40010
 		registerFunctionInt("sceUmdGetDriveStat", 0x6B4A146C, since = 150) { sceUmdGetDriveStat() }
 		registerFunctionInt("sceUmdRegisterUMDCallBack", 0xAEE7404D, since = 150) { sceUmdRegisterUMDCallBack(int) }
 		registerFunctionInt("sceUmdUnRegisterUMDCallBack", 0xBD2BDE07, since = 150) { sceUmdUnRegisterUMDCallBack(int) }
+		registerFunctionInt("sceUmdWaitDriveStatWithTimer", 0x56202973, since = 150) { sceUmdWaitDriveStatWithTimer(int, int) }
 
 		registerFunctionRaw("sceUmdGetErrorStat", 0x20628E6F, since = 150) { sceUmdGetErrorStat(it) }
 		registerFunctionRaw("sceUmdGetDiscInfo", 0x340B7686, since = 150) { sceUmdGetDiscInfo(it) }
-		registerFunctionRaw("sceUmdWaitDriveStatWithTimer", 0x56202973, since = 150) { sceUmdWaitDriveStatWithTimer(it) }
 		registerFunctionRaw("sceUmdCancelWaitDriveStat", 0x6AF9B50A, since = 150) { sceUmdCancelWaitDriveStat(it) }
 		registerFunctionRaw("sceUmdReplaceProhibit", 0x87533940, since = 150) { sceUmdReplaceProhibit(it) }
 		registerFunctionRaw("sceUmdReplacePermit", 0xCBE9F02A, since = 150) { sceUmdReplacePermit(it) }

@@ -311,13 +311,22 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoReadAsync(fileId: Int, outputPointer: Ptr, outputLength: Int): Int {
 		logger.error { "sceIoReadAsync:$fileId,$outputPointer,$outputLength" }
-		return async(fileId, "sceIoReadAsync") {
+		async(fileId, "sceIoReadAsync") {
 			val res = sceIoRead(fileId, outputPointer, outputLength)
 			//println(outputPointer.readBytes(outputLength).toString(UTF8))
 			logger.error { "sceIoReadAsync --> $res" }
-			//res.toLong()
+			res.toLong()
+		}
+		return 0
+	}
+
+	suspend fun sceIoCloseAsync(fileId: Int): Int {
+		logger.error { "sceIoCloseAsync:$fileId" }
+		async(fileId, "sceIoCloseAsync") {
+			sceIoClose(fileId)
 			0L
 		}
+		return 0
 	}
 
 	fun sceIoPollAsync(fd: Int, out: Ptr): Int {
@@ -352,7 +361,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 	fun sceIoCancel(cpu: CpuState): Unit = UNIMPLEMENTED(0xE8BC6571)
 	fun sceIoIoctlAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0xE95A012B)
 	fun sceIoRemove(cpu: CpuState): Unit = UNIMPLEMENTED(0xF27A9C51)
-	fun sceIoCloseAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0xFF5940B6)
 
 
 	override fun registerModule() {
@@ -371,8 +379,8 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		// Files Async
 		registerFunctionSuspendInt("sceIoOpenAsync", 0x89AA9906, since = 150) { sceIoOpenAsync(thread, str, int, int) }
 		registerFunctionSuspendInt("sceIoReadAsync", 0xA0B5A7C2, since = 150) { sceIoReadAsync(int, ptr, int) }
+		registerFunctionSuspendInt("sceIoCloseAsync", 0xFF5940B6, since = 150) { sceIoCloseAsync(int) }
 		registerFunctionInt("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(int, ptr) }
-		registerFunctionRaw("sceIoCloseAsync", 0xFF5940B6, since = 150) { sceIoCloseAsync(it) }
 
 		// Directories
 		registerFunctionSuspendInt("sceIoDopen", 0xB29DDF9C, since = 150) { sceIoDopen(str) }

@@ -74,6 +74,12 @@ class ThreadManForUser(emulator: Emulator)
 		return 0
 	}
 
+	fun sceKernelTerminateDeleteThread(threadId: Int): Int {
+		sceKernelTerminateThread(threadId)
+		sceKernelDeleteThread(threadId)
+		return 0
+	}
+
 	suspend fun _sceKernelSleepThread(currentThread: PspThread, cb: Boolean): Int {
 		currentThread.onWakeUp.waitOne()
 		return 0
@@ -90,6 +96,16 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelCreateCallback(name: String?, func: Ptr, arg: Int): Int {
 		val callback = callbackManager.create(name ?: "callback", func, arg)
 		return callback.id
+	}
+
+	fun sceKernelCheckCallback(): Int {
+		// TODO
+		return 0
+	}
+
+	fun sceKernelDeleteCallback(id: Int): Int {
+		callbackManager.freeById(id)
+		return 0
 	}
 
 	suspend fun _sceKernelDelayThread(thread: PspThread, microseconds: Int, cb: Boolean): Int {
@@ -258,9 +274,7 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelDeleteVTimer(cpu: CpuState): Unit = UNIMPLEMENTED(0x328F9E52)
 	fun sceKernelReferMsgPipeStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x33BE4024)
 	fun sceKernelCancelMsgPipe(cpu: CpuState): Unit = UNIMPLEMENTED(0x349B864D)
-	fun sceKernelCheckCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x349D6D6C)
 	fun sceKernelReferThreadEventHandlerStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x369EEB6B)
-	fun sceKernelTerminateDeleteThread(cpu: CpuState): Unit = UNIMPLEMENTED(0x383F7BCC)
 	fun sceKernelReferVplStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x39810265)
 	fun sceKernelSuspendDispatchThread(cpu: CpuState): Unit = UNIMPLEMENTED(0x3AD58B8C)
 	fun sceKernelGetThreadExitStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x3B183E26)
@@ -333,7 +347,6 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelSysClock2USecWide(cpu: CpuState): Unit = UNIMPLEMENTED(0xE1619D7C)
 	fun sceKernelSendMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0xE9B3061E)
 	fun sceKernelAllocateVplCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xEC0A693F)
-	fun sceKernelDeleteCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xEDBA5844)
 	fun sceKernelDeleteMsgPipe(cpu: CpuState): Unit = UNIMPLEMENTED(0xF0B7DA1C)
 	fun sceKernelReceiveMbxCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xF3986382)
 	fun sceKernelDeleteMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0xF8170FBE)
@@ -367,9 +380,12 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionVoid("sceKernelExitThread", 0xAA73C935, since = 150) { sceKernelExitThread(thread, int) }
 		registerFunctionInt("sceKernelChangeCurrentThreadAttr", 0xEA748E31, since = 150) { sceKernelChangeCurrentThreadAttr(thread, int, int) }
 		registerFunctionInt("sceKernelChangeThreadPriority", 0x71BC9871, since = 150) { sceKernelChangeThreadPriority(int, int) }
+		registerFunctionInt("sceKernelTerminateDeleteThread", 0x383F7BCC, since = 150) { sceKernelTerminateDeleteThread(int) }
 
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(str, ptr, int) }
+		registerFunctionInt("sceKernelCheckCallback", 0x349D6D6C, since = 150) { sceKernelCheckCallback() }
+		registerFunctionInt("sceKernelDeleteCallback", 0xEDBA5844, since = 150) { sceKernelDeleteCallback(int) }
 
 		// Semaphores
 		registerFunctionInt("sceKernelCreateSema", 0xD6DA4BA1, since = 150) { sceKernelCreateSema(str, int, int, int, ptr) }
@@ -398,9 +414,7 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelDeleteVTimer", 0x328F9E52, since = 150) { sceKernelDeleteVTimer(it) }
 		registerFunctionRaw("sceKernelReferMsgPipeStatus", 0x33BE4024, since = 150) { sceKernelReferMsgPipeStatus(it) }
 		registerFunctionRaw("sceKernelCancelMsgPipe", 0x349B864D, since = 150) { sceKernelCancelMsgPipe(it) }
-		registerFunctionRaw("sceKernelCheckCallback", 0x349D6D6C, since = 150) { sceKernelCheckCallback(it) }
 		registerFunctionRaw("sceKernelReferThreadEventHandlerStatus", 0x369EEB6B, since = 150) { sceKernelReferThreadEventHandlerStatus(it) }
-		registerFunctionRaw("sceKernelTerminateDeleteThread", 0x383F7BCC, since = 150) { sceKernelTerminateDeleteThread(it) }
 		registerFunctionRaw("sceKernelReferVplStatus", 0x39810265, since = 150) { sceKernelReferVplStatus(it) }
 		registerFunctionRaw("sceKernelSuspendDispatchThread", 0x3AD58B8C, since = 150) { sceKernelSuspendDispatchThread(it) }
 		registerFunctionRaw("sceKernelGetThreadExitStatus", 0x3B183E26, since = 150) { sceKernelGetThreadExitStatus(it) }
@@ -472,7 +486,6 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelSysClock2USecWide", 0xE1619D7C, since = 150) { sceKernelSysClock2USecWide(it) }
 		registerFunctionRaw("sceKernelSendMbx", 0xE9B3061E, since = 150) { sceKernelSendMbx(it) }
 		registerFunctionRaw("sceKernelAllocateVplCB", 0xEC0A693F, since = 150) { sceKernelAllocateVplCB(it) }
-		registerFunctionRaw("sceKernelDeleteCallback", 0xEDBA5844, since = 150) { sceKernelDeleteCallback(it) }
 		registerFunctionRaw("sceKernelDeleteMsgPipe", 0xF0B7DA1C, since = 150) { sceKernelDeleteMsgPipe(it) }
 		registerFunctionRaw("sceKernelReceiveMbxCB", 0xF3986382, since = 150) { sceKernelReceiveMbxCB(it) }
 		registerFunctionRaw("sceKernelDeleteMutex", 0xF8170FBE, since = 150) { sceKernelDeleteMutex(it) }

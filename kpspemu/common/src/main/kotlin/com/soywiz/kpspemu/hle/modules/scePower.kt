@@ -60,6 +60,11 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		return 0
 	}
 
+	fun scePowerRegisterCallback(slot: Int, callbackId: Int): Int {
+		logger.warn { "Unimplemented scePowerRegisterCallback($slot, $callbackId)" }
+		return 0
+	}
+
 	fun scePowerIsBatteryExist(): Int = this.emulator.battery.batteryExists.toInt()
 	fun scePowerIsLowBattery(): Int = this.emulator.battery.isLowBattery.toInt()
 	fun scePowerIsPowerOnline(): Int = this.emulator.battery.charging.toInt()
@@ -71,7 +76,6 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 
 	fun scePowerGetResumeCount(cpu: CpuState): Unit = UNIMPLEMENTED(0x0074EF9B)
 	fun scePowerRequestColdReset(cpu: CpuState): Unit = UNIMPLEMENTED(0x0442D852)
-	fun scePowerRegisterCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x04B7766E)
 	fun scePowerSetPowerSwMode(cpu: CpuState): Unit = UNIMPLEMENTED(0x0CD21B1F)
 	fun scePowerGetPowerSwMode(cpu: CpuState): Unit = UNIMPLEMENTED(0x165CE085)
 	fun scePowerGetInnerTemp(cpu: CpuState): Unit = UNIMPLEMENTED(0x23436A4A)
@@ -133,10 +137,10 @@ class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011,
 		registerFunctionInt("scePowerGetBatteryLifePercent", 0x2085D15D, since = 150) { scePowerGetBatteryLifePercent() }
 		registerFunctionInt("scePowerGetBatteryVolt", 0x483CE86B, since = 150) { scePowerGetBatteryVolt() }
 		registerFunctionInt("scePowerGetBatteryTemp", 0x28E12023, since = 150) { scePowerGetBatteryTemp() }
+		registerFunctionInt("scePowerRegisterCallback", 0x04B7766E, since = 150) { scePowerRegisterCallback(int, int) }
 
 		registerFunctionRaw("scePowerGetResumeCount", 0x0074EF9B, since = 150) { scePowerGetResumeCount(it) }
 		registerFunctionRaw("scePowerRequestColdReset", 0x0442D852, since = 150) { scePowerRequestColdReset(it) }
-		registerFunctionRaw("scePowerRegisterCallback", 0x04B7766E, since = 150) { scePowerRegisterCallback(it) }
 		registerFunctionRaw("scePowerSetPowerSwMode", 0x0CD21B1F, since = 150) { scePowerSetPowerSwMode(it) }
 		registerFunctionRaw("scePowerGetPowerSwMode", 0x165CE085, since = 150) { scePowerGetPowerSwMode(it) }
 		registerFunctionRaw("scePowerGetInnerTemp", 0x23436A4A, since = 150) { scePowerGetInnerTemp(it) }
