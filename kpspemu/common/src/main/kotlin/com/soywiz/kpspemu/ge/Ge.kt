@@ -79,3 +79,11 @@ data class GeCallback(override val id: Int) : ResourceItem {
 enum class PrimAction { NOTHING, FLUSH_PRIM }
 
 enum class ListSyncKind { DONE, QUEUED, DRAWING_DONE, STALL_REACHED, CANCEL_DONE }
+
+object PspGeSyncType {
+	val PSP_GE_LIST_DONE = 0
+	val PSP_GE_LIST_QUEUED = 1
+	val PSP_GE_LIST_DRAWING_DONE = 2
+	val PSP_GE_LIST_STALL_REACHED = 3
+	val PSP_GE_LIST_CANCEL_DONE = 4
+}
