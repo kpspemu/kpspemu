@@ -564,9 +564,12 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 				var afile: VfsFile? = null
 				done@ for (folder in listOf("PSP_GAME/SYSDIR", "")) {
 					umdLikeStructure = folder.isNotEmpty()
-					for (filename in listOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")) {
+					for (filename in listOf("BOOT.BIN", "EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP")) {
 						afile = container["$folder/$filename"]
-						if (afile.exists()) break@done
+						if (afile.exists()) {
+							logger.warn { "Using $afile from iso" }
+							break@done
+						}
 					}
 				}
 
