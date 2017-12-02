@@ -12,7 +12,7 @@ import com.soywiz.kpspemu.timeManager
 import com.soywiz.kpspemu.util.currentTimeMicroDouble
 
 @Suppress("UNUSED_PARAMETER")
-class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x40010011, "sysmem.prx", "sceSystemMemoryManager") {
+open class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x40010011, "sysmem.prx", "sceSystemMemoryManager") {
 	val random = MtRand(0)
 
 	fun sceKernelUtilsMt19937Init(ctx: Ptr, seed: Int): Int {

@@ -75,9 +75,11 @@ object Main {
 	@JvmStatic
 	fun main(args: Array<String>) {
 		Korge(KpspemuModule, injector = AsyncInjector()
-			.mapSingleton(Emulator::class) { Emulator(
-				getCoroutineContext()
-			) }
+			.mapSingleton(Emulator::class) {
+				Emulator(
+					getCoroutineContext()
+				)
+			}
 			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(Emulator::class)) }
 			.mapPrototype(DebugScene::class) { DebugScene(get(), get()) }
 			.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
@@ -136,18 +138,21 @@ class KpspemuMainScene(
 		running = true
 		ended = false
 		emulator.reset()
-		emulator.gpuRenderer = object : GpuRenderer {
+		emulator.gpuRenderer = object : GpuRenderer() {
+			override val queuedJobs get() = agRenderer.taskCountFlag
+
 			override fun render(batches: List<GeBatchData>) {
-				agRenderer.anyBatch = true
-				agRenderer.batchesQueue += batches
+				agRenderer.addBatches(batches)
 			}
 
 			override fun reset() {
+				super.reset()
 				agRenderer.reset()
 			}
 		}
 		agRenderer.anyBatch = false
 		agRenderer.reset()
+		setIcon0Bitmap(Bitmap32(1, 1))
 	}
 
 	var icon0Texture: Texture? = null
@@ -227,7 +232,6 @@ class KpspemuMainScene(
 	suspend fun geProcess() {
 		while (true) {
 			emulator.ge.run()
-			gpu.flush()
 			agRenderer.stats.reset()
 			agRenderer.updateStats()
 			sleep(MS_1)

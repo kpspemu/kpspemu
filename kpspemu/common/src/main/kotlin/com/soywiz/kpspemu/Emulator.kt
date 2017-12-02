@@ -19,27 +19,17 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.coroutines.experimental.CoroutineContext
 
-class AddressInfo : NameProvider {
-	val names = hashMapOf<Int, String>()
-	override fun getName(addr: Int): String? = names[addr]
-	fun reset() {
-		names.clear()
-	}
-}
-
 class Emulator(
 	val coroutineContext: CoroutineContext,
 	val syscalls: SyscallManager = SyscallManager(),
 	val mem: Memory = Memory(),
 	var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	val logger = Logger("Emulator")
 	val timeManager = TimeManager(this)
 	val nameProvider = AddressInfo()
 	val breakpoints = Breakpoints()
-	val eventLoop = coroutineContext.eventLoop
 	val globalCpuState = GlobalCpuState()
-	val logger = Logger("Emulator")
-
 	var output = StringBuilder()
 	val ge: Ge = Ge(this)
 	val gpu: Gpu = Gpu(this)
@@ -98,6 +88,14 @@ class Emulator(
 
 interface WithEmulator {
 	val emulator: Emulator
+}
+
+class AddressInfo : NameProvider {
+	val names = hashMapOf<Int, String>()
+	override fun getName(addr: Int): String? = names[addr]
+	fun reset() {
+		names.clear()
+	}
 }
 
 val WithEmulator.mem: Memory get() = emulator.mem

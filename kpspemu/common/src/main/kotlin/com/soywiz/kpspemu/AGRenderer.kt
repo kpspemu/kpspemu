@@ -15,6 +15,7 @@ import com.soywiz.korio.util.hex
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.Matrix4
 import com.soywiz.kpspemu.ge.*
+import com.soywiz.kpspemu.util.EventFlag
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
 	enum class RenderMode { AUTO, NORMAL, DIRECT }
@@ -23,8 +24,31 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 	val logger = Logger("AGRenderer")
 	var anyBatch = false
-	val batchesQueue = arrayListOf<List<GeBatchData>>()
+	private val batchesQueue = arrayListOf<List<GeBatchData>>()
 	val tempBmp = Bitmap32(512, 272)
+	val taskCountFlag = EventFlag(0)
+	var taskCount by taskCountFlag
+
+	fun reset() {
+		for ((_, tex) in texturesById) tex.texture.close()
+		for ((_, vtype) in programLayoutByVertexType) {
+			//vtype.dele
+			// close
+		}
+		texturesById.clear()
+		programLayoutByVertexType.clear()
+		taskCount = 0
+	}
+
+	fun addBatches(batches: List<GeBatchData>) {
+		anyBatch = true
+		batchesQueue += batches
+		updateTaskCount()
+	}
+
+	private fun updateTaskCount() {
+		taskCount = batchesQueue.size
+	}
 
 	fun updateStats() {
 		stats.setTo(batchesQueue)
@@ -123,6 +147,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		} finally {
 			batchesQueue.clear()
 		}
+		updateTaskCount()
 	}
 
 	data class TextureSlot(
@@ -137,16 +162,6 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	//var texture: AG.Texture? = null
 	val texturesById = LinkedHashMap<Int, TextureSlot>()
 	//val texturesById = IntMap<TextureSlot>()
-
-	fun reset() {
-		for ((_, tex) in texturesById) tex.texture.close()
-		for ((_, vtype) in programLayoutByVertexType) {
-			//vtype.dele
-			// close
-		}
-		texturesById.clear()
-		programLayoutByVertexType.clear()
-	}
 
 	private fun renderBatch(views: Views, ctx: RenderContext, batch: GeBatch, scale: Double) {
 		val ag = ctx.ag

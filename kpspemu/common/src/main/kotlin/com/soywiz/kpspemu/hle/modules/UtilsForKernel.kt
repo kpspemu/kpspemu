@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.timeManager
 
 @Suppress("UNUSED_PARAMETER")
-class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel", 0x00090011, "sysmem.prx", "sceSystemMemoryManager") {
+//class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel", 0x00090011, "sysmem.prx", "sceSystemMemoryManager") {
+class UtilsForKernel(emulator: Emulator) : UtilsForUser(emulator) {
+	/*
 	fun sceKernelIcacheInvalidateRange(ptr: Int, size: Int): Unit {
 		emulator.invalidateIcache(ptr, size)
 	}
@@ -74,9 +73,11 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 	fun UtilsForKernel_F0155BCA(cpu: CpuState): Unit = UNIMPLEMENTED(0xF0155BCA)
 	fun sceKernelUtilsSha1BlockInit(cpu: CpuState): Unit = UNIMPLEMENTED(0xF8FCD5BA)
 	fun sceKernelIcacheReadTag(cpu: CpuState): Unit = UNIMPLEMENTED(0xFB05FAD0)
-
+	*/
 
 	override fun registerModule() {
+		super.registerModule()
+		/*
 		registerFunctionVoid("sceKernelIcacheInvalidateRange", 0xC2DF770E, since = 150) { sceKernelIcacheInvalidateRange(int, int) }
 		registerFunctionVoid("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(int, int) }
 		registerFunctionInt("sceKernelLibcClock", 0x91E4F6A7, since = 150) { sceKernelLibcClock() }
@@ -140,5 +141,6 @@ class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel",
 		registerFunctionRaw("UtilsForKernel_F0155BCA", 0xF0155BCA, since = 150) { UtilsForKernel_F0155BCA(it) }
 		registerFunctionRaw("sceKernelUtilsSha1BlockInit", 0xF8FCD5BA, since = 150) { sceKernelUtilsSha1BlockInit(it) }
 		registerFunctionRaw("sceKernelIcacheReadTag", 0xFB05FAD0, since = 150) { sceKernelIcacheReadTag(it) }
+		*/
 	}
 }

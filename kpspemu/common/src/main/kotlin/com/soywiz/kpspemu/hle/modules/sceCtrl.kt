@@ -25,7 +25,6 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 	}
 
 	suspend fun sceCtrlPeekBufferPositive(thread: PspThread, sceCtrlDataPtr: Ptr, count: Int): Int {
-		//display.waitVblank(thread, "sceCtrlReadBufferPositive")
 		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
 	}
 	suspend fun sceCtrlReadBufferPositive(thread: PspThread, sceCtrlDataPtr: Ptr, count: Int): Int {
