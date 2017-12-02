@@ -117,7 +117,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	private fun renderBatches(views: Views, ctx: RenderContext, scale: Double) {
 		try {
 			for (batches in batchesQueue) for (batch in batches) {
-				this.batch.initData(batch)
+				this.batch.initData(batch, emulatorContainer.emulator)
 				renderBatch(views, ctx, this.batch, scale)
 			}
 		} finally {

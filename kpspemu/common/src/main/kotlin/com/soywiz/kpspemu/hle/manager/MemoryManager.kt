@@ -7,6 +7,7 @@ import com.soywiz.kds.ext.splice
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.util.shex
 
 class MemoryManager(val emulator: Emulator) {
 	val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()
@@ -138,8 +139,8 @@ data class MemoryPartition(
 		return p2
 	}
 
-	fun allocateLow(size: Long, name: String = ""): MemoryPartition = this.allocateLowHigh(size, true, name)
-	fun allocateHigh(size: Long, name: String = "", alignment: Int = 1): MemoryPartition = this.allocateLowHigh(size, false, name)
+	fun allocateLow(size: Long, name: String = ""): MemoryPartition = this.allocateLowHigh(size, low = true, name = name)
+	fun allocateHigh(size: Long, name: String = "", alignment: Int = 1): MemoryPartition = this.allocateLowHigh(size, low = false, name = name)
 
 	private fun _validateChilds() {
 		var childs = this.childPartitions
@@ -155,7 +156,12 @@ data class MemoryPartition(
 	private fun allocateLowHigh(size: Long, low: Boolean, name: String = ""): MemoryPartition {
 		var childs = this.childPartitions
 
-		val index = childs.indexOfFirst { it.free && it.size >= size }
+		val index = if (low) {
+			childs.indexOfFirst { it.free && it.size >= size }
+		} else {
+			childs.indexOfLast { it.free && it.size >= size }
+		}
+
 		if (index < 0) throw OutOfMemoryError("Can't find a partition with $size available")
 		var child = childs[index]
 
@@ -242,5 +248,14 @@ data class MemoryPartition(
 	fun getMaxContiguousFreeMemoryInt(): Int = this.getMaxContiguousFreeMemory().toInt()
 
 	private fun findFreeChildWithSize(size: Int) = Unit
+
+	fun toString2() = "MemoryPartition('$name', ${low.toInt().shex}-${high.toInt().shex} size=$size)"
+
+	fun dump() {
+		println("DUMP: ${this.toString2()}")
+		for (child in childPartitions.filter { it.allocated }.sortedBy { it.low }) {
+			println(" - ${child.toString2()}")
+		}
+	}
 }
 

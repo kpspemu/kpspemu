@@ -1,9 +1,10 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.Pool
-import com.soywiz.korio.error.invalidOp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
+
+class ResourceNotFoundException(msg: String) : Exception(msg)
 
 open class Manager<T : Resource>(val name: String, override val emulator: Emulator) : WithEmulator {
 	internal var lastId: Int = 0
@@ -15,7 +16,7 @@ open class Manager<T : Resource>(val name: String, override val emulator: Emulat
 	internal fun allocId(): Int = freeIds.alloc()
 	fun tryGetByName(name: String): T? = resourcesById.values.firstOrNull { it.name == name }
 	fun tryGetById(id: Int): T? = resourcesById[id]
-	fun getById(id: Int) = tryGetById(id) ?: invalidOp("Can't find $name $id")
+	fun getById(id: Int) = tryGetById(id) ?: throw ResourceNotFoundException("Can't find $name $id")
 	fun freeById(id: Int) {
 		freeIds.free(id)
 		resourcesById.remove(id)

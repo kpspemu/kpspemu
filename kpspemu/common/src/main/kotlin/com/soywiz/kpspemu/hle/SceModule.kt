@@ -1,9 +1,7 @@
 package com.soywiz.kpspemu.hle
 
 import com.soywiz.kds.IntMap
-import com.soywiz.klogger.LogLevel
 import com.soywiz.klogger.Logger
-import com.soywiz.korio.async.Promise
 import com.soywiz.korio.coroutine.Continuation
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
@@ -104,6 +102,7 @@ abstract class SceModule(
 
 	fun registerFunctionRR(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {
 		registerFunctionRaw(name, uid, since, syscall) {
+			//println("Calling $name")
 			rr.reset(it)
 			function(rr, it)
 		}
@@ -137,27 +136,28 @@ abstract class SceModule(
 		}
 	}
 
-	// @TODO: registerFunctionSuspendInt and registerFunctionSuspendLong are mostly duplicated!
-
-	fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
+	inline fun <T> registerFunctionSuspendT(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, noinline function: suspend RegisterReader.(CpuState) -> T, noinline resumeHandler: (CpuState, PspThread, T) -> Unit, noinline convertErrorToT: (Int) -> T) {
 		val fullName = "${this.name}:$name"
-		registerFunctionRR(name, uid, since, syscall) {
-			loggerSuspend.trace { "Suspend $name (${threadManager.summary}) : ${cpu.summary}" }
-			val mfunction: suspend (RegisterReader) -> Int = { function(it, it.cpu) }
+		registerFunctionRR(name, uid, since, syscall) { rrr ->
+			val rcpu = cpu
+			val rthread = thread
+
+			loggerSuspend.trace { "Suspend $name (${threadManager.summary}) : ${rcpu.summary}" }
+			val mfunction: suspend (RegisterReader) -> T = { function(it, rcpu) }
 			var completed = false
-			mfunction.startCoroutine(this, object : Continuation<Int> {
+			mfunction.startCoroutine(this, object : Continuation<T> {
 				override val context: CoroutineContext = coroutineContext
 
-				override fun resume(value: Int) {
-					cpu.r2 = value
+				override fun resume(value: T) {
+					resumeHandler(rcpu, thread, value)
 					completed = true
-					it.thread.resume()
-					loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${cpu.summary}" }
+					rthread.resume()
+					loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
 				}
 
 				override fun resumeWithException(exception: Throwable) {
 					if (exception is SceKernelException) {
-						resume(exception.errorCode)
+						resume(convertErrorToT(exception.errorCode))
 					} else {
 						exception.printStackTrace()
 						throw exception
@@ -166,39 +166,23 @@ abstract class SceModule(
 			})
 
 			if (!completed) {
-				it.thread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
+				rthread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
+				//println("  [S] Calling $name")
 				threadManager.suspend()
 			}
 		}
 	}
 
+	fun registerFunctionSuspendInt(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Int) {
+		registerFunctionSuspendT<Int>(name, uid, since, syscall, cb, function, resumeHandler = { cpu, thread, value ->
+			cpu.r2 = value
+		}, convertErrorToT = { it })
+	}
+
 	fun registerFunctionSuspendLong(name: String, uid: Long, since: Int = 150, syscall: Int = -1, cb: Boolean = false, function: suspend RegisterReader.(CpuState) -> Long) {
-		val fullName = "${this.name}:$name"
-		registerFunctionRR(name, uid, since, syscall) {
-			loggerSuspend.trace { "Suspend $name" }
-			val mfunction: suspend (RegisterReader) -> Long = { function(it, it.cpu) }
-			var completed = false
-			mfunction.startCoroutine(this, object : Continuation<Long> {
-				override val context: CoroutineContext = coroutineContext
-
-				override fun resume(value: Long) {
-					loggerSuspend.trace { "Resumed $name with value: $value" }
-					cpu.r2 = (value ushr 0).toInt()
-					cpu.r3 = (value ushr 32).toInt()
-					completed = true
-					it.thread.resume()
-				}
-
-				override fun resumeWithException(exception: Throwable) {
-					exception.printStackTrace()
-					throw exception
-				}
-			})
-
-			if (!completed) {
-				it.thread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
-				threadManager.suspend()
-			}
-		}
+		registerFunctionSuspendT<Long>(name, uid, since, syscall, cb, function, resumeHandler = { cpu, thread, value ->
+			cpu.r2 = (value ushr 0).toInt()
+			cpu.r3 = (value ushr 32).toInt()
+		}, convertErrorToT = { it.toLong() })
 	}
 }

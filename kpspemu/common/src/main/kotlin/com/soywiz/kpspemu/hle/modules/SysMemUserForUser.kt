@@ -7,6 +7,7 @@ import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.manager.MemoryAnchor
 import com.soywiz.kpspemu.hle.manager.MemoryPartition
+import com.soywiz.kpspemu.hle.manager.MemoryPartitions
 import com.soywiz.kpspemu.hle.manager.OutOfMemoryError
 import com.soywiz.kpspemu.memoryManager
 import com.soywiz.kpspemu.util.ResourceItem
@@ -21,10 +22,11 @@ class SysMemUserForUser(emulator: Emulator) : SceModule(emulator, "SysMemUserFor
 	val partitions = ResourceList("Partition") { Partition(it) }
 
 	fun sceKernelAllocPartitionMemory(partitionId: Int, name: String?, anchor: Int, size: Int, address: Int): Int {
-		logger.info("WIP: sceKernelAllocPartitionMemory($partitionId, $name, $anchor, $size, ${address.hex})")
+		logger.info { "WIP: sceKernelAllocPartitionMemory($partitionId, $name, $anchor, $size, ${address.hex})" }
 		try {
-			val parentPartition = memoryManager.memoryPartitionsUid[partitionId] ?: invalidOp("Invalid partition $partitionId")
+			val parentPartition = memoryManager.memoryPartitionsUid[MemoryPartitions.User] ?: invalidOp("Invalid partition $partitionId")
 			val allocatedPartition = parentPartition.allocate(size.toLong(), MemoryAnchor(anchor), address.toLong(), name ?: "block")
+			println("sceKernelAllocPartitionMemory($partitionId, $name, $anchor, $size, ${address.hex}) -> $allocatedPartition - size=${allocatedPartition.size}")
 			return partitions.alloc().apply {
 				part = allocatedPartition
 			}.id

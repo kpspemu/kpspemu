@@ -8,6 +8,7 @@ import com.soywiz.kpspemu.battery.PspBattery
 import com.soywiz.kpspemu.cpu.Breakpoints
 import com.soywiz.kpspemu.cpu.CpuBreakException
 import com.soywiz.kpspemu.cpu.GlobalCpuState
+import com.soywiz.kpspemu.cpu.dis.NameProvider
 import com.soywiz.kpspemu.ctrl.PspController
 import com.soywiz.kpspemu.display.PspDisplay
 import com.soywiz.kpspemu.ge.DummyGpuRenderer
@@ -17,12 +18,16 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.coroutines.experimental.CoroutineContext
-import kotlin.coroutines.experimental.EmptyCoroutineContext
 
 class EmulatorContainer(
 	val coroutineContext: CoroutineContext,
 	override var emulator: Emulator = Emulator(coroutineContext)
 ) : WithEmulator
+
+class AddressInfo : NameProvider {
+	val names = hashMapOf<Int, String>()
+	override fun getName(addr: Int): String? = names[addr]
+}
 
 class Emulator(
 	val coroutineContext: CoroutineContext,
@@ -30,6 +35,7 @@ class Emulator(
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	val nameProvider = AddressInfo()
 	val breakpoints = Breakpoints()
 	val eventLoop = coroutineContext.eventLoop
 	val globalCpuState = GlobalCpuState()

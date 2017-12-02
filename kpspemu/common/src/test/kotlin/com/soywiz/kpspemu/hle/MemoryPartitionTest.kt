@@ -28,4 +28,14 @@ class MemoryPartitionTest {
 		assertEquals(90, base.getTotalFreeMemoryInt())
 		assertEquals(70, base.getMaxContiguousFreeMemoryInt())
 	}
+
+	@Test
+	fun name2() {
+		val p0 = base.allocateSet(30, 20)
+		val p1 = base.allocateHigh(10)
+		val p2 = base.allocateLow(10)
+		assertEquals(20, p0.low)
+		assertEquals(90, p1.low)
+		assertEquals(0, p2.low)
+	}
 }

@@ -9,6 +9,7 @@ import com.soywiz.korio.util.*
 import com.soywiz.korma.math.Math
 import com.soywiz.korma.math.isAlmostZero
 import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.dis.NameProvider
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.FloatArray2
@@ -16,7 +17,7 @@ import com.soywiz.kpspemu.util.cosv1
 import com.soywiz.kpspemu.util.sinv1
 import kotlin.math.*
 
-class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace: Boolean = false) {
+class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val nameProvider: NameProvider, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
 	fun steps(count: Int): Int {
@@ -37,9 +38,12 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 		var sPC = 0
 		var n = 0
 		//val fast = (mem as FastMemory).buffer
+		val breakpointsEnabled = breakpoints.enabled
 		try {
-			while (n++ < count) {
+			while (n < count) {
 				sPC = cpu._PC
+				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
+				n++
 				//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
 				if (trace) tracePC()
 				val IR = mem.lw(sPC)
@@ -48,10 +52,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
-			if (e !is CpuBreakException) {
-				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
-			}
-			throw e
+			checkException(sPC, e)
 		} finally {
 			cpu.totalExecuted += n
 		}
@@ -63,26 +64,35 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, var trace:
 		val cpu = this.cpu
 		var n = 0
 		var sPC = 0
+		val breakpointsEnabled = breakpoints.enabled
 		try {
-			while (n++ < count) {
+			while (n < count) {
 				sPC = cpu._PC and 0x0FFFFFFF
-				val IR = i32[(sPC + memOffset) ushr 2]
+				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
+				n++
+				val IR = i32[(memOffset + sPC) ushr 2]
 				cpu.IR = IR
 				dispatcher.dispatch(cpu, sPC, IR)
 			}
 		} catch (e: Throwable) {
-			if (e !is CpuBreakException) {
-				Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC)))
-			}
-			throw e
+			checkException(sPC, e)
 		} finally {
 			cpu.totalExecuted += n
 		}
 		return n
 	}
 
+	private fun checkException(sPC: Int, e: Throwable) {
+		if (e !is EmulatorControlFlowException) {
+			Console.error("There was an error at 0x%08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
+			Console.error(" - RA at 0x%08X: %s".format(cpu.RA, cpu.mem.disasmMacro(cpu.RA, nameProvider)))
+		}
+		throw e
+	}
+
+
 	private fun tracePC() {
-		println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC)))
+		println("0x%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC, nameProvider)))
 	}
 }
 

@@ -2,21 +2,15 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
-import com.soywiz.korio.async.Promise
-import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.Thread_sleep
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.util.hasFlag
+import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.nextAlignedTo
+import com.soywiz.korio.util.umod
 import com.soywiz.kpspemu.*
-import com.soywiz.kpspemu.cpu.CpuBreakException
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.RA
-import com.soywiz.kpspemu.cpu.SP
+import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
@@ -44,9 +38,15 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		//priorities.sortBy { it.priority }
 		var attr = attributes
 		val ssize = max(stackSize, 0x200).nextAlignedTo(0x100)
+		//val ssize = max(stackSize, 0x20000).nextAlignedTo(0x10000)
 		val stack = memoryManager.userPartition.allocateHigh(ssize, "${name}_stack")
+
+		println(stack.toString2())
+
 		val thread = PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
 		logger.info { "stack:%08X-%08X (%d)".format(stack.low.toInt(), stack.high.toInt(), stack.size.toInt()) }
+
+		memoryManager.userPartition.dump()
 
 		attr = attr or PspThreadAttributes.User
 		attr = attr or PspThreadAttributes.LowFF
@@ -57,6 +57,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		} else {
 			logger.trace { "NOT FILLING: $stack" }
 		}
+		threadManager.onThreadChanged(thread)
 		return thread
 	}
 
@@ -64,26 +65,78 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		throw CpuBreakException(CpuBreakException.THREAD_WAIT)
 	}
 
-	suspend fun step() {
-		var start: Double = timeManager.getTimeInMicrosecondsDouble()
+	var currentThread: PspThread? = null
 
-		while (true) {
-			for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
-				val time = (t.waitObject as WaitObject.TIME).instant
-				if (start >= time) {
-					t.resume()
-				}
-			}
-			val priority = availablePriorities.firstOrNull() ?: break
-			for (t in resourcesById.values.filter { it.running && it.priority == priority }) {
-				val now: Double = timeManager.getTimeInMicrosecondsDouble()
-				t.step(now)
-				if (now - start >= 16.0) {
-					start = now
-					getCoroutineContext().eventLoop.sleep(0)
-				}
-			}
+	fun getActiveThreadPriorities(): List<Int> = threads.filter { it.running }.map { it.priority }.distinct().sorted()
+	fun getActiveThreadsWithPriority(priority: Int): List<PspThread> = threads.filter { it.running && it.priority == priority }
+	fun getFirstThread(): PspThread? = getActiveThreadPriorities().firstOrNull()?.let { getActiveThreadsWithPriority(it) }?.firstOrNull()
+
+	fun computeNextThread(prevThread: PspThread?): PspThread? {
+		if (prevThread == null) return getFirstThread()
+		val threadsWithPriority = getActiveThreadsWithPriority(prevThread.priority)
+		val threadsWithPriorityCount = threadsWithPriority.size
+		if (threadsWithPriorityCount == 0) return null
+		val index = threadsWithPriority.indexOf(prevThread) umod threadsWithPriorityCount
+		return threadsWithPriority.getOrNull((index + 1) umod threadsWithPriorityCount)
+	}
+
+	val onThreadChanged = Signal2<PspThread>()
+
+	suspend fun waitThreadChange() {
+		//println("[1]")
+		try {
+			onThreadChanged.waitOne(16)
+		} catch (e: TimeoutException) {
 		}
+		//println("[2]")
+		//coroutineContext.sleep(0)
+	}
+
+	suspend fun step() {
+		val start: Double = timeManager.getTimeInMicrosecondsDouble()
+
+		//for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+		//	val time = (t.waitObject as WaitObject.TIME).instant
+		//	if (start >= time) {
+		//		t.resume()
+		//	}
+		//}
+
+		do {
+			val now: Double = timeManager.getTimeInMicrosecondsDouble()
+			if (currentThread == null) currentThread = getFirstThread()
+			if (currentThread?.running == false) {
+				println("WAIT! Trying to execute a sleeping thread!")
+				currentThread = computeNextThread(currentThread)
+			}
+			try {
+				currentThread?.step(now)
+				currentThread = computeNextThread(currentThread)
+			} catch (e: BreakpointException) {
+				break
+			}
+			if (now - start >= 16.0) {
+				break // Rest a bit
+			}
+		} while (currentThread != null)
+
+		//while (true) {
+		//	for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+		//		val time = (t.waitObject as WaitObject.TIME).instant
+		//		if (start >= time) {
+		//			t.resume()
+		//		}
+		//	}
+		//	val priority = availablePriorities.firstOrNull() ?: break
+		//	for (t in resourcesById.values.filter { it.running && it.priority == priority }) {
+		//		val now: Double = timeManager.getTimeInMicrosecondsDouble()
+		//		t.step(now)
+		//		if (now - start >= 16.0) {
+		//			start = now
+		//			getCoroutineContext().eventLoop.sleep(0)
+		//		}
+		//	}
+		//}
 	}
 
 	val availablePriorities: List<Int> get() = resourcesById.values.filter { it.running }.map { it.priority }.distinct().sorted()
@@ -138,10 +191,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 }
 
 sealed class WaitObject {
-	data class TIME(val instant: Double) : WaitObject()
-	data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
+	//data class TIME(val instant: Double) : WaitObject() {
+	//	override fun toString(): String = "TIME(${instant.toLong()})"
+	//}
+	//data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
 	data class COROUTINE(val reason: String) : WaitObject()
-	object SLEEP : WaitObject()
+
+	//object SLEEP : WaitObject()
 	object VBLANK : WaitObject()
 }
 
@@ -158,6 +214,7 @@ class PspThread internal constructor(
 	var preemptionCount: Int = 0
 	val totalExecutedInstructions: Long get() = state.totalExecuted
 	val onEnd = Signal2<Unit>()
+	val onWakeUp = Signal2<Unit>()
 	val logger = Logger("PspThread")
 
 	enum class Phase {
@@ -186,13 +243,15 @@ class PspThread internal constructor(
 	val waiting: Boolean get() = waitObject != null
 	var priority: Int = initPriority
 	override val emulator get() = manager.emulator
-	val state = CpuState(emulator.globalCpuState, emulator.mem, emulator.syscalls).apply {
+	val state = CpuState("state.thread.$name", emulator.globalCpuState, emulator.mem, emulator.syscalls).apply {
 		_thread = this@PspThread
 		setPC(entryPoint)
 		SP = stack.high.toInt()
 		RA = CpuBreakException.THREAD_EXIT_KIL_RA
+
+		println("CREATED THREAD('$name'): PC=${PC.hex}, SP=${SP.hex}")
 	}
-	val interpreter = CpuInterpreter(state, emulator.breakpoints)
+	val interpreter = CpuInterpreter(state, emulator.breakpoints, emulator.nameProvider)
 	//val interpreter = FastCpuInterpreter(state)
 
 	init {
@@ -226,6 +285,7 @@ class PspThread internal constructor(
 
 	fun start() {
 		resume()
+		threadManager.onThreadChanged(this)
 	}
 
 	fun resume() {
@@ -233,6 +293,7 @@ class PspThread internal constructor(
 		waitObject = null
 		waitInfo = null
 		acceptingCallbacks = false
+		threadManager.onThreadChanged(this)
 	}
 
 	fun stop(reason: String = "generic") {
@@ -240,6 +301,7 @@ class PspThread internal constructor(
 			phase = Phase.STOPPED
 			onEnd(Unit)
 		}
+		//threadManager.onThreadChanged(this)
 	}
 
 	fun delete() {
@@ -254,6 +316,12 @@ class PspThread internal constructor(
 	}
 
 	fun step(now: Double) {
+		//if (name == "update_thread") {
+		//	println("Ignoring: Thread.${this.name}")
+		//	stop("ignoring")
+		//	return
+		//}
+		//println("Step: Thread.${this.name}")
 		preemptionCount++
 		try {
 			interpreter.steps(INSTRUCTIONS_PER_STEP)
@@ -286,11 +354,11 @@ class PspThread internal constructor(
 
 	fun suspend(wait: WaitObject, cb: Boolean) {
 		markWaiting(wait, cb)
-		if (wait is WaitObject.PROMISE) {
-			wait.promise.then { resume() }
-		}
+		//if (wait is WaitObject.PROMISE) wait.promise.then { resume() }
 		threadManager.suspend()
 	}
+
+	var pendingAccumulatedMicrosecondsToWait: Int = 0
 }
 
 var CpuState._thread: PspThread? by Extra.Property { null }

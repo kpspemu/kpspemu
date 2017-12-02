@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.ge
 import com.soywiz.korma.Matrix4
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korma.Matrix2d
+import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.mem.Memory
 
 data class GeBatchData(
@@ -25,14 +26,14 @@ class GeBatch {
 	val vertices: ByteArray get() = data.vertices
 	val indices: ShortArray get() = data.indices
 
-	fun initData(data: GeBatchData) {
+	fun initData(data: GeBatchData, emulator: Emulator) {
+
 		this.data = data
 		state.setTo(data.state)
 		vtype.init(state)
 		if (vtype.transform2D) {
-			//modelViewProjMatrix.setToOrtho(0f, 480f, 272f, 0f, 0f, (-0xFFFF).toFloat())
+			//modelViewProjMatrix.setToOrtho(0f, 0f, 512f, 272f, 0f, (-0xFFFF).toFloat())
 			modelViewProjMatrix.setToOrtho(0f, 0f, 480f, 272f, 0f, (-0xFFFF).toFloat())
-			//modelViewProjMatrix.setToIdentity()
 		} else {
 			modelViewProjMatrix.setToIdentity()
 			modelViewProjMatrix.setToMultiply(modelViewProjMatrix, state.getProjMatrix(tempMatrix))

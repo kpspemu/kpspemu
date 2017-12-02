@@ -7,7 +7,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class CpuStateTest {
-	val s = CpuState(GlobalCpuState(), DummyMemory)
+	val s = CpuState("test", GlobalCpuState(), DummyMemory)
 
 	@Test
 	fun gpr0IsAlways0() {

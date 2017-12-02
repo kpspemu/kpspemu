@@ -18,7 +18,7 @@ class DynarekMethodBuilderTest {
 		val func = mb.generateFunction()
 		println(func.generateJsBody(strict = false))
 
-		val state = CpuState(GlobalCpuState(), Memory())
+		val state = CpuState("DynarekMethodBuilderTest", GlobalCpuState(), Memory())
 		val ff = func.generateDynarek()
 		ff(state)
 		assertEquals(0x08900004, state.r4)

@@ -2,7 +2,10 @@ package com.soywiz.kpspemu.util
 
 import com.soywiz.kds.LinkedList2
 import com.soywiz.korio.async.Promise
+import com.soywiz.korio.async.eventLoop
+import com.soywiz.korio.async.sleep
 import com.soywiz.korio.async.suspendCancellableCoroutine
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.lang.Closeable
 
 class Signal2<T>(val onRegister: () -> Unit = {}) { //: AsyncSequence<T> {
@@ -48,14 +51,22 @@ fun <TI, TO> Signal2<TI>.mapSignal(transform: (TI) -> TO): Signal2<TO> {
 
 operator fun Signal2<Unit>.invoke() = invoke(Unit)
 
-suspend fun <T> Signal2<T>.waitOne(): T = suspendCancellableCoroutine { c ->
+class TimeoutException : Exception()
+
+suspend fun <T> Signal2<T>.waitOne(timeout: Int? = null): T = suspendCancellableCoroutine { c ->
 	var close: Closeable? = null
 	close = once {
 		close?.close()
 		c.resume(it)
 	}
+	if (timeout != null) {
+		c.context.eventLoop.setTimeout(timeout) {
+			close.close()
+			c.resumeWithException(TimeoutException())
+		}
+	}
 	c.onCancel {
-		close?.close()
+		close.close()
 	}
 }
 
