@@ -5,6 +5,7 @@ import com.soywiz.kpspemu.controller
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.mem.Ptr
 
 class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "ctrl.prx", "sceController_Service") {
@@ -27,8 +28,8 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		//display.waitVblank("sceCtrlPeekBufferPositive")
 		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
 	}
-	suspend fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
-		//display.waitVblank("sceCtrlReadBufferPositive")
+	suspend fun sceCtrlReadBufferPositive(thread: PspThread, sceCtrlDataPtr: Ptr, count: Int): Int {
+		display.waitVblank(thread, "sceCtrlReadBufferPositive")
 		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
 	}
 
@@ -55,8 +56,8 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		controller.lastLatchData.setTo(controller.currentFrame)
 	}
 
-	suspend fun sceCtrlReadLatch(currentLatchPtr: Ptr): Int {
-		display.waitVblank("sceCtrlReadLatch")
+	suspend fun sceCtrlReadLatch(thread: PspThread, currentLatchPtr: Ptr): Int {
+		display.waitVblank(thread, "sceCtrlReadLatch")
 		_peekLatch(currentLatchPtr)
 		return 0
 	}
@@ -76,10 +77,10 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 	override fun registerModule() {
 		registerFunctionSuspendInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
-		registerFunctionSuspendInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(ptr, int) }
+		registerFunctionSuspendInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(thread, ptr, int) }
 		registerFunctionInt("sceCtrlSetSamplingCycle", 0x6A2774F3, since = 150) { sceCtrlSetSamplingCycle(int) }
 		registerFunctionInt("sceCtrlSetSamplingMode", 0x1F4011E6, since = 150) { sceCtrlSetSamplingMode(int) }
-		registerFunctionSuspendInt("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(ptr) }
+		registerFunctionSuspendInt("sceCtrlReadLatch", 0x0B588501, since = 150) { sceCtrlReadLatch(thread, ptr) }
 
 		registerFunctionRaw("sceCtrlGetSamplingCycle", 0x02BAAD91, since = 150) { sceCtrlGetSamplingCycle(it) }
 		registerFunctionRaw("sceCtrl_348D99D4", 0x348D99D4, since = 150) { sceCtrl_348D99D4(it) }

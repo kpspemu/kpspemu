@@ -35,6 +35,7 @@ class Emulator(
 	val mem: Memory = Memory(),
 	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
+	val timeManager = TimeManager(this)
 	val nameProvider = AddressInfo()
 	val breakpoints = Breakpoints()
 	val eventLoop = coroutineContext.eventLoop
@@ -52,7 +53,6 @@ class Emulator(
 	val threadManager = ThreadManager(this)
 	val moduleManager = ModuleManager(this)
 	val callbackManager = CallbackManager(this)
-	val timeManager = TimeManager(this)
 	val controller = PspController(this)
 	val fileManager = FileManager(this)
 	val imem = object : IMemory {

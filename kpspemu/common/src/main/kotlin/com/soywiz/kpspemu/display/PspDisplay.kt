@@ -5,24 +5,22 @@ import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.color.RGBA_5551
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
-import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.ge.PixelFormat
+import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.mem
-import com.soywiz.kpspemu.util.Signal2
-import com.soywiz.kpspemu.util.waitOne
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	companion object {
 		const val PROCESSED_PIXELS_PER_SECOND = 9000000 // hz
-		const val CYCLES_PER_PIXEL = 1
+		const val CYCLES_PER_PIXEL = 1.0
 		const val PIXELS_IN_A_ROW = 525
 		const val VSYNC_ROW = 272
 		const val NUMBER_OF_ROWS = 286
 		const val HCOUNT_PER_VBLANK = 285.72
-		const val HORIZONTAL_SYNC_HZ = (PspDisplay.PROCESSED_PIXELS_PER_SECOND * PspDisplay.CYCLES_PER_PIXEL) / PspDisplay.PIXELS_IN_A_ROW // 17142.85714285714
-		const val HORIZONTAL_SECONDS = 1 / PspDisplay.HORIZONTAL_SYNC_HZ // 5.8333333333333E-5
+		const val HORIZONTAL_SYNC_HZ = (PspDisplay.PROCESSED_PIXELS_PER_SECOND.toDouble() * PspDisplay.CYCLES_PER_PIXEL.toDouble()) / PspDisplay.PIXELS_IN_A_ROW .toDouble()// 17142.85714285714
+		const val HORIZONTAL_SECONDS = 1.0 / PspDisplay.HORIZONTAL_SYNC_HZ // 5.8333333333333E-5
 		const val VERTICAL_SYNC_HZ = PspDisplay.HORIZONTAL_SYNC_HZ / PspDisplay.HCOUNT_PER_VBLANK // 59.998800024
-		const val VERTICAL_SECONDS = 1 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
+		const val VERTICAL_SECONDS = 1.0 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
 	}
 
 	var exposeDisplay = true
@@ -40,11 +38,6 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	//var displayWidth: Int = 512
 	var displayWidth: Int = 480
 	var displayHeight: Int = 272
-
-	var vcount = 0
-
-	val onVsyncStart = Signal2<Unit>()
-	val onVsyncEnd = Signal2<Unit>()
 
 	fun fixedAddress(): Int {
 		//println(address.hex)
@@ -84,29 +77,55 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		//mem.fill(0, Memory.VIDEOMEM.start, Memory.VIDEOMEM.size)
 	}
 
-	suspend fun waitVblankStart(reason: String) {
-		//println("waitVblankStart: $reason")
-		display.onVsyncStart.waitOne()
-		//waitVblank(reason)
+	val times = DisplayTimes { emulator.timeManager.getTimeInMillisecondsDouble() }
+
+	val updatedTimes get() = run { times.updateTime(); times }
+
+	suspend fun waitVblankStart(thread: PspThread, reason: String) {
+		times.updateTime()
+		thread.sleepSeconds(times.secondsLeftForVblankStart)
 	}
 
-	suspend fun waitVblank(reason: String) {
-		//println("waitVblank: $reason")
-		//if (!inVBlank) {
-			display.onVsyncStart.waitOne()
-		//}
+	suspend fun waitVblank(thread: PspThread, reason: String) {
+		times.updateTime()
+		thread.sleepSeconds(times.secondsLeftForVblank)
+	}
+}
+
+class DisplayTimes(val msProvider: () -> Double) {
+	private var startTimeMs: Double = 0.0
+	private var currentMs: Double = startTimeMs
+	private var elapsedSeconds: Double = 0.0
+	var hcountTotal = 0
+	var hcountCurrent = 0
+	var vblankCount = 0
+	private var isInVblank = false
+
+	private var rowsLeftForVblank = 0
+	var secondsLeftForVblank = 0.0
+
+	private var rowsLeftForVblankStart = 0
+	var secondsLeftForVblankStart = 0.0
+
+	fun updateTime(now: Double = msProvider()) {
+		if (startTimeMs == 0.0) startTimeMs = now
+		this.currentMs = now
+		this.elapsedSeconds = (this.currentMs - this.startTimeMs) / 1000
+		this.hcountTotal = (this.elapsedSeconds * PspDisplay.HORIZONTAL_SYNC_HZ).toInt()
+		this.hcountCurrent = (((this.elapsedSeconds % 1.00002) * PspDisplay.HORIZONTAL_SYNC_HZ).toInt()) % PspDisplay.NUMBER_OF_ROWS
+		this.vblankCount = (this.elapsedSeconds * PspDisplay.VERTICAL_SYNC_HZ).toInt()
+		//console.log(this.elapsedSeconds);
+		if (this.hcountCurrent >= PspDisplay.VSYNC_ROW) {
+			this.isInVblank = true
+			this.rowsLeftForVblank = 0
+			this.rowsLeftForVblankStart = (PspDisplay.NUMBER_OF_ROWS - this.hcountCurrent) + PspDisplay.VSYNC_ROW
+		} else {
+			this.isInVblank = false
+			this.rowsLeftForVblank = PspDisplay.VSYNC_ROW - this.hcountCurrent
+			this.rowsLeftForVblankStart = this.rowsLeftForVblank
+		}
+		this.secondsLeftForVblank = this.rowsLeftForVblank * PspDisplay.HORIZONTAL_SECONDS
+		this.secondsLeftForVblankStart = this.rowsLeftForVblankStart * PspDisplay.HORIZONTAL_SECONDS
 	}
 
-	var inVBlank = false
-
-	fun startVsync() {
-		inVBlank = true
-		vcount++
-		onVsyncStart(Unit)
-	}
-
-	fun endVsync() {
-		inVBlank = false
-		onVsyncEnd(Unit)
-	}
 }

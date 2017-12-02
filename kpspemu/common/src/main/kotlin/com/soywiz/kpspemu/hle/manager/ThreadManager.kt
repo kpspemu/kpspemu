@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
+import com.soywiz.korio.async.sleep
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
@@ -359,6 +360,14 @@ class PspThread internal constructor(
 	}
 
 	var pendingAccumulatedMicrosecondsToWait: Int = 0
+
+	suspend fun sleepMicro(microseconds: Int) {
+		val totalMicroseconds = pendingAccumulatedMicrosecondsToWait + microseconds
+		pendingAccumulatedMicrosecondsToWait = totalMicroseconds % 1000
+		coroutineContext.sleep(totalMicroseconds / 1000)
+	}
+
+	suspend fun sleepSeconds(seconds: Double) = sleepMicro((seconds * 1_000_000).toInt())
 }
 
 var CpuState._thread: PspThread? by Extra.Property { null }

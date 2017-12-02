@@ -240,8 +240,6 @@ class KpspemuMainScene(
 			controller.startFrame(timeManager.getTimeInMicrosecondsInt())
 
 			emulator.interruptManager.dispatchVsync()
-			emulator.display.startVsync()
-			emulator.display.endVsync()
 			//sceneView.waitFrame()
 			sleep(MS_15)
 

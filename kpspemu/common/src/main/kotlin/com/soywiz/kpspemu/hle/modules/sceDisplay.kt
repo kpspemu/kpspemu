@@ -5,6 +5,7 @@ import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.hle.manager.PspThread
 
 @Suppress("UNUSED_PARAMETER")
 class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010011, "display_02g.prx", "sceDisplay_Service") {
@@ -17,15 +18,13 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return 0
 	}
 
-	suspend fun sceDisplayWaitVblankStart(): Int {
-		//thread.suspend(WaitObject.VBLANK, cb = cb)
-		display.waitVblankStart("sceDisplayWaitVblankStart")
+	suspend fun sceDisplayWaitVblankStart(thread: PspThread): Int {
+		display.waitVblankStart(thread, "sceDisplayWaitVblankStart")
 		return 0
 	}
 
-	suspend fun sceDisplayWaitVblank(): Int {
-		//thread.suspend(WaitObject.VBLANK, cb = cb)
-		display.waitVblank("sceDisplayWaitVblank")
+	suspend fun sceDisplayWaitVblank(thread: PspThread): Int {
+		display.waitVblank(thread, "sceDisplayWaitVblank")
 		return 0
 	}
 
@@ -39,15 +38,8 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return 0
 	}
 
-	fun sceDisplayGetVcount(): Int {
-		return emulator.display.vcount
-	}
-
-	fun sceDisplayGetCurrentHcount(): Int {
-		//this.hcountTotal = (this.elapsedSeconds * PspDisplay.HORIZONTAL_SYNC_HZ) | 0;
-		//this.hcountCurrent = (((this.elapsedSeconds % 1.00002) * PspDisplay.HORIZONTAL_SYNC_HZ) | 0) % PspDisplay.NUMBER_OF_ROWS;
-		return 0
-	}
+	fun sceDisplayGetVcount(): Int = emulator.display.updatedTimes.vblankCount
+	fun sceDisplayGetCurrentHcount(): Int = emulator.display.updatedTimes.hcountCurrent
 
 	fun sceDisplayIsVsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x21038913)
 	fun sceDisplayGetAccumulatedHcount(cpu: CpuState): Unit = UNIMPLEMENTED(0x210EAB3A)
@@ -68,10 +60,10 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 	override fun registerModule() {
 		registerFunctionInt("sceDisplaySetMode", 0x0E20F177, 150, syscall = 0x213A) { sceDisplaySetMode(int, int, int) }
 		registerFunctionInt("sceDisplaySetFrameBuf", 0x289D82FE, 150, syscall = 0x213F) { sceDisplaySetFrameBuf(int, int, int, int) }
-		registerFunctionSuspendInt("sceDisplayWaitVblank", 0x36CDFADE, since = 150, cb = false) { sceDisplayWaitVblank() }
-		registerFunctionSuspendInt("sceDisplayWaitVblankCB", 0x8EB9EC49, since = 150, cb = true) { sceDisplayWaitVblank() }
-		registerFunctionSuspendInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147, cb = false) { sceDisplayWaitVblankStart() }
-		registerFunctionSuspendInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150, cb = true) { sceDisplayWaitVblankStart() }
+		registerFunctionSuspendInt("sceDisplayWaitVblank", 0x36CDFADE, since = 150, cb = false) { sceDisplayWaitVblank(thread) }
+		registerFunctionSuspendInt("sceDisplayWaitVblankCB", 0x8EB9EC49, since = 150, cb = true) { sceDisplayWaitVblank(thread) }
+		registerFunctionSuspendInt("sceDisplayWaitVblankStart", 0x984C27E7, 150, syscall = 0x2147, cb = false) { sceDisplayWaitVblankStart(thread) }
+		registerFunctionSuspendInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150, cb = true) { sceDisplayWaitVblankStart(thread) }
 		registerFunctionInt("sceDisplayGetVcount", 0x9C6EAAD7, since = 150) { sceDisplayGetVcount() }
 		registerFunctionInt("sceDisplayGetCurrentHcount", 0x773DD3A3, since = 150) { sceDisplayGetCurrentHcount() }
 
