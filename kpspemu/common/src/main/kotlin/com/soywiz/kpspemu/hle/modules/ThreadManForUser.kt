@@ -103,7 +103,11 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelDelayThread(thread: PspThread, microseconds: Int): Int = _sceKernelDelayThread(thread, microseconds, cb = false)
 
 	suspend fun _sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr, cb: Boolean): Int {
-		val thread = threadManager.getById(threadId)
+		val thread = threadManager.tryGetById(threadId)
+		if (thread == null) {
+			logger.warn { "_sceKernelWaitThreadEnd: Thread not found! $threadId" }
+			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+		}
 		currentThread.waitInfo = threadId
 		thread.onEnd.add {
 			println("ENDED!")

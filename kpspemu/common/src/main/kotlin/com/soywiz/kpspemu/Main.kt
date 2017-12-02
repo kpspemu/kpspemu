@@ -217,7 +217,8 @@ class KpspemuMainScene(
 					}
 				}
 				//emulator.frameStep()
-				sleep(MS_1)
+				//sleep(MS_1)
+				sleep(MS_0)
 			} else {
 				sleep(MS_10)
 			}
@@ -308,8 +309,9 @@ class KpspemuMainScene(
 					}
 					PspEmuKeys.F11 -> {
 						// Dump threads
+						println("THREAD_DUMP:")
 						for (thread in emulator.threadManager.threads) {
-							println("Thread(${thread.name}) : ${thread.waitObject}")
+							println("Thread[${thread.id}](${thread.name}) : ${thread.status} : ${thread.waitObject}")
 						}
 					}
 				}

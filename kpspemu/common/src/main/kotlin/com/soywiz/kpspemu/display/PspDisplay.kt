@@ -87,6 +87,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	suspend fun waitVblankStart(reason: String) {
 		//println("waitVblankStart: $reason")
 		display.onVsyncStart.waitOne()
+		//waitVblank(reason)
 	}
 
 	suspend fun waitVblank(reason: String) {

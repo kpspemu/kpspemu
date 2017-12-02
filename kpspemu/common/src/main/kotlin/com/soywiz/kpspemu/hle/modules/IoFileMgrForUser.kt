@@ -7,6 +7,7 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
+import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.toInt
 import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.Emulator
@@ -58,7 +59,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 				(flags and FileOpenFlags.Write) != 0 -> VfsOpenMode.WRITE
 				else -> VfsOpenMode.READ
 			}
-			file.stream = file.file.open(flags2)
+			val f = file.file.open(flags2)
+			val bytes = f.readAll()
+			println("Bytes:" + bytes.size)
+			file.stream = bytes.openAsync().check(fileName)
+
+			//file.stream = file.file.open(flags2).readAll().openAsync()
 			logger.warn { "WIP: sceIoOpen(${thread.name}) --> $fileName, ${file.id}" }
 			return file.id
 		} catch (e: Throwable) {
@@ -398,4 +404,34 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionRaw("sceIoIoctlAsync", 0xE95A012B, since = 150) { sceIoIoctlAsync(it) }
 		registerFunctionRaw("sceIoRemove", 0xF27A9C51, since = 150) { sceIoRemove(it) }
 	}
+}
+
+fun AsyncStream.check(name: String): AsyncStream {
+	val base = this
+
+	return object : AsyncStreamBase() {
+		suspend override fun close() {
+			base.close()
+		}
+
+		suspend override fun getLength(): Long {
+			return base.getLength()
+		}
+
+		suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
+			if (position >= getLength()) return 0
+			base.position = position
+			println("AsyncStream.check.read('$name':$position/${getLength()}): buffer(${buffer.size}), $offset, $len")
+			return base.read(buffer, offset, len)
+		}
+
+		suspend override fun setLength(value: Long) {
+			base.setLength(value)
+		}
+
+		suspend override fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {
+			base.position = position
+			base.write(buffer, offset, len)
+		}
+	}.toAsyncStream()
 }
