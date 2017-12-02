@@ -47,8 +47,22 @@ class DebugScene(
 
 	suspend fun askGoto() {
 		val thread = emulatorContainer.threadManager.threads.firstOrNull()
-		viewAddress = evaluateIntExpr(thread?.state ?: CpuState.dummy, browser.prompt("Address", viewAddress.hex)) and
+		val exprStr = browser.prompt("Address", viewAddress.hex)
+		val addr = evaluateIntExpr(thread?.state ?: CpuState.dummy, exprStr) and
 			0b11.inv()
+		println("Expr: $exprStr")
+		println("Address: ${addr.hex}")
+		viewAddress = addr
+	}
+
+	suspend fun askEval() {
+		val thread = emulatorContainer.threadManager.threads.firstOrNull()
+		val exprStr = browser.prompt("Expression", viewAddress.hex)
+		val value = evaluateIntExpr(thread?.state ?: CpuState.dummy, exprStr) and
+			0b11.inv()
+		println("Expr: $exprStr")
+		println("Result: ${value.hex}")
+		browser.alert("Expr: $exprStr\nResult: ${value.hex}")
 	}
 
 	suspend override fun sceneInit(sceneView: Container) {
@@ -60,6 +74,7 @@ class DebugScene(
 			when (it.keyCode) {
 				113 -> sceneView.visible = !sceneView.visible // F2
 				else -> if (sceneView.visible) when (it.keyCode) {
+					69 -> askEval() // E
 					71 -> askGoto() // G
 					38 -> moveUp() // UP
 					40 -> moveDown() // DOWN
@@ -168,7 +183,7 @@ class DebugScene(
 	}
 
 	class GprListView(browser: Browser, views: Views, val font: BitmapFont) : Container(views) {
-		var state = CpuState(GlobalCpuState(), DummyMemory)
+		var state = CpuState("GprListView", GlobalCpuState(), DummyMemory)
 		val regs = (0 until 32).map { regIndex ->
 			GprView(views, font, "r$regIndex", { state.setGpr(regIndex, it) }, { state.getGpr(regIndex) }).apply {
 				this@GprListView += this
@@ -300,6 +315,7 @@ class DebugScene(
 				this += text
 				text.onLineClick {
 					emulatorContainer.breakpoints.toggle(text.addr)
+					println("Toggle breakpoint at: ${text.addr.hex}")
 				}
 			}
 		}

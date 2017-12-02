@@ -3,14 +3,11 @@ package com.soywiz.kpspemu.hle.manager
 import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.Promise
-import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.Thread_sleep
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.util.hasFlag
+import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.korio.util.umod
 import com.soywiz.kpspemu.*
@@ -42,9 +39,15 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		//priorities.sortBy { it.priority }
 		var attr = attributes
 		val ssize = max(stackSize, 0x200).nextAlignedTo(0x100)
+		//val ssize = max(stackSize, 0x20000).nextAlignedTo(0x10000)
 		val stack = memoryManager.userPartition.allocateHigh(ssize, "${name}_stack")
+
+		println(stack.toString2())
+
 		val thread = PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
 		logger.info { "stack:%08X-%08X (%d)".format(stack.low.toInt(), stack.high.toInt(), stack.size.toInt()) }
+
+		memoryManager.userPartition.dump()
 
 		attr = attr or PspThreadAttributes.User
 		attr = attr or PspThreadAttributes.LowFF
@@ -74,11 +77,18 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		val threadsWithPriorityCount = threadsWithPriority.size
 		if (threadsWithPriorityCount == 0) return null
 		val index = threadsWithPriority.indexOf(prevThread) umod threadsWithPriorityCount
-		return threadsWithPriority.getOrNull((index + 1)umod threadsWithPriorityCount)
+		return threadsWithPriority.getOrNull((index + 1) umod threadsWithPriorityCount)
 	}
 
 	suspend fun step() {
 		val start: Double = timeManager.getTimeInMicrosecondsDouble()
+
+		for (t in resourcesById.values.filter { it.waitObject is WaitObject.TIME }) {
+			val time = (t.waitObject as WaitObject.TIME).instant
+			if (start >= time) {
+				t.resume()
+			}
+		}
 
 		do {
 			val now: Double = timeManager.getTimeInMicrosecondsDouble()
@@ -165,7 +175,10 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 }
 
 sealed class WaitObject {
-	data class TIME(val instant: Double) : WaitObject()
+	data class TIME(val instant: Double) : WaitObject() {
+		override fun toString(): String = "TIME(${instant.toLong()})"
+	}
+
 	data class PROMISE(val promise: Promise<Unit>, val reason: String) : WaitObject()
 	data class COROUTINE(val reason: String) : WaitObject()
 	object SLEEP : WaitObject()
@@ -213,11 +226,13 @@ class PspThread internal constructor(
 	val waiting: Boolean get() = waitObject != null
 	var priority: Int = initPriority
 	override val emulator get() = manager.emulator
-	val state = CpuState(emulator.globalCpuState, emulator.mem, emulator.syscalls).apply {
+	val state = CpuState("state.thread.$name", emulator.globalCpuState, emulator.mem, emulator.syscalls).apply {
 		_thread = this@PspThread
 		setPC(entryPoint)
 		SP = stack.high.toInt()
 		RA = CpuBreakException.THREAD_EXIT_KIL_RA
+
+		println("CREATED THREAD('$name'): PC=${PC.hex}, SP=${SP.hex}")
 	}
 	val interpreter = CpuInterpreter(state, emulator.breakpoints, emulator.nameProvider)
 	//val interpreter = FastCpuInterpreter(state)
@@ -281,6 +296,12 @@ class PspThread internal constructor(
 	}
 
 	fun step(now: Double) {
+		//if (name == "update_thread") {
+		//	println("Ignoring: Thread.${this.name}")
+		//	stop("ignoring")
+		//	return
+		//}
+		//println("Step: Thread.${this.name}")
 		preemptionCount++
 		try {
 			interpreter.steps(INSTRUCTIONS_PER_STEP)

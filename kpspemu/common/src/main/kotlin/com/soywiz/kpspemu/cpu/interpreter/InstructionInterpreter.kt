@@ -84,15 +84,15 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 
 	private fun checkException(sPC: Int, e: Throwable) {
 		if (e !is EmulatorControlFlowException) {
-			Console.error("There was an error at %08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
-			Console.error(" - RA at %08X: %s".format(cpu.RA, cpu.mem.disasmMacro(cpu.RA, nameProvider)))
+			Console.error("There was an error at 0x%08X: %s".format(sPC, cpu.mem.disasmMacro(sPC, nameProvider)))
+			Console.error(" - RA at 0x%08X: %s".format(cpu.RA, cpu.mem.disasmMacro(cpu.RA, nameProvider)))
 		}
 		throw e
 	}
 
 
 	private fun tracePC() {
-		println("%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC, nameProvider)))
+		println("0x%08X: %s".format(cpu._PC, cpu.mem.disasmMacro(cpu._PC, nameProvider)))
 	}
 }
 

@@ -3,9 +3,11 @@ package com.soywiz.kpspemu.mem
 import com.soywiz.kmem.arraycopy
 import com.soywiz.kmem.get
 import com.soywiz.kmem.set
-import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.hex
+import com.soywiz.kpspemu.debug.BaseBreakpoints
 
 const private val MEMORY_MASK = 0x0FFFFFFF
 const private val MASK = MEMORY_MASK
@@ -33,6 +35,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 		val MAINMEM = MemorySegment("mainmem", MAIN_OFFSET until 0x0a000000)
 
 		operator fun invoke(): Memory = com.soywiz.kpspemu.mem.NormalMemory()
+		//operator fun invoke(): Memory = com.soywiz.kpspemu.mem.SmallMemory()
 		//operator fun invoke(): Memory = SmallMemory()
 	}
 
@@ -45,9 +48,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	open fun hash(address4: Int, nwords: Int): Int {
 		var hash = 0
-		for (n in 0 until nwords) {
-			hash += lw(address4 + n * 4)
-		}
+		for (n in 0 until nwords) hash += lw(address4 + n * 4)
 		return hash
 	}
 
@@ -163,9 +164,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
 	fun readStringzOrNull(offset: Int): String? = if (offset != 0) readStringz(offset) else null
 
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
-	open fun fill(value: Int, offset: Int, size: Int) {
-		for (n in 0 until offset) sb(offset + n, value)
-	}
+	open fun fill(value: Int, address: Int, size: Int) = run { for (n in 0 until size) sb(address + n, value) }
 }
 
 object DummyMemory : Memory(true) {
@@ -223,24 +222,45 @@ class TraceMemory(
 	}
 }
 
+open class ListenerMemory(
+	val parent: Memory = Memory(),
+	val listener: (size: Int, addr: Int, old: Int, new: Int) -> Unit
+) : Memory(true) {
+	fun normalized(address: Int) = address and 0x0FFFFFFF
 
-fun Memory.openSync(): SyncStream {
-	val mem = this
-	return SyncStream(object : SyncStreamBase() {
-		override var length: Long
-			get() = 0xFFFFFFFFL
-			set(value) = invalidOp
-
-		override fun close() = Unit
-		override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
-			mem.read(position.toInt(), buffer, offset, len)
-			return len
+	private inline fun <T> check(address: Int, callback: () -> T): T {
+		try {
+			return callback()
+		} catch (e: IndexOutOfBoundsException) {
+			Console.error("OUT OF BOUNDS trying to read: ${address.hex}")
+			throw e
 		}
+	}
 
-		override fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {
-			mem.write(position.toInt(), buffer, offset, len)
+	override fun sb(address: Int, value: Int) {
+		check(address) {
+			listener(1, address, parent.lb(address), value)
+			parent.sb(normalized(address), value)
 		}
-	})
+	}
+
+	override fun sh(address: Int, value: Int) {
+		check(address) {
+			listener(2, address, parent.lh(address), value)
+			parent.sh(normalized(address), value)
+		}
+	}
+
+	override fun sw(address: Int, value: Int) {
+		check(address) {
+			listener(4, address, parent.lw(address), value)
+			parent.sw(normalized(address), value)
+		}
+	}
+
+	override fun lb(address: Int): Int = check(address) { parent.lb(normalized(address)) }
+	override fun lh(address: Int): Int = check(address) { parent.lh(normalized(address)) }
+	override fun lw(address: Int): Int = check(address) { parent.lw(normalized(address)) }
 }
 
 abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(true) {
@@ -276,9 +296,9 @@ abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(t
 	override fun write(dstPos: Int, src: ByteArray, srcPos: Int, len: Int) = fmem.setAlignedArrayInt8(index(dstPos), src, srcPos, len)
 	override fun write(dstPos: Int, src: IntArray, srcPos: Int, len: Int) = fmem.setAlignedArrayInt32(index(dstPos) ushr 2, src, srcPos, len)
 
-	override fun fill(value: Int, offset: Int, size: Int) {
+	override fun fill(value: Int, address: Int, size: Int) {
 		val m = this.i8
-		val start = index(offset)
+		val start = index(address)
 		for (n in 0 until size) m[start + n] = value.toByte() // @TODO: Use native fill!
 	}
 
@@ -291,9 +311,12 @@ class NormalMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x0a00000
 }
 
 class SmallMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)) {
-	override fun index(address: Int): Int = when {
-		address >= 0x08000000 -> address - 0x08000000
-		address >= 0x04000000 -> address - 0x04000000 + 0x02000000
-		else -> address + 0x04000000 + 0x02000000
+	override fun index(address: Int): Int {
+		val addr = address and 0x0FFFFFFF
+		return when {
+			addr >= 0x08000000 -> addr - 0x08000000
+			addr >= 0x04000000 -> addr - 0x04000000 + 0x02000000
+			else -> addr + 0x04000000 + 0x02000000
+		}
 	}
 }

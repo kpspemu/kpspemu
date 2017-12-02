@@ -1,6 +1,8 @@
 package com.soywiz.kpspemu.cpu
 
-class Breakpoints {
+import com.soywiz.kpspemu.debug.BaseBreakpoints
+
+class Breakpoints : BaseBreakpoints {
 	private val breakpoints = LinkedHashMap<Int, Boolean>()
 	var enabled: Boolean = false; private set
 
@@ -9,7 +11,7 @@ class Breakpoints {
 		updateEnabled()
 	}
 
-	operator fun get(addr: Int) = enabled && breakpoints.getOrElse(addr) { false }
+	override operator fun get(addr: Int) = enabled && breakpoints.getOrElse(addr) { false }
 
 	operator fun set(addr: Int, enable: Boolean) {
 		if (enable) {
@@ -26,5 +28,10 @@ class Breakpoints {
 
 	private fun updateEnabled() {
 		enabled = breakpoints.size != 0
+	}
+
+	fun copyFrom(src: Breakpoints) {
+		this.breakpoints.putAll(src.breakpoints)
+		updateEnabled()
 	}
 }

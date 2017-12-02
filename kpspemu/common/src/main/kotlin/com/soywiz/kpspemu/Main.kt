@@ -132,6 +132,7 @@ class KpspemuMainScene(
 	suspend fun createEmulator() {
 		running = true
 		ended = false
+		val oldBP = emulatorContainer.emulator.breakpoints
 		emulatorContainer.emulator = Emulator(
 			coroutineContext,
 			mem = Memory(),
@@ -142,6 +143,7 @@ class KpspemuMainScene(
 				}
 			}
 		)
+		emulatorContainer.emulator.breakpoints.copyFrom(oldBP)
 		agRenderer.anyBatch = false
 		agRenderer.reset()
 	}

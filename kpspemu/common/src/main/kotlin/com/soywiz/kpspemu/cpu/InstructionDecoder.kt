@@ -52,7 +52,7 @@ open class InstructionDecoder {
 	inline val Int.one_two: Int get() = (1 + 1 * this.one + 2 * this.two)
 
 	inline val Int.syscall: Int get() = this.extract(6, 20)
-	inline val Int.s_imm16: Int get() = ((this and 0xFFFF) shl 16) shr 16
+	inline val Int.s_imm16: Int get() = (this shl 16) shr 16
 	inline val Int.u_imm16: Int get() = this and 0xFFFF
 
 	inline val Int.s_imm14: Int get() = this.extract(2, 14).signExtend(14)
