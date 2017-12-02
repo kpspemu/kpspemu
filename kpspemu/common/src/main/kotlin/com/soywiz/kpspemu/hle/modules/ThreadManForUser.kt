@@ -93,7 +93,9 @@ class ThreadManForUser(emulator: Emulator)
 	}
 
 	suspend fun _sceKernelDelayThread(thread: PspThread, microseconds: Int, cb: Boolean): Int {
-		coroutineContext.sleep(microseconds / 1000)
+		val totalMicroseconds = thread.pendingAccumulatedMicrosecondsToWait + microseconds
+		thread.pendingAccumulatedMicrosecondsToWait = totalMicroseconds % 1000
+		coroutineContext.sleep(totalMicroseconds / 1000)
 		//thread.suspend(WaitObject.TIME(rtc.getTimeInMicrosecondsDouble() + microseconds), cb = cb)
 		return 0
 	}

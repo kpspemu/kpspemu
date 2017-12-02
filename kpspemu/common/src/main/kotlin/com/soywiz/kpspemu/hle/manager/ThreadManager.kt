@@ -357,6 +357,8 @@ class PspThread internal constructor(
 		//if (wait is WaitObject.PROMISE) wait.promise.then { resume() }
 		threadManager.suspend()
 	}
+
+	var pendingAccumulatedMicrosecondsToWait: Int = 0
 }
 
 var CpuState._thread: PspThread? by Extra.Property { null }

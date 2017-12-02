@@ -19,6 +19,7 @@ import com.soywiz.korge.scene.*
 import com.soywiz.korge.service.Browser
 import com.soywiz.korge.time.milliseconds
 import com.soywiz.korge.time.seconds
+import com.soywiz.korge.time.waitFrame
 import com.soywiz.korge.tween.get
 import com.soywiz.korge.tween.tween
 import com.soywiz.korge.view.*
@@ -116,6 +117,7 @@ class KpspemuMainScene(
 		val logger = Logger("KpspemuMainScene")
 		val MS_0 = 0.milliseconds
 		val MS_1 = 1.milliseconds
+		val MS_2 = 2.milliseconds
 		val MS_10 = 10.milliseconds
 		val MS_15 = 15.milliseconds
 	}
@@ -236,12 +238,21 @@ class KpspemuMainScene(
 	suspend fun displayProcess() {
 		while (true) {
 			controller.startFrame(timeManager.getTimeInMicrosecondsInt())
-			sleep(MS_15)
+
+			emulator.interruptManager.dispatchVsync()
+			emulator.display.startVsync()
+			emulator.display.endVsync()
+			sceneView.waitFrame()
+
+			/*
+			//sleep(MS_15)
+			sleep(MS_2)
 			emulator.interruptManager.dispatchVsync()
 			emulator.display.startVsync()
 			controller.endFrame()
 			sleep(MS_1)
 			emulator.display.endVsync()
+			*/
 			controller.endFrame()
 		}
 	}
