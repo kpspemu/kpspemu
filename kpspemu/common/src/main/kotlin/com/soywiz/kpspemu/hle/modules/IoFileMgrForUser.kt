@@ -59,12 +59,12 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 				(flags and FileOpenFlags.Write) != 0 -> VfsOpenMode.WRITE
 				else -> VfsOpenMode.READ
 			}
-			val f = file.file.open(flags2)
-			val bytes = f.readAll()
-			println("Bytes:" + bytes.size)
-			file.stream = bytes.openAsync().check(fileName)
+			//val f = file.file.open(flags2)
+			//val bytes = f.readAll()
+			//println("Bytes:" + bytes.size)
+			//file.stream = bytes.openAsync().check(fileName)
 
-			//file.stream = file.file.open(flags2).readAll().openAsync()
+			file.stream = file.file.open(flags2)
 			logger.warn { "WIP: sceIoOpen(${thread.name}) --> $fileName, ${file.id}" }
 			return file.id
 		} catch (e: Throwable) {
