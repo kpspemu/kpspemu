@@ -368,6 +368,10 @@ class PspThread internal constructor(
 	}
 
 	suspend fun sleepSeconds(seconds: Double) = sleepMicro((seconds * 1_000_000).toInt())
+
+	suspend fun sleepSecondsIfRequired(seconds: Double) {
+		if (seconds > 0.0) sleepMicro((seconds * 1_000_000).toInt())
+	}
 }
 
 var CpuState._thread: PspThread? by Extra.Property { null }

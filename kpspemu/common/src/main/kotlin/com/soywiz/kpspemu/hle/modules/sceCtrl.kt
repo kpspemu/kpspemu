@@ -21,15 +21,15 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 			pos += 16
 		}
 		//return waitAsync(1).then(v => count);
-		return count;
+		return count
 	}
 
-	suspend fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
-		//display.waitVblank("sceCtrlPeekBufferPositive")
+	suspend fun sceCtrlPeekBufferPositive(thread: PspThread, sceCtrlDataPtr: Ptr, count: Int): Int {
+		//display.waitVblank(thread, "sceCtrlReadBufferPositive")
 		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
 	}
 	suspend fun sceCtrlReadBufferPositive(thread: PspThread, sceCtrlDataPtr: Ptr, count: Int): Int {
-		display.waitVblank(thread, "sceCtrlReadBufferPositive")
+		//display.waitVblank(thread, "sceCtrlReadBufferPositive")
 		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
 	}
 
@@ -45,12 +45,12 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 	fun _peekLatch(currentLatchPtr: Ptr): Unit {
 		val ButtonsNew = controller.currentFrame.buttons
-		val ButtonsOld = controller.lastLatchData.buttons;
-		val ButtonsChanged = ButtonsOld xor ButtonsNew;
+		val ButtonsOld = controller.lastLatchData.buttons
+		val ButtonsChanged = ButtonsOld xor ButtonsNew
 
-		currentLatchPtr.sw(0, ButtonsNew and ButtonsChanged); // uiMake
-		currentLatchPtr.sw(4, ButtonsOld and ButtonsChanged); // uiBreak
-		currentLatchPtr.sw(8, ButtonsNew); // uiPress
+		currentLatchPtr.sw(0, ButtonsNew and ButtonsChanged) // uiMake
+		currentLatchPtr.sw(4, ButtonsOld and ButtonsChanged) // uiBreak
+		currentLatchPtr.sw(8, ButtonsNew) // uiPress
 		currentLatchPtr.sw(12, (ButtonsOld and ButtonsNew.inv()) and ButtonsChanged) // uiRelease
 
 		controller.lastLatchData.setTo(controller.currentFrame)
@@ -76,7 +76,7 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 
 	override fun registerModule() {
-		registerFunctionSuspendInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
+		registerFunctionSuspendInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(thread, ptr, int) }
 		registerFunctionSuspendInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(thread, ptr, int) }
 		registerFunctionInt("sceCtrlSetSamplingCycle", 0x6A2774F3, since = 150) { sceCtrlSetSamplingCycle(int) }
 		registerFunctionInt("sceCtrlSetSamplingMode", 0x1F4011E6, since = 150) { sceCtrlSetSamplingMode(int) }

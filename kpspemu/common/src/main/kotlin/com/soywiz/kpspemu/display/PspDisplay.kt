@@ -83,12 +83,12 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 
 	suspend fun waitVblankStart(thread: PspThread, reason: String) {
 		times.updateTime()
-		thread.sleepSeconds(times.secondsLeftForVblankStart)
+		thread.sleepSecondsIfRequired(times.secondsLeftForVblankStart)
 	}
 
 	suspend fun waitVblank(thread: PspThread, reason: String) {
 		times.updateTime()
-		thread.sleepSeconds(times.secondsLeftForVblank)
+		thread.sleepSecondsIfRequired(times.secondsLeftForVblank)
 	}
 }
 

@@ -102,7 +102,7 @@ abstract class SceModule(
 
 	fun registerFunctionRR(name: String, uid: Long, since: Int = 150, syscall: Int = -1, function: RegisterReader.(CpuState) -> Unit) {
 		registerFunctionRaw(name, uid, since, syscall) {
-			//println("Calling $name")
+			//if (name != "sceGeListUpdateStallAddr") println("Calling $name")
 			rr.reset(it)
 			function(rr, it)
 		}
