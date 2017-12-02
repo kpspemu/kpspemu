@@ -597,7 +597,8 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 			}
 			PspFileFormat.ENCRYPTED_ELF -> {
 				val encryptedData = stream.readAll()
-				val decryptedData = CryptedElf.decrypt(encryptedData)
+				//val decryptedData = CryptedElf.decrypt(encryptedData)
+				val decryptedData = CryptedElf2.decrypt(encryptedData)
 				if (decryptedData.detectPspFormat() != PspFileFormat.ELF) {
 					val encryptedFile = tempVfs["BOOT.BIN.encrypted"]
 					val decryptedFile = tempVfs["BOOT.BIN.decrypted"]
