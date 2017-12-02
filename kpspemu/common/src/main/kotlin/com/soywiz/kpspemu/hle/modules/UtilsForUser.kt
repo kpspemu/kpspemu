@@ -29,18 +29,17 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 
 	fun sceKernelLibcGettimeofday(timevalPtr: Ptr, timezonePtr: Ptr): Int {
 		if (timevalPtr.isNotNull) {
-			val totalMilliseconds = Klock.currentTimeMicro()
-			val totalSeconds = totalMilliseconds / 1000;
-			val milliseconds = totalMilliseconds % 1000;
-			val microseconds = milliseconds * 1000;
-			timevalPtr.sw(0, totalSeconds.toInt());
-			timevalPtr.sw(4, microseconds.toInt());
+			val totalMicroseconds = Klock.currentTimeMicro()
+			val totalSeconds = totalMicroseconds / 1_000_000
+			val microseconds = totalMicroseconds % 1_000_000
+			timevalPtr.sw(0, totalSeconds.toInt())
+			timevalPtr.sw(4, microseconds.toInt())
 		}
 		if (timezonePtr.isNotNull) {
-			val minutesWest = 0;
-			val dstTime = 0;
-			timevalPtr.sw(0, minutesWest);
-			timevalPtr.sw(4, dstTime);
+			val minutesWest = 0
+			val dstTime = 0
+			timevalPtr.sw(0, minutesWest)
+			timevalPtr.sw(4, dstTime)
 		}
 
 		return 0
