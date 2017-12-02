@@ -23,10 +23,13 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 		return count;
 	}
 
-	fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int = _sceCtrlPeekBuffer(sceCtrlDataPtr, count, true)
+	suspend fun sceCtrlPeekBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
+		//display.waitVblank("sceCtrlPeekBufferPositive")
+		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
+	}
 	suspend fun sceCtrlReadBufferPositive(sceCtrlDataPtr: Ptr, count: Int): Int {
-		display.waitVblank("sceCtrlReadBufferPositive")
-		return sceCtrlPeekBufferPositive(sceCtrlDataPtr, count)
+		//display.waitVblank("sceCtrlReadBufferPositive")
+		return _sceCtrlPeekBuffer(sceCtrlDataPtr, count, positive = true)
 	}
 
 	fun sceCtrlSetSamplingCycle(samplingCycle: Int): Int {
@@ -60,7 +63,6 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 	fun sceCtrlGetSamplingCycle(cpu: CpuState): Unit = UNIMPLEMENTED(0x02BAAD91)
 	fun sceCtrl_348D99D4(cpu: CpuState): Unit = UNIMPLEMENTED(0x348D99D4)
-	fun sceCtrlPeekBufferPositive(cpu: CpuState): Unit = UNIMPLEMENTED(0x3A622550)
 	fun sceCtrlReadBufferNegative(cpu: CpuState): Unit = UNIMPLEMENTED(0x60B81F86)
 	fun sceCtrlSetRapidFire(cpu: CpuState): Unit = UNIMPLEMENTED(0x6841BE1A)
 	fun sceCtrlGetIdleCancelThreshold(cpu: CpuState): Unit = UNIMPLEMENTED(0x687660FA)
@@ -73,7 +75,7 @@ class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "
 
 
 	override fun registerModule() {
-		registerFunctionInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
+		registerFunctionSuspendInt("sceCtrlPeekBufferPositive", 0x3A622550, 150, syscall = 0x2150) { sceCtrlPeekBufferPositive(ptr, int) }
 		registerFunctionSuspendInt("sceCtrlReadBufferPositive", 0x1F803938, since = 150) { sceCtrlReadBufferPositive(ptr, int) }
 		registerFunctionInt("sceCtrlSetSamplingCycle", 0x6A2774F3, since = 150) { sceCtrlSetSamplingCycle(int) }
 		registerFunctionInt("sceCtrlSetSamplingMode", 0x1F4011E6, since = 150) { sceCtrlSetSamplingMode(int) }

@@ -242,7 +242,8 @@ class KpspemuMainScene(
 			emulator.interruptManager.dispatchVsync()
 			emulator.display.startVsync()
 			emulator.display.endVsync()
-			sceneView.waitFrame()
+			//sceneView.waitFrame()
+			sleep(MS_15)
 
 			/*
 			//sleep(MS_15)

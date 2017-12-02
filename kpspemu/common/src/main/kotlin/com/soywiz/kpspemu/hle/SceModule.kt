@@ -167,6 +167,7 @@ abstract class SceModule(
 
 			if (!completed) {
 				rthread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
+				//println("  [S] Calling $name")
 				threadManager.suspend()
 			}
 		}
