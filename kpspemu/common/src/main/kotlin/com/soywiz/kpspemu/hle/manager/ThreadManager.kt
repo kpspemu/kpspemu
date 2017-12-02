@@ -93,6 +93,10 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		do {
 			val now: Double = timeManager.getTimeInMicrosecondsDouble()
 			if (currentThread == null) currentThread = getFirstThread()
+			if (currentThread?.running == false) {
+				println("WAIT! Trying to execute a sleeping thread!")
+				currentThread = computeNextThread(currentThread)
+			}
 			try {
 				currentThread?.step(now)
 				currentThread = computeNextThread(currentThread)
