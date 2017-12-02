@@ -24,6 +24,7 @@ import com.soywiz.kpspemu.cpu.dis.Disassembler
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.ui.simpleButton
+import com.soywiz.kpspemu.util.PspEmuKeys
 import com.soywiz.kpspemu.util.expr.ExprNode
 import com.soywiz.kpspemu.util.expr.toDynamicInt
 import com.soywiz.kpspemu.util.shex
@@ -72,16 +73,16 @@ class DebugScene(
 
 		sceneView.onKeyDown {
 			when (it.keyCode) {
-				113 -> sceneView.visible = !sceneView.visible // F2
+				PspEmuKeys.F2 -> sceneView.visible = !sceneView.visible // F2
 				else -> if (sceneView.visible) when (it.keyCode) {
-					69 -> askEval() // E
-					71 -> askGoto() // G
-					38 -> moveUp() // UP
-					40 -> moveDown() // DOWN
-					33 -> moveUp(16) // PGUP
-					34 -> moveDown(16) // PGDOWN
-					84 -> toggle() // T
-					114 -> toggle() // F3
+					PspEmuKeys.E -> askEval() // E
+					PspEmuKeys.G -> askGoto() // G
+					PspEmuKeys.UP -> moveUp() // UP
+					PspEmuKeys.DOWN -> moveDown() // DOWN
+					PspEmuKeys.PGUP -> moveUp(16) // PGUP
+					PspEmuKeys.PGDOWN -> moveDown(16) // PGDOWN
+					PspEmuKeys.T -> toggle() // T
+					PspEmuKeys.F3 -> toggle() // F3
 					else -> println("onKeyDown: ${it.keyCode}")
 				}
 			}

@@ -63,6 +63,7 @@ import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
 import com.soywiz.kpspemu.ui.simpleButton
+import com.soywiz.kpspemu.util.PspEmuKeys
 import com.soywiz.kpspemu.util.io.openAsIso2
 import com.soywiz.kpspemu.util.io.openAsZip2
 import kotlin.math.roundToInt
@@ -282,19 +283,19 @@ class KpspemuMainScene(
 			//println("updateKey: $keyCode, $pressed")
 			keys[keyCode and 0xFF] = pressed
 			when (keyCode) {
-				10 -> controller.updateButton(PspCtrlButtons.start, pressed) // return
-				32 -> controller.updateButton(PspCtrlButtons.select, pressed) // space
-				87 -> controller.updateButton(PspCtrlButtons.triangle, pressed) // W
-				65 -> controller.updateButton(PspCtrlButtons.square, pressed) // A
-				83 -> controller.updateButton(PspCtrlButtons.cross, pressed) // S
-				68 -> controller.updateButton(PspCtrlButtons.circle, pressed) // D
-				81 -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed) // Q
-				69 -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed) // E
-				37 -> controller.updateButton(PspCtrlButtons.left, pressed) // LEFT
-				38 -> controller.updateButton(PspCtrlButtons.up, pressed) // UP
-				39 -> controller.updateButton(PspCtrlButtons.right, pressed) // RIGHT
-				40 -> controller.updateButton(PspCtrlButtons.down, pressed) // DOWN
-				in 73..76 -> Unit // IJKL (analog)
+				PspEmuKeys.RETURN -> controller.updateButton(PspCtrlButtons.start, pressed)
+				PspEmuKeys.SPACE -> controller.updateButton(PspCtrlButtons.select, pressed)
+				PspEmuKeys.W -> controller.updateButton(PspCtrlButtons.triangle, pressed)
+				PspEmuKeys.A -> controller.updateButton(PspCtrlButtons.square, pressed)
+				PspEmuKeys.S -> controller.updateButton(PspCtrlButtons.cross, pressed)
+				PspEmuKeys.D -> controller.updateButton(PspCtrlButtons.circle, pressed)
+				PspEmuKeys.Q -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed)
+				PspEmuKeys.E -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed)
+				PspEmuKeys.LEFT -> controller.updateButton(PspCtrlButtons.left, pressed)
+				PspEmuKeys.UP -> controller.updateButton(PspCtrlButtons.up, pressed)
+				PspEmuKeys.RIGHT -> controller.updateButton(PspCtrlButtons.right, pressed)
+				PspEmuKeys.DOWN -> controller.updateButton(PspCtrlButtons.down, pressed)
+				PspEmuKeys.I, PspEmuKeys.J, PspEmuKeys.K, PspEmuKeys.L -> Unit // analog
 				else -> {
 					logger.trace { "UnhandledKey($pressed): $keyCode" }
 				}
@@ -302,10 +303,10 @@ class KpspemuMainScene(
 
 			if (pressed) {
 				when (keyCode) {
-					121 -> { // F10
+					PspEmuKeys.F10 -> {
 						go(coroutineContext) { toggleHud() }
 					}
-					122 -> { // F11
+					PspEmuKeys.F11 -> {
 						// Dump threads
 						for (thread in emulator.threadManager.threads) {
 							println("Thread(${thread.name}) : ${thread.waitObject}")
@@ -315,8 +316,8 @@ class KpspemuMainScene(
 			}
 
 			controller.updateAnalog(
-				x = when { keys[74] -> -1f; keys[76] -> +1f; else -> 0f; },
-				y = when { keys[73] -> -1f; keys[75] -> +1f; else -> 0f; }
+				x = when { keys[PspEmuKeys.J] -> -1f; keys[PspEmuKeys.L] -> +1f; else -> 0f; },
+				y = when { keys[PspEmuKeys.I] -> -1f; keys[PspEmuKeys.K] -> +1f; else -> 0f; }
 			)
 		}
 
