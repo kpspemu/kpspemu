@@ -7,7 +7,8 @@ import com.soywiz.kpspemu.cpu.CpuState
 class InterruptManager(val emulator: Emulator) {
 	val logger = Logger("InterruptManager")
 
-	val state = emulator.globalCpuState
+	val state get() = emulator.globalCpuState
+
 	fun disableAllInterrupts(): Int {
 		val res = state.interruptFlags
 		state.interruptFlags = 0
@@ -24,10 +25,19 @@ class InterruptManager(val emulator: Emulator) {
 		var address: Int = 0,
 		var argument: Int = 0,
 		var cpuState: CpuState? = null
-	)
+	) {
+		fun reset(): Unit {
+			enabled = false
+			address = 0
+			argument = 0
+			cpuState = null
+		}
+	}
 
 	class InterruptKind(val index: Int) {
 		val handlers by lazy { (0 until 32).map { InterruptHandler(it) } }
+
+		fun reset() = run { for (h in handlers) h.reset() }
 	}
 
 	val interrupts by lazy { (0 until 68).map { InterruptKind(it) } }
@@ -36,10 +46,7 @@ class InterruptManager(val emulator: Emulator) {
 		return interrupts[interrupt].handlers[handlerIndex]
 	}
 
-	fun dispatchVsync() {
-		dispatchInterrupt(PspInterrupts.PSP_VBLANK_INT)
-	}
-
+	fun dispatchVsync() = dispatchInterrupt(PspInterrupts.PSP_VBLANK_INT)
 	fun isEnabled(id: Int) = (state.interruptFlags and (1 shl id)) != 0
 
 	fun dispatchInterrupt(id: Int) {
@@ -51,6 +58,8 @@ class InterruptManager(val emulator: Emulator) {
 			}
 		}
 	}
+
+	fun reset() = run { for (i in interrupts) i.reset() }
 }
 
 

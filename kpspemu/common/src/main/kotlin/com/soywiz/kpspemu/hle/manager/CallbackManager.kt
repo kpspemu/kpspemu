@@ -9,6 +9,10 @@ class CallbackManager(emulator: Emulator) : Manager<PspCallback>("Callback", emu
 	fun queueFunction1(funcPC: Int, funcARG: Int) {
 		// @TODO: Implement this!
 	}
+
+	override fun reset() {
+		super.reset()
+	}
 }
 
 class PspCallback(

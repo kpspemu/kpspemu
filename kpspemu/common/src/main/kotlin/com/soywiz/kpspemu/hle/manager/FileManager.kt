@@ -16,6 +16,13 @@ class FileManager(val emulator: Emulator) {
 	val fileDescriptors = ResourceList<FileDescriptor>("FileDescriptor") { FileDescriptor(it) }
 	val directoryDescriptors = ResourceList<DirectoryDescriptor>("DirectoryDescriptor") { DirectoryDescriptor(it) }
 
+	fun reset() {
+		currentDirectory = "umd0:"
+		executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
+		fileDescriptors.reset()
+		directoryDescriptors.reset()
+	}
+
 	fun resolvePath(path: String): String {
 		if (path.contains(':')) {
 			return path

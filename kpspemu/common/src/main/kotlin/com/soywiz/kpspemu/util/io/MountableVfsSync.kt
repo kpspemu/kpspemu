@@ -25,6 +25,10 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 			resort()
 		}
 
+		override fun unmountAll(): MountableSync = this.apply {
+			_mounts.clear()
+		}
+
 		private fun _unmount(folder: String) {
 			_mounts.removeAll { it.first == VfsUtil.normalize(folder) }
 		}
@@ -69,6 +73,7 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 interface MountableSync {
 	fun mount(folder: String, file: VfsFile): MountableSync
 	fun unmount(folder: String): MountableSync
+	fun unmountAll(): MountableSync
 	val mounts: Map<String, VfsFile>
 }
 

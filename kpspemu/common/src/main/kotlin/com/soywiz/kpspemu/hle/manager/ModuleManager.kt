@@ -5,7 +5,6 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.hle.SceModule
 
 class ModuleManager(val emulator: Emulator) {
-	val e = emulator
 	val modules = LinkedHashMap<String, SceModule>()
 
 	fun register(module: SceModule) {
@@ -14,4 +13,8 @@ class ModuleManager(val emulator: Emulator) {
 	}
 
 	fun getByName(name: String): SceModule = modules[name] ?: invalidOp("Can't find module '$name'")
+
+	fun reset() {
+		modules.clear()
+	}
 }

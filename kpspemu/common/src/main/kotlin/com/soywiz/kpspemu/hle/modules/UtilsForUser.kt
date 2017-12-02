@@ -9,7 +9,7 @@ import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.isNotNull
 import com.soywiz.kpspemu.rtc
 import com.soywiz.kpspemu.timeManager
-import com.soywiz.kpspemu.util.currentTimeMicro
+import com.soywiz.kpspemu.util.currentTimeMicroDouble
 
 @Suppress("UNUSED_PARAMETER")
 class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x40010011, "sysmem.prx", "sceSystemMemoryManager") {
@@ -29,7 +29,7 @@ class UtilsForUser(emulator: Emulator) : SceModule(emulator, "UtilsForUser", 0x4
 
 	fun sceKernelLibcGettimeofday(timevalPtr: Ptr, timezonePtr: Ptr): Int {
 		if (timevalPtr.isNotNull) {
-			val totalMicroseconds = Klock.currentTimeMicro()
+			val totalMicroseconds = Klock.currentTimeMicroDouble()
 			val totalSeconds = totalMicroseconds / 1_000_000
 			val microseconds = totalMicroseconds % 1_000_000
 			timevalPtr.sw(0, totalSeconds.toInt())

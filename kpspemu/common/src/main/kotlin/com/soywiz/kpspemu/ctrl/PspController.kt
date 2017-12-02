@@ -4,10 +4,15 @@ import com.soywiz.korio.util.umod
 import com.soywiz.korma.math.clamp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kpspemu.util.setBits
 
 class PspController(override val emulator: Emulator) : WithEmulator {
 	var samplingCycle: Int = 0
 	var samplingMode: Int = 0
+	val frames = (0 until 0x10).map { Frame() }
+	var frameIndex = 0
+	fun getFrame(offset: Int): Frame = frames[(frameIndex + offset) umod frames.size]
+	val lastLatchData = Frame()
 
 	data class Frame(var timestamp: Int = 0, var buttons: Int = 0, var lx: Int = 128, var ly: Int = 128) {
 		fun setTo(other: Frame) {
@@ -15,17 +20,18 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 			this.lx = other.lx
 			this.ly = other.ly
 		}
+
+		fun reset() {
+			timestamp = 0
+			buttons = 0
+			lx = 128
+			ly = 128
+		}
 	}
 
-	val frames = (0 until 0x10).map { Frame() }
-	var frameIndex = 0
-	fun getFrame(offset: Int): Frame = frames[(frameIndex + offset) umod frames.size]
 	val currentFrame get() = frames[frameIndex]
-	val lastLatchData = Frame()
 
-	fun startFrame(timestamp: Int) {
-		currentFrame.timestamp = timestamp
-	}
+	fun startFrame(timestamp: Int) = run { currentFrame.timestamp = timestamp }
 
 	fun endFrame() {
 		val lastFrame = currentFrame
@@ -34,11 +40,7 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 	}
 
 	fun updateButton(button: PspCtrlButtons, pressed: Boolean) {
-		if (pressed) {
-			currentFrame.buttons = currentFrame.buttons or button.bits
-		} else {
-			currentFrame.buttons = currentFrame.buttons and button.bits.inv()
-		}
+		currentFrame.buttons = currentFrame.buttons.setBits(button.bits, pressed)
 	}
 
 	private fun fixFloat(v: Float): Int = ((v.clamp(-1f, 1f) * 127) + 128).toInt()
@@ -47,6 +49,14 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 		currentFrame.lx = fixFloat(x)
 		currentFrame.ly = fixFloat(y)
 		//println("Update analog: ($x, $y) - ($lx, $ly)")
+	}
+
+	fun reset() {
+		samplingCycle = 0
+		samplingMode = 0
+		for (f in frames) f.reset()
+		lastLatchData.reset()
+		frameIndex = 0
 	}
 }
 

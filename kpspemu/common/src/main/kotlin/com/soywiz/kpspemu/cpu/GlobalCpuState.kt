@@ -7,4 +7,9 @@ class GlobalCpuState {
 	companion object {
 		val dummy = GlobalCpuState()
 	}
+
+	fun reset() {
+		insideInterrupt = false
+		interruptFlags = -1
+	}
 }

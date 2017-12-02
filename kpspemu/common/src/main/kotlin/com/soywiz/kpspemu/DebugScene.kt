@@ -37,7 +37,7 @@ import kotlin.reflect.KMutableProperty0
  */
 class DebugScene(
 	val browser: Browser,
-	val emulatorContainer: EmulatorContainer
+	val emulator: Emulator
 ) : Scene() {
 	var viewAddress: Int = 0
 
@@ -47,7 +47,7 @@ class DebugScene(
 	lateinit var font: BitmapFont
 
 	suspend fun askGoto() {
-		val thread = emulatorContainer.threadManager.threads.firstOrNull()
+		val thread = emulator.threadManager.threads.firstOrNull()
 		val exprStr = browser.prompt("Address", viewAddress.hex)
 		val addr = evaluateIntExpr(thread?.state ?: CpuState.dummy, exprStr) and
 			0b11.inv()
@@ -57,7 +57,7 @@ class DebugScene(
 	}
 
 	suspend fun askEval() {
-		val thread = emulatorContainer.threadManager.threads.firstOrNull()
+		val thread = emulator.threadManager.threads.firstOrNull()
 		val exprStr = browser.prompt("Expression", viewAddress.hex)
 		val value = evaluateIntExpr(thread?.state ?: CpuState.dummy, exprStr) and
 			0b11.inv()
@@ -97,13 +97,13 @@ class DebugScene(
 			registerList = this
 		}
 
-		sceneView += DissasemblerView(emulatorContainer, views, font).apply {
+		sceneView += DissasemblerView(emulator, views, font).apply {
 			disassembler = this
 			visible = true
 			x = 96.0
 			y = 8.0
 		}
-		sceneView += HexdumpView(emulatorContainer, views, font).apply {
+		sceneView += HexdumpView(emulator, views, font).apply {
 			hexdump = this
 			visible = false
 			x = 32.0
@@ -126,7 +126,7 @@ class DebugScene(
 
 		sceneView.addUpdatable {
 			if (sceneView.visible) {
-				val thread = emulatorContainer.threadManager.threads.firstOrNull()
+				val thread = emulator.threadManager.threads.firstOrNull()
 				val cpu = thread?.state ?: CpuState.dummy
 				if (registerList.visible) registerList.update(cpu)
 				if (disassembler.visible) disassembler.update(viewAddress, cpu.mem, cpu)
@@ -221,7 +221,7 @@ class DebugScene(
 		}
 	}
 
-	class HexdumpLineView(val emulatorContainer: EmulatorContainer, views: Views, val lineNumber: Int, val font: BitmapFont) : Container(views) {
+	class HexdumpLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) : Container(views) {
 		val text = views.text("-").apply {
 			this@HexdumpLineView += this
 			filtering = false
@@ -245,8 +245,8 @@ class DebugScene(
 		}
 	}
 
-	class HexdumpView(val emulatorContainer: EmulatorContainer, views: Views, val font: BitmapFont) : Container(views) {
-		val texts = (0 until 32).map { HexdumpLineView(emulatorContainer, views, it, font) }
+	class HexdumpView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+		val texts = (0 until 32).map { HexdumpLineView(emulator, views, it, font) }
 
 		init {
 			for (text in texts) {
@@ -262,7 +262,7 @@ class DebugScene(
 		}
 	}
 
-	class DissasemblerLineView(val emulatorContainer: EmulatorContainer, views: Views, val lineNumber: Int, val font: BitmapFont) : Container(views) {
+	class DissasemblerLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) : Container(views) {
 		val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
 		val BG_PC = RGBA(0, 0, 0xFF, 0x99)
 		val BG_BREAKPOINT = RGBA(0xFF, 0, 0, 0x99)
@@ -290,7 +290,7 @@ class DebugScene(
 			val atPC = addr == state.PC
 			text.bgcolor = when {
 			//addr == state.PC -> BG_PC
-				emulatorContainer.emulator.breakpoints[addr] -> BG_BREAKPOINT
+				emulator.breakpoints[addr] -> BG_BREAKPOINT
 				else -> BG_NORMAL
 			}
 			if (over) {
@@ -308,14 +308,14 @@ class DebugScene(
 		}
 	}
 
-	class DissasemblerView(val emulatorContainer: EmulatorContainer, views: Views, val font: BitmapFont) : Container(views) {
-		val texts = (0 until 32).map { DissasemblerLineView(emulatorContainer, views, it, font) }
+	class DissasemblerView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+		val texts = (0 until 32).map { DissasemblerLineView(emulator, views, it, font) }
 
 		init {
 			for (text in texts) {
 				this += text
 				text.onLineClick {
-					emulatorContainer.breakpoints.toggle(text.addr)
+					emulator.breakpoints.toggle(text.addr)
 					println("Toggle breakpoint at: ${text.addr.hex}")
 				}
 			}
@@ -324,7 +324,7 @@ class DebugScene(
 		fun update(startAddress: Int, memory: Memory, state: CpuState) {
 			for ((n, text) in texts.withIndex()) {
 				val address = startAddress + n * 4
-				text.update(address, memory, state, emulatorContainer.emulator)
+				text.update(address, memory, state, emulator)
 			}
 		}
 	}

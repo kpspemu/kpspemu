@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korio.async.Signal
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.gpu
@@ -11,7 +10,7 @@ import com.soywiz.kpspemu.util.Signal2
 class Ge(override val emulator: Emulator) : WithEmulator {
 	val state = GeState()
 	val queue = arrayListOf<GeList>()
-	val lists = ResourceList<GeList>("GeList") { GeList(this, it) }
+	val lists = ResourceList("GeList") { GeList(this, it) }
 	val onCompleted = Signal2<Unit>()
 
 	fun listEnqueue(start: Int, stall: Int, callback: GeCallback, pspGeListArgs: Int): GeList {
@@ -50,6 +49,13 @@ class Ge(override val emulator: Emulator) : WithEmulator {
 
 	fun sync(syncType: Int) {
 		run()
+	}
+
+	fun reset() {
+		state.reset()
+		queue.clear()
+		lists.reset()
+		onCompleted.clear()
 	}
 
 	//suspend fun sync(syncType: Int) {

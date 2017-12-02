@@ -13,6 +13,15 @@ class MemoryManager(val emulator: Emulator) {
 	val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()
 
 	init {
+		reset()
+	}
+
+	val kernelPartition: MemoryPartition get() = this.memoryPartitionsUid[MemoryPartitions.Kernel0]!!
+	val userPartition: MemoryPartition get() = this.memoryPartitionsUid[MemoryPartitions.User]!!
+	val stackPartition: MemoryPartition get() = this.memoryPartitionsUid[MemoryPartitions.UserStacks]!!
+
+	fun reset() {
+		this.memoryPartitionsUid.clear()
 		this.memoryPartitionsUid[MemoryPartitions.Kernel0] = MemoryPartition("Kernel Partition 1", 0x88000000, 0x88300000, false)
 		//this.memoryPartitionsUid[MemoryPartitions.User] = new MemoryPartition("User Partition", 0x08800000, 0x08800000 + 0x100000 * 32, false);
 		//this.memoryPartitionsUid[MemoryPartitions.UserStacks] = new MemoryPartition("User Stacks Partition", 0x08800000, 0x08800000 + 0x100000 * 32, false);
@@ -20,10 +29,6 @@ class MemoryManager(val emulator: Emulator) {
 		this.memoryPartitionsUid[MemoryPartitions.UserStacks] = MemoryPartition("User Stacks Partition", 0x08800000, 0x08800000 + 0x100000 * 24, false)
 		this.memoryPartitionsUid[MemoryPartitions.VolatilePartition] = MemoryPartition("Volatile Partition", 0x08400000, 0x08800000, false)
 	}
-
-	val kernelPartition: MemoryPartition get() = this.memoryPartitionsUid[MemoryPartitions.Kernel0]!!
-	val userPartition: MemoryPartition get() = this.memoryPartitionsUid[MemoryPartitions.User]!!
-	val stackPartition: MemoryPartition get() = this.memoryPartitionsUid[MemoryPartitions.UserStacks]!!
 }
 
 open class MemoryPartitions(val id: Int) {

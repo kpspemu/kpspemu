@@ -19,21 +19,19 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Memory
 import kotlin.coroutines.experimental.CoroutineContext
 
-class EmulatorContainer(
-	val coroutineContext: CoroutineContext,
-	override var emulator: Emulator = Emulator(coroutineContext)
-) : WithEmulator
-
 class AddressInfo : NameProvider {
 	val names = hashMapOf<Int, String>()
 	override fun getName(addr: Int): String? = names[addr]
+	fun reset() {
+		names.clear()
+	}
 }
 
 class Emulator(
 	val coroutineContext: CoroutineContext,
 	val syscalls: SyscallManager = SyscallManager(),
 	val mem: Memory = Memory(),
-	val gpuRenderer: GpuRenderer = DummyGpuRenderer()
+	var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) {
 	val timeManager = TimeManager(this)
 	val nameProvider = AddressInfo()
@@ -71,6 +69,30 @@ class Emulator(
 
 	fun invalidateDcache(ptr: Int, size: Int) {
 		logger.trace { "invalidateDcache()" }
+	}
+
+	fun reset() {
+		syscalls.reset()
+		mem.reset()
+		CpuBreakException.initialize(mem)
+		gpuRenderer.reset()
+		timeManager.reset()
+		nameProvider.reset()
+		//breakpoints.reset() // Do not reset breakpoints?
+		globalCpuState.reset()
+		output = StringBuilder()
+		ge.reset()
+		gpu.reset()
+		battery.reset()
+		interruptManager.reset()
+		display.reset()
+		deviceManager.reset()
+		memoryManager.reset()
+		threadManager.reset()
+		moduleManager.reset()
+		callbackManager.reset()
+		controller.reset()
+		fileManager.reset()
 	}
 }
 

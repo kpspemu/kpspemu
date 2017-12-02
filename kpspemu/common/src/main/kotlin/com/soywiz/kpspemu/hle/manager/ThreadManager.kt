@@ -34,6 +34,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	val activeThreads: Int get() = resourcesById.count { it.value.running }
 	val totalThreads: Int get() = resourcesById.size
 	val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
+	val onThreadChanged = Signal2<PspThread>()
+	var currentThread: PspThread? = null
+
+	override fun reset() {
+		super.reset()
+		currentThread = null
+	}
 
 	fun create(name: String, entryPoint: Int, initPriority: Int, stackSize: Int, attributes: Int, optionPtr: Ptr): PspThread {
 		//priorities.sortBy { it.priority }
@@ -66,8 +73,6 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		throw CpuBreakException(CpuBreakException.THREAD_WAIT)
 	}
 
-	var currentThread: PspThread? = null
-
 	fun getActiveThreadPriorities(): List<Int> = threads.filter { it.running }.map { it.priority }.distinct().sorted()
 	fun getActiveThreadsWithPriority(priority: Int): List<PspThread> = threads.filter { it.running && it.priority == priority }
 	fun getFirstThread(): PspThread? = getActiveThreadPriorities().firstOrNull()?.let { getActiveThreadsWithPriority(it) }?.firstOrNull()
@@ -80,8 +85,6 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		val index = threadsWithPriority.indexOf(prevThread) umod threadsWithPriorityCount
 		return threadsWithPriority.getOrNull((index + 1) umod threadsWithPriorityCount)
 	}
-
-	val onThreadChanged = Signal2<PspThread>()
 
 	suspend fun waitThreadChange() {
 		//println("[1]")

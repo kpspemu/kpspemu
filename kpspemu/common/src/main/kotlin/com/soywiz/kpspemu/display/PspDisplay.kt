@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.display
 
+import com.soywiz.kmem.fill
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.color.RGBA_5551
@@ -17,34 +18,28 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		const val VSYNC_ROW = 272
 		const val NUMBER_OF_ROWS = 286
 		const val HCOUNT_PER_VBLANK = 285.72
-		const val HORIZONTAL_SYNC_HZ = (PspDisplay.PROCESSED_PIXELS_PER_SECOND.toDouble() * PspDisplay.CYCLES_PER_PIXEL.toDouble()) / PspDisplay.PIXELS_IN_A_ROW .toDouble()// 17142.85714285714
+		const val HORIZONTAL_SYNC_HZ = (PspDisplay.PROCESSED_PIXELS_PER_SECOND.toDouble() * PspDisplay.CYCLES_PER_PIXEL.toDouble()) / PspDisplay.PIXELS_IN_A_ROW.toDouble()// 17142.85714285714
 		const val HORIZONTAL_SECONDS = 1.0 / PspDisplay.HORIZONTAL_SYNC_HZ // 5.8333333333333E-5
 		const val VERTICAL_SYNC_HZ = PspDisplay.HORIZONTAL_SYNC_HZ / PspDisplay.HCOUNT_PER_VBLANK // 59.998800024
 		const val VERTICAL_SECONDS = 1.0 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
 	}
 
-	var exposeDisplay = true
-
 	val bmp = Bitmap32(512, 272)
-
+	var exposeDisplay = true
 	var rawDisplay: Boolean = true
-
 	var address: Int = 0x44000000
 	var bufferWidth: Int = 512
 	var pixelFormat: PixelFormat = PixelFormat.RGBA_8888
 	var sync: Int = 0
-
 	var displayMode: Int = 0
-	//var displayWidth: Int = 512
 	var displayWidth: Int = 480
 	var displayHeight: Int = 272
+	private val temp = ByteArray(512 * 272 * 4)
 
 	fun fixedAddress(): Int {
 		//println(address.hex)
 		return address
 	}
-
-	private val temp = ByteArray(512 * 272 * 4)
 
 	fun decodeToBitmap32(out: Bitmap32) {
 		val bmpData = out.data
@@ -90,6 +85,21 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		times.updateTime()
 		thread.sleepSecondsIfRequired(times.secondsLeftForVblank)
 	}
+
+	fun reset() {
+		times.reset()
+		exposeDisplay = true
+		rawDisplay = true
+		address = 0x44000000
+		bufferWidth = 512
+		pixelFormat = PixelFormat.RGBA_8888
+		sync = 0
+		displayMode = 0
+		displayWidth = 480
+		displayHeight = 272
+		bmp.fill(0)
+		temp.fill(0)
+	}
 }
 
 class DisplayTimes(val msProvider: () -> Double) {
@@ -126,6 +136,11 @@ class DisplayTimes(val msProvider: () -> Double) {
 		}
 		this.secondsLeftForVblank = this.rowsLeftForVblank * PspDisplay.HORIZONTAL_SECONDS
 		this.secondsLeftForVblankStart = this.rowsLeftForVblankStart * PspDisplay.HORIZONTAL_SECONDS
+	}
+
+	fun reset() {
+		// TODO?
+		startTimeMs = 0.0
 	}
 
 }

@@ -6,6 +6,10 @@ class Breakpoints : BaseBreakpoints {
 	private val breakpoints = LinkedHashMap<Int, Boolean>()
 	var enabled: Boolean = false; private set
 
+	fun reset() {
+		clear()
+	}
+
 	fun clear() {
 		breakpoints.clear()
 		updateEnabled()

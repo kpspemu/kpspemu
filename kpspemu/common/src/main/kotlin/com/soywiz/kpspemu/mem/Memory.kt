@@ -165,6 +165,12 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
 	fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
 	open fun fill(value: Int, address: Int, size: Int) = run { for (n in 0 until size) sb(address + n, value) }
+
+	fun reset() {
+		for (seg in listOf(SCRATCHPAD, MAINMEM, VIDEOMEM)) {
+			fill(0, seg.start, seg.size)
+		}
+	}
 }
 
 object DummyMemory : Memory(true) {

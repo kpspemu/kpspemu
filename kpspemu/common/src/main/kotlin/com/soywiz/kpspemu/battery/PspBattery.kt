@@ -4,12 +4,13 @@ import com.soywiz.korio.util.IdEnum
 import com.soywiz.kpspemu.Emulator
 
 class PspBattery(val emulator: Emulator) {
-	val volt: Int = 4135
-	val temp: Int = 28
 	var charging = false
 	var chargedRatio = 1.0
 	var lifetimeSeconds: Double = 8.0 * 3600.0
 	var batteryExists: Boolean = true
+
+	val volt: Int = 4135
+	val temp: Int = 28
 	val level: Double get() = chargedRatio
 	val percentage: Double get() = chargedRatio
 	val isLowBattery: Boolean = chargedRatio < 0.22
@@ -23,6 +24,13 @@ class PspBattery(val emulator: Emulator) {
 			chargedRatio < 0.80 -> BatteryStatusEnum.PartiallyFilled
 			else -> BatteryStatusEnum.FullyFilled
 		}
+
+	fun reset() {
+		charging = false
+		chargedRatio = 1.0
+		lifetimeSeconds = 8.0 * 3600.0
+		batteryExists = true
+	}
 
 }
 

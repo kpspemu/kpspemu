@@ -15,8 +15,8 @@ class SyscallManager : Syscalls {
 		println("%08X: Called syscall: ### %04X".format(state.PC, id))
 	}
 
-	val syscallToFunc = IntMap<(CpuState, Int) -> Unit>()
-	val syscallToName = IntMap<String>()
+	var syscallToFunc = IntMap<(CpuState, Int) -> Unit>()
+	var syscallToName = IntMap<String>()
 
 	fun register(id: Int = -1, name: String, callback: (CpuState, Int) -> Unit): Int {
 		val syscallId = if (id < 0) lasSyscallId++ else id
@@ -33,5 +33,11 @@ class SyscallManager : Syscalls {
 		val func = syscallToFunc[id] ?: ::unhandled
 		logger.trace { "syscall: $id (${syscallToName[id]})" }
 		func(state, id)
+	}
+
+	fun reset() {
+		syscallToFunc = IntMap() // @TODO: clear
+		syscallToName = IntMap() // @TODO: clear
+		lasSyscallId = 1
 	}
 }

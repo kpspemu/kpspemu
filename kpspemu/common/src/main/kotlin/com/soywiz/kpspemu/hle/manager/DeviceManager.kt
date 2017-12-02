@@ -20,21 +20,26 @@ class DeviceManager(val emulator: Emulator) {
 	val dummy = MemoryVfs()
 
 	val root = MountableVfsSync {
+
+	}
+	val mountable = root.vfs as MountableSync
+
+	init {
+		reset()
+	}
+
+	fun reset() {
+		mountable.unmountAll()
 		mount("fatms0:", ms)
 		mount("ms0:", ms)
 		mount("mscmhc0:", ms)
-
 		mount("host0:", dummy)
-
 		mount("flash0:", flash)
-
 		mount("emulator:", dummy)
 		mount("kemulator:", dummy)
-
 		mount("disc0:", dummy)
 		mount("umd0:", dummy)
 	}
-	val mountable = root.vfs as MountableSync
 
 	//val devicesToVfs = LinkedHashMap<String, VfsFile>()
 

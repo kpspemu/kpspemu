@@ -19,7 +19,6 @@ import com.soywiz.korge.scene.*
 import com.soywiz.korge.service.Browser
 import com.soywiz.korge.time.milliseconds
 import com.soywiz.korge.time.seconds
-import com.soywiz.korge.time.waitFrame
 import com.soywiz.korge.tween.get
 import com.soywiz.korge.tween.tween
 import com.soywiz.korge.view.*
@@ -76,8 +75,10 @@ object Main {
 	@JvmStatic
 	fun main(args: Array<String>) {
 		Korge(KpspemuModule, injector = AsyncInjector()
-			.mapSingleton(EmulatorContainer::class) { EmulatorContainer(getCoroutineContext()) }
-			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(EmulatorContainer::class)) }
+			.mapSingleton(Emulator::class) { Emulator(
+				getCoroutineContext()
+			) }
+			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(Emulator::class)) }
 			.mapPrototype(DebugScene::class) { DebugScene(get(), get()) }
 			.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
 			//, debug = true
@@ -111,7 +112,7 @@ abstract class SceneWithProcess() : Scene() {
 
 class KpspemuMainScene(
 	val browser: Browser,
-	val emulatorContainer: EmulatorContainer
+	override val emulator: Emulator
 ) : SceneWithProcess(), WithEmulator {
 	companion object {
 		val logger = Logger("KpspemuMainScene")
@@ -123,7 +124,6 @@ class KpspemuMainScene(
 	}
 
 	//lateinit var exeFile: VfsFile
-	override val emulator: Emulator get() = emulatorContainer.emulator
 	val tex by lazy { views.texture(display.bmp) }
 	val agRenderer by lazy { AGRenderer(this, tex) }
 	val hudFont by lazy { BitmapFont(views.ag, "Lucida Console", 32, BitmapFontGenerator.LATIN_ALL, mipmaps = false) }
@@ -132,21 +132,20 @@ class KpspemuMainScene(
 	var paused = false
 	var forceSteps = 0
 
-	suspend fun createEmulator() {
+	suspend fun resetEmulator() {
 		running = true
 		ended = false
-		val oldBP = emulatorContainer.emulator.breakpoints
-		emulatorContainer.emulator = Emulator(
-			coroutineContext,
-			mem = Memory(),
-			gpuRenderer = object : GpuRenderer {
-				override fun render(batches: List<GeBatchData>) {
-					agRenderer.anyBatch = true
-					agRenderer.batchesQueue += batches
-				}
+		emulator.reset()
+		emulator.gpuRenderer = object : GpuRenderer {
+			override fun render(batches: List<GeBatchData>) {
+				agRenderer.anyBatch = true
+				agRenderer.batchesQueue += batches
 			}
-		)
-		emulatorContainer.emulator.breakpoints.copyFrom(oldBP)
+
+			override fun reset() {
+				agRenderer.reset()
+			}
+		}
 		agRenderer.anyBatch = false
 		agRenderer.reset()
 	}
@@ -173,7 +172,7 @@ class KpspemuMainScene(
 		setIcon0Bitmap(Bitmap32(144, 80))
 		titleText.text = ""
 
-		createEmulator()
+		resetEmulator()
 		emulator.registerNativeModules()
 		emulator.loadExecutableAndStart(exeFile, object : LoadProcess() {
 			suspend override fun readIcon0(icon0: ByteArray) {
@@ -268,7 +267,7 @@ class KpspemuMainScene(
 		//val result = func(cpuState)
 		//println("PC: ${cpuState.PC.hex}")
 
-		createEmulator()
+		resetEmulator()
 		println("KPSPEMU: ${Kpspemu.VERSION}")
 		println("DYNAREK: ${Dynarek.VERSION}")
 		println("KORINJECT: ${Korinject.VERSION}")

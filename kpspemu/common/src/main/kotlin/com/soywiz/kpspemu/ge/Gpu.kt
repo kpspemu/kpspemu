@@ -16,4 +16,8 @@ class Gpu(override val emulator: Emulator) : WithEmulator {
 	fun addBatch(batch: GeBatchData) {
 		batchQueue += batch
 	}
+
+	fun reset() {
+		batchQueue.clear()
+	}
 }

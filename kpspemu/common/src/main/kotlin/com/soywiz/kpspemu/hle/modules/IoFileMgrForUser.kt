@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.kmem.arraycopy
 import com.soywiz.korio.async.Promise
 import com.soywiz.korio.async.spawn
 import com.soywiz.korio.async.toList
@@ -7,7 +8,9 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.lang.toString
-import com.soywiz.korio.stream.*
+import com.soywiz.korio.stream.AsyncStream
+import com.soywiz.korio.stream.AsyncStreamBase
+import com.soywiz.korio.stream.toAsyncStream
 import com.soywiz.korio.util.toInt
 import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.Emulator
@@ -21,6 +24,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.PoolItem
 import com.soywiz.kpspemu.util.write
 import kotlin.math.max
+import kotlin.math.min
 
 @Suppress("UNUSED_PARAMETER")
 class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUser", 0x40010011, "iofilemgr.prx", "sceIOFileManager") {
@@ -64,6 +68,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			//println("Bytes:" + bytes.size)
 			//file.stream = bytes.openAsync().check(fileName)
 
+			//file.stream = file.file.open(flags2).cached(fileName)
 			file.stream = file.file.open(flags2)
 			logger.warn { "WIP: sceIoOpen(${thread.name}) --> $fileName, ${file.id}" }
 			return file.id
@@ -427,6 +432,67 @@ fun AsyncStream.check(name: String): AsyncStream {
 
 		suspend override fun setLength(value: Long) {
 			base.setLength(value)
+		}
+
+		suspend override fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {
+			base.position = position
+			base.write(buffer, offset, len)
+		}
+	}.toAsyncStream()
+}
+
+suspend fun AsyncStream.cached(name: String): AsyncStream {
+	val base = this
+
+	class CachedEntry(var position: Long = 0L, var data: ByteArray = ByteArray(0x10000), var dataSize: Int = 0) {
+		val end: Long get() = position + dataSize
+		val range get() = position until (position + dataSize)
+
+		fun contains(position: Long, size: Int) = (position in range) && ((position + size - 1) in range)
+
+		fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
+			if (len <= 0) return 0
+			val roffset = (position - this.position).toInt()
+			if (roffset !in 0 until dataSize) return 0
+			val available = this.dataSize - roffset
+			val alen = min(available, len)
+			arraycopy(this.data, roffset, buffer, offset, alen)
+			return alen
+		}
+	}
+
+	var sslen = base.getLength()
+
+	return object : AsyncStreamBase() {
+		suspend override fun close() {
+			base.close()
+		}
+
+		suspend override fun getLength(): Long = sslen
+
+		val cacheEntry = CachedEntry()
+
+		suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
+			if (position >= sslen) return 0
+
+			if (!cacheEntry.contains(position, len)) {
+				base.position = position
+				println("[U]AsyncStream.check.read('$name':$position/$sslen): buffer(${buffer.size}), $offset, $len")
+				val ret = base.read(cacheEntry.data, 0, cacheEntry.data.size)
+				cacheEntry.position = position
+				cacheEntry.dataSize = ret
+			} else {
+				println("[C]AsyncStream.check.read('$name':$position/$sslen): buffer(${buffer.size}), $offset, $len")
+			}
+			val ret = cacheEntry.read(position, buffer, offset, len)
+			//println(buffer.hexString)
+			println(" --> $ret")
+			return ret
+		}
+
+		suspend override fun setLength(value: Long) {
+			base.setLength(value)
+			sslen = base.getLength()
 		}
 
 		suspend override fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {

@@ -3,6 +3,7 @@
 package com.soywiz.kpspemu.ge
 
 import com.soywiz.kmem.arraycopy
+import com.soywiz.kmem.fill
 import com.soywiz.korim.color.RGBA_4444
 import com.soywiz.korim.color.RGBA_5551
 import com.soywiz.korim.color.RGB_565
@@ -442,6 +443,9 @@ class GeState {
 
 	fun getMorphWeight(index: Int) = float1(this.data[Op.MORPHWEIGHT0 + index])
 	fun getAddressRelativeToBase(relativeAddress: Int) = (this.baseAddress or relativeAddress)
+	fun reset() {
+		data.fill(0)
+	}
 	//fun getAddressRelativeToBaseOffset(relativeAddress: Int) = ((this.baseAddress or relativeAddress) + this.baseOffset)
 
 	///////////////////////
