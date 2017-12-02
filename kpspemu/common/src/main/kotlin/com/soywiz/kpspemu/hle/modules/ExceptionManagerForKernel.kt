@@ -7,7 +7,7 @@ import com.soywiz.kpspemu.hle.SceModule
 @Suppress("UNUSED_PARAMETER")
 class ExceptionManagerForKernel(emulator: Emulator) : SceModule(emulator, "ExceptionManagerForKernel", 0x00010011, "exceptionman.prx", "sceExceptionManager") {
 	fun sceKernelRegisterDefaultExceptionHandler(exceptionHandlerFunction: Int): Int {
-		return 0;
+		return 0
 	}
 
 	fun sceKernelRegisterNmiHandler(cpu: CpuState): Unit = UNIMPLEMENTED(0x15ADC862)

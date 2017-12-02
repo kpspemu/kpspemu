@@ -3,22 +3,12 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.Emulator
 
 @Suppress("UNUSED_PARAMETER")
-//class UtilsForKernel(emulator: Emulator) : SceModule(emulator, "UtilsForKernel", 0x00090011, "sysmem.prx", "sceSystemMemoryManager") {
-class UtilsForKernel(emulator: Emulator) : UtilsForUser(emulator) {
+class UtilsForKernel(emulator: Emulator) : UtilsBase(emulator, "UtilsForKernel", 0x00090011, "sysmem.prx", "sceSystemMemoryManager") {
 	/*
-	fun sceKernelIcacheInvalidateRange(ptr: Int, size: Int): Unit {
-		emulator.invalidateIcache(ptr, size)
-	}
-	fun sceKernelDcacheWritebackInvalidateRange(ptr: Int, size: Int): Unit {
-		emulator.invalidateDcache(ptr, size)
-	}
-	fun sceKernelLibcClock(): Int = timeManager.getTimeInMicrosecondsInt()
-
 	fun UtilsForKernel_004D4DEE(cpu: CpuState): Unit = UNIMPLEMENTED(0x004D4DEE)
 	fun sceKernelUtilsMt19937UInt(cpu: CpuState): Unit = UNIMPLEMENTED(0x06FB8A63)
 	fun sceKernelSetPTRIGMask(cpu: CpuState): Unit = UNIMPLEMENTED(0x136F2419)
 	fun UtilsForKernel_157A383A(cpu: CpuState): Unit = UNIMPLEMENTED(0x157A383A)
-	fun sceKernelDcacheReadTag(cpu: CpuState): Unit = UNIMPLEMENTED(0x16641D70)
 	fun sceKernelSetGPIMask(cpu: CpuState): Unit = UNIMPLEMENTED(0x193D4036)
 	fun UtilsForKernel_1B0592A3(cpu: CpuState): Unit = UNIMPLEMENTED(0x1B0592A3)
 	fun sceKernelRegisterRtcFunc(cpu: CpuState): Unit = UNIMPLEMENTED(0x23A0C5BA)
@@ -72,13 +62,11 @@ class UtilsForKernel(emulator: Emulator) : UtilsForUser(emulator) {
 	fun sceKernelDeflateDecompress(cpu: CpuState): Unit = UNIMPLEMENTED(0xE8DB3CE6)
 	fun UtilsForKernel_F0155BCA(cpu: CpuState): Unit = UNIMPLEMENTED(0xF0155BCA)
 	fun sceKernelUtilsSha1BlockInit(cpu: CpuState): Unit = UNIMPLEMENTED(0xF8FCD5BA)
-	fun sceKernelIcacheReadTag(cpu: CpuState): Unit = UNIMPLEMENTED(0xFB05FAD0)
 	*/
 
 	override fun registerModule() {
 		super.registerModule()
 		/*
-		registerFunctionVoid("sceKernelIcacheInvalidateRange", 0xC2DF770E, since = 150) { sceKernelIcacheInvalidateRange(int, int) }
 		registerFunctionVoid("sceKernelDcacheWritebackInvalidateRange", 0x34B9FA9E, since = 150) { sceKernelDcacheWritebackInvalidateRange(int, int) }
 		registerFunctionInt("sceKernelLibcClock", 0x91E4F6A7, since = 150) { sceKernelLibcClock() }
 
@@ -86,7 +74,6 @@ class UtilsForKernel(emulator: Emulator) : UtilsForUser(emulator) {
 		registerFunctionRaw("sceKernelUtilsMt19937UInt", 0x06FB8A63, since = 150) { sceKernelUtilsMt19937UInt(it) }
 		registerFunctionRaw("sceKernelSetPTRIGMask", 0x136F2419, since = 150) { sceKernelSetPTRIGMask(it) }
 		registerFunctionRaw("UtilsForKernel_157A383A", 0x157A383A, since = 150) { UtilsForKernel_157A383A(it) }
-		registerFunctionRaw("sceKernelDcacheReadTag", 0x16641D70, since = 150) { sceKernelDcacheReadTag(it) }
 		registerFunctionRaw("sceKernelSetGPIMask", 0x193D4036, since = 150) { sceKernelSetGPIMask(it) }
 		registerFunctionRaw("UtilsForKernel_1B0592A3", 0x1B0592A3, since = 150) { UtilsForKernel_1B0592A3(it) }
 		registerFunctionRaw("sceKernelRegisterRtcFunc", 0x23A0C5BA, since = 150) { sceKernelRegisterRtcFunc(it) }
@@ -140,7 +127,6 @@ class UtilsForKernel(emulator: Emulator) : UtilsForUser(emulator) {
 		registerFunctionRaw("sceKernelDeflateDecompress", 0xE8DB3CE6, since = 150) { sceKernelDeflateDecompress(it) }
 		registerFunctionRaw("UtilsForKernel_F0155BCA", 0xF0155BCA, since = 150) { UtilsForKernel_F0155BCA(it) }
 		registerFunctionRaw("sceKernelUtilsSha1BlockInit", 0xF8FCD5BA, since = 150) { sceKernelUtilsSha1BlockInit(it) }
-		registerFunctionRaw("sceKernelIcacheReadTag", 0xFB05FAD0, since = 150) { sceKernelIcacheReadTag(it) }
 		*/
 	}
 }

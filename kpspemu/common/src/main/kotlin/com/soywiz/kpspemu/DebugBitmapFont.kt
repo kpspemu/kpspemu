@@ -18,7 +18,7 @@ object DebugBitmapFont {
 	}
 
 	val DEBUG_FONT_BMP by lazy {
-		PNG.decode(DEBUG_FONT_BYTES).toBMP32()
+		PNG.decode(DEBUG_FONT_BYTES).toBMP32().premultipliedIfRequired()
 	}
 
 	val DEBUG_FONT_BYTES by lazy {

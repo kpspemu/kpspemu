@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
 
 class TableGeneratorScriptTest {
 	@Test
-		//@Ignore
+	@Ignore
 	fun name() {
 		val switch = TableGenerator.createSwitch(Instructions.instructions)
 		println(switch)
