@@ -516,7 +516,6 @@ object CryptedElf2 {
 
 		memcpy(tmp1, outbuf, 0x150)
 
-		var i: Int
 		val p = tmp2 + 0x14
 
 		// Writes 0x90 bytes to tmp2 + 0x14.

@@ -59,7 +59,16 @@ object Kirk {
 	fun kirk_CMD14(output: SyncStream, outsize: Any): Unit = TODO()
 	fun kirk_CMD13(output: SyncStream, input: SyncStream): Unit = TODO()
 	fun kirk_CMD12(output: SyncStream): Unit = TODO()
-	fun kirk_CMD11(output: SyncStream, input: SyncStream): Unit = TODO()
+
+	fun kirk_CMD11(output: SyncStream, input: SyncStream): Unit {
+		if (input.length == 0L) invalidOp
+		val headerDataSize = input.slice().readS32_le()
+		if (headerDataSize == 0) invalidOp
+		val data = input.sliceWithStart(4L).readBytes(headerDataSize)
+		val hash = SHA1.hash(data)
+		output.writeBytes(hash)
+	}
+
 	fun kirk_CMD4(output: SyncStream, input: SyncStream): Unit = TODO()
 	fun kirk_CMD10(input: SyncStream): Unit = TODO()
 
