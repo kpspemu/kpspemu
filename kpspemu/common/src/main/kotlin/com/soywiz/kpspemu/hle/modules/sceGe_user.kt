@@ -57,6 +57,7 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 		//thread.suspend(WaitObject.PROMISE(ge.syncAsync(syncType)), cb = false)
 		ge.sync(syncType)
 		emulator.gpu.flush()
+		emulator.gpuRenderer.tryExecuteNow()
 		when (syncType) {
 			PspGeSyncType.PSP_GE_LIST_DONE, PspGeSyncType.PSP_GE_LIST_DRAWING_DONE -> {
 				emulator.gpuRenderer.queuedJobs.waitValue(0)

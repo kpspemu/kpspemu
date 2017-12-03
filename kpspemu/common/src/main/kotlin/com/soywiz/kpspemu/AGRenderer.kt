@@ -25,7 +25,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	val logger = Logger("AGRenderer")
 	var anyBatch = false
 	private val batchesQueue = arrayListOf<List<GeBatchData>>()
-	val tempBmp = Bitmap32(512, 272)
+	val tempBmp = Bitmap32(480, 272)
 	val taskCountFlag = EventFlag(0)
 	var taskCount by taskCountFlag
 
@@ -66,6 +66,11 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 	var frameCount = 0
 
+	//val WW = 512
+	val WW = 480
+	val HH = 272
+	var actualTexture = sceneTex
+
 	fun render(views: Views, ctx: RenderContext, m: Matrix2d) {
 		val ag = ctx.ag
 		ag.checkErrors = false
@@ -79,8 +84,6 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		}
 
 		if (directFastSharpRendering) {
-			val WW = 512
-			val HH = 272
 
 			if (batchesQueue.isNotEmpty()) {
 				//ag.create
@@ -100,16 +103,21 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 					rb.end()
 				}
 			}
-			ctx.batch.drawQuad(geTexture, m = m, blendFactors = AG.Blending.NONE, filtering = false, width = WW.toFloat(), height = HH.toFloat())
+			actualTexture = geTexture
 		} else {
 			if (batchesQueue.isNotEmpty()) {
-				mem.read(display.fixedAddress(), tempBmp.data)
+				//mem.read(display.fixedAddress(), tempBmp.data)
+				for (n in 0 until 272) {
+					//mem.write(display.fixedAddress() + n * 512 * 4, tempBmp.data, tempBmp.width * (271 - n), tempBmp.width)
+					mem.read(display.fixedAddress() + n * 512 * 4, tempBmp.data, tempBmp.width * n, tempBmp.width)
+				}
 				ag.renderToBitmapEx(tempBmp) {
 					ag.drawBmp(tempBmp)
 					renderBatches(views, ctx, scale = 1.0)
 				}
-				tempBmp.flipY() // @TODO: This should be removed!
-				mem.write(display.fixedAddress(), tempBmp.data)
+				for (n in 0 until 272) {
+					mem.write(display.fixedAddress() + n * 512 * 4, tempBmp.data, tempBmp.width * (271 - n), tempBmp.width)
+				}
 			}
 
 			if (display.rawDisplay) {
@@ -117,9 +125,14 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				display.bmp.setAlpha(0xFF)
 				sceneTex.update(display.bmp)
 			}
-
-			ctx.batch.drawQuad(sceneTex, m = m, blendFactors = AG.Blending.NONE, filtering = false)
+			actualTexture = sceneTex
 		}
+		ctx.flush()
+	}
+
+	fun renderTexture(views: Views, ctx: RenderContext, m: Matrix2d) {
+		ctx.flush()
+		ctx.batch.drawQuad(actualTexture, m = m, blendFactors = AG.Blending.NONE, filtering = false, width = WW.toFloat(), height = HH.toFloat())
 		ctx.flush()
 	}
 

@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.Extra
 import com.soywiz.klogger.Logger
+import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.sleep
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
@@ -132,6 +133,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 			}
 			if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
 			if (now - start >= 16.0) {
+				coroutineContext.sleep(0)
 				break // Rest a bit
 			}
 		} while (currentThread != null)

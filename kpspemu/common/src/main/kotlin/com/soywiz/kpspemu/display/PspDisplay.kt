@@ -24,7 +24,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 		const val VERTICAL_SECONDS = 1.0 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
 	}
 
-	val bmp = Bitmap32(512, 272)
+	val bmp = Bitmap32(480, 272)
 	var exposeDisplay = true
 	var rawDisplay: Boolean = true
 	var address: Int = 0x44000000
@@ -32,7 +32,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 	var pixelFormat: PixelFormat = PixelFormat.RGBA_8888
 	var sync: Int = 0
 	var displayMode: Int = 0
-	var displayWidth: Int = 480
+	var displayWidth: Int = 512
 	var displayHeight: Int = 272
 	private val temp = ByteArray(512 * 272 * 4)
 
@@ -46,7 +46,9 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 
 		when (pixelFormat) {
 			PixelFormat.RGBA_8888 -> { // Optimized!
-				mem.read(address, bmpData)
+				for (n in 0 until 272) {
+					mem.read(address + n * 512 * 4, bmpData, bmp.width * n, bmp.width)
+				}
 			}
 			else -> {
 				mem.read(address, temp, 0, temp.size)
@@ -55,10 +57,11 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
 					PixelFormat.RGBA_5551 -> RGBA_5551
 					else -> RGBA
 				}
+				val stride = 512 * color.bytesPerPixel
 
-				color.decodeToBitmap32(out, temp)
-				//RGBA_4444.decodeToBitmap32(out, temp)
-				//RGBA.decodeToBitmap32(out, temp)
+				for (n in 0 until 272) {
+					color.decode(temp, n * stride, bmpData, bmp.width * n, bmp.width)
+				}
 			}
 		}
 	}

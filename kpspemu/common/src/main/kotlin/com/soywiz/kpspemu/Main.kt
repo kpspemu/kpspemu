@@ -47,7 +47,10 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.hexString
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korio.vfs.applicationVfs
+import com.soywiz.korio.vfs.localCurrentDirVfs
+import com.soywiz.korio.vfs.tempVfs
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -149,6 +152,15 @@ class KpspemuMainScene(
 			override fun reset() {
 				super.reset()
 				agRenderer.reset()
+			}
+
+			private val identity = Matrix2d()
+			private val renderContext = RenderContext(views.ag)
+
+			override fun tryExecuteNow() {
+				// @TODO: This produces an error! We should update KorAG to support this!
+				//println("tryExecuteNow.Thread: ${KorioNative.currentThreadId}")
+				//agRenderer.render(views, renderContext, identity)
 			}
 		}
 		agRenderer.anyBatch = false
@@ -441,11 +453,13 @@ class KpspemuMainScene(
 		}
 
 		val displayView = object : View(views) {
-			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 512, 272) }
+			override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 480, 272) }
 			override fun render(ctx: RenderContext, m: Matrix2d) {
 				val startTime = Klock.currentTimeMillis()
 				fpsCounter.tick(startTime.toDouble())
+				//println("displayView.render.Thread: ${KorioNative.currentThreadId}")
 				agRenderer.render(views, ctx, m)
+				agRenderer.renderTexture(views, ctx, m)
 				val endTime = Klock.currentTimeMillis()
 				agRenderer.stats.renderTime = (endTime - startTime).toInt()
 				infoText.text = getInfoText()
