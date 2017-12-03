@@ -19,14 +19,28 @@ data class PtrArray(val ptr: Ptr, val size: Int) {
 	val high: Int get() = low + size
 }
 
-class Ptr32(val ptr: Ptr) {
+interface BasePtr {
+	val ptr: Ptr
+}
+
+class Ptr32(override val ptr: Ptr) : BasePtr {
 	fun get(): Int = this[0]
 	fun set(value: Int) = run { this[0] = value }
 	operator fun get(index: Int): Int = ptr.lw(index * 4)
 	operator fun set(index: Int, value: Int) = ptr.sw(index * 4, value)
+	operator fun plus(offset: Int) = Ptr32(ptr + offset * 4)
 }
 
-interface Ptr {
+class Ptr64(override val ptr: Ptr) : BasePtr {
+	fun get(): Long = this[0]
+	fun set(value: Long) = run { this[0] = value }
+	operator fun get(index: Int): Long = ptr.ldw(index * 8)
+	operator fun set(index: Int, value: Long) = ptr.sdw(index * 8, value)
+	operator fun plus(offset: Int) = Ptr64(ptr + offset * 8)
+}
+
+interface Ptr : BasePtr {
+	override val ptr: Ptr
 	val addr: Int
 	fun sb(offset: Int, value: Int): Unit
 	fun sh(offset: Int, value: Int): Unit
@@ -34,7 +48,6 @@ interface Ptr {
 	fun lb(offset: Int): Int
 	fun lh(offset: Int): Int
 	fun lw(offset: Int): Int
-
 	fun sdw(offset: Int, value: Long): Unit {
 		sw(offset + 0, (value ushr 0).toInt())
 		sw(offset + 4, (value ushr 32).toInt())
@@ -45,9 +58,11 @@ interface Ptr {
 		val high = lw(offset + 4).unsigned
 		return (high shl 32) or low
 	}
+	operator fun plus(offset: Int): Ptr
 }
 
 object DummyPtr : Ptr {
+	override val ptr = this
 	override val addr: Int = 0
 	override fun sb(offset: Int, value: Int) = Unit
 	override fun sh(offset: Int, value: Int) = Unit
@@ -55,6 +70,7 @@ object DummyPtr : Ptr {
 	override fun lb(offset: Int): Int = 0
 	override fun lh(offset: Int): Int = 0
 	override fun lw(offset: Int): Int = 0
+	override fun plus(offset: Int): Ptr = DummyPtr
 }
 
 fun <T> Ptr.read(struct: Struct<T>): T = openSync().read(struct)
@@ -71,6 +87,7 @@ inline fun <T, TR> Ptr.capture(struct: Struct<T>, callback: (T) -> TR): TR {
 }
 
 data class MemPtr(val mem: Memory, override val addr: Int) : Ptr {
+	override val ptr = this
 	override fun sb(offset: Int, value: Int): Unit = mem.sb(addr + offset, value)
 	override fun sh(offset: Int, value: Int): Unit = mem.sh(addr + offset, value)
 	override fun sw(offset: Int, value: Int): Unit = mem.sw(addr + offset, value)
@@ -78,14 +95,15 @@ data class MemPtr(val mem: Memory, override val addr: Int) : Ptr {
 	override fun lh(offset: Int): Int = mem.lh(addr + offset)
 	override fun lw(offset: Int): Int = mem.lw(addr + offset)
 	override fun toString(): String = "Ptr(0x%08X)".format(addr)
+	override fun plus(offset: Int): Ptr = MemPtr(mem, addr + offset)
 }
 
 fun Ptr.array(size: Int) = PtrArray(this, size)
 
 fun Memory.ptr(addr: Int) = MemPtr(this, addr)
 
-val Ptr.isNotNull: Boolean get() = addr != 0
-val Ptr.isNull: Boolean get() = addr == 0
+val BasePtr.isNotNull: Boolean get() = ptr.addr != 0
+val BasePtr.isNull: Boolean get() = ptr.addr == 0
 
 fun Ptr.writeBytes(bytes: ByteArray, offset: Int = 0, size: Int = bytes.size - offset) {
 	for (n in 0 until size) this.sb(n, bytes[offset + n].toInt())

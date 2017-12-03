@@ -7,10 +7,7 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.manager.ScePspDateTime
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.isNotNull
-import com.soywiz.kpspemu.mem.openSync
-import com.soywiz.kpspemu.mem.write
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.timeManager
 
 @Suppress("UNUSED_PARAMETER")
@@ -26,9 +23,9 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		return 0
 	}
 
-	fun sceRtcGetTick(datePtr: Ptr, ticksPtr: Ptr): Int {
+	fun sceRtcGetTick(datePtr: Ptr, ticksPtr: Ptr64): Int {
 		val date = ScePspDateTime.read(datePtr.openSync())
-		ticksPtr.sdw(0, date.date.unix * 1000)
+		ticksPtr.set(date.date.unix * 1000)
 		return 0
 	}
 
@@ -92,7 +89,7 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionInt("sceRtcGetDayOfWeek", 0x57726BC1, since = 150) { sceRtcGetDayOfWeek(int, int, int) }
 		registerFunctionInt("sceRtcGetDaysInMonth", 0x05EF322C, since = 150) { sceRtcGetDaysInMonth(int, int) }
 		registerFunctionInt("sceRtcSetTick", 0x7ED29E40, since = 150) { sceRtcSetTick(ptr, ptr) }
-		registerFunctionInt("sceRtcGetTick", 0x6FF40ACC, since = 150) { sceRtcGetTick(ptr, ptr) }
+		registerFunctionInt("sceRtcGetTick", 0x6FF40ACC, since = 150) { sceRtcGetTick(ptr, ptr64) }
 		registerFunctionInt("sceRtcGetCurrentClock", 0x4CFA57B0, since = 150) { sceRtcGetCurrentClock(ptr, int) }
 		registerFunctionInt("sceRtcGetCurrentClockLocalTime", 0xE7C27D1B, since = 150) { sceRtcGetCurrentClockLocalTime(ptr) }
 		registerFunctionInt("sceRtcTickAddMicroseconds", 0x26D25A5D, since = 150) { sceRtcTickAddMicroseconds(ptr, ptr, long) }

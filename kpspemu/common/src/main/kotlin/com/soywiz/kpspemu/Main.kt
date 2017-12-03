@@ -186,6 +186,7 @@ class KpspemuMainScene(
 				try {
 					setIcon0Bitmap(PNG.read(icon0, "file.png").toBMP32())
 				} catch (e: Throwable) {
+					println("ERROR at loadExecutableAndStart")
 					e.printStackTrace()
 				}
 			}
@@ -211,6 +212,7 @@ class KpspemuMainScene(
 					try {
 						emulator.threadManager.step()
 					} catch (e: Throwable) {
+						println("ERROR at cpuProcess")
 						e.printStackTrace()
 						running = false
 					}

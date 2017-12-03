@@ -7,6 +7,10 @@ import com.soywiz.kpspemu.hle.SceModule
 
 
 class sceMpeg(emulator: Emulator) : SceModule(emulator, "sceMpeg", 0x00010011, "mpeg_vsh.prx", "sceMpegVsh_library") {
+	fun sceMpegInit(): Int {
+		return -1 // @TODO: 0 when we implement the rest of the API
+	}
+
 	fun sceMpegQueryUserdataEsSize(cpu: CpuState): Unit = UNIMPLEMENTED(0x01977054)
 	fun sceMpeg_0558B075(cpu: CpuState): Unit = UNIMPLEMENTED(0x0558B075)
 	fun sceMpegAvcDecode(cpu: CpuState): Unit = UNIMPLEMENTED(0x0E3C2E9D)
@@ -30,7 +34,6 @@ class sceMpeg(emulator: Emulator) : SceModule(emulator, "sceMpeg", 0x00010011, "
 	fun sceMpegDelete(cpu: CpuState): Unit = UNIMPLEMENTED(0x606A4649)
 	fun sceMpegQueryStreamSize(cpu: CpuState): Unit = UNIMPLEMENTED(0x611E9E11)
 	fun sceMpegAvcInitYCbCr(cpu: CpuState): Unit = UNIMPLEMENTED(0x67179B1B)
-	fun sceMpegInit(cpu: CpuState): Unit = UNIMPLEMENTED(0x682A619B)
 	fun sceMpegAvcDecodeGetDecodeSEI(cpu: CpuState): Unit = UNIMPLEMENTED(0x6F314410)
 	fun sceMpegFlushAllStream(cpu: CpuState): Unit = UNIMPLEMENTED(0x707B7629)
 	fun sceMpegAvcDecodeStop(cpu: CpuState): Unit = UNIMPLEMENTED(0x740FCCD1)
@@ -70,6 +73,8 @@ class sceMpeg(emulator: Emulator) : SceModule(emulator, "sceMpeg", 0x00010011, "
 
 
 	override fun registerModule() {
+		registerFunctionInt("sceMpegInit", 0x682A619B, since = 150) { sceMpegInit() }
+
 		registerFunctionRaw("sceMpegQueryUserdataEsSize", 0x01977054, since = 150) { sceMpegQueryUserdataEsSize(it) }
 		registerFunctionRaw("sceMpeg_0558B075", 0x0558B075, since = 150) { sceMpeg_0558B075(it) }
 		registerFunctionRaw("sceMpegAvcDecode", 0x0E3C2E9D, since = 150) { sceMpegAvcDecode(it) }
@@ -93,7 +98,6 @@ class sceMpeg(emulator: Emulator) : SceModule(emulator, "sceMpeg", 0x00010011, "
 		registerFunctionRaw("sceMpegDelete", 0x606A4649, since = 150) { sceMpegDelete(it) }
 		registerFunctionRaw("sceMpegQueryStreamSize", 0x611E9E11, since = 150) { sceMpegQueryStreamSize(it) }
 		registerFunctionRaw("sceMpegAvcInitYCbCr", 0x67179B1B, since = 150) { sceMpegAvcInitYCbCr(it) }
-		registerFunctionRaw("sceMpegInit", 0x682A619B, since = 150) { sceMpegInit(it) }
 		registerFunctionRaw("sceMpegAvcDecodeGetDecodeSEI", 0x6F314410, since = 150) { sceMpegAvcDecodeGetDecodeSEI(it) }
 		registerFunctionRaw("sceMpegFlushAllStream", 0x707B7629, since = 150) { sceMpegFlushAllStream(it) }
 		registerFunctionRaw("sceMpegAvcDecodeStop", 0x740FCCD1, since = 150) { sceMpegAvcDecodeStop(it) }

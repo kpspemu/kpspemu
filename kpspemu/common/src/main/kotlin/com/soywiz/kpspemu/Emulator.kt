@@ -53,12 +53,12 @@ class Emulator(
 		CpuBreakException.initialize(mem)
 	}
 
-	fun invalidateIcache(ptr: Int, size: Int) {
-		logger.trace { "invalidateIcache(${ptr.hex}, $size)" }
+	fun invalidateInstructionCache(ptr: Int = 0, size: Int = Int.MAX_VALUE) {
+		logger.trace { "invalidateInstructionCache($ptr, $size)" }
 	}
 
-	fun invalidateDcache(ptr: Int, size: Int) {
-		logger.trace { "invalidateDcache()" }
+	fun dataCache(ptr: Int = 0, size: Int = Int.MAX_VALUE, writeback: Boolean, invalidate: Boolean) {
+		logger.trace { "writebackDataCache($ptr, $size, writeback=$writeback, invalidate=$invalidate)" }
 	}
 
 	fun reset() {

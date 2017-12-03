@@ -72,6 +72,8 @@ fun Memory.disasmMacro(pc: Int, nameProvider: NameProvider = DummyNameProvider):
 	Disassembler.disasmMacro(pc, this.lw(pc), nameProvider)
 } catch (e: IndexOutOfBoundsException) {
 	"invalid(PC=0x%08X)".format(pc)
+} catch (e: Exception) {
+	"error: ${e.message}"
 }
 
 fun Memory.getPrintInstructionAt(address: Int, nameProvider: NameProvider = DummyNameProvider): String = address.hex + " : " + disasmMacro(address, nameProvider)

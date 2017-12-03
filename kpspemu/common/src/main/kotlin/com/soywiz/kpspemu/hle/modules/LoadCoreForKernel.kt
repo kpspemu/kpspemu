@@ -6,9 +6,7 @@ import com.soywiz.kpspemu.hle.SceModule
 
 @Suppress("UNUSED_PARAMETER")
 class LoadCoreForKernel(emulator: Emulator) : SceModule(emulator, "LoadCoreForKernel", 0x00010011, "loadcore.prx", "sceLoaderCore") {
-	fun sceKernelIcacheClearAll(): Unit {
-		emulator.invalidateIcache(0, Int.MAX_VALUE)
-	}
+	fun sceKernelIcacheClearAll(): Unit = emulator.invalidateInstructionCache()
 
 	fun LoadCoreForKernel_00E94E85(cpu: CpuState): Unit = UNIMPLEMENTED(0x00E94E85)
 	fun LoadCoreForKernel_0B53340F(cpu: CpuState): Unit = UNIMPLEMENTED(0x0B53340F)

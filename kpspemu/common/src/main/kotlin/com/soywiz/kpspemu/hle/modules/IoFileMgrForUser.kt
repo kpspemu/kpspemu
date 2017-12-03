@@ -21,6 +21,7 @@ import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.fileManager
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.error.sceKernelException
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.PoolItem
@@ -222,6 +223,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			dd.files = dd.directory.list().toList()
 			return dd.id
 		} catch (e: Throwable) {
+			println("ERROR AT sceIoDopen")
 			e.printStackTrace()
 			return -1
 		}
@@ -296,7 +298,6 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			res.asyncResult = callback()
 			logger.error { "  async $name completed with result ${res.asyncResult}" }
 			res.asyncDone = true
-			res.asyncPromise = null
 		}
 		return res.id
 	}
@@ -324,6 +325,16 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		return 0
 	}
 
+	suspend fun sceIoLseekAsync(fileId: Int, offset: Long, whence: Int): Int {
+		async(fileId, "sceIoLseekAsync") {
+			val res = sceIoLseek(fileId, offset, whence)
+			//println(outputPointer.readBytes(outputLength).toString(UTF8))
+			logger.error { "::sceIoReadAsync --> $res" }
+			res.toLong()
+		}
+		return 0
+	}
+
 	suspend fun sceIoCloseAsync(fileId: Int): Int {
 		logger.error { "sceIoCloseAsync:$fileId" }
 		async(fileId, "sceIoCloseAsync", doLater = {
@@ -334,28 +345,38 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		return 0
 	}
 
-	fun sceIoPollAsync(fd: Int, out: Ptr): Int {
-		logger.error { "sceIoPollAsync:$fd,$out" }
-		val res = fileDescriptors.tryGetById(fd)
-		out.sdw(0, res?.asyncResult ?: 0)
+	private fun getFileDescriptor(fileId: Int) = fileDescriptors.tryGetById(fileId) ?: sceKernelException(SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR)
+
+	fun sceIoPollAsync(fileId: Int, out: Ptr64): Int {
+		logger.error { "sceIoPollAsync:$fileId,$out" }
+		val fd = getFileDescriptor(fileId)
+		if (out.isNotNull) {
+			out.set(fd.asyncResult)
+		}
 		val outv = when {
-			res == null -> -1
-			res.asyncDone -> 0
+			fd.asyncDone -> 0
 			else -> 1
 		}
-		res?.doLater?.let { doLater -> go(coroutineContext) { doLater() } } // For closing!
-		logger.error { "   sceIoPollAsync:$fd,$out -> valid=${res != null} :: ${res?.asyncResult} -> outv=$outv" }
+		fd.doLater?.let { doLater -> go(coroutineContext) { doLater() } } // For closing!
+		logger.error { "   sceIoPollAsync:$fileId,$out -> ${fd.asyncResult} -> outv=$outv" }
 		return outv
+	}
+
+	suspend fun sceIoWaitAsyncCB(fileId: Int, out: Ptr): Int {
+		val fd = getFileDescriptor(fileId)
+		fd.asyncPromise?.await()
+		if (out.isNotNull) {
+			out.sdw(0, fd.asyncResult)
+		}
+		return 0
 	}
 
 	fun sceIoGetDevType(cpu: CpuState): Unit = UNIMPLEMENTED(0x08BD7374)
 	fun sceIoWriteAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x0FACAB19)
 	fun sceIoLseek32Async(cpu: CpuState): Unit = UNIMPLEMENTED(0x1B385D8F)
-	fun sceIoWaitAsyncCB(cpu: CpuState): Unit = UNIMPLEMENTED(0x35DBD746)
 	fun sceIoGetFdList(cpu: CpuState): Unit = UNIMPLEMENTED(0x5C2BE2CC)
 	fun sceIoIoctl(cpu: CpuState): Unit = UNIMPLEMENTED(0x63632449)
 	fun sceIoUnassign(cpu: CpuState): Unit = UNIMPLEMENTED(0x6D08A871)
-	fun sceIoLseekAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0x71B19E77)
 	fun sceIoRename(cpu: CpuState): Unit = UNIMPLEMENTED(0x779103A0)
 	fun sceIoSetAsyncCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xA12A0514)
 	fun sceIoSync(cpu: CpuState): Unit = UNIMPLEMENTED(0xAB96437F)
@@ -386,7 +407,9 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionSuspendInt("sceIoOpenAsync", 0x89AA9906, since = 150) { sceIoOpenAsync(thread, str, int, int) }
 		registerFunctionSuspendInt("sceIoReadAsync", 0xA0B5A7C2, since = 150) { sceIoReadAsync(int, ptr, int) }
 		registerFunctionSuspendInt("sceIoCloseAsync", 0xFF5940B6, since = 150) { sceIoCloseAsync(int) }
-		registerFunctionInt("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(int, ptr) }
+		registerFunctionSuspendInt("sceIoLseekAsync", 0x71B19E77, since = 150) { sceIoLseekAsync(int, long, int) }
+		registerFunctionInt("sceIoPollAsync", 0x3251EA56, since = 150) { sceIoPollAsync(int, ptr64) }
+		registerFunctionSuspendInt("sceIoWaitAsyncCB", 0x35DBD746, since = 150, cb = true) { sceIoWaitAsyncCB(int, ptr) }
 
 		// Directories
 		registerFunctionSuspendInt("sceIoDopen", 0xB29DDF9C, since = 150) { sceIoDopen(str) }
@@ -406,11 +429,9 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		registerFunctionRaw("sceIoGetDevType", 0x08BD7374, since = 150) { sceIoGetDevType(it) }
 		registerFunctionRaw("sceIoWriteAsync", 0x0FACAB19, since = 150) { sceIoWriteAsync(it) }
 		registerFunctionRaw("sceIoLseek32Async", 0x1B385D8F, since = 150) { sceIoLseek32Async(it) }
-		registerFunctionRaw("sceIoWaitAsyncCB", 0x35DBD746, since = 150) { sceIoWaitAsyncCB(it) }
 		registerFunctionRaw("sceIoGetFdList", 0x5C2BE2CC, since = 150) { sceIoGetFdList(it) }
 		registerFunctionRaw("sceIoIoctl", 0x63632449, since = 150) { sceIoIoctl(it) }
 		registerFunctionRaw("sceIoUnassign", 0x6D08A871, since = 150) { sceIoUnassign(it) }
-		registerFunctionRaw("sceIoLseekAsync", 0x71B19E77, since = 150) { sceIoLseekAsync(it) }
 		registerFunctionRaw("sceIoRename", 0x779103A0, since = 150) { sceIoRename(it) }
 		registerFunctionRaw("sceIoSetAsyncCallback", 0xA12A0514, since = 150) { sceIoSetAsyncCallback(it) }
 		registerFunctionRaw("sceIoSync", 0xAB96437F, since = 150) { sceIoSync(it) }

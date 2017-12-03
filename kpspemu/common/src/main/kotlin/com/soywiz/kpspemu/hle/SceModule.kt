@@ -19,10 +19,7 @@ import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.WaitObject
 import com.soywiz.kpspemu.hle.manager._thread
 import com.soywiz.kpspemu.hle.manager.thread
-import com.soywiz.kpspemu.mem.MemPtr
-import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.Ptr32
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.threadManager
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.startCoroutine
@@ -39,6 +36,7 @@ class RegisterReader {
 
 	val thread: PspThread get() = cpu.thread
 	val mem: Memory get() = cpu.mem
+	val bool: Boolean get() = int != 0
 	val int: Int get() = this.cpu.getGpr(pos++)
 	val long: Long
 		get() {
@@ -49,6 +47,7 @@ class RegisterReader {
 		}
 	val ptr: Ptr get() = MemPtr(mem, int)
 	val ptr32: Ptr32 get() = Ptr32(ptr)
+	val ptr64: Ptr64 get() = Ptr64(ptr)
 	val str: String? get() = mem.readStringzOrNull(int)
 	val istr: String get() = mem.readStringzOrNull(int) ?: ""
 }
@@ -170,12 +169,13 @@ abstract class SceModule(
 					loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
 				}
 
-				override fun resumeWithException(exception: Throwable) {
-					if (exception is SceKernelException) {
-						resume(convertErrorToT(exception.errorCode))
+				override fun resumeWithException(e: Throwable) {
+					if (e is SceKernelException) {
+						resume(convertErrorToT(e.errorCode))
 					} else {
-						exception.printStackTrace()
-						throw exception
+						println("ERROR at registerFunctionSuspendT.resumeWithException")
+						e.printStackTrace()
+						throw e
 					}
 				}
 			})

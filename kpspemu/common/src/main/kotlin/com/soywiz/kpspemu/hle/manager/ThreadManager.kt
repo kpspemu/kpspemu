@@ -131,7 +131,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 				break
 			}
 			if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
-			if (now - start >= 100.0) {
+			if (now - start >= 16.0) {
 				break // Rest a bit
 			}
 		} while (currentThread != null)
@@ -174,11 +174,19 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 			cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
 			cpu.r4 = argument
 
+			val start = timeManager.getTimeInMicroseconds()
 			while (true) {
+				val now = timeManager.getTimeInMicroseconds()
 				interpreter.steps(10000)
+				if (now - start >= 16.0) {
+					println("Interrupt is taking too long...")
+					break // Rest a bit
+				}
 			}
 		} catch (e: CpuBreakException) {
-			// Done
+			if (e.id != CpuBreakException.INTERRUPT_RETURN) {
+				throw e
+			}
 		} finally {
 			gcpustate.insideInterrupt = oldInsideInterrupt
 		}
@@ -342,6 +350,7 @@ class PspThread internal constructor(
 				}
 				else -> {
 					println("CPU: ${state.summary}")
+					println("ERROR at PspThread.step")
 					e.printStackTrace()
 					throw e
 				}

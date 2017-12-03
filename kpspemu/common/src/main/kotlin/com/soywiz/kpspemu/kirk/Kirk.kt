@@ -16,6 +16,7 @@ object Kirk {
 			hleUtilsBufferCopyWithRange(o, i, command)
 			return 0
 		} catch (e: Throwable) {
+			println("ERROR at: hleUtilsBufferCopyWithRange")
 			e.printStackTrace()
 			return -1
 		}
