@@ -78,6 +78,13 @@ object INT32 : StructType<Int> {
 	override fun read(s: SyncStream): Int = s.readS32_le()
 }
 
+object INT32_be : StructType<Int> {
+	override val size = 4
+	override fun write(s: SyncStream, value: Int) = s.write32_be(value)
+	override fun read(s: SyncStream): Int = s.readS32_be()
+}
+
+
 fun <T, TR> StructType<T>.map(map: (T) -> TR, invMap: (TR) -> T): StructType<TR> = object : StructType<TR> {
 	override val size: Int = this@map.size
 	override fun write(s: SyncStream, value: TR) = this@map.write(s, invMap(value))

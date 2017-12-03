@@ -1,24 +1,41 @@
 package com.soywiz.kpspemu.kirk
 
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.IdEnum
+import com.soywiz.korio.util.hexString
 import com.soywiz.kpspemu.util.*
 import com.soywiz.krypto.AES
 
 object Kirk {
-	fun hleUtilsBufferCopyWithRange(output: SyncStream, input: SyncStream, command: CommandEnum): Unit = when (command) {
-		CommandEnum.DECRYPT_PRIVATE -> kirk_CMD1(output, input)
-		CommandEnum.ENCRYPT_IV_0 -> kirk_CMD4(output, input)
-		CommandEnum.DECRYPT_IV_0 -> kirk_CMD7(output, input)
-		CommandEnum.PRIV_SIG_CHECK -> kirk_CMD10(input)
-		CommandEnum.SHA1_HASH -> kirk_CMD11(output, input)
-		CommandEnum.ECDSA_GEN_KEYS -> kirk_CMD12(output)
-		CommandEnum.ECDSA_MULTIPLY_POINT -> kirk_CMD13(output, input)
-		CommandEnum.PRNG -> kirk_CMD14(output, TODO("argument outSize"))
-		CommandEnum.ECDSA_SIGN -> kirk_CMD16(output, input)
-		CommandEnum.ECDSA_VERIFY -> kirk_CMD17(input)
-		else -> TODO("Not implemented hleUtilsBufferCopyWithRange! with command $command: $command")
+	fun hleUtilsBufferCopyWithRange(output: p_u8, outputSize: Int, input: p_u8, inputSize: Int, command: CommandEnum): Int {
+		try {
+			val o = output.openSync(outputSize)
+			val i = input.openSync(inputSize)
+			hleUtilsBufferCopyWithRange(o, i, command)
+			return 0
+		} catch (e: Throwable) {
+			e.printStackTrace()
+			return -1
+		}
+	}
+
+	fun hleUtilsBufferCopyWithRange(output: SyncStream, input: SyncStream, command: CommandEnum): Unit {
+		//println("hleUtilsBufferCopyWithRange(${input.length}): ${input.clone().readBytes(1024).hexString}")
+		return when (command) {
+			CommandEnum.DECRYPT_PRIVATE -> kirk_CMD1(output, input)
+			CommandEnum.ENCRYPT_IV_0 -> kirk_CMD4(output, input)
+			CommandEnum.DECRYPT_IV_0 -> kirk_CMD7(output, input)
+			CommandEnum.PRIV_SIG_CHECK -> kirk_CMD10(input)
+			CommandEnum.SHA1_HASH -> kirk_CMD11(output, input)
+			CommandEnum.ECDSA_GEN_KEYS -> kirk_CMD12(output)
+			CommandEnum.ECDSA_MULTIPLY_POINT -> kirk_CMD13(output, input)
+			CommandEnum.PRNG -> kirk_CMD14(output, TODO("argument outSize"))
+			CommandEnum.ECDSA_SIGN -> kirk_CMD16(output, input)
+			CommandEnum.ECDSA_VERIFY -> kirk_CMD17(input)
+			else -> TODO("Not implemented hleUtilsBufferCopyWithRange! with command $command: $command")
+		}
 	}
 
 	fun kirk_CMD7(output: SyncStream, input: SyncStream) {
@@ -42,13 +59,24 @@ object Kirk {
 	fun kirk_CMD14(output: SyncStream, outsize: Any): Unit = TODO()
 	fun kirk_CMD13(output: SyncStream, input: SyncStream): Unit = TODO()
 	fun kirk_CMD12(output: SyncStream): Unit = TODO()
-	fun kirk_CMD11(output: SyncStream, input: SyncStream): Unit = TODO()
+
+	fun kirk_CMD11(output: SyncStream, input: SyncStream): Unit {
+		if (input.length == 0L) invalidOp
+		val headerDataSize = input.slice().readS32_le()
+		if (headerDataSize == 0) invalidOp
+		val data = input.sliceWithStart(4L).readBytes(headerDataSize)
+		val hash = SHA1.hash(data)
+		output.writeBytes(hash)
+	}
+
 	fun kirk_CMD4(output: SyncStream, input: SyncStream): Unit = TODO()
 	fun kirk_CMD10(input: SyncStream): Unit = TODO()
 
 	fun CMD7(input: SyncStream): ByteArray {
 		val header = input.read(KIRK_AES128CBC_HEADER)
-		if (header.mode != KirkMode.DecryptCbc) throw Error("Kirk Invalid mode '" + header.mode + "'")
+		if (header.mode != KirkMode.DecryptCbc) {
+			throw Error("Kirk Invalid mode '" + header.mode + "'")
+		}
 		if (header.data_size == 0) invalidOp("Kirk data size == 0")
 		return AES.decryptAes128Cbc(input.readAll(), getKirk7Key(header.keyseed))
 		//return AES.decryptAes128Cbc(input.readBytes(header.data_size), kirk_4_7_get_key(header.keyseed))

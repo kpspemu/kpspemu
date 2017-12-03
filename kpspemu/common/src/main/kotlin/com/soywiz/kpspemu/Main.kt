@@ -46,9 +46,7 @@ import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.hexString
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.applicationVfs
-import com.soywiz.korio.vfs.localCurrentDirVfs
+import com.soywiz.korio.vfs.*
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -56,6 +54,7 @@ import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.Korui
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.*
+import com.soywiz.kpspemu.format.elf.CryptedElf
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.GeBatchData
@@ -565,7 +564,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 				var afile: VfsFile? = null
 				done@ for (folder in listOf("PSP_GAME/SYSDIR", "")) {
 					umdLikeStructure = folder.isNotEmpty()
-					for (filename in listOf("BOOT.BIN", "EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP")) {
+					for (filename in listOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")) {
 						afile = container["$folder/$filename"]
 						if (afile.exists()) {
 							// Some BOOT.BIN files are filled with 0!
@@ -598,7 +597,18 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 				stream = pbp.PSP_DATA
 			}
 			PspFileFormat.ENCRYPTED_ELF -> {
-				stream = CryptedElf.decrypt(stream.readAll()).openAsync()
+				val encryptedData = stream.readAll()
+				//val decryptedData = CryptedElf.decrypt(encryptedData)
+				val decryptedData = CryptedElf.decrypt(encryptedData)
+				if (decryptedData.detectPspFormat() != PspFileFormat.ELF) {
+					val encryptedFile = tempVfs["BOOT.BIN.encrypted"]
+					val decryptedFile = tempVfs["BOOT.BIN.decrypted"]
+					encryptedFile.writeBytes(encryptedData)
+					decryptedFile.writeBytes(decryptedData)
+					invalidOp("Error decrypting file. Written to: ${decryptedFile.absolutePath} & ${encryptedFile.absolutePath}")
+				}
+				//LocalVfs("c:/temp/decryptedData.bin").write(decryptedData)
+				stream = decryptedData.openAsync()
 			}
 			PspFileFormat.ELF -> {
 				when {

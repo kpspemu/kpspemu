@@ -138,14 +138,14 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 
 	suspend fun sceIoRead(fileId: Int, dst: Ptr, dstLen: Int): Int {
-		logger.warn { "WIP: sceIoRead: $fileId, $dst, $dstLen" }
+		logger.info { "WIP: sceIoRead: $fileId, $dst, $dstLen" }
 		val fd = fileDescriptors[fileId]
 		val stream = fd.stream
 		val adstLen = max(0, dstLen)
 		val out = ByteArray(adstLen)
 		val initPosition = stream.position
 		val read = stream.read(out, 0, adstLen)
-		logger.warn { " --> $fileId, $dst, $dstLen : POS($initPosition -> ${stream.position}) LEN(${stream.getLength()}) AVAILABLE(${stream.getAvailable()}) // ${fd.fileName} // read=$read" }
+		logger.info { " --> $fileId, $dst, $dstLen : POS($initPosition -> ${stream.position}) LEN(${stream.getLength()}) AVAILABLE(${stream.getAvailable()}) // ${fd.fileName} // read=$read" }
 		dst.writeBytes(out, 0, read)
 		return read
 	}

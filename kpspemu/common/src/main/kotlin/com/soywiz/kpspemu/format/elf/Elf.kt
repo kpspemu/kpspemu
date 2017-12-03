@@ -36,7 +36,7 @@ class Elf private constructor(val stream: SyncStream) {
 		sectionHeaderStringTable = sectionHeaders[header.sectionHeaderStringTable]
 		stringTableStream = getSectionHeaderFileStream(sectionHeaderStringTable)
 
-		sectionHeadersByName = LinkedHashMap<String, ElfSectionHeader>()
+		sectionHeadersByName = LinkedHashMap()
 		for (sectionHeader in sectionHeaders) {
 			val name = this.getStringFromStringTable(sectionHeader.nameOffset)
 			sectionHeader.name = name
