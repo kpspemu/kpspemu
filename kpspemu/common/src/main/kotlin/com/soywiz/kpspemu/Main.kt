@@ -54,6 +54,7 @@ import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.Korui
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.*
+import com.soywiz.kpspemu.format.elf.CryptedElf
 import com.soywiz.kpspemu.format.elf.PspElf
 import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
 import com.soywiz.kpspemu.ge.GeBatchData

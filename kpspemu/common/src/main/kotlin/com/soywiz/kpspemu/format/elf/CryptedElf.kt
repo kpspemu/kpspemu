@@ -1,4 +1,4 @@
-package com.soywiz.kpspemu.format
+package com.soywiz.kpspemu.format.elf
 
 import com.soywiz.kmem.UByteArray
 import com.soywiz.korio.crypto.Hex
@@ -7,21 +7,28 @@ import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.kirk.Kirk
 import com.soywiz.kpspemu.util.*
 
-// https://github.com/hrydgard/ppsspp/blob/1f9fabee579422053d49e2de557aec6f20ee4405/Core/ELF/PrxDecrypter.cpp#L337
+// https://github.com/hrydgard/ppsspp/blob/1f9fabee579422053d49e2de557aec6f20ee4405/Core/ELF/PrxDecrypter.cpp
 // From PPSSPP
 object CryptedElf {
-	fun ROUNDUP16(x: Int) = (((x) + 15) and 15.inv())
+	suspend fun decrypt(input: ByteArray): ByteArray {
+		val out = ByteArray(input.size)
+		val size = pspDecryptPRX(input.p_u8(), out.p_u8(), input.size)
+		if (size < 0) invalidOp("Error decrypting prx")
+		return out.copyOf(size)
+	}
 
-	fun GetTagInfo(checkTag: Int): Keys.TagInfo?
+	private fun ROUNDUP16(x: Int) = (((x) + 15) and 15.inv())
+
+	private fun GetTagInfo(checkTag: Int): Keys.TagInfo?
 		= Keys.g_TagInfo.firstOrNull { it.tag == checkTag }
 
-	fun ExtraV2Mangle(buffer1: p_u8, codeExtra: Int) {
+	private fun ExtraV2Mangle(buffer1: p_u8, codeExtra: Int) {
 		val buffer2 = ByteArray(ROUNDUP16(0x14 + 0xA0)).p_u8()
 
 		memcpy(buffer2 + 0x14, buffer1, 0xA0)
 
 		val pl2 = buffer2.p_u32()
-		pl2[0] = 5
+		pl2[0] = Kirk.KirkMode.DecryptCbc.id
 		pl2[1] = 0
 		pl2[2] = 0
 		pl2[3] = codeExtra
@@ -32,8 +39,8 @@ object CryptedElf {
 		memcpy(buffer1, buffer2, 0xA0)
 	}
 
-	fun Scramble(buf: p_u32, size: Int, code: Int): Int {
-		buf[0] = 5
+	private fun Scramble(buf: p_u32, size: Int, code: Int): Int {
+		buf[0] = Kirk.KirkMode.DecryptCbc.id
 		buf[1] = 0
 		buf[2] = 0
 		buf[3] = code
@@ -41,25 +48,16 @@ object CryptedElf {
 		return sceUtilsBufferCopyWithRange(buf.p_u8(), size + 0x14, buf.p_u8(), size + 0x14, KIRK_CMD_DECRYPT_IV_0)
 	}
 
-	fun DecryptPRX1(pbIn: p_u8, pbOut: p_u8, cbTotal: Int, tag: Int): Int {
-		var i: Int = 0
-		var retsize: Int
+	private fun DecryptPRX1(pbIn: p_u8, pbOut: p_u8, cbTotal: Int, tag: Int): Int {
 		val bD0 = ByteArray(0x80).p_u8()
 		val b80 = ByteArray(0x50).p_u8()
 		val b00 = ByteArray(0x80).p_u8()
 		val bB0 = ByteArray(0x20).p_u8()
-
 		val pti = GetTagInfo(tag) ?: invalidOp("Missing tag ${tag.hex}")
-
 		if (pti.key.size <= 0x10) return -1
 
-		retsize = ((pbIn + 0xB0).p_u32())[0]
-
-		i = 0
-		while (i < 0x14) {
-			if (pti.key[i] != 0) break
-			i++
-		}
+		val firstZeroIndex = pti.key.data.indexOf(0.toByte())
+		val retsize = ((pbIn + 0xB0).p_u32())[0]
 
 		// Scramble the key (!)
 		//
@@ -67,7 +65,7 @@ object CryptedElf {
 		// to write to stuff that should be before the actual key.
 		val key = ByteArray(0x90).p_u8()
 		memcpy(key.p_u8(), pti.key.p_u8(), 0x90)
-		if (i == 0x14) {
+		if (firstZeroIndex < 0) {
 			Scramble(key.p_u32(), 0x90, pti.code)
 		}
 
@@ -132,8 +130,7 @@ object CryptedElf {
 		return retsize
 	}
 
-
-	fun DecryptPRX2(inbuf: p_u8, outbuf: p_u8, size: Int, tag: Int): Int {
+	private fun DecryptPRX2(inbuf: p_u8, outbuf: p_u8, size: Int, tag: Int): Int {
 		val pti = GetTagInfo(tag) ?: return -1
 
 		// only type2 and type6 can be process by this code.
@@ -249,7 +246,7 @@ object CryptedElf {
 		return retsize
 	}
 
-	fun pspDecryptPRX(inbuf: p_u8, outbuf: p_u8, size: Int): Int {
+	private fun pspDecryptPRX(inbuf: p_u8, outbuf: p_u8, size: Int): Int {
 		var retsize = DecryptPRX1(inbuf, outbuf, size, (inbuf + 0xD0).p_u32()[0])
 		if (retsize == MISSING_KEY) {
 			return MISSING_KEY
@@ -262,21 +259,13 @@ object CryptedElf {
 		return retsize
 	}
 
-	suspend fun decrypt(input: ByteArray): ByteArray {
-		val out = ByteArray(input.size)
-		val size = pspDecryptPRX(input.p_u8(), out.p_u8(), input.size)
-		if (size < 0) invalidOp("Error decrypting prx")
-		return out.copyOf(size)
-	}
-
-
-	fun sceUtilsBufferCopyWithRange(output: p_u8, outputSize: Int, input: p_u8, inputSize: Int, command: Kirk.CommandEnum): Int
+	private fun sceUtilsBufferCopyWithRange(output: p_u8, outputSize: Int, input: p_u8, inputSize: Int, command: Kirk.CommandEnum): Int
 		= Kirk.hleUtilsBufferCopyWithRange(output, outputSize, input, inputSize, command)
 
-	val KIRK_CMD_DECRYPT_PRIVATE = Kirk.CommandEnum.DECRYPT_PRIVATE // 0x1
-	val KIRK_CMD_DECRYPT_IV_0 = Kirk.CommandEnum.DECRYPT_IV_0 // 0x7
-	val KIRK_CMD_SHA1_HASH = Kirk.CommandEnum.SHA1_HASH // 0xB
-	val MISSING_KEY = -99
+	private val KIRK_CMD_DECRYPT_PRIVATE = Kirk.CommandEnum.DECRYPT_PRIVATE // 0x1
+	private val KIRK_CMD_DECRYPT_IV_0 = Kirk.CommandEnum.DECRYPT_IV_0 // 0x7
+	private val KIRK_CMD_SHA1_HASH = Kirk.CommandEnum.SHA1_HASH // 0xB
+	private val MISSING_KEY = -99
 
 	@Suppress("RemoveRedundantCallsOfConversionMethods", "unused", "MemberVisibilityCanPrivate")
 	object Keys {
@@ -512,3 +501,11 @@ object CryptedElf {
 	//	)
 	//}
 }
+
+//fun main(args: Array<String>) = Korio {
+//	val ebootBin = LocalVfs("c:/temp/1/EBOOT.BIN").readAll()
+//	//val decrypted1 = CryptedElf.decrypt(ebootBin)
+//	val decrypted2 = CryptedElf.decrypt(ebootBin)
+//	//LocalVfs("c:/temp/1/EBOOT.BIN.decrypted.kpspemu1").writeBytes(decrypted1)
+//	LocalVfs("c:/temp/1/EBOOT.BIN.decrypted.kpspemu2").writeBytes(decrypted2)
+//}
