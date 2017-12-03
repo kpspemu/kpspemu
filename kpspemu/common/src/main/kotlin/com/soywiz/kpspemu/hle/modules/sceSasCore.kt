@@ -2,11 +2,13 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.util.IdEnum
+import com.soywiz.korio.util.hasFlag
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
 import com.soywiz.kpspemu.hle.error.sceKernelException
+
 
 @Suppress("UNUSED_PARAMETER")
 class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010011, "sc_sascore.prx", "sceSAScore") {
@@ -49,7 +51,22 @@ class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010
 		return 0
 	}
 
-	fun __sceSasSetADSR(cpu: CpuState): Unit = UNIMPLEMENTED(0x019B25EB)
+	private fun hasSasCoreVoice(sasCorePointer: Int, voiceId: Int) = this.core.voices[voiceId] != null;
+	private fun getSasCoreVoice(sasCorePointer: Int, voiceId: Int) = this.core.voices[voiceId];
+
+	//@nativeFunction(0x019B25EB, 150, 'uint', 'int/int/int/int/int/int/int', { originalName: "__sceSasSetADSR" })
+	fun __sceSasSetADSR(sasCorePointer: Int, voiceId: Int, flags: Int, attackRate: Int, decayRate: Int, sustainRate: Int, releaseRate: Int): Int {
+		if (!this.hasSasCoreVoice(sasCorePointer, voiceId)) return SceKernelErrors.ERROR_SAS_INVALID_VOICE
+		val voice = this.getSasCoreVoice(sasCorePointer, voiceId)
+
+		if (flags hasFlag AdsrFlags.HasAttack) voice.envelope.attackRate = attackRate
+		if (flags hasFlag AdsrFlags.HasDecay) voice.envelope.decayRate = decayRate
+		if (flags hasFlag AdsrFlags.HasSustain) voice.envelope.sustainRate = sustainRate
+		if (flags hasFlag AdsrFlags.HasRelease) voice.envelope.releaseRate = releaseRate
+		logger.warn { "__sceSasSetADSR" }
+		return 0
+	}
+
 	fun __sceSasGetAllEnvelopeHeights(cpu: CpuState): Unit = UNIMPLEMENTED(0x07F58C24)
 	fun __sceSasRevParam(cpu: CpuState): Unit = UNIMPLEMENTED(0x267A6DD2)
 	fun __sceSasGetPauseFlag(cpu: CpuState): Unit = UNIMPLEMENTED(0x2C8E6AB3)
@@ -81,8 +98,8 @@ class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010
 
 	override fun registerModule() {
 		registerFunctionInt("__sceSasInit", 0x42778A9F, since = 150) { __sceSasInit(int, int, int, int, int) }
+		registerFunctionInt("__sceSasSetADSR", 0x019B25EB, since = 150) { __sceSasSetADSR(int, int, int, int, int, int, int) }
 
-		registerFunctionRaw("__sceSasSetADSR", 0x019B25EB, since = 150) { __sceSasSetADSR(it) }
 		registerFunctionRaw("__sceSasGetAllEnvelopeHeights", 0x07F58C24, since = 150) { __sceSasGetAllEnvelopeHeights(it) }
 		registerFunctionRaw("__sceSasRevParam", 0x267A6DD2, since = 150) { __sceSasRevParam(it) }
 		registerFunctionRaw("__sceSasGetPauseFlag", 0x2C8E6AB3, since = 150) { __sceSasGetPauseFlag(it) }
@@ -126,7 +143,7 @@ class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010
 		var waveformEffectIsWet = false
 		var leftVolume = PSP_SAS_VOL_MAX
 		var rightVolume = PSP_SAS_VOL_MAX
-		var voices: ArrayList<Voice> = arrayListOf<Voice>()
+		var voices: Array<Voice> = Array(32) { Voice(it) }
 		var bufferTempArray = arrayListOf<List<Sample>>()
 	}
 

@@ -47,6 +47,7 @@ class FileDescriptor(override val id: Int) : ResourceItem {
 	lateinit var file: VfsFile
 	lateinit var stream: AsyncStream
 
+	var doLater: (suspend () -> Unit)? = null
 	var asyncPromise: Promise<Unit>? = null
 	var asyncResult: Long = 0L
 	var asyncDone: Boolean = false

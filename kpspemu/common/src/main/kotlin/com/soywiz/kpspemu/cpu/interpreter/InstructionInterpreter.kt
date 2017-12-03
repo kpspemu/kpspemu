@@ -14,23 +14,24 @@ import com.soywiz.kpspemu.cpu.dis.disasmMacro
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.FloatArray2
 import com.soywiz.kpspemu.util.cosv1
+import com.soywiz.kpspemu.util.shex
 import com.soywiz.kpspemu.util.sinv1
 import kotlin.math.*
 
 class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val nameProvider: NameProvider, var trace: Boolean = false) {
 	val dispatcher = InstructionDispatcher(InstructionInterpreter)
 
-	fun steps(count: Int): Int {
+	fun steps(count: Int, trace: Boolean = false): Int {
 		val mem = cpu.mem.getFastMem()
 		//val mem = null
 		return if (mem != null) {
-			stepsFastMem(mem, cpu.mem.getFastMemOffset(Memory.MAIN_OFFSET) - Memory.MAIN_OFFSET, count)
+			stepsFastMem(mem, cpu.mem.getFastMemOffset(Memory.MAIN_OFFSET) - Memory.MAIN_OFFSET, count, trace)
 		} else {
-			stepsNormal(count)
+			stepsNormal(count, trace)
 		}
 	}
 
-	fun stepsNormal(count: Int): Int {
+	fun stepsNormal(count: Int, trace: Boolean): Int {
 		val dispatcher = this.dispatcher
 		val cpu = this.cpu
 		val mem = cpu.mem
@@ -42,6 +43,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 		try {
 			while (n < count) {
 				sPC = cpu._PC
+				if (trace) println("TRACE:${sPC.hex}")
 				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
 				n++
 				//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
@@ -59,7 +61,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 		return n
 	}
 
-	fun stepsFastMem(mem: FastMemory, memOffset: Int, count: Int): Int {
+	fun stepsFastMem(mem: FastMemory, memOffset: Int, count: Int, trace: Boolean): Int {
 		val i32 = mem.i32
 		val cpu = this.cpu
 		var n = 0
@@ -68,6 +70,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 		try {
 			while (n < count) {
 				sPC = cpu._PC and 0x0FFFFFFF
+				if (trace) println("TRACE:${sPC.hex}")
 				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
 				n++
 				val IR = i32[(memOffset + sPC) ushr 2]

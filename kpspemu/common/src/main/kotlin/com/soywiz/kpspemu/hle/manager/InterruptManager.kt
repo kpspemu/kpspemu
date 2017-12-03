@@ -54,6 +54,7 @@ class InterruptManager(val emulator: Emulator) {
 			val int = interrupts[id]
 			for (handler in int.handlers.filter { it.enabled }) {
 				logger.trace { "Interrupt $id: $handler" }
+				//logger.warn { "Interrupt $id: $handler" }
 				emulator.threadManager.executeInterrupt(handler.address, handler.argument)
 			}
 		}

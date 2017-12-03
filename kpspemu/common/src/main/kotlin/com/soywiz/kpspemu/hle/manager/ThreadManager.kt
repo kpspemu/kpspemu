@@ -149,17 +149,17 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		val thread = threads.first()
 		val cpu = thread.state
 		val backCpu = cpu.clone()
-		try {
-			cpu.setPC(address)
-			cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
-			cpu.r4 = argument
-			thread.step(timeManager.getTimeInMicrosecondsDouble())
-		} catch (e: CpuBreakException) {
-			// END OF INTERRUPT
-		} finally {
-			cpu.setTo(backCpu)
-			gcpustate.insideInterrupt = oldInsideInterrupt
+
+		cpu.setPC(address)
+		cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
+		cpu.r4 = argument
+
+		while (true) {
+			val res = thread.step(timeManager.getTimeInMicrosecondsDouble(), trace = false)
+			if (res != 0) break
 		}
+		cpu.setTo(backCpu)
+		gcpustate.insideInterrupt = oldInsideInterrupt
 	}
 
 	fun delayThread(micros: Int) {
@@ -295,7 +295,7 @@ class PspThread internal constructor(
 		delete()
 	}
 
-	fun step(now: Double) {
+	fun step(now: Double, trace: Boolean = false): Int {
 		//if (name == "update_thread") {
 		//	println("Ignoring: Thread.${this.name}")
 		//	stop("ignoring")
@@ -304,7 +304,8 @@ class PspThread internal constructor(
 		//println("Step: Thread.${this.name}")
 		preemptionCount++
 		try {
-			interpreter.steps(INSTRUCTIONS_PER_STEP)
+			interpreter.steps(INSTRUCTIONS_PER_STEP, trace)
+			return 0
 		} catch (e: CpuBreakException) {
 			when (e.id) {
 				CpuBreakException.THREAD_EXIT_KILL -> {
@@ -323,6 +324,7 @@ class PspThread internal constructor(
 					throw e
 				}
 			}
+			return e.id
 		}
 	}
 

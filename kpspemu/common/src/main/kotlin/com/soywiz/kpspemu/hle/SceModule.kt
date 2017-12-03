@@ -14,6 +14,7 @@ import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.error.SceKernelException
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.WaitObject
+import com.soywiz.kpspemu.hle.manager._thread
 import com.soywiz.kpspemu.hle.manager.thread
 import com.soywiz.kpspemu.mem.MemPtr
 import com.soywiz.kpspemu.mem.Memory
@@ -106,6 +107,7 @@ abstract class SceModule(
 			//	"sceGeListUpdateStallAddr", "sceKernelLibcGettimeofday" -> Unit
 			//	else -> println("Calling $name")
 			//}
+			//println("Calling $name from ${it._thread?.name}")
 			rr.reset(it)
 			function(rr, it)
 		}

@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.kmem.arraycopy
 import com.soywiz.korio.async.Promise
+import com.soywiz.korio.async.go
 import com.soywiz.korio.async.spawn
 import com.soywiz.korio.async.toList
 import com.soywiz.korio.error.invalidOp
@@ -14,6 +15,7 @@ import com.soywiz.korio.stream.toAsyncStream
 import com.soywiz.korio.util.toInt
 import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.coroutineContext
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.fileManager
@@ -284,16 +286,18 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		}
 	}
 
-	suspend fun async(fileId: Int, name: String, callback: suspend () -> Long): Int {
+	suspend fun async(fileId: Int, name: String, doLater: (suspend () -> Unit)? = null, callback: suspend () -> Long): Int {
 		logger.error { "starting async $name" }
 		val res = fileDescriptors[fileId]
+		logger.error { "  STARTED async $name ---> fid=${res.id}" }
 		res.asyncDone = false
+		res.doLater = doLater
 		res.asyncPromise = spawn {
 			res.asyncResult = callback()
 			logger.error { "  async $name completed with result ${res.asyncResult}" }
 			res.asyncDone = true
+			res.asyncPromise = null
 		}
-		logger.error { "  async $name ---> ${res.id}" }
 		return res.id
 	}
 
@@ -314,7 +318,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		async(fileId, "sceIoReadAsync") {
 			val res = sceIoRead(fileId, outputPointer, outputLength)
 			//println(outputPointer.readBytes(outputLength).toString(UTF8))
-			logger.error { "sceIoReadAsync --> $res" }
+			logger.error { "::sceIoReadAsync --> $res" }
 			res.toLong()
 		}
 		return 0
@@ -322,8 +326,9 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoCloseAsync(fileId: Int): Int {
 		logger.error { "sceIoCloseAsync:$fileId" }
-		async(fileId, "sceIoCloseAsync") {
+		async(fileId, "sceIoCloseAsync", doLater = {
 			sceIoClose(fileId)
+		}) {
 			0L
 		}
 		return 0
@@ -338,7 +343,8 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 			res.asyncDone -> 0
 			else -> 1
 		}
-		logger.error { "   sceIoPollAsync:$fd,$out -> valid=${res != null} :: ${res?.asyncResult} -> $outv" }
+		res?.doLater?.let { doLater -> go(coroutineContext) { doLater() } } // For closing!
+		logger.error { "   sceIoPollAsync:$fd,$out -> valid=${res != null} :: ${res?.asyncResult} -> outv=$outv" }
 		return outv
 	}
 
