@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.async.sleep
 import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.CpuState
@@ -8,6 +7,7 @@ import com.soywiz.kpspemu.cpu.GP
 import com.soywiz.kpspemu.cpu.K0
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.kpspemu.hle.error.SceKernelException
 import com.soywiz.kpspemu.hle.error.sceKernelException
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.Ptr
@@ -62,21 +62,25 @@ class ThreadManForUser(emulator: Emulator)
 		threadManager.suspend()
 	}
 
-	fun sceKernelChangeThreadPriority(threadId: Int, priority: Int): Int {
-		val thread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+	fun sceKernelGetThreadExitStatus(threadId: Int): Int = getThreadById(threadId).exitStatus
+
+	private fun getThreadById(id: Int): PspThread = threadManager.tryGetById(id) ?: throw SceKernelException(SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD)
+
+	fun sceKernelChangeThreadPriority(id: Int, priority: Int): Int {
+		val thread = getThreadById(id)
 		thread.priority = priority
 		return 0
 	}
 
-	fun sceKernelDeleteThread(threadId: Int): Int {
-		val thread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+	fun sceKernelDeleteThread(id: Int): Int {
+		val thread = getThreadById(id)
 		thread.delete()
 		return 0
 	}
 
-	fun sceKernelTerminateDeleteThread(threadId: Int): Int {
-		sceKernelTerminateThread(threadId)
-		sceKernelDeleteThread(threadId)
+	fun sceKernelTerminateDeleteThread(id: Int): Int {
+		sceKernelTerminateThread(id)
+		sceKernelDeleteThread(id)
 		return 0
 	}
 
@@ -277,7 +281,6 @@ class ThreadManForUser(emulator: Emulator)
 	fun sceKernelReferThreadEventHandlerStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x369EEB6B)
 	fun sceKernelReferVplStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x39810265)
 	fun sceKernelSuspendDispatchThread(cpu: CpuState): Unit = UNIMPLEMENTED(0x3AD58B8C)
-	fun sceKernelGetThreadExitStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0x3B183E26)
 	fun sceKernelReferLwMutexStatusByID(cpu: CpuState): Unit = UNIMPLEMENTED(0x4C145944)
 	fun sceKernelGetThreadStackFreeSize(cpu: CpuState): Unit = UNIMPLEMENTED(0x52089CA1)
 	fun _sceKernelExitThread(cpu: CpuState): Unit = UNIMPLEMENTED(0x532A522E)
@@ -381,6 +384,7 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionInt("sceKernelChangeCurrentThreadAttr", 0xEA748E31, since = 150) { sceKernelChangeCurrentThreadAttr(thread, int, int) }
 		registerFunctionInt("sceKernelChangeThreadPriority", 0x71BC9871, since = 150) { sceKernelChangeThreadPriority(int, int) }
 		registerFunctionInt("sceKernelTerminateDeleteThread", 0x383F7BCC, since = 150) { sceKernelTerminateDeleteThread(int) }
+		registerFunctionInt("sceKernelGetThreadExitStatus", 0x3B183E26, since = 150) { sceKernelGetThreadExitStatus(int) }
 
 		// Callbacks
 		registerFunctionInt("sceKernelCreateCallback", 0xE81CAF8F, since = 150) { sceKernelCreateCallback(str, ptr, int) }
@@ -417,7 +421,6 @@ class ThreadManForUser(emulator: Emulator)
 		registerFunctionRaw("sceKernelReferThreadEventHandlerStatus", 0x369EEB6B, since = 150) { sceKernelReferThreadEventHandlerStatus(it) }
 		registerFunctionRaw("sceKernelReferVplStatus", 0x39810265, since = 150) { sceKernelReferVplStatus(it) }
 		registerFunctionRaw("sceKernelSuspendDispatchThread", 0x3AD58B8C, since = 150) { sceKernelSuspendDispatchThread(it) }
-		registerFunctionRaw("sceKernelGetThreadExitStatus", 0x3B183E26, since = 150) { sceKernelGetThreadExitStatus(it) }
 		registerFunctionRaw("sceKernelReferLwMutexStatusByID", 0x4C145944, since = 150) { sceKernelReferLwMutexStatusByID(it) }
 		registerFunctionRaw("sceKernelGetThreadStackFreeSize", 0x52089CA1, since = 150) { sceKernelGetThreadStackFreeSize(it) }
 		registerFunctionRaw("_sceKernelExitThread", 0x532A522E, since = 150) { _sceKernelExitThread(it) }

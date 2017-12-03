@@ -84,6 +84,8 @@ class Emulator(
 		controller.reset()
 		fileManager.reset()
 	}
+
+	var globalTrace: Boolean = false
 }
 
 interface WithEmulator {

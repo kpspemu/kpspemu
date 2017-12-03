@@ -11,6 +11,7 @@ import com.soywiz.korma.math.isAlmostZero
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.NameProvider
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
+import com.soywiz.kpspemu.hle.manager._thread
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.FloatArray2
 import com.soywiz.kpspemu.util.cosv1
@@ -43,7 +44,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 		try {
 			while (n < count) {
 				sPC = cpu._PC
-				if (trace) println("TRACE:${sPC.hex}")
+				if (trace) doTrace(sPC, cpu)
 				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
 				n++
 				//if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
@@ -70,7 +71,7 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 		try {
 			while (n < count) {
 				sPC = cpu._PC and 0x0FFFFFFF
-				if (trace) println("TRACE:${sPC.hex}")
+				if (trace) doTrace(sPC, cpu)
 				if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
 				n++
 				val IR = i32[(memOffset + sPC) ushr 2]
@@ -83,6 +84,11 @@ class CpuInterpreter(var cpu: CpuState, val breakpoints: Breakpoints, val namePr
 			cpu.totalExecuted += n
 		}
 		return n
+	}
+
+	private fun doTrace(sPC: Int, state: CpuState) {
+		val I = if (state.globalCpuState.insideInterrupt) "I" else "_"
+		println("TRACE[$I][${state._thread?.name}]:${sPC.hex} : ${cpu.mem.disasmMacro(sPC, nameProvider)}")
 	}
 
 	private fun checkException(sPC: Int, e: Throwable) {

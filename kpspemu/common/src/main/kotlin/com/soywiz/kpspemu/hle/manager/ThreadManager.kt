@@ -78,13 +78,21 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	fun getActiveThreadsWithPriority(priority: Int): List<PspThread> = threads.filter { it.running && it.priority == priority }
 	fun getFirstThread(): PspThread? = getActiveThreadPriorities().firstOrNull()?.let { getActiveThreadsWithPriority(it) }?.firstOrNull()
 
+	fun getNextPriority(priority: Int): Int? {
+		return getActiveThreadPriorities().firstOrNull { it > priority }
+	}
+
 	fun computeNextThread(prevThread: PspThread?): PspThread? {
 		if (prevThread == null) return getFirstThread()
 		val threadsWithPriority = getActiveThreadsWithPriority(prevThread.priority)
 		val threadsWithPriorityCount = threadsWithPriority.size
-		if (threadsWithPriorityCount == 0) return null
-		val index = threadsWithPriority.indexOf(prevThread) umod threadsWithPriorityCount
-		return threadsWithPriority.getOrNull((index + 1) umod threadsWithPriorityCount)
+		if (threadsWithPriorityCount > 0) {
+			val index = threadsWithPriority.indexOf(prevThread) umod threadsWithPriorityCount
+			return threadsWithPriority.getOrNull((index + 1) umod threadsWithPriorityCount)
+		} else {
+			val nextPriority = getNextPriority(prevThread.priority)
+			return nextPriority?.let { getActiveThreadsWithPriority(it).firstOrNull() }
+		}
 	}
 
 	suspend fun waitThreadChange() {
@@ -100,6 +108,14 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 	suspend fun step() {
 		val start: Double = timeManager.getTimeInMicrosecondsDouble()
 
+		if (emulator.globalTrace) {
+			println("-----")
+			for (thread in threads) {
+				println("- ${thread.name} : ${thread.priority} : running=${thread.running}")
+			}
+			println("-----")
+		}
+
 		do {
 			val now: Double = timeManager.getTimeInMicrosecondsDouble()
 			if (currentThread == null) currentThread = getFirstThread()
@@ -107,13 +123,15 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 				println("WAIT! Trying to execute a sleeping thread!")
 				currentThread = computeNextThread(currentThread)
 			}
+			if (emulator.globalTrace) println("Current thread: ${currentThread?.name}")
 			try {
 				currentThread?.step(now)
 				currentThread = computeNextThread(currentThread)
 			} catch (e: BreakpointException) {
 				break
 			}
-			if (now - start >= 16.0) {
+			if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
+			if (now - start >= 100.0) {
 				break // Rest a bit
 			}
 		} while (currentThread != null)
@@ -146,20 +164,24 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		val gcpustate = emulator.globalCpuState
 		val oldInsideInterrupt = gcpustate.insideInterrupt
 		gcpustate.insideInterrupt = true
-		val thread = threads.first()
-		val cpu = thread.state
-		val backCpu = cpu.clone()
+		try {
+			val thread = threads.first()
+			val cpu = thread.state.clone()
+			cpu._thread = thread
+			val interpreter = CpuInterpreter(cpu, emulator.breakpoints, emulator.nameProvider)
 
-		cpu.setPC(address)
-		cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
-		cpu.r4 = argument
+			cpu.setPC(address)
+			cpu.RA = CpuBreakException.INTERRUPT_RETURN_RA
+			cpu.r4 = argument
 
-		while (true) {
-			val res = thread.step(timeManager.getTimeInMicrosecondsDouble(), trace = false)
-			if (res != 0) break
+			while (true) {
+				interpreter.steps(10000)
+			}
+		} catch (e: CpuBreakException) {
+			// Done
+		} finally {
+			gcpustate.insideInterrupt = oldInsideInterrupt
 		}
-		cpu.setTo(backCpu)
-		gcpustate.insideInterrupt = oldInsideInterrupt
 	}
 
 	fun delayThread(micros: Int) {
@@ -295,7 +317,7 @@ class PspThread internal constructor(
 		delete()
 	}
 
-	fun step(now: Double, trace: Boolean = false): Int {
+	fun step(now: Double, trace: Boolean = tracing): Int {
 		//if (name == "update_thread") {
 		//	println("Ignoring: Thread.${this.name}")
 		//	stop("ignoring")
@@ -353,6 +375,8 @@ class PspThread internal constructor(
 	suspend fun sleepSecondsIfRequired(seconds: Double) {
 		if (seconds > 0.0) sleepMicro((seconds * 1_000_000).toInt())
 	}
+
+	var tracing: Boolean = false
 }
 
 var CpuState._thread: PspThread? by Extra.Property { null }

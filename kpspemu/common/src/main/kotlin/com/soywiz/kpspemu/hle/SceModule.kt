@@ -4,13 +4,16 @@ import com.soywiz.kds.IntMap
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.coroutine.Continuation
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
 import com.soywiz.kpspemu.coroutineContext
 import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.kpspemu.cpu.EmulatorControlFlowException
 import com.soywiz.kpspemu.hle.error.SceKernelException
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.WaitObject
@@ -107,9 +110,16 @@ abstract class SceModule(
 			//	"sceGeListUpdateStallAddr", "sceKernelLibcGettimeofday" -> Unit
 			//	else -> println("Calling $name")
 			//}
-			//println("Calling $name from ${it._thread?.name}")
-			rr.reset(it)
-			function(rr, it)
+			try {
+				if (it._thread?.tracing == true) println("Calling $name from ${it._thread?.name}")
+				rr.reset(it)
+				function(rr, it)
+			} catch (e: Throwable) {
+				if (e !is EmulatorControlFlowException) {
+					Console.error("Error while processing '$name' :: at ${it.sPC.hex} :: $e")
+				}
+				throw e
+			}
 		}
 	}
 
@@ -172,7 +182,7 @@ abstract class SceModule(
 
 			if (!completed) {
 				rthread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
-				//println("  [S] Calling $name")
+				if (rthread.tracing) println("  [S] Calling $name")
 				threadManager.suspend()
 			}
 		}

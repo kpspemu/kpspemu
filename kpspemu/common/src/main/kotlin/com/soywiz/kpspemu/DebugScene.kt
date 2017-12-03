@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.kds.Pool
 import com.soywiz.korge.bitmapfont.BitmapFont
 import com.soywiz.korge.bitmapfont.convert
 import com.soywiz.korge.html.Html
@@ -10,6 +11,7 @@ import com.soywiz.korge.input.onOver
 import com.soywiz.korge.scene.Scene
 import com.soywiz.korge.service.Browser
 import com.soywiz.korge.view.Container
+import com.soywiz.korge.view.Text
 import com.soywiz.korge.view.Views
 import com.soywiz.korge.view.text
 import com.soywiz.korim.color.Colors
@@ -21,9 +23,11 @@ import com.soywiz.korio.util.substr
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.cpu.GlobalCpuState
 import com.soywiz.kpspemu.cpu.dis.Disassembler
+import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.ui.simpleButton
+import com.soywiz.kpspemu.util.AutoArrayList
 import com.soywiz.kpspemu.util.PspEmuKeys
 import com.soywiz.kpspemu.util.expr.ExprNode
 import com.soywiz.kpspemu.util.expr.toDynamicInt
@@ -43,6 +47,7 @@ class DebugScene(
 
 	lateinit var registerList: GprListView
 	lateinit var disassembler: DissasemblerView
+	lateinit var threadList: ThreadListView
 	lateinit var hexdump: HexdumpView
 	lateinit var font: BitmapFont
 
@@ -103,6 +108,13 @@ class DebugScene(
 			x = 96.0
 			y = 8.0
 		}
+		sceneView += ThreadListView(emulator, views, font).apply {
+			threadList = this
+			visible = true
+			x = 400.0
+			y = 8.0
+		}
+
 		sceneView += HexdumpView(emulator, views, font).apply {
 			hexdump = this
 			visible = false
@@ -130,6 +142,7 @@ class DebugScene(
 				val cpu = thread?.state ?: CpuState.dummy
 				if (registerList.visible) registerList.update(cpu)
 				if (disassembler.visible) disassembler.update(viewAddress, cpu.mem, cpu)
+				if (threadList.visible) threadList.update()
 				if (hexdump.visible) hexdump.update(viewAddress, cpu.mem, cpu)
 			}
 		}
@@ -325,6 +338,66 @@ class DebugScene(
 			for ((n, text) in texts.withIndex()) {
 				val address = startAddress + n * 4
 				text.update(address, memory, state, emulator)
+			}
+		}
+	}
+
+	class ThreadView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+		val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
+		val BG_PC = RGBA(0, 0, 0xFF, 0x99)
+		val BG_BREAKPOINT = RGBA(0xFF, 0, 0, 0x99)
+
+		var lineId = 0
+		var lineThread: PspThread? = null
+		var selected = false
+		var addr = 0
+		val onLineClick = AsyncSignal<Unit>()
+		var over = false
+
+		val text = Text(views).apply {
+			autoSize = true
+			format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+			filtering = false
+			onOver { over = true }
+			onOut { over = false }
+			onClick {
+				onLineClick(Unit)
+			}
+			this@ThreadView += this
+		}
+
+		fun update() {
+			text.bgcolor = if (selected) BG_BREAKPOINT else BG_NORMAL
+			if (over) {
+				text.bgcolor = RGBA.packRGB_A(RGBA.getRGB(text.bgcolor), 0xFF)
+			}
+		}
+	}
+
+	class ThreadListView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+		val viewPool = AutoArrayList { ThreadView(emulator, views, font).apply {
+			onLineClick {
+				clickedLine(this)
+			}
+		} }
+
+		fun clickedLine(threadView: ThreadView) {
+			val tracing = !(threadView.lineThread?.tracing ?: false)
+			println("Tracing for thread: ${threadView.lineThread?.name} = $tracing")
+			threadView.lineThread?.tracing = tracing
+		}
+
+		fun update() {
+			removeChildren()
+			for ((index, thread) in emulator.threadManager.threads.sortedBy { it.name }.withIndex()) {
+				val line = viewPool[index]
+				line.lineId = index
+				line.lineThread = thread
+				addChild(line)
+				line.y = (index * 8).toDouble()
+				line.text.text = thread.name
+				line.selected = thread.tracing
+				line.update()
 			}
 		}
 	}

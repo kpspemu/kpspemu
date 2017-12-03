@@ -169,6 +169,11 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 		return 0
 	}
 
+	fun sceAtracGetAtracID(codecType: Int): Int {
+		logger.warn { "sceAtracGetAtracID not implemented" }
+		return 1
+	}
+
 	fun sceAtracSetData(cpu: CpuState): Unit = UNIMPLEMENTED(0x0E2A73AB)
 	fun sceAtracSetHalfwayBufferAndGetID(cpu: CpuState): Unit = UNIMPLEMENTED(0x0FAE370E)
 	fun sceAtracReinit(cpu: CpuState): Unit = UNIMPLEMENTED(0x132F1ECA)
@@ -180,7 +185,6 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 	fun sceAtracSetMOutHalfwayBuffer(cpu: CpuState): Unit = UNIMPLEMENTED(0x5CF9D852)
 	fun sceAtracSetAA3HalfwayBufferAndGetID(cpu: CpuState): Unit = UNIMPLEMENTED(0x5DD66588)
 	fun sceAtracResetPlayPosition(cpu: CpuState): Unit = UNIMPLEMENTED(0x644E5607)
-	fun sceAtracGetAtracID(cpu: CpuState): Unit = UNIMPLEMENTED(0x780F88D1)
 	fun sceAtracSetMOutHalfwayBufferAndGetID(cpu: CpuState): Unit = UNIMPLEMENTED(0x9CD7DE03)
 	fun sceAtracGetBitrate(cpu: CpuState): Unit = UNIMPLEMENTED(0xA554A158)
 	fun sceAtracGetOutputChannel(cpu: CpuState): Unit = UNIMPLEMENTED(0xB3B5D042)
@@ -205,6 +209,7 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 		registerFunctionInt("sceAtracDecodeData", 0x6A8C3CD5, since = 150) { sceAtracDecodeData(int, ptr, ptr32, ptr, ptr32) }
 		registerFunctionInt("sceAtracGetStreamDataInfo", 0x5D268707, since = 150) { sceAtracGetStreamDataInfo(int, ptr, ptr, ptr) }
 		registerFunctionInt("sceAtracAddStreamData", 0x7DB31251, since = 150) { sceAtracAddStreamData(int, int) }
+		registerFunctionInt("sceAtracGetAtracID", 0x780F88D1, since = 150) { sceAtracGetAtracID(int) }
 
 		registerFunctionRaw("sceAtracSetData", 0x0E2A73AB, since = 150) { sceAtracSetData(it) }
 		registerFunctionRaw("sceAtracSetHalfwayBufferAndGetID", 0x0FAE370E, since = 150) { sceAtracSetHalfwayBufferAndGetID(it) }
@@ -217,7 +222,6 @@ class sceAtrac3plus(emulator: Emulator) : SceModule(emulator, "sceAtrac3plus", 0
 		registerFunctionRaw("sceAtracSetMOutHalfwayBuffer", 0x5CF9D852, since = 150) { sceAtracSetMOutHalfwayBuffer(it) }
 		registerFunctionRaw("sceAtracSetAA3HalfwayBufferAndGetID", 0x5DD66588, since = 150) { sceAtracSetAA3HalfwayBufferAndGetID(it) }
 		registerFunctionRaw("sceAtracResetPlayPosition", 0x644E5607, since = 150) { sceAtracResetPlayPosition(it) }
-		registerFunctionRaw("sceAtracGetAtracID", 0x780F88D1, since = 150) { sceAtracGetAtracID(it) }
 		registerFunctionRaw("sceAtracSetMOutHalfwayBufferAndGetID", 0x9CD7DE03, since = 150) { sceAtracSetMOutHalfwayBufferAndGetID(it) }
 		registerFunctionRaw("sceAtracGetBitrate", 0xA554A158, since = 150) { sceAtracGetBitrate(it) }
 		registerFunctionRaw("sceAtracGetOutputChannel", 0xB3B5D042, since = 150) { sceAtracGetOutputChannel(it) }

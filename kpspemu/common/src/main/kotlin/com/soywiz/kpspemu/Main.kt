@@ -44,6 +44,7 @@ import com.soywiz.korio.stream.openAsync
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.hexString
 import com.soywiz.korio.util.umod
 import com.soywiz.korio.vfs.*
@@ -315,6 +316,9 @@ class KpspemuMainScene(
 
 			if (pressed) {
 				when (keyCode) {
+					PspEmuKeys.F9 -> {
+						emulator.globalTrace = !emulator.globalTrace
+					}
 					PspEmuKeys.F10 -> {
 						go(coroutineContext) { toggleHud() }
 					}
@@ -322,7 +326,7 @@ class KpspemuMainScene(
 						// Dump threads
 						println("THREAD_DUMP:")
 						for (thread in emulator.threadManager.threads) {
-							println("Thread[${thread.id}](${thread.name}) : ${thread.status} : ${thread.waitObject}")
+							println("Thread[${thread.id}](${thread.name}) : ${thread.status} : ${thread.waitObject}, running = ${thread.running}, waiting = ${thread.waiting}, priority=${thread.priority}, PC=${thread.state.PC.hex}, preemptionCount=${thread.preemptionCount}, totalExecuted=${thread.state.totalExecuted}")
 						}
 					}
 				}
