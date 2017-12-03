@@ -22,7 +22,7 @@ object Kirk {
 	}
 
 	fun hleUtilsBufferCopyWithRange(output: SyncStream, input: SyncStream, command: CommandEnum): Unit {
-		println("hleUtilsBufferCopyWithRange(${input.length}): ${input.clone().readBytes(1024).hexString}")
+		//println("hleUtilsBufferCopyWithRange(${input.length}): ${input.clone().readBytes(1024).hexString}")
 		return when (command) {
 			CommandEnum.DECRYPT_PRIVATE -> kirk_CMD1(output, input)
 			CommandEnum.ENCRYPT_IV_0 -> kirk_CMD4(output, input)
