@@ -11,6 +11,7 @@ import com.soywiz.kpspemu.util.mkdirsSafe
 
 class DeviceManager(val emulator: Emulator) {
 	lateinit var ms: VfsFile
+	lateinit var config: VfsFile
 	val flash = MemoryVfsMix(
 	)
 	val dummy = MemoryVfs()
@@ -23,6 +24,7 @@ class DeviceManager(val emulator: Emulator) {
 	suspend fun init() {
 		println("init")
 		ms = ApplicationDataVfs["ms0"].apply { mkdirsSafe() }.jail()
+		config = ApplicationDataVfs["config"].apply { mkdirsSafe() }.jail()
 		ms["PSP"].mkdirsSafe()
 		ms["PSP/GAME"].mkdirsSafe()
 		ms["PSP/SAVES"].mkdirsSafe()
