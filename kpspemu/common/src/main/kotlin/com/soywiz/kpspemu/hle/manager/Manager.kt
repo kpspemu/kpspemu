@@ -6,8 +6,8 @@ import com.soywiz.kpspemu.WithEmulator
 
 class ResourceNotFoundException(msg: String) : Exception(msg)
 
-open class Manager<T : Resource>(val name: String, override val emulator: Emulator) : WithEmulator {
-	internal var lastId: Int = 0
+open class Manager<T : Resource>(val name: String, override val emulator: Emulator, val initialId: Int = 0) : WithEmulator {
+	internal var lastId: Int = initialId
 	internal var freeIds = Pool { lastId++ }
 	internal val resourcesById = LinkedHashMap<Int, T>()
 	val resourcesCount: Int get() = resourcesById.size
@@ -23,7 +23,7 @@ open class Manager<T : Resource>(val name: String, override val emulator: Emulat
 	}
 
 	open fun reset() {
-		lastId = 0
+		lastId = initialId
 		freeIds = Pool { lastId++ }
 		resourcesById.clear()
 	}
