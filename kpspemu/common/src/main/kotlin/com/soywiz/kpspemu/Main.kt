@@ -63,6 +63,7 @@ import com.soywiz.kpspemu.ge.GpuRenderer
 import com.soywiz.kpspemu.hle.registerNativeModules
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.native.KPspEmuNative
+import com.soywiz.kpspemu.ui.PromptConfigurator
 import com.soywiz.kpspemu.ui.simpleButton
 import com.soywiz.kpspemu.util.PspEmuKeys
 import com.soywiz.kpspemu.util.io.openAsIso2
@@ -78,10 +79,17 @@ object Main {
 	fun main(args: Array<String>) {
 		Korge(KpspemuModule, injector = AsyncInjector()
 			.mapSingleton(Emulator::class) { Emulator(getCoroutineContext()) }
-			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(Emulator::class)) }
-			.mapPrototype(DebugScene::class) { DebugScene(get(), get()) }
+			.mapSingleton(PromptConfigurator::class) { PromptConfigurator(get(Browser::class), get(Emulator::class)) }
+			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(Emulator::class), get(PromptConfigurator::class)) }
+			.mapPrototype(DebugScene::class) { DebugScene(get(Browser::class), get(Emulator::class)) }
 			.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
-			//, debug = true
+
+			// @TODO: Kotlin.JS unresolved bug!
+			//.mapSingleton { Emulator(getCoroutineContext()) }
+			//.mapSingleton { PromptConfigurator(get(), get()) }
+			//.mapPrototype { KpspemuMainScene(get(), get(), get()) }
+			//.mapPrototype { DebugScene(get(), get()) }
+			//.mapSingleton { Browser(get()) }
 		)
 	}
 }
@@ -112,7 +120,8 @@ abstract class SceneWithProcess() : Scene() {
 
 class KpspemuMainScene(
 	val browser: Browser,
-	override val emulator: Emulator
+	override val emulator: Emulator,
+	val promptConfigurator: PromptConfigurator
 ) : SceneWithProcess(), WithEmulator {
 	companion object {
 		val logger = Logger("KpspemuMainScene")
@@ -316,6 +325,11 @@ class KpspemuMainScene(
 
 			if (pressed) {
 				when (keyCode) {
+					PspEmuKeys.F7 -> {
+						go(coroutineContext) {
+							promptConfigurator.prompt()
+						}
+					}
 					PspEmuKeys.F9 -> {
 						emulator.globalTrace = !emulator.globalTrace
 					}
@@ -410,13 +424,11 @@ class KpspemuMainScene(
 			forceSteps++
 		}
 
-		val memdumpButton = views.simpleButton("memdump", font = hudFont).apply {
+		val promptButton = views.simpleButton("prompt", font = hudFont).apply {
 			x = 8.0
 			y = 272.0 - 24.0 * 5
 		}.onClick {
-			val outFile = applicationVfs["memdump.bin"]
-			outFile.writeBytes(mem.readBytes(Memory.MAINMEM.start, Memory.MAINMEM.size))
-			logger.warn { "Writted memory to $outFile" }
+			promptConfigurator.prompt()
 		}
 
 
@@ -426,7 +438,7 @@ class KpspemuMainScene(
 		hud += directButton
 		hud += pauseButton
 		hud += stepButton
-		hud += memdumpButton
+		hud += promptButton
 		hud += icon0Image.apply {
 			scale = 0.5
 			x = 100.0

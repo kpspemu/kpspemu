@@ -36,6 +36,7 @@ class Emulator(
 	val interruptManager: InterruptManager = InterruptManager(this)
 	val display: PspDisplay = PspDisplay(this)
 	val deviceManager = DeviceManager(this)
+	val configManager = ConfigManager()
 	val memoryManager = MemoryManager(this)
 	val threadManager = ThreadManager(this)
 	val moduleManager = ModuleManager(this)
@@ -47,7 +48,12 @@ class Emulator(
 	}
 
 	suspend override fun init() {
+		configManager.init()
 		deviceManager.init()
+
+		configManager.storage.subscribe {
+			deviceManager.setStorage(it)
+		}
 	}
 
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
@@ -66,7 +72,7 @@ class Emulator(
 		logger.trace { "writebackDataCache($ptr, $size, writeback=$writeback, invalidate=$invalidate)" }
 	}
 
-	fun reset() {
+	suspend fun reset() {
 		globalTrace = false
 		sdkVersion = 150
 		syscalls.reset()
