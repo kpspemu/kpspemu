@@ -47,10 +47,7 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.hexString
 import com.soywiz.korio.util.umod
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.applicationVfs
-import com.soywiz.korio.vfs.localCurrentDirVfs
-import com.soywiz.korio.vfs.tempVfs
+import com.soywiz.korio.vfs.*
 import com.soywiz.korma.Korma
 import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
@@ -70,6 +67,7 @@ import com.soywiz.kpspemu.ui.simpleButton
 import com.soywiz.kpspemu.util.PspEmuKeys
 import com.soywiz.kpspemu.util.io.openAsIso2
 import com.soywiz.kpspemu.util.io.openAsZip2
+import com.soywiz.kpspemu.util.mkdirsSafe
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
@@ -79,11 +77,7 @@ object Main {
 	@JvmStatic
 	fun main(args: Array<String>) {
 		Korge(KpspemuModule, injector = AsyncInjector()
-			.mapSingleton(Emulator::class) {
-				Emulator(
-					getCoroutineContext()
-				)
-			}
+			.mapSingleton(Emulator::class) { Emulator(getCoroutineContext()) }
 			.mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(Emulator::class)) }
 			.mapPrototype(DebugScene::class) { DebugScene(get(), get()) }
 			.mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
@@ -553,6 +547,7 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 	var umdLikeStructure = false
 	var layerName = file.basename
 	var container = file.parent.jail()
+	var gameName = "virtual"
 
 	logger.warn { "Opening $file" }
 	while (true) {
@@ -596,7 +591,11 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 				}
 
 				for (paramSfo in listOf(container["PSP_GAME/PARAM.SFO"])) {
-					if (paramSfo.exists()) loadProcess.readParamSfo(Psf(paramSfo.readAll()))
+					if (paramSfo.exists()) {
+						val psf = Psf(paramSfo.readAll())
+						gameName = psf.getString("DISC_ID") ?: "virtual"
+						loadProcess.readParamSfo(psf)
+					}
 				}
 
 				stream = afile.open()
@@ -606,7 +605,11 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 				val icon0 = pbp.ICON0_PNG.readAll()
 				if (icon0.isNotEmpty()) loadProcess.readIcon0(icon0)
 				val paramSfo = pbp.PARAM_SFO.readAll()
-				if (paramSfo.isNotEmpty()) loadProcess.readParamSfo(Psf(pbp.PARAM_SFO))
+				if (paramSfo.isNotEmpty()) {
+					val psf = Psf(pbp.PARAM_SFO)
+					gameName = psf.getString("DISC_ID") ?: "virtual"
+					loadProcess.readParamSfo(psf)
+				}
 				stream = pbp.PSP_DATA
 			}
 			PspFileFormat.ENCRYPTED_ELF -> {
@@ -633,10 +636,21 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 						deviceManager.mount("umd0:", container)
 					}
 					else -> {
-						val PSP_GAME_virtual = "ms0:/PSP/GAME/virtual"
-						fileManager.currentDirectory = PSP_GAME_virtual
-						fileManager.executableFile = "$PSP_GAME_virtual/EBOOT.PBP"
-						deviceManager.mount(PSP_GAME_virtual, container)
+						val ngameName = PathInfo(gameName).basename
+						val PSP_GAME_folder = "PSP/GAME/$ngameName"
+						val ms_PSP_GAME_folder = "ms0:/$PSP_GAME_folder"
+						deviceManager.ms[PSP_GAME_folder].mkdirsSafe()
+						fileManager.currentDirectory = ms_PSP_GAME_folder
+						fileManager.executableFile = "$ms_PSP_GAME_folder/EBOOT.PBP"
+						deviceManager.mount(
+							ms_PSP_GAME_folder,
+							MergedVfs(
+								listOf(
+									deviceManager.ms[PSP_GAME_folder].jail(),
+									container
+								)
+							).root
+						)
 					}
 				}
 

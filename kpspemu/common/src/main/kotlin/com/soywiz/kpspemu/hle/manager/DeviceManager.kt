@@ -1,30 +1,31 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.korio.vfs.ApplicationDataVfs
 import com.soywiz.korio.vfs.MemoryVfs
 import com.soywiz.korio.vfs.MemoryVfsMix
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.util.io.MountableSync
 import com.soywiz.kpspemu.util.io.MountableVfsSync
+import com.soywiz.kpspemu.util.mkdirsSafe
 
 class DeviceManager(val emulator: Emulator) {
-	val ms = MemoryVfsMix(
-		"PSP/GAME/empty.txt" to byteArrayOf(),
-		"PSP/COMMON/empty.txt" to byteArrayOf(),
-		"PSP/SYSTEM/empty.txt" to byteArrayOf(),
-		"PSP/THEME/empty.txt" to byteArrayOf(),
-		"PSP/SAVEDATA/empty.txt" to byteArrayOf()
-	)
+	lateinit var ms: VfsFile
 	val flash = MemoryVfsMix(
 	)
 	val dummy = MemoryVfs()
 
 	val root = MountableVfsSync {
-
 	}
+
 	val mountable = root.vfs as MountableSync
 
-	init {
+	suspend fun init() {
+		println("init")
+		ms = ApplicationDataVfs["ms0"].apply { mkdirsSafe() }.jail()
+		ms["PSP"].mkdirsSafe()
+		ms["PSP/GAME"].mkdirsSafe()
+		ms["PSP/SAVES"].mkdirsSafe()
 		reset()
 	}
 

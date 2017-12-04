@@ -72,6 +72,10 @@ class Psf {
 	lateinit var entriesByName: Map<String, Any?>; private set
 	lateinit var header: HeaderStruct; private set
 
+	fun getString(key: String): String? = entriesByName[key]?.toString()
+	fun getInt(key: String): Int? = entriesByName[key]?.toString()?.toInt()
+	fun getDouble(key: String): Double? = entriesByName[key]?.toString()?.toDouble()
+
 	fun load(stream: SyncStream) {
 		val header = HeaderStruct.read(stream)
 		this.header = header

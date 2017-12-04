@@ -9,16 +9,21 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.util.*
 
 class FileManager(val emulator: Emulator) {
+	companion object {
+		val INIT_CURRENT_DIRECTORY = "umd0:"
+		val INIT_EXECUTABLE_FILE = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
+	}
+
 	val deviceManager get() = emulator.deviceManager
-	var currentDirectory = "umd0:"
-	var executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
+	var currentDirectory = INIT_CURRENT_DIRECTORY
+	var executableFile = INIT_EXECUTABLE_FILE
 
 	val fileDescriptors = ResourceList<FileDescriptor>("FileDescriptor") { FileDescriptor(it) }
 	val directoryDescriptors = ResourceList<DirectoryDescriptor>("DirectoryDescriptor") { DirectoryDescriptor(it) }
 
 	fun reset() {
-		currentDirectory = "umd0:"
-		executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
+		currentDirectory = INIT_CURRENT_DIRECTORY
+		executableFile = INIT_EXECUTABLE_FILE
 		fileDescriptors.reset()
 		directoryDescriptors.reset()
 	}

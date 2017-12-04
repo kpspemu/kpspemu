@@ -25,6 +25,7 @@ import com.soywiz.kpspemu.hle.error.sceKernelException
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.PoolItem
+import com.soywiz.kpspemu.util.mkdirsSafe
 import com.soywiz.kpspemu.util.write
 import kotlin.math.max
 import kotlin.math.min
@@ -48,13 +49,18 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 		return resolved
 	}
 
+	private fun String.normalizePath(): String = this.replace('\\', '/').replace("./", "/").replace("//", "/")
+
 	private fun resolve(path: String?): VfsFile {
+		val npath = path?.normalizePath()
 		logger.trace { "resolve:$path" }
-		return _resolve(path!!)
+		logger.trace { "resolveNormalized:$npath" }
+		return _resolve(npath!!)
 	}
 
 	suspend fun _sceIoOpen(thread: PspThread, fileId: Int, fileName: String?, flags: Int, mode: Int): Int {
 		logger.warn { "WIP: _sceIoOpen(${thread.name}): $fileId, $fileName, $flags, $mode" }
+		logger.warn { " --> normalized=  ${fileName?.normalizePath()}" }
 		if (fileName == null) return SceKernelErrors.ERROR_ERROR
 		try {
 			val file = fileDescriptors[fileId]
@@ -271,7 +277,7 @@ class IoFileMgrForUser(emulator: Emulator) : SceModule(emulator, "IoFileMgrForUs
 
 	suspend fun sceIoMkdir(path: String?): Int {
 		logger.error { "sceIoMkdir:$path" }
-		resolve(path).mkdir()
+		resolve(path).mkdirsSafe()
 		return 0
 	}
 

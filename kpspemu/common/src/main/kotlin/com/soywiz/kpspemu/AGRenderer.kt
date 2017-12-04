@@ -8,6 +8,7 @@ import com.soywiz.korge.render.Texture
 import com.soywiz.korge.view.Views
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.setAlpha
+import com.soywiz.korim.color.Colors
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.util.hasFlag
 import com.soywiz.korio.util.hex
@@ -88,6 +89,9 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 					renderBuffer = ag.createRenderBuffer()
 					geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH), 0, HH, WW, 0)
 					//geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH))
+					renderBuffer!!.start(WW * renderScale.toInt(), HH * renderScale.toInt())
+					ag.clear(Colors.BLACK)
+					renderBuffer!!.end()
 				}
 
 				val rb = renderBuffer!!

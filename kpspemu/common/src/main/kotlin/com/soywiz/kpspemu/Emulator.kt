@@ -2,8 +2,7 @@ package com.soywiz.kpspemu
 
 import com.soywiz.klogger.Logger
 import com.soywiz.korau.format.util.IMemory
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.util.hex
+import com.soywiz.korinject.AsyncDependency
 import com.soywiz.kpspemu.battery.PspBattery
 import com.soywiz.kpspemu.cpu.Breakpoints
 import com.soywiz.kpspemu.cpu.CpuBreakException
@@ -24,7 +23,7 @@ class Emulator(
 	val syscalls: SyscallManager = SyscallManager(),
 	val mem: Memory = Memory(),
 	var gpuRenderer: GpuRenderer = DummyGpuRenderer()
-) {
+) : AsyncDependency {
 	val logger = Logger("Emulator")
 	val timeManager = TimeManager(this)
 	val nameProvider = AddressInfo()
@@ -45,6 +44,10 @@ class Emulator(
 	val fileManager = FileManager(this)
 	val imem = object : IMemory {
 		override fun read8(addr: Int): Int = mem.lbu(addr)
+	}
+
+	suspend override fun init() {
+		deviceManager.init()
 	}
 
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
