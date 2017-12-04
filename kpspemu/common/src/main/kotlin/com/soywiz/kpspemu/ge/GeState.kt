@@ -7,9 +7,11 @@ import com.soywiz.kmem.fill
 import com.soywiz.korim.color.RGBA_4444
 import com.soywiz.korim.color.RGBA_5551
 import com.soywiz.korim.color.RGB_565
+import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.korma.Matrix4
+import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.max
 
 
@@ -127,18 +129,35 @@ class MipmapState(val texture: TextureState, private val data: IntArray, val ind
 	val sizeInBytes get() = this.texture.pixelFormat.getSizeInBytes(this.size)
 }
 
-class ClutState(val data: IntArray) {
+interface ClutReader {
+	val numberOfColors: Int
+	fun getRawColor(mem: Memory, n: Int): Int
+	fun getColor(mem: Memory, n: Int): Int
+}
+
+class ClutState(val data: IntArray) : ClutReader {
 	fun getHashFast(): Int = (this.data[Op.CMODE] shl 0) + (this.data[Op.CLOAD] shl 8) + (this.data[Op.CLUTADDR] shl 16) + (this.data[Op.CLUTADDRUPPER] shl 24)
 	val cmode get() = this.data[Op.CMODE]
 	val cload get() = this.data[Op.CLOAD]
 	val address get() = param24(this.data[Op.CLUTADDR]) or ((this.data[Op.CLUTADDRUPPER] shl 8) and 0xFF000000.toInt())
-	val addressEnd get() = this.address + this.sizeInBytes
-	val numberOfColors get() = this.data[Op.CLOAD] * 8
+	//val addressEnd get() = this.address + this.sizeInBytes
+	override val numberOfColors get() = this.data[Op.CLOAD] * 8
 	val pixelFormat get() = PixelFormat(param2(this.data[Op.CMODE], 0))
+	val colorBits: Int get() = pixelFormat.bitsPerPixel
 	val shift get() = param5(this.data[Op.CMODE], 2)
 	val mask get() = param8(this.data[Op.CMODE], 8)
 	val start get() = param5(this.data[Op.CMODE], 16)
-	val sizeInBytes get() = this.pixelFormat.getSizeInBytes(this.numberOfColors)
+	//val sizeInBytes get() = this.pixelFormat.getSizeInBytes(this.numberOfColors)
+
+	fun getIndex(n: Int) = ((start + n) ushr shift) and mask
+
+	override fun getRawColor(mem: Memory, n: Int): Int = when (colorBits) {
+		16 -> mem.lhu(address + getIndex(n) * 2)
+		32 -> mem.lw(address + getIndex(n) * 4)
+		else -> invalidOp("Invalid palette")
+	}
+
+	override fun getColor(mem: Memory, n: Int): Int = pixelFormat.colorFormat!!.unpackToRGBA(getRawColor(mem, n))
 }
 
 class TextureState(val geState: GeState) {

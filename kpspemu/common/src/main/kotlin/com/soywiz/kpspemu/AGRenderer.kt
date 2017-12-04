@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.klogger.LogLevel
 import com.soywiz.klogger.Logger
 import com.soywiz.korag.AG
 import com.soywiz.korag.shader.*
@@ -43,15 +42,12 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	fun addBatches(batches: List<GeBatchData>) {
 		anyBatch = true
 		batchesQueue += batches
+		stats.add(batches)
 		updateTaskCount()
 	}
 
 	private fun updateTaskCount() {
 		taskCount = batchesQueue.size
-	}
-
-	fun updateStats() {
-		stats.setTo(batchesQueue)
 	}
 
 	val stats = Stats()
@@ -474,29 +470,26 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 			return lines.joinToString("\n")
 		}
 
-		fun setTo(batchesQueue: List<List<GeBatchData>>) {
-			reset()
-			for (bq in batchesQueue) {
-				for (batch in bq) {
-					batches++
-					vertices += batch.vertexCount
-					when (batch.primType) {
-						PrimitiveType.POINTS -> {
-							batchesPoints++
-							verticesPoints += batch.vertexCount
-						}
-						PrimitiveType.LINES, PrimitiveType.LINE_STRIP -> {
-							batchesLines++
-							verticesLines += batch.vertexCount
-						}
-						PrimitiveType.TRIANGLES, PrimitiveType.TRIANGLE_STRIP, PrimitiveType.TRIANGLE_FAN -> {
-							batchesTriangles++
-							verticesTriangles += batch.vertexCount
-						}
-						PrimitiveType.SPRITES -> {
-							batchesSprites++
-							verticesSprites += batch.vertexCount
-						}
+		fun add(batches: List<GeBatchData>) {
+			for (batch in batches) {
+				this.batches++
+				vertices += batch.vertexCount
+				when (batch.primType) {
+					PrimitiveType.POINTS -> {
+						batchesPoints++
+						verticesPoints += batch.vertexCount
+					}
+					PrimitiveType.LINES, PrimitiveType.LINE_STRIP -> {
+						batchesLines++
+						verticesLines += batch.vertexCount
+					}
+					PrimitiveType.TRIANGLES, PrimitiveType.TRIANGLE_STRIP, PrimitiveType.TRIANGLE_FAN -> {
+						batchesTriangles++
+						verticesTriangles += batch.vertexCount
+					}
+					PrimitiveType.SPRITES -> {
+						batchesSprites++
+						verticesSprites += batch.vertexCount
 					}
 				}
 			}

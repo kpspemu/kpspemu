@@ -60,7 +60,7 @@ class GeBatch {
 			hash += mem.hash(mipmap.address, mipmap.sizeInBytes / 4)
 			if (texture.hasClut) {
 				val clut = texture.clut
-				hash += mem.hash(clut.address, clut.sizeInBytes / 4)
+				for (n in 0 until clut.numberOfColors) hash += clut.getRawColor(mem, n)
 			}
 		}
 		return hash
@@ -71,19 +71,10 @@ class GeBatch {
 		if (texture.hasTexture) {
 			val mipmap = texture.mipmaps[0]
 			val colorData = mem.readBytes(mipmap.address, mipmap.sizeInBytes)
-			var clutData: ByteArray? = null
-			var clutFormat: PixelFormat? = null
-			var clutColors: Int = 0
-			if (texture.hasClut) {
-				val clut = texture.clut
-				clutFormat = texture.clut.pixelFormat
-				clutColors = texture.clut.numberOfColors
-				clutData = mem.readBytes(clut.address, clut.sizeInBytes)
-			}
+			val clutReader = if (texture.hasClut) texture.clut else null
 			val texWidth = mipmap.bufferWidth
 			val texHeight = mipmap.textureHeight
-
-			return Bitmap32(texWidth, texHeight).setTo(texture.pixelFormat, colorData, clutData, clutFormat, clutColors, swizzled = texture.swizzled, width = texWidth, height = texHeight)
+			return Bitmap32(texWidth, texHeight).setTo(texture.pixelFormat, colorData, mem, clutReader, swizzled = texture.swizzled, width = texWidth, height = texHeight)
 		} else {
 			return null
 		}

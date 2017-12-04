@@ -378,7 +378,12 @@ class PspThread internal constructor(
 	suspend fun sleepMicro(microseconds: Int) {
 		val totalMicroseconds = pendingAccumulatedMicrosecondsToWait + microseconds
 		pendingAccumulatedMicrosecondsToWait = totalMicroseconds % 1000
-		coroutineContext.sleep(totalMicroseconds / 1000)
+		val totalMilliseconds = totalMicroseconds / 1000
+		if (totalMilliseconds < 16) {
+			pendingAccumulatedMicrosecondsToWait += totalMilliseconds * 1000
+		} else {
+			coroutineContext.sleep(totalMilliseconds)
+		}
 	}
 
 	suspend fun sleepSeconds(seconds: Double) = sleepMicro((seconds * 1_000_000).toInt())

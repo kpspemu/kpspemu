@@ -160,7 +160,9 @@ class KpspemuMainScene(
 			override fun tryExecuteNow() {
 				// @TODO: This produces an error! We should update KorAG to support this!
 				//println("tryExecuteNow.Thread: ${KorioNative.currentThreadId}")
-				//agRenderer.render(views, renderContext, identity)
+				views.ag.offscreenRendering {
+					agRenderer.render(views, renderContext, identity)
+				}
 			}
 		}
 		agRenderer.anyBatch = false
@@ -244,15 +246,6 @@ class KpspemuMainScene(
 		}
 	}
 
-	suspend fun geProcess() {
-		while (true) {
-			emulator.ge.run()
-			agRenderer.stats.reset()
-			agRenderer.updateStats()
-			sleep(MS_1)
-		}
-	}
-
 	suspend fun displayProcess() {
 		while (true) {
 			controller.startFrame(timeManager.getTimeInMicrosecondsInt())
@@ -276,7 +269,6 @@ class KpspemuMainScene(
 
 	suspend override fun sceneInit(sceneView: Container) {
 		registerSceneProcess { cpuProcess() }
-		registerSceneProcess { geProcess() }
 		registerSceneProcess { displayProcess() }
 		//val func = function(DClass(CpuState::class), DVOID) {
 		//	SET(p0[CpuState::_PC], 7.lit)
@@ -463,6 +455,7 @@ class KpspemuMainScene(
 				val endTime = Klock.currentTimeMillis()
 				agRenderer.stats.renderTime = (endTime - startTime).toInt()
 				infoText.text = getInfoText()
+				agRenderer.stats.reset()
 			}
 		}
 

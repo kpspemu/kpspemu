@@ -2,17 +2,21 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.kmem.arraycopy
 import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korio.error.invalidOp
+import com.soywiz.kpspemu.mem.Memory
+import kotlin.math.pow
 
-fun Bitmap32.setTo(colorFormat: PixelFormat, colorData: ByteArray, clutData: ByteArray? = null, clutFormat: PixelFormat? = null, clutColors: Int = 0, swizzled: Boolean = false, width: Int = 0, height: Int = 0): Bitmap32 {
+fun Bitmap32.setTo(colorFormat: PixelFormat, colorData: ByteArray, mem: Memory, clutReader: ClutReader? = null, swizzled: Boolean = false, width: Int = 0, height: Int = 0): Bitmap32 {
 	if (swizzled) {
 		unswizzleInline(colorFormat, colorData, width, height)
 	}
 	when {
 		colorFormat.requireClut -> {
 			//println(clutFormat)
-			val clutBmp = Bitmap32(clutColors, 1)
-			clutBmp.setTo(clutFormat!!, clutData!!)
-			val colors = clutBmp.data
+			clutReader!!
+			val ncolors = 2.0.pow(colorFormat.paletteBits).toInt()
+			val colors = IntArray(ncolors) { clutReader.getColor(mem, it) }
+
 
 			when (colorFormat.paletteBits) {
 				4 -> {
@@ -20,8 +24,8 @@ fun Bitmap32.setTo(colorFormat: PixelFormat, colorData: ByteArray, clutData: Byt
 					var m = 0
 					for (n in 0 until this.area / 2) {
 						val byte = colorData[n].toInt() and 0xFF
-						this.data[m++] = colors[((byte ushr 0) and 0b1111) % colors.size]
-						this.data[m++] = colors[((byte ushr 4) and 0b1111) % colors.size]
+						this.data[m++] = colors[((byte ushr 0) and 0b1111)]
+						this.data[m++] = colors[((byte ushr 4) and 0b1111)]
 					}
 				}
 				8 -> {
@@ -30,6 +34,9 @@ fun Bitmap32.setTo(colorFormat: PixelFormat, colorData: ByteArray, clutData: Byt
 						val byte = colorData[n]
 						this.data[m++] = colors[((byte.toInt() ushr 0) and 0b11111111) % colors.size]
 					}
+				}
+				else -> {
+					invalidOp("Unsupported palette of size ${colorFormat.paletteBits}")
 				}
 			}
 		}

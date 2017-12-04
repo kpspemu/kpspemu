@@ -48,6 +48,8 @@ class Emulator(
 	}
 
 	val running: Boolean get() = threadManager.aliveThreadCount >= 1
+	var globalTrace: Boolean = false
+	var sdkVersion: Int = 150
 
 	init {
 		CpuBreakException.initialize(mem)
@@ -62,6 +64,8 @@ class Emulator(
 	}
 
 	fun reset() {
+		globalTrace = false
+		sdkVersion = 150
 		syscalls.reset()
 		mem.reset()
 		CpuBreakException.initialize(mem)
@@ -84,8 +88,6 @@ class Emulator(
 		controller.reset()
 		fileManager.reset()
 	}
-
-	var globalTrace: Boolean = false
 }
 
 interface WithEmulator {

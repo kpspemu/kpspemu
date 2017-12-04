@@ -1,7 +1,10 @@
 package com.soywiz.kpspemu.ge
 
 import com.soywiz.korim.color.ColorFormat
+import com.soywiz.korim.color.ColorFormat16
+import com.soywiz.korim.color.ColorFormatBase
 import com.soywiz.korio.util.IdEnum
+import com.soywiz.korio.util.extractScaledFFDefault
 
 enum class CullingDirection(override val id: Int) : IdEnum {
 	COUNTER_CLOCK_WISE(0),
@@ -205,6 +208,25 @@ object ClearBufferSet {
 	val FastClear = 16
 }
 
+object PspRGB_565 : ColorFormat16(), ColorFormatBase by ColorFormatBase.Mixin(
+	rOffset = 0, rSize = 5,
+	gOffset = 5, gSize = 6,
+	bOffset = 11, bSize = 5,
+	aOffset = 15, aSize = 0
+) {
+	override fun getA(v: Int): Int = 0xFF
+}
+
+object PspRGBA_5551 : ColorFormat16(), ColorFormatBase by ColorFormatBase.Mixin(
+	rOffset = 0, rSize = 5,
+	gOffset = 5, gSize = 5,
+	bOffset = 10, bSize = 5,
+	aOffset = 15, aSize = 1
+) {
+	// Reverse alpha bit!
+	//override fun getA(v: Int): Int = if (v.extractScaledFFDefault(15, 1, default = 0xFF) == 0) 0xFF else 0x00
+}
+
 enum class PixelFormat(
 	override val id: Int,
 	val bytesPerPixel: Double,
@@ -216,8 +238,8 @@ enum class PixelFormat(
 	val dxtVersion: Int = 0,
 	val isCompressed: Boolean = false
 ) : IdEnum {
-	RGBA_5650(0, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGB_565, isRgba = true, colorBits = 16),
-	RGBA_5551(1, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGBA_5551, isRgba = true, colorBits = 16),
+	RGBA_5650(0, bytesPerPixel = 2.0, colorFormat = PspRGB_565, isRgba = true, colorBits = 16),
+	RGBA_5551(1, bytesPerPixel = 2.0, colorFormat = PspRGBA_5551, isRgba = true, colorBits = 16),
 	RGBA_4444(2, bytesPerPixel = 2.0, colorFormat = com.soywiz.korim.color.RGBA_4444, isRgba = true, colorBits = 16),
 	RGBA_8888(3, bytesPerPixel = 4.0, colorFormat = com.soywiz.korim.color.RGBA, isRgba = true, colorBits = 32),
 	PALETTE_T4(4, bytesPerPixel = 0.5, isPalette = true, paletteBits = 4),
@@ -227,6 +249,8 @@ enum class PixelFormat(
 	COMPRESSED_DXT1(8, bytesPerPixel = 0.5, isCompressed = true, dxtVersion = 1),
 	COMPRESSED_DXT3(9, bytesPerPixel = 1.0, isCompressed = true, dxtVersion = 3),
 	COMPRESSED_DXT5(10, bytesPerPixel = 1.0, isCompressed = true, dxtVersion = 5);
+
+	val bitsPerPixel = (bytesPerPixel * 8).toInt()
 
 	val requireClut: Boolean = isPalette
 	fun getSizeInBytes(count: Int): Int = (bytesPerPixel * count).toInt()

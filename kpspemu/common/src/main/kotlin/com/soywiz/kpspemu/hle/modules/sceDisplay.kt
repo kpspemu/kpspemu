@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.display
 import com.soywiz.kpspemu.ge.PixelFormat
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.manager.PspThread
+import com.soywiz.kpspemu.mem.Ptr32
 
 @Suppress("UNUSED_PARAMETER")
 class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010011, "display_02g.prx", "sceDisplay_Service") {
@@ -38,6 +39,13 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		return 0
 	}
 
+	fun sceDisplayGetFrameBuf(topaddrAddr: Ptr32, bufferwidthAddr: Ptr32, pixelformatAddr: Ptr32, syncType: Int): Int {
+		topaddrAddr.set(display.address)
+		bufferwidthAddr.set(display.bufferWidth)
+		pixelformatAddr.set(display.pixelFormat.id)
+		return 0
+	}
+
 	fun sceDisplayGetVcount(): Int = emulator.display.updatedTimes.vblankCount
 	fun sceDisplayGetCurrentHcount(): Int = emulator.display.updatedTimes.hcountCurrent
 
@@ -55,7 +63,7 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 	fun sceDisplayGetResumeMode(cpu: CpuState): Unit = UNIMPLEMENTED(0xBF79F646)
 	fun sceDisplayGetFramePerSec(cpu: CpuState): Unit = UNIMPLEMENTED(0xDBA6C4C4)
 	fun sceDisplayGetMode(cpu: CpuState): Unit = UNIMPLEMENTED(0xDEA197D4)
-	fun sceDisplayGetFrameBuf(cpu: CpuState): Unit = UNIMPLEMENTED(0xEEDA2E54)
+
 
 	override fun registerModule() {
 		registerFunctionInt("sceDisplaySetMode", 0x0E20F177, 150, syscall = 0x213A) { sceDisplaySetMode(int, int, int) }
@@ -66,6 +74,7 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		registerFunctionSuspendInt("sceDisplayWaitVblankStartCB", 0x46F186C3, since = 150, cb = true) { sceDisplayWaitVblankStart(thread) }
 		registerFunctionInt("sceDisplayGetVcount", 0x9C6EAAD7, since = 150) { sceDisplayGetVcount() }
 		registerFunctionInt("sceDisplayGetCurrentHcount", 0x773DD3A3, since = 150) { sceDisplayGetCurrentHcount() }
+		registerFunctionInt("sceDisplayGetFrameBuf", 0xEEDA2E54, since = 150) { sceDisplayGetFrameBuf(ptr32, ptr32, ptr32, int) }
 
 		registerFunctionRaw("sceDisplayIsVsync", 0x21038913, since = 150) { sceDisplayIsVsync(it) }
 		registerFunctionRaw("sceDisplayGetAccumulatedHcount", 0x210EAB3A, since = 150) { sceDisplayGetAccumulatedHcount(it) }
@@ -81,6 +90,5 @@ class sceDisplay(emulator: Emulator) : SceModule(emulator, "sceDisplay", 0x40010
 		registerFunctionRaw("sceDisplayGetResumeMode", 0xBF79F646, since = 150) { sceDisplayGetResumeMode(it) }
 		registerFunctionRaw("sceDisplayGetFramePerSec", 0xDBA6C4C4, since = 150) { sceDisplayGetFramePerSec(it) }
 		registerFunctionRaw("sceDisplayGetMode", 0xDEA197D4, since = 150) { sceDisplayGetMode(it) }
-		registerFunctionRaw("sceDisplayGetFrameBuf", 0xEEDA2E54, since = 150) { sceDisplayGetFrameBuf(it) }
 	}
 }

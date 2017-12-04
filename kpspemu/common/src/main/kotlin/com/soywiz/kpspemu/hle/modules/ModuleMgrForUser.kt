@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-
+import com.soywiz.korio.util.hex
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.mem.Ptr
-
 
 @Suppress("MemberVisibilityCanPrivate", "UNUSED_PARAMETER")
 class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUser", 0x40010011, "modulemgr.prx", "sceModuleManager") {
@@ -16,6 +15,16 @@ class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUs
 	fun sceKernelStartModule(moduleId: Int, argumentSize: Int, argumentPointer: Ptr, status:Ptr, sceKernelSMOption:Ptr): Int {
 		logger.error { "Not implemented sceKernelStartModule: $moduleId" }
 		return 0
+	}
+
+	fun sceKernelGetModuleIdByAddress(addr: Int): Int {
+		logger.error { "Not implemented sceKernelGetModuleIdByAddress: ${addr.hex}" }
+		return 2
+	}
+
+	fun sceKernelGetModuleId(): Int {
+		logger.error { "Not implemented sceKernelGetModuleId" }
+		return 1
 	}
 
 	fun sceKernelLoadModuleBufferMs(cpu: CpuState): Unit = UNIMPLEMENTED(0x1196472E)
@@ -30,9 +39,7 @@ class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUs
 	fun sceKernelStopModule(cpu: CpuState): Unit = UNIMPLEMENTED(0xD1FF982A)
 	fun sceKernelGetModuleGPByAddress(cpu: CpuState): Unit = UNIMPLEMENTED(0xD2FBC957)
 	fun sceKernelSelfStopUnloadModule(cpu: CpuState): Unit = UNIMPLEMENTED(0xD675EBB8)
-	fun sceKernelGetModuleIdByAddress(cpu: CpuState): Unit = UNIMPLEMENTED(0xD8B73127)
 	fun ModuleMgrForUser_E4C4211C(cpu: CpuState): Unit = UNIMPLEMENTED(0xE4C4211C)
-	fun sceKernelGetModuleId(cpu: CpuState): Unit = UNIMPLEMENTED(0xF0A26395)
 	fun ModuleMgrForUser_F2D8D1B4(cpu: CpuState): Unit = UNIMPLEMENTED(0xF2D8D1B4)
 	fun sceKernelLoadModuleBufferUsbWlan(cpu: CpuState): Unit = UNIMPLEMENTED(0xF9275D98)
 	fun ModuleMgrForUser_FBE27467(cpu: CpuState): Unit = UNIMPLEMENTED(0xFBE27467)
@@ -42,6 +49,8 @@ class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUs
 	override fun registerModule() {
 		registerFunctionInt("sceKernelLoadModule", 0x977DE386, since = 150) { sceKernelLoadModule(istr, int, ptr) }
 		registerFunctionInt("sceKernelStartModule", 0x50F0C1EC, since = 150) { sceKernelStartModule(int, int, ptr, ptr, ptr) }
+		registerFunctionInt("sceKernelGetModuleIdByAddress", 0xD8B73127, since = 150) { sceKernelGetModuleIdByAddress(int) }
+		registerFunctionInt("sceKernelGetModuleId", 0xF0A26395, since = 150) { sceKernelGetModuleId() }
 
 		registerFunctionRaw("sceKernelLoadModuleBufferMs", 0x1196472E, since = 150) { sceKernelLoadModuleBufferMs(it) }
 		registerFunctionRaw("sceKernelLoadModuleBufferApp", 0x24EC0641, since = 150) { sceKernelLoadModuleBufferApp(it) }
@@ -55,9 +64,7 @@ class ModuleMgrForUser(emulator: Emulator) : SceModule(emulator, "ModuleMgrForUs
 		registerFunctionRaw("sceKernelStopModule", 0xD1FF982A, since = 150) { sceKernelStopModule(it) }
 		registerFunctionRaw("sceKernelGetModuleGPByAddress", 0xD2FBC957, since = 150) { sceKernelGetModuleGPByAddress(it) }
 		registerFunctionRaw("sceKernelSelfStopUnloadModule", 0xD675EBB8, since = 150) { sceKernelSelfStopUnloadModule(it) }
-		registerFunctionRaw("sceKernelGetModuleIdByAddress", 0xD8B73127, since = 150) { sceKernelGetModuleIdByAddress(it) }
 		registerFunctionRaw("ModuleMgrForUser_E4C4211C", 0xE4C4211C, since = 150) { ModuleMgrForUser_E4C4211C(it) }
-		registerFunctionRaw("sceKernelGetModuleId", 0xF0A26395, since = 150) { sceKernelGetModuleId(it) }
 		registerFunctionRaw("ModuleMgrForUser_F2D8D1B4", 0xF2D8D1B4, since = 150) { ModuleMgrForUser_F2D8D1B4(it) }
 		registerFunctionRaw("sceKernelLoadModuleBufferUsbWlan", 0xF9275D98, since = 150) { sceKernelLoadModuleBufferUsbWlan(it) }
 		registerFunctionRaw("ModuleMgrForUser_FBE27467", 0xFBE27467, since = 150) { ModuleMgrForUser_FBE27467(it) }
