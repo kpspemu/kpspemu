@@ -10,6 +10,7 @@ class sceHprm(emulator: Emulator) : SceModule(emulator, "sceHprm", 0x40010011, "
 		ptr.sw(0, 0)
 		return 0
 	}
+
 	fun sceHprmIsRemoteExist(cpu: CpuState): Unit = UNIMPLEMENTED(0x208DB1BD)
 	fun sceHprmIsMicrophoneExist(cpu: CpuState): Unit = UNIMPLEMENTED(0x219C58F1)
 	fun sceHprmPeekLatch(cpu: CpuState): Unit = UNIMPLEMENTED(0x2BCEC83E)
@@ -37,5 +38,14 @@ class sceHprm(emulator: Emulator) : SceModule(emulator, "sceHprm", 0x40010011, "
 		registerFunctionRaw("sceHprmIsHeadphoneExist", 0x7E69EDA4, since = 150) { sceHprmIsHeadphoneExist(it) }
 		registerFunctionRaw("sceHprmRegisterCallback", 0xC7154136, since = 150) { sceHprmRegisterCallback(it) }
 		registerFunctionRaw("sceHprm_FD7DE6CD", 0xFD7DE6CD, since = 150) { sceHprm_FD7DE6CD(it) }
+	}
+
+	companion object {
+		const val PSP_HPRM_PLAYPAUSE = 0x1
+		const val PSP_HPRM_FORWARD = 0x4
+		const val PSP_HPRM_BACK = 0x8
+		const val PSP_HPRM_VOL_UP = 0x10
+		const val PSP_HPRM_VOL_DOWN = 0x20
+		const val PSP_HPRM_HOLD = 0x8
 	}
 }

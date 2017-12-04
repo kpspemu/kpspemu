@@ -6,6 +6,7 @@ import com.soywiz.korio.coroutine.Continuation
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.lang.portableSimpleName
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.nextAlignedTo
@@ -61,6 +62,9 @@ abstract class SceModule(
 	val prxFile: String = "",
 	val prxName: String = ""
 ) : WithEmulator {
+	inline fun <reified T : SceModule> getModuleOrNull(): T? = emulator.moduleManager.modulesByClass[T::class] as? T?
+	inline fun <reified T : SceModule> getModule(): T = getModuleOrNull<T>() ?: invalidOp("Expected to get module ${T::class.portableSimpleName}")
+
 	val loggerSuspend = Logger("SceModuleSuspend").apply {
 		//level = LogLevel.TRACE
 	}

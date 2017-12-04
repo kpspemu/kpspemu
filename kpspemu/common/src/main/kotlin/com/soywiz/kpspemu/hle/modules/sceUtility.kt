@@ -118,7 +118,12 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtilityMsgDialogShutdownStart(): Unit {
 		logger.error { "sceUtilityMsgDialogShutdownStart" }
 		currentStep = DialogStepEnum.SHUTDOWN
+	}
 
+	fun sceUtilityLoadAvModule(module: Int): Int {
+		logger.error { "sceUtilityLoadAvModule" }
+		//getModule<LoadExecForUser>()
+		return 1
 	}
 
 	fun sceUtility_0251B134(cpu: CpuState): Unit = UNIMPLEMENTED(0x0251B134)
@@ -182,7 +187,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtilityHtmlViewerGetStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xBDA7D894)
 	fun sceUtilityInstallGetStatus(cpu: CpuState): Unit = UNIMPLEMENTED(0xC4700FA3)
 	fun sceUtilityGameSharingInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0xC492F751)
-	fun sceUtilityLoadAvModule(cpu: CpuState): Unit = UNIMPLEMENTED(0xC629AF26)
 	fun sceUtilityHtmlViewerInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0xCDC3AA41)
 	fun sceUtility_D17A0573(cpu: CpuState): Unit = UNIMPLEMENTED(0xD17A0573)
 	fun sceUtilitySavedataUpdate(cpu: CpuState): Unit = UNIMPLEMENTED(0xD4B95FFB)
@@ -214,6 +218,7 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionInt("sceUtilityMsgDialogInitStart", 0x2AD8E239, since = 150) { sceUtilityMsgDialogInitStart(ptr) }
 		registerFunctionInt("sceUtilityMsgDialogGetStatus", 0x9A1C91D7, since = 150) { sceUtilityMsgDialogGetStatus() }
 		registerFunctionVoid("sceUtilityMsgDialogShutdownStart", 0x67AF3428, since = 150) { sceUtilityMsgDialogShutdownStart() }
+		registerFunctionInt("sceUtilityLoadAvModule", 0xC629AF26, since = 150) { sceUtilityLoadAvModule(int) }
 
 		registerFunctionRaw("sceUtility_0251B134", 0x0251B134, since = 150) { sceUtility_0251B134(it) }
 		registerFunctionRaw("sceUtilityHtmlViewerUpdate", 0x05AFB9E4, since = 150) { sceUtilityHtmlViewerUpdate(it) }
@@ -276,7 +281,6 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtilityHtmlViewerGetStatus", 0xBDA7D894, since = 150) { sceUtilityHtmlViewerGetStatus(it) }
 		registerFunctionRaw("sceUtilityInstallGetStatus", 0xC4700FA3, since = 150) { sceUtilityInstallGetStatus(it) }
 		registerFunctionRaw("sceUtilityGameSharingInitStart", 0xC492F751, since = 150) { sceUtilityGameSharingInitStart(it) }
-		registerFunctionRaw("sceUtilityLoadAvModule", 0xC629AF26, since = 150) { sceUtilityLoadAvModule(it) }
 		registerFunctionRaw("sceUtilityHtmlViewerInitStart", 0xCDC3AA41, since = 150) { sceUtilityHtmlViewerInitStart(it) }
 		registerFunctionRaw("sceUtility_D17A0573", 0xD17A0573, since = 150) { sceUtility_D17A0573(it) }
 		registerFunctionRaw("sceUtilitySavedataUpdate", 0xD4B95FFB, since = 150) { sceUtilitySavedataUpdate(it) }

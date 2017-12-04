@@ -1,10 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.cpu.CpuState
 import com.soywiz.kpspemu.hle.SceModule
-
 
 class sceNet(emulator: Emulator) : SceModule(emulator, "sceNet", 0x00010011, "pspnet.prx", "sceNet_Library") {
 	fun sceNetGetLocalEtherAddr(cpu: CpuState): Unit = UNIMPLEMENTED(0x0BF0A3AE)
@@ -21,7 +19,6 @@ class sceNet(emulator: Emulator) : SceModule(emulator, "sceNet", 0x00010011, "ps
 	fun sceNetEtherStrton(cpu: CpuState): Unit = UNIMPLEMENTED(0xD27961C9)
 	fun sceNet_DB88F458(cpu: CpuState): Unit = UNIMPLEMENTED(0xDB88F458)
 	fun sceNet_E1F4696F(cpu: CpuState): Unit = UNIMPLEMENTED(0xE1F4696F)
-
 
 	override fun registerModule() {
 		registerFunctionRaw("sceNetGetLocalEtherAddr", 0x0BF0A3AE, since = 150) { sceNetGetLocalEtherAddr(it) }
