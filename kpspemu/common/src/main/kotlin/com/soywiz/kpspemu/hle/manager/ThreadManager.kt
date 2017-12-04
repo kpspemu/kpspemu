@@ -379,11 +379,13 @@ class PspThread internal constructor(
 		val totalMicroseconds = pendingAccumulatedMicrosecondsToWait + microseconds
 		pendingAccumulatedMicrosecondsToWait = totalMicroseconds % 1000
 		val totalMilliseconds = totalMicroseconds / 1000
-		if (totalMilliseconds < 16) {
-			pendingAccumulatedMicrosecondsToWait += totalMilliseconds * 1000
-		} else {
+
+		// @TODO: This makes sceRtc test to be flaky
+		//if (totalMilliseconds < 1) {
+		//	pendingAccumulatedMicrosecondsToWait += totalMilliseconds * 1000
+		//} else {
 			coroutineContext.sleep(totalMilliseconds)
-		}
+		//}
 	}
 
 	suspend fun sleepSeconds(seconds: Double) = sleepMicro((seconds * 1_000_000).toInt())
