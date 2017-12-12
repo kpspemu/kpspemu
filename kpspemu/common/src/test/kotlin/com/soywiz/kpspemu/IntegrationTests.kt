@@ -53,7 +53,8 @@ class IntegrationTests {
 	@Ignore
 	@Test fun testLoaderBss() = testFile("loader/bss/bss")
 
-	//@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
+	@Ignore
+	@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(

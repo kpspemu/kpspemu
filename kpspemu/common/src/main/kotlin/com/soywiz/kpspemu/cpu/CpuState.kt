@@ -294,10 +294,23 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	fun setVfpr(index: Int, value: Float) = run { _VFPR[index] = value }
 	fun getVfpr(index: Int): Float = _VFPR[index]
 
+	val VFPR = VFPRF_Class()
+	val VFPRI = VFPRI_Class()
+
 	fun setVfprI(index: Int, value: Int) = run { _VFPR_I[index] = value }
 	fun getVfprI(index: Int): Int = _VFPR_I[index]
 
 	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
+
+	inner class VFPRI_Class {
+		operator inline fun get(index: Int): Int = getVfprI(index)
+		operator inline fun set(index: Int, value: Int): Unit = run { setVfprI(index, value) }
+	}
+
+	inner class VFPRF_Class {
+		operator inline fun get(index: Int): Float = getVfpr(index)
+		operator inline fun set(index: Int, value: Float): Unit = run { setVfpr(index, value) }
+	}
 
 	fun clone() = CpuState("${this.name}.cloned", globalCpuState, mem, syscalls).apply {
 		this@CpuState.copyTo(this)

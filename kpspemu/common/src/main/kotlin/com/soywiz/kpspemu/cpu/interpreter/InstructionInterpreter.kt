@@ -15,7 +15,6 @@ import com.soywiz.kpspemu.hle.manager._thread
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.FloatArray2
 import com.soywiz.kpspemu.util.cosv1
-import com.soywiz.kpspemu.util.shex
 import com.soywiz.kpspemu.util.sinv1
 import kotlin.math.*
 
@@ -340,13 +339,57 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	val tempInts = IntArray(16)
 
 	override fun lvl_q(s: CpuState) = s {
-		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> tempInts[i] = getVfprI(r) }
+		getVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
 		mem.lvl_q(RS_IMM14, tempInts)
 	}
+
 	override fun lvr_q(s: CpuState) = s {
-		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> tempInts[i] = getVfprI(r) }
+		getVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
 		mem.lvr_q(RS_IMM14, tempInts)
 	}
+
+	override fun svl_q(s: CpuState) = s {
+		mem.svl_q(RS_IMM14, tempInts)
+		setVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
+	}
+
+	override fun svr_q(s: CpuState) = s {
+		mem.svr_q(RS_IMM14, tempInts)
+		setVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
+	}
+
+	private val VDEST = IntArray(16)
+	private val VSRC = IntArray(16)
+
+	private fun cc_8888_to_4444(i: Int): Int = 0 or
+		(((i ushr 4) and 15) shl 0) or
+		(((i ushr 12) and 15) shl 4) or
+		(((i ushr 20) and 15) shl 8) or
+		(((i ushr 28) and 15) shl 12)
+
+	private fun cc_8888_5551(i: Int): Int = 0 or
+		(((i ushr 3) and 31) shl 0) or
+		(((i ushr 11) and 31) shl 5) or
+		(((i ushr 19) and 31) shl 10) or
+		(((i ushr 31) and 1) shl 15)
+
+	private fun cc_8888_5650(i: Int): Int = 0 or
+		(((i ushr 3) and 31) shl 0) or
+		(((i ushr 10) and 63) shl 5) or
+		(((i ushr 19) and 31) shl 11)
+
+	private fun _vtXXXX_q(s: CpuState, func: (Int) -> Int) = s {
+		if (IR.one_two != 4) invalidOp("Not implemented _vtXXXX_q for VectorSize=${IR.one_two}")
+		getVectorRegisters(VDEST, IR.vd, VectorSize.Pair)
+		getVectorRegisters(VSRC, IR.vs, VectorSize.Quad)
+		s.VFPRI[VDEST[0]] = func(s.VFPRI[VSRC[0]]) or (func(s.VFPRI[VSRC[1]]) shl 16)
+		s.VFPRI[VDEST[1]] = func(s.VFPRI[VSRC[2]]) or (func(s.VFPRI[VSRC[3]]) shl 16)
+	}
+
+	override fun vt4444_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_4444)
+	override fun vt5551_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_5551)
+	override fun vt5650_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_5650)
+
 	override fun sv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> mem.sw(start + i * 4, s.getVfprI(r)) } }
 	override fun lv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> s.setVfprI(r, mem.lw(start + i * 4 + 4)) } }
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
@@ -465,17 +508,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vi2f(s: CpuState) = unimplemented(s, Instructions.vi2f)
 	override fun vscmp(s: CpuState) = unimplemented(s, Instructions.vscmp)
 	override fun vmscl(s: CpuState) = unimplemented(s, Instructions.vmscl)
-	override fun vt4444_q(s: CpuState) = unimplemented(s, Instructions.vt4444_q)
-	override fun vt5551_q(s: CpuState) = unimplemented(s, Instructions.vt5551_q)
-	override fun vt5650_q(s: CpuState) = unimplemented(s, Instructions.vt5650_q)
 	override fun vmfvc(s: CpuState) = unimplemented(s, Instructions.vmfvc)
 	override fun vmtvc(s: CpuState) = unimplemented(s, Instructions.vmtvc)
 	override fun mfvme(s: CpuState) = unimplemented(s, Instructions.mfvme)
 	override fun mtvme(s: CpuState) = unimplemented(s, Instructions.mtvme)
 	override fun sv_s(s: CpuState) = unimplemented(s, Instructions.sv_s)
 	override fun vfim(s: CpuState) = unimplemented(s, Instructions.vfim)
-	override fun svl_q(s: CpuState) = unimplemented(s, Instructions.svl_q)
-	override fun svr_q(s: CpuState) = unimplemented(s, Instructions.svr_q)
 	override fun vbfy1(s: CpuState) = unimplemented(s, Instructions.vbfy1)
 	override fun vbfy2(s: CpuState) = unimplemented(s, Instructions.vbfy2)
 	override fun vf2h(s: CpuState) = unimplemented(s, Instructions.vf2h)
@@ -589,32 +627,49 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	//	}
 	//}
 
+	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: VectorSize) {
+		vectorRegisters(vectorReg, N) { i, r ->
+			out[i] = r
+		}
+	}
+
+	fun getVectorRegisterValuesInt(s: CpuState, out: IntArray, vectorReg: Int, N: VectorSize) {
+		vectorRegisters(vectorReg, N) { i, r ->
+			out[i] = s.getVfprI(r)
+		}
+	}
+
+	fun setVectorRegisterValuesInt(s: CpuState, inp: IntArray, vectorReg: Int, N: VectorSize) {
+		vectorRegisters(vectorReg, N) { i, r ->
+			s.setVfprI(r, inp[i])
+		}
+	}
+
+	fun getVectorRegisterValuesFloat(s: CpuState, out: FloatArray, vectorReg: Int, N: VectorSize) {
+		vectorRegisters(vectorReg, N) { i, r ->
+			out[i] = s.getVfpr(r)
+		}
+	}
+
+	fun setVectorRegisterValuesFloat(s: CpuState, inp: FloatArray, vectorReg: Int, N: VectorSize) {
+		vectorRegisters(vectorReg, N) { i, r ->
+			s.setVfpr(r, inp[i])
+		}
+	}
+
 	// @TODO: Precalculate this! & mark as inline once this is simplified!
 	fun vectorRegisters(vectorReg: Int, N: VectorSize, callback: (index: Int, r: Int) -> Unit) {
-		val mtx = (vectorReg ushr 2) and 0b111
-		val col = vectorReg and 0b11
+		val mtx = vectorReg.extract(2, 3)
+		val col = vectorReg.extract(0, 2)
 		val row: Int
-		val length: Int
-		var transpose = ((vectorReg ushr 5) and 0b1) != 0
+		val length: Int = N.id
+		val transpose = (N != VectorSize.Single) && vectorReg.extractBool(5)
 
 		when (N) {
-			VectorSize.Single -> {
-				transpose = false
-				row = (vectorReg ushr 5) and 3
-				length = 1
-			}
-			VectorSize.Pair -> {
-				row = (vectorReg ushr 5) and 2
-				length = 2
-			}
-			VectorSize.Triple -> {
-				row = (vectorReg ushr 6) and 1
-				length = 3
-			}
-			VectorSize.Quad -> {
-				row = (vectorReg ushr 5) and 2
-				length = 4
-			}
+			VectorSize.Single -> row = (vectorReg ushr 5) and 3
+			VectorSize.Pair -> row = (vectorReg ushr 5) and 2
+			VectorSize.Triple -> row = (vectorReg ushr 6) and 1
+			VectorSize.Quad -> row = (vectorReg ushr 5) and 2
 		}
 
 		for (i in 0 until length) {
