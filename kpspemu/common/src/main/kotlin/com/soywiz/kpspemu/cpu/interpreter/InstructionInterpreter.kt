@@ -9,6 +9,8 @@ import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.*
 import com.soywiz.korma.math.Math
 import com.soywiz.korma.math.isAlmostZero
+import com.soywiz.korma.math.reinterpretAsFloat
+import com.soywiz.korma.math.reinterpretAsInt
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.NameProvider
 import com.soywiz.kpspemu.cpu.dis.disasmMacro
@@ -339,10 +341,22 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	private val VDEST = IntArray(16)
 	private val VSRC = IntArray(16)
+	private val VSRCF = FloatArray(16)
 
 	override fun lv_q(s: CpuState) = s {
-		val start = IR.s_imm14
-		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> s.setVfprI(r, mem.lw(start + i * 4 + 4)) }
+		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		val start = RS_IMM14
+		for (n in 0 until 4) {
+			s.VFPRI[VSRC[n]] = mem.lw(start + n * 4)
+		}
+	}
+
+	override fun sv_q(s: CpuState) = s {
+		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		val start = RS_IMM14
+		for (n in 0 until 4) {
+			mem.sw(start + n * 4, s.VFPRI[VSRC[n]])
+		}
 	}
 
 	override fun lvl_q(s: CpuState) = s {
@@ -353,11 +367,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun lvr_q(s: CpuState) = s {
 		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
 		mem.lvr_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
-	}
-
-	override fun sv_q(s: CpuState) = s {
-		val start = IR.s_imm14
-		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> mem.sw(start + i * 4, s.getVfprI(r)) }
 	}
 
 	override fun svl_q(s: CpuState) = s {
@@ -447,6 +456,147 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	override fun vi2c(s: CpuState) = _vi2c(s) { it.extract8(24) }
 	override fun vi2uc(s: CpuState) = _vi2c(s) { if (it < 0) 0 else it.extract8(23) }
+
+	private fun _vi2s(s: CpuState, gen: (value: Int) -> Int) = s {
+		val size = IR.one_two
+		val dsize = size / 2
+		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize(dsize))
+		for (n in 0 until dsize) {
+			val l = gen(VSRC[n * 2 + 0])
+			val r = gen(VSRC[n * 2 + 1])
+			VFPRI[VDEST[n]] = l or (r shl 16)
+		}
+	}
+
+	override fun vi2s(s: CpuState) = _vi2s(s) { it ushr 16 }
+	override fun vi2us(s: CpuState) = _vi2s(s) { if (it < 0) 0 else it shr 15 }
+
+
+	override fun vi2f(s: CpuState) = s {
+		val size = IR.one_two
+		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize(size))
+		for (n in 0 until size) {
+			VFPR[VDEST[n]] = VSRC[n] * 2f.pow(-IR.imm5)
+		}
+	}
+
+	private fun _vf2ix(s: CpuState, func: (value: Float, imm5: Int) -> Int) = s {
+		val size = IR.one_two
+		getVectorRegisterValuesFloat(s, VSRCF, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize(size))
+		for (n in 0 until size) {
+			//println("${VSRCF[n]} : ${IR.imm5}")
+			val value = VSRCF[n]
+			VFPRI[VDEST[n]] = if (value.isNaN()) 0x7FFFFFFF else func(value, IR.imm5)
+		}
+	}
+
+	// @TODO: Verify these ones!
+	override fun vf2id(s: CpuState) = _vf2ix(s) { value, imm5 -> floor(value * 2f.pow(imm5)).toInt() }
+
+	override fun vf2iu(s: CpuState) = _vf2ix(s) { value, imm5 -> ceil(value * 2f.pow(imm5)).toInt() }
+	override fun vf2in(s: CpuState) = _vf2ix(s) { value, imm5 -> Math.rint((value * 2f.pow(imm5))) }
+	override fun vf2iz(s: CpuState) = _vf2ix(s) { value, imm5 -> val rs = value * 2f.pow(imm5); if (value >= 0) floor(rs).toInt() else ceil(rs).toInt() }
+
+	override fun vf2h(s: CpuState) = s {
+		val size = IR.one_two
+		val dsize = size / 2
+		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize(dsize))
+		for (n in 0 until dsize) {
+			val l = HalfFloat.floatToHalffloat(VSRC[n * 2 + 0])
+			val r = HalfFloat.floatToHalffloat(VSRC[n * 2 + 1])
+			VFPRI[VDEST[n]] = (l) or (r shl 16)
+		}
+	}
+
+	override fun vh2f(s: CpuState) = s {
+		val size = IR.one_two
+		val dsize = size * 2
+		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize(dsize))
+		for (n in 0 until size) {
+			val value = VSRC[n]
+			VFPRI[VDEST[n * 2 + 0]] = HalfFloat.halffloatToFloat(value.extract(0, 16))
+			VFPRI[VDEST[n * 2 + 1]] = HalfFloat.halffloatToFloat(value.extract(16, 16))
+		}
+	}
+
+	// Move this outside
+	class HalfFloat(val v: Char) {
+		constructor(v: Float) : this(floatToHalffloat(v.reinterpretAsInt()).toChar())
+
+		val f: Float get() = halffloatToFloat(v.toInt()).reinterpretAsFloat()
+
+		companion object {
+			fun halffloatToFloat(imm16: Int): Int {
+				val s = imm16 shr 15 and 0x00000001 // sign
+				var e = imm16 shr 10 and 0x0000001f // exponent
+				var f = imm16 shr 0 and 0x000003ff // fraction
+
+				// need to handle 0x7C00 INF and 0xFC00 -INF?
+				if (e == 0) {
+					// need to handle +-0 case f==0 or f=0x8000?
+					if (f == 0) {
+						// Plus or minus zero
+						return s shl 31
+					}
+					// Denormalized number -- renormalize it
+					while (f and 0x00000400 == 0) {
+						f = f shl 1
+						e -= 1
+					}
+					e += 1
+					f = f and 0x00000400.inv()
+				} else if (e == 31) {
+					return if (f == 0) {
+						// Inf
+						s shl 31 or 0x7f800000
+					} else s shl 31 or 0x7f800000 or f
+					// NaN
+					// fraction is not shifted by PSP
+				}
+
+				e += (127 - 15)
+				f = f shl 13
+
+				return s shl 31 or (e shl 23) or f
+			}
+
+			internal fun floatToHalffloat(i: Int): Int {
+				val s = i shr 16 and 0x00008000              // sign
+				val e = (i shr 23 and 0x000000ff) - (127 - 15) // exponent
+				var f = i shr 0 and 0x007fffff              // fraction
+
+				// need to handle NaNs and Inf?
+				if (e <= 0) {
+					if (e < -10) {
+						return if (s != 0) {
+							// handle -0.0
+							0x8000
+						} else 0
+					}
+					f = f or 0x00800000 shr 1 - e
+					return s or (f shr 13)
+				} else if (e == 0xff - (127 - 15)) {
+					if (f == 0) {
+						// Inf
+						return s or 0x7c00
+					}
+					// NAN
+					f = f shr 13
+					f = 0x3ff // PSP always encodes NaN with this value
+					return s or 0x7c00 or f or if (f == 0) 1 else 0
+				}
+				return if (e > 30) {
+					// Overflow
+					s or 0x7c00
+				} else s or (e shl 10) or (f shr 13)
+			}
+		}
+	}
 
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
 	override fun vcst(s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
@@ -555,11 +705,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vcmovf(s: CpuState) = unimplemented(s, Instructions.vcmovf)
 	override fun vcmovt(s: CpuState) = unimplemented(s, Instructions.vcmovt)
 	override fun vavg(s: CpuState) = unimplemented(s, Instructions.vavg)
-	override fun vf2id(s: CpuState) = unimplemented(s, Instructions.vf2id)
-	override fun vf2in(s: CpuState) = unimplemented(s, Instructions.vf2in)
-	override fun vf2iu(s: CpuState) = unimplemented(s, Instructions.vf2iu)
-	override fun vf2iz(s: CpuState) = unimplemented(s, Instructions.vf2iz)
-	override fun vi2f(s: CpuState) = unimplemented(s, Instructions.vi2f)
 	override fun vscmp(s: CpuState) = unimplemented(s, Instructions.vscmp)
 	override fun vmscl(s: CpuState) = unimplemented(s, Instructions.vmscl)
 	override fun vmfvc(s: CpuState) = unimplemented(s, Instructions.vmfvc)
@@ -570,10 +715,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vfim(s: CpuState) = unimplemented(s, Instructions.vfim)
 	override fun vbfy1(s: CpuState) = unimplemented(s, Instructions.vbfy1)
 	override fun vbfy2(s: CpuState) = unimplemented(s, Instructions.vbfy2)
-	override fun vf2h(s: CpuState) = unimplemented(s, Instructions.vf2h)
-	override fun vh2f(s: CpuState) = unimplemented(s, Instructions.vh2f)
-	override fun vi2s(s: CpuState) = unimplemented(s, Instructions.vi2s)
-	override fun vi2us(s: CpuState) = unimplemented(s, Instructions.vi2us)
 	override fun vlgb(s: CpuState) = unimplemented(s, Instructions.vlgb)
 	override fun vqmul(s: CpuState) = unimplemented(s, Instructions.vqmul)
 	override fun vsbn(s: CpuState) = unimplemented(s, Instructions.vsbn)

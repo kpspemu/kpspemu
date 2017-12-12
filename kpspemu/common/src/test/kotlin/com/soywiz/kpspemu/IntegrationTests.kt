@@ -56,7 +56,6 @@ class IntegrationTests {
 
 	@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
-	@Ignore
 	@Test fun testVfpuConvert() = testFile("cpu/vfpu/convert")
 
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
