@@ -336,30 +336,28 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		}
 	}
 
-	val tempInts = IntArray(16)
+	private val VDEST = IntArray(16)
+	private val VSRC = IntArray(16)
 
 	override fun lvl_q(s: CpuState) = s {
-		getVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
-		mem.lvl_q(RS_IMM14, tempInts)
+		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		mem.lvl_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
 	}
 
 	override fun lvr_q(s: CpuState) = s {
-		getVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
-		mem.lvr_q(RS_IMM14, tempInts)
+		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		mem.lvr_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
 	}
 
 	override fun svl_q(s: CpuState) = s {
-		mem.svl_q(RS_IMM14, tempInts)
-		setVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
+		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		mem.svl_q(RS_IMM14) { getVfprI(VSRC[it]) }
 	}
 
 	override fun svr_q(s: CpuState) = s {
-		mem.svr_q(RS_IMM14, tempInts)
-		setVectorRegisterValuesInt(s, tempInts, IR.vt5_1, VectorSize.Quad)
+		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		mem.svr_q(RS_IMM14) { getVfprI(VSRC[it]) }
 	}
-
-	private val VDEST = IntArray(16)
-	private val VSRC = IntArray(16)
 
 	private fun cc_8888_to_4444(i: Int): Int = 0 or
 		(((i ushr 4) and 15) shl 0) or
@@ -367,13 +365,13 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		(((i ushr 20) and 15) shl 8) or
 		(((i ushr 28) and 15) shl 12)
 
-	private fun cc_8888_5551(i: Int): Int = 0 or
+	private fun cc_8888_to_5551(i: Int): Int = 0 or
 		(((i ushr 3) and 31) shl 0) or
 		(((i ushr 11) and 31) shl 5) or
 		(((i ushr 19) and 31) shl 10) or
 		(((i ushr 31) and 1) shl 15)
 
-	private fun cc_8888_5650(i: Int): Int = 0 or
+	private fun cc_8888_to_5650(i: Int): Int = 0 or
 		(((i ushr 3) and 31) shl 0) or
 		(((i ushr 10) and 63) shl 5) or
 		(((i ushr 19) and 31) shl 11)
@@ -381,14 +379,15 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	private fun _vtXXXX_q(s: CpuState, func: (Int) -> Int) = s {
 		if (IR.one_two != 4) invalidOp("Not implemented _vtXXXX_q for VectorSize=${IR.one_two}")
 		getVectorRegisters(VDEST, IR.vd, VectorSize.Pair)
-		getVectorRegisters(VSRC, IR.vs, VectorSize.Quad)
-		s.VFPRI[VDEST[0]] = func(s.VFPRI[VSRC[0]]) or (func(s.VFPRI[VSRC[1]]) shl 16)
-		s.VFPRI[VDEST[1]] = func(s.VFPRI[VSRC[2]]) or (func(s.VFPRI[VSRC[3]]) shl 16)
+		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize.Quad)
+		//println(VSRC.toList())
+		VFPRI[VDEST[0]] = func(VSRC[0]) or (func(VSRC[1]) shl 16)
+		VFPRI[VDEST[1]] = func(VSRC[2]) or (func(VSRC[3]) shl 16)
 	}
 
 	override fun vt4444_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_4444)
-	override fun vt5551_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_5551)
-	override fun vt5650_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_5650)
+	override fun vt5551_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_5551)
+	override fun vt5650_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_5650)
 
 	override fun sv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> mem.sw(start + i * 4, s.getVfprI(r)) } }
 	override fun lv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> s.setVfprI(r, mem.lw(start + i * 4 + 4)) } }

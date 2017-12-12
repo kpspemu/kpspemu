@@ -303,13 +303,13 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
 
 	inner class VFPRI_Class {
-		operator inline fun get(index: Int): Int = getVfprI(index)
-		operator inline fun set(index: Int, value: Int): Unit = run { setVfprI(index, value) }
+		operator fun get(index: Int): Int = getVfprI(index)
+		operator fun set(index: Int, value: Int): Unit = run { setVfprI(index, value) }
 	}
 
 	inner class VFPRF_Class {
-		operator inline fun get(index: Int): Float = getVfpr(index)
-		operator inline fun set(index: Int, value: Float): Unit = run { setVfpr(index, value) }
+		operator fun get(index: Int): Float = getVfpr(index)
+		operator fun set(index: Int, value: Float): Unit = run { setVfpr(index, value) }
 	}
 
 	fun clone() = CpuState("${this.name}.cloned", globalCpuState, mem, syscalls).apply {
