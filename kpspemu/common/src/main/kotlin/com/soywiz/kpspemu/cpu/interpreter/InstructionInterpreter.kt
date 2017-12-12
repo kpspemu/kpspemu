@@ -400,38 +400,17 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		(((i ushr 19) and 31) shl 11)
 
 	private fun CpuState._vtXXXX_q(func: (Int) -> Int) = this {
-		if (IR.one_two != 4) invalidOp("Not implemented _vtXXXX_q for VectorSize=${IR.one_two}")
-		getVectorRegisters(VDEST, IR.vd, VectorSize.Pair)
-		getVectorRegisterValuesInt(VSRC, IR.vs, VectorSize.Quad)
-		//println(VSRC.toList())
-		VFPRI[VDEST[0]] = func(VSRC[0]) or (func(VSRC[1]) shl 16)
-		VFPRI[VDEST[1]] = func(VSRC[2]) or (func(VSRC[3]) shl 16)
+		setVDI_VS(destSize = IR.one_two / 2) {
+			func(vsi[it * 2 + 0]) or (func(vsi[it * 2 + 1]) shl 16)
+		}
 	}
 
 	override fun vt4444_q(s: CpuState) = s._vtXXXX_q(this::cc_8888_to_4444)
 	override fun vt5551_q(s: CpuState) = s._vtXXXX_q(this::cc_8888_to_5551)
 	override fun vt5650_q(s: CpuState) = s._vtXXXX_q(this::cc_8888_to_5650)
 
-	//static vc2i(index: number, value: number) {
-	//	return (value << ((3 - index) * 8)) & 0xFF000000;
-	//}
-	//static vuc2i(index: number, value: number) {
-	//	return ((((value >>> (index * 8)) & 0xFF) * 0x01010101) >> 1) & ~0x80000000;
-	//}
-	//vc2i(i: Instruction) { return this._vset2(i, (index, src) => call('MathVfpu.vc2i', [imm32(index), src[0]]), 0, 1, 'int', 'int'); }
-	//vuc2i(i: Instruction) { return this._vset2(i, (index, src) => call('MathVfpu.vuc2i', [imm32(index), src[0]]), 0, 1, 'int', 'int'); }
-	//private _vset2(i: Instruction, generate: (index: number, src: _ast.ANodeExprLValue[]) => _ast.ANodeExpr, destSize: number = 0, srcSize: number = 0, destType = 'float', srcType = 'float') {
-	//	var st:_ast.ANodeExpr[] = [];
-	//	var src = this._vset_readVS(st, i, srcType, srcSize);
-	//	this._vset_storeVD(st, i, destType, destSize, (index: number) => generate(index, src));
-	//	return stms(st);
-	//}
-
 	private fun _vc2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
-		getVectorRegisters(VSRC, IR.vs, VectorSize.Single)
-		getVectorRegisters(VDEST, IR.vd, VectorSize.Quad)
-		val value = VFPRI[VSRC[0]]
-		for (n in 0 until 4) VFPRI[VDEST[n]] = func(n, value)
+		setVDI_VS(destSize = 4, srcSize = 1) { func(it, vsi.x) }
 	}
 
 	override fun vc2i(s: CpuState) = _vc2i(s) { index, value -> (value shl ((3 - index) * 8)) and 0xFF000000.toInt() }
@@ -1099,6 +1078,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		var Float32Buffer.z: Float get() = this[2]; set(value) = run { this[2] = value }
 		var Float32Buffer.w: Float get() = this[3]; set(value) = run { this[3] = value }
 
+		var Int32Buffer.x: Int get() = this[0]; set(value) = run { this[0] = value }
+		var Int32Buffer.y: Int get() = this[1]; set(value) = run { this[1] = value }
+		var Int32Buffer.z: Int get() = this[2]; set(value) = run { this[2] = value }
+		var Int32Buffer.w: Int get() = this[3]; set(value) = run { this[3] = value }
+
 		fun CpuState.readVs(reg: Int = IR.vs, size: Int = IR.one_two): Float32Buffer {
 			vsSize = size
 			getVectorRegisterValues(b_vs, reg, VectorSize(size))
@@ -1139,6 +1123,13 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		vdSize = destSize
 		readVs(size = srcSize)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
+		writeVd(size = destSize)
+	}
+
+	fun CpuState.setVDI_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
+		vdSize = destSize
+		readVs(size = srcSize)
+		for (n in 0 until destSize) vdi[n] = callback(vfpuContext, n)
 		writeVd(size = destSize)
 	}
 
