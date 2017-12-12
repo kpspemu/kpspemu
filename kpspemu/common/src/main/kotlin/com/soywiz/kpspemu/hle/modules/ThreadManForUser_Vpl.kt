@@ -14,7 +14,7 @@ import com.soywiz.kpspemu.mem.nullPtr
 import com.soywiz.kpspemu.memoryManager
 import com.soywiz.kpspemu.util.*
 
-class ThreadManForUser_Vpl(mmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(mmodule) {
+class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
 	class PspVpl(override val id: Int) : ResourceItem {
 		val info = SceKernelVplInfo()
 		lateinit var part: MemoryPartition
@@ -74,10 +74,10 @@ class ThreadManForUser_Vpl(mmodule: ThreadManForUser) : SceSubmodule<ThreadManFo
 		return 0
 	}
 
-	fun sceKernelCancelVpl(cpu: CpuState): Unit = mmodule.UNIMPLEMENTED(0x1D371B8A)
-	fun sceKernelAllocateVplCB(cpu: CpuState): Unit = mmodule.UNIMPLEMENTED(0xEC0A693F)
+	fun sceKernelCancelVpl(cpu: CpuState): Unit = UNIMPLEMENTED(0x1D371B8A)
+	fun sceKernelAllocateVplCB(cpu: CpuState): Unit = UNIMPLEMENTED(0xEC0A693F)
 
-	fun registerModuleVpl() = mmodule.apply {
+	fun registerSubmodule() = tmodule.apply {
 		registerFunctionInt("sceKernelCreateVpl", 0x56C039B5, since = 150) { sceKernelCreateVpl(istr, int, int, int, ptr) }
 		registerFunctionInt("sceKernelAllocateVpl", 0xBED27435, since = 150) { sceKernelAllocateVpl(int, int, ptr32, ptr32) }
 		registerFunctionInt("sceKernelTryAllocateVpl", 0xAF36D708, since = 150) { sceKernelTryAllocateVpl(int, int, ptr32) }

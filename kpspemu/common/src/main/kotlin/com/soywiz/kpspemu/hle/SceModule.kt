@@ -58,17 +58,34 @@ class RegisterReader {
 
 data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
 
-open class SceSubmodule<T : SceModule>(val mmodule: T) : WithEmulator {
+abstract class BaseSceModule {
+	abstract val mmodule: SceModule
+	abstract val name: String
+
+	fun getByNidOrNull(nid: Int): NativeFunction? = mmodule.functions[nid]
+	fun getByNid(nid: Int): NativeFunction = getByNidOrNull(nid) ?: invalidOp("Can't find NID 0x%08X in %s".format(nid, name))
+
+	fun UNIMPLEMENTED(nid: Int): Nothing {
+		val func = getByNid(nid)
+		TODO("Unimplemented %s:0x%08X:%s".format(this.name, func.nid, func.name))
+	}
+
+	fun UNIMPLEMENTED(nid: Long): Nothing = UNIMPLEMENTED(nid.toInt())
+}
+
+abstract class SceSubmodule<out T : SceModule>(override val mmodule: T) : WithEmulator, BaseSceModule() {
+	override val name: String get() = mmodule.name
 	override val emulator: Emulator get() = mmodule.emulator
 }
 
 abstract class SceModule(
 	override val emulator: Emulator,
-	val name: String,
+	override val name: String,
 	val flags: Int = 0,
 	val prxFile: String = "",
 	val prxName: String = ""
-) : WithEmulator {
+) : WithEmulator, BaseSceModule() {
+	override val mmodule get() = this
 	inline fun <reified T : SceModule> getModuleOrNull(): T? = emulator.moduleManager.modulesByClass[T::class] as? T?
 	inline fun <reified T : SceModule> getModule(): T = getModuleOrNull<T>() ?: invalidOp("Expected to get module ${T::class.portableSimpleName}")
 
@@ -88,16 +105,6 @@ abstract class SceModule(
 	private val rr: RegisterReader = RegisterReader()
 
 	val functions = IntMap<NativeFunction>()
-
-	fun getByNidOrNull(nid: Int): NativeFunction? = functions[nid]
-	fun getByNid(nid: Int): NativeFunction = getByNidOrNull(nid) ?: invalidOp("Can't find NID 0x%08X in %s".format(nid, name))
-
-	fun UNIMPLEMENTED(nid: Int): Nothing {
-		val func = getByNid(nid)
-		TODO("Unimplemented %s:0x%08X:%s".format(this.name, func.nid, func.name))
-	}
-
-	fun UNIMPLEMENTED(nid: Long): Nothing = UNIMPLEMENTED(nid.toInt())
 
 	fun registerFunctionRaw(function: NativeFunction) {
 		functions[function.nid.toInt()] = function
