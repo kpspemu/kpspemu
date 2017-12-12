@@ -8,8 +8,6 @@ import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.*
 import com.soywiz.korma.math.Math
 import com.soywiz.korma.math.isAlmostZero
-import com.soywiz.korma.math.reinterpretAsFloat
-import com.soywiz.korma.math.reinterpretAsInt
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.CpuState.VCondition
 import com.soywiz.kpspemu.cpu.dis.NameProvider
@@ -292,8 +290,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	override fun mov_s(s: CpuState) = s.checkNan { FD = FS }
-	override fun add_s(s: CpuState) = s.checkNan { FD = FS + FT }
-	override fun sub_s(s: CpuState) = s.checkNan { FD = FS - FT }
+	override fun add_s(s: CpuState) = s.checkNan { FD = FS pspAdd FT }
+	override fun sub_s(s: CpuState) = s.checkNan { FD = FS pspSub FT }
 	override fun mul_s(s: CpuState) = s.checkNan { FD = FS * FT; if (fcr31_fs && FD.isAlmostZero()) FD = 0f }
 	override fun div_s(s: CpuState) = s.checkNan { FD = FS / FT }
 	override fun neg_s(s: CpuState) = s.checkNan { FD = -FS }
@@ -466,19 +464,21 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
+	override fun vfim(s: CpuState) = s { VT_I = HalfFloat.halfFloatBitsToFloatBits(U_IMM16) }
+
 	override fun vcst(s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
 	override fun mtv(s: CpuState) = s { VD_I = RT }
 	override fun vpfxt(s: CpuState) = s { vpfxt.setEnable(IR) }
 	override fun vpfxd(s: CpuState) = s { vpfxd.setEnable(IR) }
 	override fun vpfxs(s: CpuState) = s { vpfxs.setEnable(IR) }
 	override fun vavg(s: CpuState) =  s {
-		setVD_VS(destSize = 1) {
-			((0 until vsSize).sumByDouble { (vs[it] / vsSize).toDouble() }).toFloat()
+		setVD_VS(destSize = 1, prefixes = true) {
+			((0 until vsSize).sumByFloat { (vs[it] / vsSize) })
 		}
 	}
 	override fun vfad(s: CpuState) = s {
-		setVD_VS(destSize = 1) {
-			((0 until vsSize).sumByDouble { vs[it].toDouble() }).toFloat()
+		setVD_VS(destSize = 1, prefixes = true) {
+			((0 until vsSize).sumByFloat { vs[it] })
 		}
 	}
 	override fun vrot(s: CpuState) = s {
@@ -488,7 +488,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		val sinIndex = imm5.extract(2, 2)
 		val negateSin = imm5.extractBool(4)
 
-		setVD_VS(vectorSize, 1) {
+		setVD_VS(vectorSize, 1, prefixes = true) {
 			var sine = sinv1(vs.x)
 			val cosine = cosv1(vs.x)
 			if (negateSin) sine = -sine
@@ -502,29 +502,29 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	// Vector operations (zero operands)
-	override fun vzero(s: CpuState) = s { setVD_ { 0f } }
-	override fun vone(s: CpuState) = s { setVD_ { 1f } }
+	override fun vzero(s: CpuState) = s { setVD_(prefixes = true) { 0f } }
+	override fun vone(s: CpuState) = s { setVD_(prefixes = true) { 1f } }
 
 	// Vector operations (one operand)
 	override fun vmov(s: CpuState) = s { setVD_VS(prefixes = true) { vs[it] } }
-	override fun vabs(s: CpuState) = s { setVD_VS { abs(vs[it]) } }
-	override fun vsqrt(s: CpuState) = s { setVD_VS { sqrt(vs[it]) } }
-	override fun vneg(s: CpuState) = s { setVD_VS { -vs[it] } }
-	override fun vsat0(s: CpuState) = s { setVD_VS { vs[it].clampf(0f, 1f) } }
-	override fun vsat1(s: CpuState) = s { setVD_VS { vs[it].clampf(-1f, 1f) } }
-	override fun vrcp(s: CpuState) = s { setVD_VS { 1f / vs[it] } }
-	override fun vrsq(s: CpuState) = s { setVD_VS { 1f / sqrt(vs[it]) } }
-	override fun vsin(s: CpuState) = s { setVD_VS { sinv1(vs[it]) } }
-	override fun vasin(s: CpuState) = s { setVD_VS { asinv1(vs[it]) } }
-	override fun vnsin(s: CpuState) = s { setVD_VS { -sinv1(vs[it]) } }
-	override fun vcos(s: CpuState) = s { setVD_VS { cosv1(vs[it]) } }
-	override fun vexp2(s: CpuState) = s { setVD_VS { 2f.pow(vs[it]) } }
-	override fun vrexp2(s: CpuState) = s { setVD_VS { 1f / 2f.pow(vs[it]) } }
-	override fun vlog2(s: CpuState) = s { setVD_VS { log2(vs[it]) } }
-	override fun vnrcp(s: CpuState) = s { setVD_VS { -1f / vs[it] } }
-	override fun vsgn(s: CpuState) = s { setVD_VS { sign(vs[it]) } }
-	override fun vocp(s: CpuState) = s { setVD_VS { 1f - vs[it] } }
-	override fun vbfy1(s: CpuState) = s { setVD_VS {
+	override fun vabs(s: CpuState) = s { setVD_VS(prefixes = true) { abs(vs[it]) } }
+	override fun vsqrt(s: CpuState) = s { setVD_VS(prefixes = true) { sqrt(vs[it]) } }
+	override fun vneg(s: CpuState) = s { setVD_VS(prefixes = true) { -vs[it] } }
+	override fun vsat0(s: CpuState) = s { setVD_VS(prefixes = true) { vs[it].pspSat0 } }
+	override fun vsat1(s: CpuState) = s { setVD_VS(prefixes = true) { vs[it].pspSat1 } }
+	override fun vrcp(s: CpuState) = s { setVD_VS(prefixes = true) { 1f / vs[it] } }
+	override fun vrsq(s: CpuState) = s { setVD_VS(prefixes = true) { 1f / sqrt(vs[it]) } }
+	override fun vsin(s: CpuState) = s { setVD_VS(prefixes = true) { sinv1(vs[it]) } }
+	override fun vasin(s: CpuState) = s { setVD_VS(prefixes = true) { asinv1(vs[it]) } }
+	override fun vnsin(s: CpuState) = s { setVD_VS(prefixes = true) { -sinv1(vs[it]) } }
+	override fun vcos(s: CpuState) = s { setVD_VS(prefixes = true) { cosv1(vs[it]) } }
+	override fun vexp2(s: CpuState) = s { setVD_VS(prefixes = true) { 2f.pow(vs[it]) } }
+	override fun vrexp2(s: CpuState) = s { setVD_VS(prefixes = true) { 1f / 2f.pow(vs[it]) } }
+	override fun vlog2(s: CpuState) = s { setVD_VS(prefixes = true) { log2(vs[it]) } }
+	override fun vnrcp(s: CpuState) = s { setVD_VS(prefixes = true) { -1f / vs[it] } }
+	override fun vsgn(s: CpuState) = s { setVD_VS(prefixes = true) { vs[it].pspSign } }
+	override fun vocp(s: CpuState) = s { setVD_VS(prefixes = true) { 1f - vs[it] } }
+	override fun vbfy1(s: CpuState) = s { setVD_VS(prefixes = true) {
 		when (it) {
 			0 -> vs.x + vs.y
 			1 -> vs.x - vs.y
@@ -533,7 +533,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			else -> invalidOp
 		}
 	} }
-	override fun vbfy2(s: CpuState) = s { setVD_VS {
+	override fun vbfy2(s: CpuState) = s { setVD_VS(prefixes = true) {
 		when (it) {
 			0 -> vs.x + vs.z
 			1 -> vs.y + vs.w
@@ -542,28 +542,28 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			else -> invalidOp
 		}
 	} }
-	override fun vsrt1(s: CpuState) = s { setVD_VS { when (it) {
+	override fun vsrt1(s: CpuState) = s { setVD_VS(prefixes = true) { when (it) {
 		0 -> min(vs.x, vs.y)
 		1 -> max(vs.x, vs.y)
 		2 -> min(vs.z, vs.w)
 		3 -> max(vs.z, vs.w)
 		else -> invalidOp
 	} } }
-	override fun vsrt2(s: CpuState) = s { setVD_VS { vs.run { when (it) {
+	override fun vsrt2(s: CpuState) = s { setVD_VS(prefixes = true) { vs.run { when (it) {
 		0 -> min(x, w)
 		1 -> min(y, z)
 		2 -> max(y, z)
 		3 -> max(x, w)
 		else -> invalidOp
 	} } } }
-	override fun vsrt3(s: CpuState) = s { setVD_VS { when (it) {
+	override fun vsrt3(s: CpuState) = s { setVD_VS(prefixes = true) { when (it) {
 		0 -> max(vs.x, vs.y)
 		1 -> min(vs.x, vs.y)
 		2 -> max(vs.z, vs.w)
 		3 -> min(vs.z, vs.w)
 		else -> invalidOp
 	} } }
-	override fun vsrt4(s: CpuState) = s { setVD_VS { when (it) {
+	override fun vsrt4(s: CpuState) = s { setVD_VS(prefixes = true) { when (it) {
 		0 -> max(vs.x, vs.w)
 		1 -> max(vs.y, vs.z)
 		2 -> min(vs.y, vs.z)
@@ -572,17 +572,17 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	} } }
 
 	// Vector operations (two operands)
-	override fun vsge(s: CpuState) = s { setVD_VSVT { if (vs[it] >= vt[it]) 1f else 0f } }
-	override fun vslt(s: CpuState) = s { setVD_VSVT { if (vs[it] < vt[it]) 1f else 0f } }
-	override fun vscmp(s: CpuState) = s { setVD_VSVT { vs[it].compareTo(vt[it]).toFloat() } }
+	override fun vsge(s: CpuState) = s { setVD_VSVT(prefixes = true) { if (vs[it] >= vt[it]) 1f else 0f } }
+	override fun vslt(s: CpuState) = s { setVD_VSVT(prefixes = true) { if (vs[it] < vt[it]) 1f else 0f } }
+	override fun vscmp(s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it].compareTo(vt[it]).toFloat() } }
 
-	override fun vadd(s: CpuState) = s { setVD_VSVT { vs[it] + vt[it] } }
-	override fun vsub(s: CpuState) = s { setVD_VSVT { vs[it] - vt[it] } }
-	override fun vmul(s: CpuState) = s { setVD_VSVT { vs[it] * vt[it] } }
-	override fun vdiv(s: CpuState) = s { setVD_VSVT { vs[it] / vt[it] } }
-	override fun vmin(s: CpuState) = s { setVD_VSVT { min(vs[it], vt[it]) } }
-	override fun vmax(s: CpuState) = s { setVD_VSVT { max(vs[it], vt[it]) } }
-	override fun vcrs_t(s: CpuState) = s { setVD_VSVT {
+	override fun vadd(s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] pspAdd vt[it] } }
+	override fun vsub(s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] pspSub vt[it] } }
+	override fun vmul(s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] * vt[it] } }
+	override fun vdiv(s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] / vt[it] } }
+	override fun vmin(s: CpuState) = s { setVD_VSVT(prefixes = true) { min(vs[it], vt[it]) } }
+	override fun vmax(s: CpuState) = s { setVD_VSVT(prefixes = true) { max(vs[it], vt[it]) } }
+	override fun vcrs_t(s: CpuState) = s { setVD_VSVT(prefixes = true) {
 		when (it) {
 			0 -> vs.y * vt.z
 			1 -> vs.z * vt.x
@@ -590,7 +590,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			else -> invalidOp
 		}
 	} }
-	override fun vcrsp_t(s: CpuState) = s { setVD_VSVT {
+	override fun vcrsp_t(s: CpuState) = s { setVD_VSVT(prefixes = true) {
 		when (it) {
 			0 -> +vs.y * vt.z - vs.z * vt.y
 			1 -> +vs.z * vt.x - vs.x * vt.z
@@ -598,7 +598,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			else -> invalidOp
 		}
 	} }
-	override fun vqmul(s: CpuState) = s { setVD_VSVT {
+	override fun vqmul(s: CpuState) = s { setVD_VSVT(prefixes = true) {
 		when (it) {
 			0 -> +vs.x * vt.w + vs.y * vt.z - vs.z * vt.y + vs.w * vt.x
 			1 -> -vs.x * vt.z + vs.y * vt.w + vs.z * vt.x + vs.w * vt.y
@@ -607,20 +607,22 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			else -> invalidOp
 		}
 	} }
-	override fun vdot(s: CpuState) = s { setVD_VSVT(destSize = 1) {
-		((0 until vsSize).sumByDouble { (vs[it] * vt[it]).toDouble() }).toFloat()
+	override fun vdot(s: CpuState) = s { setVD_VSVT(destSize = 1, prefixes = true) {
+		((0 until vsSize).sumByFloat { (vs[it] * vt[it]) })
 	} }
-	override fun vscl(s: CpuState) = s { setVD_VSVT(targetSize = 1) { vs[it] * vt.x } }
+	override fun vscl(s: CpuState) = s { setVD_VSVT(targetSize = 1, prefixes = true) { vs[it] * vt.x } }
 
-	override fun vhdp(s: CpuState) = s { setVD_VSVT(destSize = 1) {
+	override fun vhdp(s: CpuState) = s { setVD_VSVT(destSize = 1, prefixes = true) {
 		vs[vsSize - 1] = 1f
-		(0 until vsSize).sumByDouble {  (vs[it] * vt[it]).toDouble() }.toFloat()
+		(0 until vsSize).sumByFloat {  (vs[it] * vt[it]) }
 	} }
-	override fun vdet(s: CpuState) = s { setVD_VSVT(destSize = 1) { vs.x * vt.y - vs.y * vt.x } }
+	override fun vdet(s: CpuState) = s { setVD_VSVT(destSize = 1, prefixes = true) {
+		vs.x * vt.y - vs.y * vt.x
+	} }
 	override fun vcmp(s: CpuState) = s {
 		val size = IR.one_two
 		var cc = 0
-		_VSVT {
+		_VSVT(prefixes = true) {
 			val cond = when (IR.imm4) {
 				VCondition.FL -> false
 				VCondition.EQ -> vs[it] == vt[it]
@@ -632,7 +634,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 				VCondition.GE -> vs[it] >= vt[it]
 				VCondition.GT -> vs[it] > vt[it]
 
-				VCondition.EZ -> (vs[it] == 0f) || (vt[it] == -0f)
+				VCondition.EZ -> (vs[it] == 0f) || (vs[it] == -0f)
 				VCondition.EN -> vs[it].isNaN()
 				VCondition.EI -> vs[it].isInfinite()
 				VCondition.ES -> vs[it].isNanOrInfinitef()
@@ -655,26 +657,54 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		if ((cc and mask) == mask) cc = cc.insert(true, 5)
 
 		VFPR_CC = (VFPR_CC and affectedBits.inv()) or cc
+		//println("vcmp:$cc --> $VFPR_CC")
 	}
 	private fun _vcmovtf(s: CpuState, truth: Boolean) = s {
 		val ccidx = IR.imm3
-		setVD_VDVS {
+		//println("_vcmovtf($truth)[$ccidx]")
+		setVD_VDVS(prefixes = true) {
 			val cond = when (ccidx) {
 				0, 1, 2, 3, 4, 5 -> VFPR_CC(ccidx)
 				6 -> VFPR_CC(it)
 				7 -> true
 				else -> false
 			}
-			if (cond == truth) vs[it] else vd[it]
+			if (cond != truth) vs[it] else vd[it]
 		}
 	}
 
 	override fun vcmovf(s: CpuState) = _vcmovtf(s, true)
 	override fun vcmovt(s: CpuState) = _vcmovtf(s, false)
 
-	override fun vfim(s: CpuState) = s { setVD_(destSize = 1) { HalfFloat.halfFloatBitsToFloat(U_IMM16) } }
-	override fun vwbn(s: CpuState) = s { setVD_VS(destSize = 1) { println("vwbn not implemented!"); -777f } }
-	override fun vsbn(s: CpuState) = s { setVD_VSVT { scalab(vs[it], vti[it]) } }
+	override fun vwbn(s: CpuState) = s { setVDI_VS(destSize = 1) {
+		val exp = IR.imm8
+		val sigbit = vsi[it] and 0x80000000.toInt()
+		val prevExp = (vsi[it] and 0x7F800000) ushr 23
+		var mantissa = (vsi[it] and 0x007FFFFF) or 0x00800000
+		if (prevExp != 0xFF && prevExp != 0) {
+			if (exp > prevExp) {
+				val shift = (exp - prevExp) and 0xF
+				mantissa = mantissa ushr shift
+			} else {
+				val shift = (prevExp - exp) and 0xF
+				mantissa = mantissa shl shift
+			}
+			sigbit or (mantissa and 0x007FFFFF) or (exp shl 23)
+		} else {
+			vsi[it] or (exp shl 23)
+		}
+	} }
+	override fun vsbn(s: CpuState) = s { setVDI_VSVT(targetSize = 1) {
+		val exp = (127 + vti[0]) and 0xFF
+		val prev = vsi[it] and 0x7F800000
+		if (prev != 0 && prev != 0x7F800000) {
+			(vsi[it] and 0x7F800000.inv()) or (exp shl 23)
+		} else {
+			vsi[it]
+		}
+
+		//scalab(vs[it], vti[it])
+	} }
 
 	// Matrix operations
 	override fun vmzero(s: CpuState) = s { setMatrixVD { 0f } }
@@ -682,7 +712,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vmidt(s: CpuState) = s { setMatrixVD { if (row == col) 1f else 0f } }
 	override fun vmmov(s: CpuState) = s { setMatrixVD_VS { ms[col, row] } }
 	override fun vmmul(s: CpuState) = s { setMatrixVD_VSVT {
-		(0 until side).map { ms[col, row] * mt[row, col] }.sum() }
+		(0 until side).map { ms[row, it] * mt[col, it] }.sum() }
 	}
 
 	override fun mfvc(s: CpuState) = s { RT = VFPRC[IR.imm7] }
@@ -693,7 +723,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 		for (n in 0 until size) {
 			getVectorRegisterValues(b_vs, IR.vs + n, size)
-			vfpuContext.vd[n] = (0 until size).sumByDouble { (vs[it] * vt[it]).toDouble() }.toFloat()
+			vfpuContext.vd[n] = (0 until size).sumByFloat { (vs[it] * vt[it]) }
 		}
 
 		setVectorRegisterValues(b_vd, IR.vd, size)
@@ -705,7 +735,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		vt[size - 1] = 1f
 		for (n in 0 until size) {
 			getVectorRegisterValues(b_vs, IR.vs + n, size)
-			vfpuContext.vd[n] = (0 until size).sumByDouble { (vs[it] * vt[it]).toDouble() }.toFloat()
+			vfpuContext.vd[n] = (0 until size).sumByFloat { (vs[it] * vt[it]) }
 		}
 
 		setVectorRegisterValues(b_vd, IR.vd, size)
@@ -716,8 +746,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vtfm4(s: CpuState) = _vtfm_x(s, 4)
 
 	override fun vhtfm2(s: CpuState) = _vhtfm_x(s, 2)
-	override fun vhtfm3(s: CpuState) = _vhtfm_x(s, 2)
-	override fun vhtfm4(s: CpuState) = _vhtfm_x(s, 2)
+	override fun vhtfm3(s: CpuState) = _vhtfm_x(s, 3)
+	override fun vhtfm4(s: CpuState) = _vhtfm_x(s, 4)
 
 	override fun vmscl(s: CpuState) = s {
 		val scale = vfpuContext.sreadVt(s, size = 1)[0]
@@ -749,6 +779,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	fun CpuState.getMatrixRegsValues(out: FloatArray2, matrixReg: Int, N: Int): Int {
 		val side = getMatrixRegs(tempRegs2, matrixReg, N)
 		for (j in 0 until side) for (i in 0 until side) out[j, i] = getVfpr(tempRegs2[j, i])
+		return side
+	}
+
+	fun CpuState.setMatrixRegsValues(inp: FloatArray2, matrixReg: Int, N: Int): Int {
+		val side = getMatrixRegs(tempRegs2, matrixReg, N)
+		for (j in 0 until side) for (i in 0 until side) setVfpr(tempRegs2[j, i], inp[j, i])
 		return side
 	}
 
@@ -790,49 +826,38 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	private val mc = MatrixContext()
 
 	fun CpuState.setMatrixVD(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
-		getMatrixRegs(VDEST2, IR.vd, side)
 		mc.side = side
 		for (col in 0 until side) for (row in 0 until side) {
-			setVfpr(VDEST2[col, row], callback(mc.setPos(col, row)))
+			mc.md[col, row] = callback(mc.setPos(col, row))
 		}
+		setMatrixRegsValues(mc.md, IR.vd, side)
 	}
 
 	fun CpuState.setMatrixVD_VS(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
-		getMatrixRegs(VDEST2, IR.vd, side)
 		getMatrixRegsValues(mc.ms, IR.vs, side)
+
 		mc.side = side
 		for (col in 0 until side) for (row in 0 until side) {
-			setVfpr(VDEST2[col, row], callback(mc.setPos(col, row)))
+			mc.md[col, row] = callback(mc.setPos(col, row))
 		}
+		setMatrixRegsValues(mc.md, IR.vd, side)
 	}
 
 	fun CpuState.setMatrixVD_VSVT(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
-		getMatrixRegs(VDEST2, IR.vd, side)
 		getMatrixRegsValues(mc.ms, IR.vs, side)
 		getMatrixRegsValues(mc.mt, IR.vt, side)
 
 		mc.side = side
 		for (col in 0 until side) for (row in 0 until side) {
-			setVfpr(VDEST2[col, row], callback(mc.setPos(col, row)))
+			mc.md[col, row] = callback(mc.setPos(col, row))
 		}
+		setMatrixRegsValues(mc.md, IR.vd, side)
 	}
 
+	private val tempRegs = IntArray(16)
 	private val tempRegs2 = IntArray2(4, 4)
 
-	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: Int) {
-		vectorRegisters(vectorReg, N) { i, r -> out[i] = r }
-	}
-
-	fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: Int) {
-		vectorRegisters(vectorReg, N) { i, r -> out.i[i] = getVfprI(r) }
-	}
-
-	fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: Int) {
-		vectorRegisters(vectorReg, N) { i, r -> setVfprI(r, inp.i[i]) }
-	}
-
-	// @TODO: Precalculate this! & mark as inline once this is simplified!
-	fun vectorRegisters(vectorReg: Int, N: Int, callback: (index: Int, r: Int) -> Unit) {
+	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: Int): Int {
 		val mtx = vectorReg.extract(2, 3)
 		val col = vectorReg.extract(0, 2)
 		val row: Int
@@ -848,12 +873,23 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		}
 
 		for (i in 0 until length) {
-			callback(i, mtx * 4 + if (transpose) {
+			out[i] = mtx * 4 + if (transpose) {
 				((row + i) and 3) + col * 32
 			} else {
 				col + ((row + i) and 3) * 32
-			})
+			}
 		}
+		return N
+	}
+
+	fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: Int) {
+		getVectorRegisters(tempRegs, vectorReg, N)
+		for (n in 0 until N) out.i[n] = getVfprI(tempRegs[n])
+	}
+
+	fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: Int) {
+		getVectorRegisters(tempRegs, vectorReg, N)
+		for (n in 0 until N) setVfprI(tempRegs[n], inp.i[n])
 	}
 
 	class VfpuContext {
@@ -904,13 +940,16 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		}
 
 		fun CpuState.writeVd(reg: Int = IR.vd, size: Int = IR.one_two, prefixes: Boolean = false) {
+			getVectorRegisters(tempRegs, reg, size)
 			if (prefixes) {
-				vectorRegisters(reg, size) { i, r ->
-					if (!vpfxd.mask(i)) setVfpr(r, vpfxd.transform(i, vd[i]))
+				for (i in 0 until size) {
+					if (vpfxd.mustWrite(i)) setVfpr(tempRegs[i], vpfxd.transform(i, vd[i]))
 				}
 				vpfxd.consume()
 			} else {
-				vectorRegisters(reg, size) { i, r -> setVfprI(r, vdi[i]) }
+				for (i in 0 until size) {
+					setVfprI(tempRegs[i], vdi[i])
+				}
 			}
 		}
 
@@ -922,46 +961,77 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	val vfpuContext = VfpuContext()
 
-	fun CpuState.setVD_(destSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	inline fun CpuState.setVD_(destSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vdSize = destSize
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
 		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
 	}
 
-	fun CpuState.setVD_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	inline fun CpuState.setVDI_(destSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
+		vdSize = destSize
+		for (n in 0 until destSize) vdi[n] = callback(vfpuContext, n)
+		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
+	}
+
+	inline fun CpuState.setVD_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vdSize = destSize
 		readVs(size = srcSize, prefixes = prefixes)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
 		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
 	}
 
-	fun CpuState.setVDI_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
+	inline fun CpuState.setVDI_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
 		vdSize = destSize
 		readVs(size = srcSize, prefixes = prefixes)
 		for (n in 0 until destSize) vdi[n] = callback(vfpuContext, n)
 		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
 	}
 
-	fun CpuState.setVD_VDVS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	inline fun CpuState.setVD_VDVS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vdSize = destSize
 		readVs(size = srcSize, prefixes = prefixes)
 		readVd(size = destSize)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
 		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
 	}
 
-	fun CpuState.setVD_VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	inline fun CpuState.setVD_VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vfpuContext.vdSize = destSize
 		readVs(size = srcSize, prefixes = prefixes)
 		readVt(size = targetSize, prefixes = prefixes)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
 		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
 	}
 
-	fun CpuState._VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Unit) = vfpuContext.run {
+	inline fun CpuState.setVDI_VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
+		vfpuContext.vdSize = destSize
+		readVs(size = srcSize, prefixes = prefixes)
+		readVt(size = targetSize, prefixes = prefixes)
+		for (n in 0 until destSize) vdi[n] = callback(vfpuContext, n)
+		writeVd(size = destSize, prefixes = prefixes)
+		consumePrefixes(prefixes)
+	}
+
+	inline fun CpuState._VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Unit) = vfpuContext.run {
 		readVs(size = srcSize, prefixes = prefixes)
 		readVt(size = targetSize, prefixes = prefixes)
 		for (n in 0 until destSize) callback(vfpuContext, n)
+		consumePrefixes(prefixes)
+	}
+
+	@PublishedApi
+	internal fun CpuState.consumePrefixes(prefixes: Boolean) {
+		if (prefixes) {
+			vpfxs.consume()
+			vpfxt.consume()
+			vpfxd.consume()
+		}
 	}
 
 	enum class VfpuConstants(val value: Float) {

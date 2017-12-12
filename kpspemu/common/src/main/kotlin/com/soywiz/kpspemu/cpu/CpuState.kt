@@ -6,12 +6,13 @@ import com.soywiz.kmem.*
 import com.soywiz.korio.error.invalidArg
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.clamp
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
-import kotlin.math.absoluteValue
+import com.soywiz.kpspemu.util.pspAbs
+import com.soywiz.kpspemu.util.pspSat0
+import com.soywiz.kpspemu.util.pspSat1
 
 abstract class EmulatorControlFlowException : Exception()
 
@@ -354,9 +355,9 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 		const val SPREFIX = 0
 		const val TPREFIX = 1
 		const val DPREFIX = 2
-		const val CC = 4
-		const val INF4 = 5
-		const val RSV5 = 6
+		const val CC = 3
+		const val INF4 = 4
+		const val RSV5 = 5
 		const val RSV6 = 6
 		const val REV = 7
 		const val RCX0 = 8
@@ -408,55 +409,51 @@ open class VfpuPrefix(val defaultValue: Int, val array: IntArray, val arrayIndex
 class VfpuSourceTargetPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt(), array, arrayIndex) {
 	private val temp = Float32BufferAlloc(16)
 
-	fun applyAndConsume(input: Float32Buffer, output: Float32Buffer = input, size: Int = input.size) {
-		apply(input, output, size)
+	fun applyAndConsume(inout: Float32Buffer, size: Int = inout.size) {
+		if (!enabled) return
+		apply(inout, size)
 		enabled = false
 	}
 
-	fun apply(input: Float32Buffer, output: Float32Buffer = input, size: Int = input.size) {
-		if (!enabled) {
-			for (n in 0 until size) output[n] = input[n]
-		} else {
-			arraycopy(input, 0, temp, 0, size)
-			for (n in 0 until size) {
-				val sourceIndex = (info ushr (0 + n * 2)) and 3
-				val sourceAbsolute = ((info ushr (8 + n * 1)) and 1) != 0
-				val sourceConstant = ((info ushr (12 + n * 1)) and 1) != 0
-				val sourceNegate = ((info ushr (16 + n * 1)) and 1) != 0
+	fun apply(inout: Float32Buffer, size: Int = inout.size) {
+		if (!enabled) return
+		arraycopy(inout, 0, temp, 0, size)
+		for (n in 0 until size) {
+			val sourceIndex = (info ushr (0 + n * 2)) and 3
+			val sourceAbsolute = ((info ushr (8 + n * 1)) and 1) != 0
+			val sourceConstant = ((info ushr (12 + n * 1)) and 1) != 0
+			val sourceNegate = ((info ushr (16 + n * 1)) and 1) != 0
 
-				val value: Float = if (sourceConstant) {
-					when (sourceIndex) {
-						0 -> if (sourceAbsolute) 3f else 0f
-						1 -> if (sourceAbsolute) 1f / 3f else 1f
-						2 -> if (sourceAbsolute) 1f / 4f else 2f
-						3 -> if (sourceAbsolute) 1f / 6f else 1f / 2f
-						else -> invalidOp
-					}
-				} else {
-					if (sourceAbsolute) temp[sourceIndex].absoluteValue else temp[sourceIndex]
+			val value: Float = if (sourceConstant) {
+				when (sourceIndex) {
+					0 -> if (sourceAbsolute) 3f else 0f
+					1 -> if (sourceAbsolute) 1f / 3f else 1f
+					2 -> if (sourceAbsolute) 1f / 4f else 2f
+					3 -> if (sourceAbsolute) 1f / 6f else 1f / 2f
+					else -> invalidOp
 				}
-
-				output[n] = if (sourceNegate) -value else value
+			} else {
+				if (sourceAbsolute) temp[sourceIndex].pspAbs else temp[sourceIndex]
 			}
+
+			inout[n] = if (sourceNegate) -value else value
 		}
 	}
 }
 
 class VfpuDestinationPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt(), array, arrayIndex) {
-	fun mask(n: Int) = ((info ushr (8 + n * 1)) and 1) != 0
+	private fun mask(n: Int) = ((info ushr (8 + n * 1)) and 1) != 0
 	fun saturation(n: Int) = (info ushr (0 + n * 2)) and 3
 
-	fun transform(n: Int, original: Float): Float {
-		if (mask(n)) {
-			return original
-		} else {
-			return when (saturation(n)) {
-				1 -> original.clamp(0f, 1f)
-				3 -> original.clamp(-1f, 1f)
-				else -> original
-			}
-		}
+	fun mustWrite(n: Int) = if (enabled) !mask(n) else true
 
+	fun transform(n: Int, value: Float): Float {
+		if (!enabled) return value
+		return when (saturation(n)) {
+			1 -> value.pspSat0
+			3 -> value.pspSat1
+			else -> value
+		}
 	}
 
 }

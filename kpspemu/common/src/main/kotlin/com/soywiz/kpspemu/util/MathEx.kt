@@ -9,7 +9,8 @@ fun sinv1(value: Float): Float {
 	angle -= floor((angle * 0.25f).toDouble()).toFloat() * 4f
 	// Handling of specific values first to avoid precision loss in float value
 	return when (angle) {
-		0f, 2f -> 0f
+		0f -> 0f
+		2f -> -0f
 		1f -> 1f
 		3f -> -1f
 		else -> sin((PI_2 * angle)).toFloat()

@@ -63,13 +63,10 @@ class IntegrationTests {
 	@Ignore
 	@Test fun testVfpuVector() = testFile("cpu/vfpu/vector")
 
-	@Ignore
 	@Test fun testVfpuGum() = testFile("cpu/vfpu/gum")
 
-	@Ignore
 	@Test fun testVfpuMatrix() = testFile("cpu/vfpu/matrix")
 
-	@Ignore
 	@Test fun testVfpuPrefixes() = testFile("cpu/vfpu/prefixes")
 
 	@Ignore
