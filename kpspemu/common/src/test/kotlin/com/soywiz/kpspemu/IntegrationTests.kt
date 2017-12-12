@@ -60,6 +60,21 @@ class IntegrationTests {
 
 	@Test fun testVfpuVavg() = testFile("cpu/vfpu/vavg")
 
+	@Ignore
+	@Test fun testVfpuVector() = testFile("cpu/vfpu/vector")
+
+	@Ignore
+	@Test fun testVfpuGum() = testFile("cpu/vfpu/gum")
+
+	@Ignore
+	@Test fun testVfpuMatrix() = testFile("cpu/vfpu/matrix")
+
+	@Ignore
+	@Test fun testVfpuPrefixes() = testFile("cpu/vfpu/prefixes")
+
+	@Ignore
+	@Test fun testVfpuVregs() = testFile("cpu/vfpu/vregs")
+
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),

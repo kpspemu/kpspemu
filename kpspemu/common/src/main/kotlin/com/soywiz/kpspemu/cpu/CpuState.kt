@@ -121,6 +121,9 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 		for (n in 0 until 128) this[n] = Float.NaN
 	}
 	val _VFPR_I = _VFPRMem.asInt32Buffer()
+	val VFPRC = intArrayOf(0, 0, 0, 0xFF, 0, 0, 0, 0, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000)
+	var VFPR_CC: Int get() = VFPRC[CpuState.VFPU_CTRL.CC]; set(value) = run { VFPRC[CpuState.VFPU_CTRL.CC] = value }
+	fun VFPR_CC(index: Int) = VFPR_CC.extract(index)
 
 	var fcr0: Int = 0x00003351
 	var fcr25: Int = 0
@@ -129,12 +132,30 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	var fcr28: Int = 0
 	var fcr31: Int = 0x00000e00
 
-	var vpfxsEnabled = false
-	var vpfxtEnabled = false
-	var vpfxdEnabled = false
-	var vpfxs: Int = 0xDC0000E4.toInt()
-	var vpfxt: Int = 0xDC0000E4.toInt()
-	var vpfxd: Int = 0x00000000
+	open class VfpuPrefix(val defaultValue: Int) {
+		var value = defaultValue
+		var enabled = false
+
+		fun setUnknown() {
+			value = defaultValue
+			enabled = false
+		}
+
+		fun setEnable(v: Int) {
+			value = v
+			enabled = true
+		}
+	}
+
+	class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
+	}
+
+	class VfpuDestinationPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
+	}
+
+	var vpfxs = VfpuSourceTargetPrefix()
+	var vpfxt = VfpuSourceTargetPrefix()
+	var vpfxd = VfpuDestinationPrefix()
 
 	fun updateFCR31(value: Int) {
 		fcr31 = value and 0x0183FFFF
@@ -345,6 +366,46 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 
 	fun dump() {
 		println(" DUMP:-- $summary")
+	}
+
+	object VFPU_CTRL {
+		const val SPREFIX = 0
+		const val TPREFIX = 1
+		const val DPREFIX = 2
+		const val CC = 4
+		const val INF4 = 5
+		const val RSV5 = 6
+		const val RSV6 = 6
+		const val REV = 7
+		const val RCX0 = 8
+		const val RCX1 = 9
+		const val RCX2 = 10
+		const val RCX3 = 11
+		const val RCX4 = 12
+		const val RCX5 = 13
+		const val RCX6 = 14
+		const val RCX7 = 15
+		const val MAX = 16
+	}
+
+
+	object VCondition {
+		const val FL = 0
+		const val EQ = 1
+		const val LT = 2
+		const val LE = 3
+		const val TR = 4
+		const val NE = 5
+		const val GE = 6
+		const val GT = 7
+		const val EZ = 8
+		const val EN = 9
+		const val EI = 10
+		const val ES = 11
+		const val NZ = 12
+		const val NN = 13
+		const val NI = 14
+		const val NS = 15
 	}
 }
 
