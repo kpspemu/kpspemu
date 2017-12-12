@@ -424,6 +424,20 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vc2i(s: CpuState) = _vc2i(s) { index, value -> (value shl ((3 - index) * 8)) and 0xFF000000.toInt() }
 	override fun vuc2i(s: CpuState) = _vc2i(s) { index, value -> ((((value ushr (index * 8)) and 0xFF) * 0x01010101) shr 1) and 0x80000000.toInt().inv() }
 
+	private fun _vs2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
+		val size = IR.one_two
+		getVectorRegisters(VSRC, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize(size * 2))
+		for (n in 0 until size) {
+			val value = VFPRI[VSRC[n]]
+			VFPRI[VDEST[n * 2 + 0]] = func(0, value)
+			VFPRI[VDEST[n * 2 + 1]] = func(1, value)
+		}
+	}
+
+	override fun vs2i(s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 16 }
+	override fun vus2i(s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 15 }
+
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
 	override fun vcst(s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
 	override fun mtv(s: CpuState) = s { VD_I = RT }
@@ -554,14 +568,12 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vi2us(s: CpuState) = unimplemented(s, Instructions.vi2us)
 	override fun vlgb(s: CpuState) = unimplemented(s, Instructions.vlgb)
 	override fun vqmul(s: CpuState) = unimplemented(s, Instructions.vqmul)
-	override fun vs2i(s: CpuState) = unimplemented(s, Instructions.vs2i)
 	override fun vsbn(s: CpuState) = unimplemented(s, Instructions.vsbn)
 	override fun vsbz(s: CpuState) = unimplemented(s, Instructions.vsbz)
 	override fun vsocp(s: CpuState) = unimplemented(s, Instructions.vsocp)
 	override fun vsrt1(s: CpuState) = unimplemented(s, Instructions.vsrt1)
 	override fun vsrt2(s: CpuState) = unimplemented(s, Instructions.vsrt2)
 	override fun vsrt4(s: CpuState) = unimplemented(s, Instructions.vsrt4)
-	override fun vus2i(s: CpuState) = unimplemented(s, Instructions.vus2i)
 	override fun vwbn(s: CpuState) = unimplemented(s, Instructions.vwbn)
 	override fun bvf(s: CpuState) = unimplemented(s, Instructions.bvf)
 	override fun bvt(s: CpuState) = unimplemented(s, Instructions.bvt)
@@ -572,12 +584,15 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	enum class VectorSize(val id: Int) {
 		Single(1), Pair(2), Triple(3), Quad(4);
+
 		companion object {
 			val items = arrayOf(Single, Single, Pair, Triple, Quad)
 			operator fun invoke(size: Int) = items[size]
 		}
 	}
+
 	enum class MatrixSize(val id: Int) { M_2x2(2), M_3x3(3), M_4x4(4);
+
 		companion object {
 			val items = arrayOf(M_2x2, M_2x2, M_2x2, M_3x3, M_4x4)
 			operator fun invoke(size: Int) = items[size]
