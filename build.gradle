@@ -3,7 +3,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 buildscript {
     ext.dynarekVersion = "0.3.0"
     ext.kloggerVersion = "0.3.0"
-    ext.klockVersion = "0.3.1"
+    ext.klockVersion = "0.4.0"
     ext.kryptoVersion = '0.3.0'
     ext.korauAtrac3plusVersion = '0.3.0'
     ext.koragVersion = "0.18.2"
