@@ -310,6 +310,7 @@ class PspThread internal constructor(
 
 	fun stop(reason: String = "generic") {
 		if (phase != Phase.STOPPED) {
+			logger.warn { "Stopping Thread: $name : reason=$reason" }
 			phase = Phase.STOPPED
 			onEnd(Unit)
 		}
@@ -320,6 +321,7 @@ class PspThread internal constructor(
 		stop()
 		phase = Phase.DELETED
 		manager.freeById(id)
+		logger.warn { "Deleting Thread: $name" }
 	}
 
 	fun exitAndKill() {
@@ -342,6 +344,7 @@ class PspThread internal constructor(
 			when (e.id) {
 				CpuBreakException.THREAD_EXIT_KILL -> {
 					logger.info { "BREAK: THREAD_EXIT_KILL ('${this.name}', ${this.id})" }
+					println("BREAK: THREAD_EXIT_KILL ('${this.name}', ${this.id})")
 					exitAndKill()
 				}
 				CpuBreakException.THREAD_WAIT -> {

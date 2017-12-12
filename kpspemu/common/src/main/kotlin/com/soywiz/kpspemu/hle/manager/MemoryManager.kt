@@ -62,6 +62,9 @@ data class MemoryPartition(
 	var allocated: Boolean,
 	val parent: MemoryPartition? = null
 ) {
+	val low_i: Int get() = low.toInt()
+	val high_i: Int get() = high.toInt()
+
 	companion object {
 		val ZERO = 0L
 		val DUMMY = MemoryPartition("dummy", 0.0, 0.0, false, null)
@@ -261,6 +264,11 @@ data class MemoryPartition(
 		for (child in childPartitions.filter { it.allocated }.sortedBy { it.low }) {
 			println(" - ${child.toString2()}")
 		}
+	}
+
+	fun getAtLow(ptr: Long): MemoryPartition? {
+		// @TODO: Optimize!
+		return childPartitions.firstOrNull { it.low == ptr }
 	}
 }
 

@@ -14,7 +14,6 @@ interface ThreadManForUser_Fpl {
 
 	fun ThreadManForUser.registerModuleFpl() {
 		registerFunctionRaw("sceKernelCreateFpl", 0xC07BB470, since = 150) { sceKernelCreateFpl(it) }
-
 		registerFunctionRaw("sceKernelTryAllocateFpl", 0x623AE665, since = 150) { sceKernelTryAllocateFpl(it) }
 		registerFunctionRaw("sceKernelCancelFpl", 0xA8AA591F, since = 150) { sceKernelCancelFpl(it) }
 		registerFunctionRaw("sceKernelReferFplStatus", 0xD8199E4C, since = 150) { sceKernelReferFplStatus(it) }

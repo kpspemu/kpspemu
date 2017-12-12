@@ -22,6 +22,7 @@ import com.soywiz.kpspemu.hle.manager._thread
 import com.soywiz.kpspemu.hle.manager.thread
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.threadManager
+import com.soywiz.kpspemu.util.StructType
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.coroutines.experimental.startCoroutine
 
@@ -51,9 +52,15 @@ class RegisterReader {
 	val ptr64: Ptr64 get() = Ptr64(ptr)
 	val str: String? get() = mem.readStringzOrNull(int)
 	val istr: String get() = mem.readStringzOrNull(int) ?: ""
+	val strnn: String get() = mem.readStringzOrNull(int) ?: ""
+	fun <T> ptr(s: StructType<T>) = PtrStruct(s, ptr)
 }
 
 data class NativeFunction(val name: String, val nid: Long, val since: Int, val syscall: Int, val function: (CpuState) -> Unit)
+
+open class SceSubmodule<T : SceModule>(val mmodule: T) : WithEmulator {
+	override val emulator: Emulator get() = mmodule.emulator
+}
 
 abstract class SceModule(
 	override val emulator: Emulator,

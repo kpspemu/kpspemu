@@ -72,6 +72,9 @@ class IntegrationTests {
 	@Ignore
 	@Test fun testVfpuVregs() = testFile("cpu/vfpu/vregs")
 
+	@Ignore
+	@Test fun testThreadsVplAllocate() = testFile("threads/vpl/allocate")
+
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),

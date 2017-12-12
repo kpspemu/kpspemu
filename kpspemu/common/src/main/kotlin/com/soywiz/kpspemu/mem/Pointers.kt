@@ -10,6 +10,7 @@ import com.soywiz.korio.stream.SyncStreamBase
 import com.soywiz.korio.stream.toSyncStream
 import com.soywiz.korio.util.unsigned
 import com.soywiz.kpspemu.util.Struct
+import com.soywiz.kpspemu.util.StructType
 import com.soywiz.kpspemu.util.read
 import com.soywiz.kpspemu.util.write
 
@@ -37,6 +38,16 @@ class Ptr64(override val ptr: Ptr) : BasePtr {
 	operator fun get(index: Int): Long = ptr.ldw(index * 8)
 	operator fun set(index: Int, value: Long) = ptr.sdw(index * 8, value)
 	operator fun plus(offset: Int) = Ptr64(ptr + offset * 8)
+}
+
+class PtrStruct<T>(val kind: StructType<T>, override val ptr: Ptr) : BasePtr {
+	val kindSize = kind.size
+
+	fun get(): T = this[0]
+	fun set(value: T) = run { this[0] = value }
+	operator fun get(index: Int): T = kind.read(ptr.openSync(index * kindSize))
+	operator fun set(index: Int, value: T) = kind.write(ptr.openSync(index * kindSize), value)
+	operator fun plus(offset: Int) = PtrStruct(kind, ptr + offset * kindSize)
 }
 
 interface Ptr : BasePtr {
@@ -72,6 +83,8 @@ object DummyPtr : Ptr {
 	override fun lw(offset: Int): Int = 0
 	override fun plus(offset: Int): Ptr = DummyPtr
 }
+
+val nullPtr = DummyPtr
 
 fun <T> Ptr.read(struct: Struct<T>): T = openSync().read(struct)
 fun <T> Ptr.write(struct: Struct<T>, value: T): Unit = openSync().write(struct, value)
@@ -127,7 +140,7 @@ fun Ptr.readStringz(charset: Charset = Charsets.UTF_8): String {
 	return out.toString(charset)
 }
 
-fun Ptr.openSync(): SyncStream {
+fun Ptr.openSync(offset: Int = 0): SyncStream {
 	return object : SyncStreamBase() {
 		override var length: Long = Long.MAX_VALUE
 		override fun close() = Unit
@@ -141,5 +154,5 @@ fun Ptr.openSync(): SyncStream {
 			val start = position.toInt()
 			for (n in 0 until len) sb(start + n, buffer[offset + n].toInt())
 		}
-	}.toSyncStream(0L)
+	}.toSyncStream(offset.toLong())
 }
