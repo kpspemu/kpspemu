@@ -45,7 +45,10 @@ class IntegrationTests {
 		"Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^"
 	))
 
-	//@Test fun testRtc() = testFile("rtc/rtc")
+	//@Test fun testRtcRtc() = testFile("rtc/rtc")
+
+	@Ignore
+	@Test fun testRtcArithmetic() = testFile("rtc/arithmetic")
 
 	@Test fun testThreadsK0() = testFile("threads/k0/k0")
 

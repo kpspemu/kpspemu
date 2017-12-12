@@ -39,8 +39,17 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		return 0
 	}
 
-	fun sceRtcTickAddMicroseconds(dst: Ptr, src: Ptr, count: Long): Int {
-		dst.sdw(0, src.ldw(0) + count)
+	fun sceRtcTickAddMicroseconds(dst: Ptr64, src: Ptr64, count: Long): Int {
+		dst.set(src.get() + count)
+		return 0
+	}
+
+	fun sceRtcCompareTick(tick1: Ptr64, tick2: Ptr64): Int {
+		return tick1.get().compareTo(tick2.get())
+	}
+
+	fun sceRtcTickAddTicks(dest: Ptr64, src: Ptr64, num: Long): Int {
+		dest.set(src.get() + num)
 		return 0
 	}
 
@@ -58,7 +67,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtcSetTime_t(cpu: CpuState): Unit = UNIMPLEMENTED(0x3A807CC8)
 	fun sceRtcIsLeapYear(cpu: CpuState): Unit = UNIMPLEMENTED(0x42307A17)
 	fun sceRtcTickAddYears(cpu: CpuState): Unit = UNIMPLEMENTED(0x42842C77)
-	fun sceRtcTickAddTicks(cpu: CpuState): Unit = UNIMPLEMENTED(0x44F45E05)
 	fun sceRtcCheckValid(cpu: CpuState): Unit = UNIMPLEMENTED(0x4B1B5E82)
 	fun sceRtcGetLastAdjustedTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x62685E98)
 	fun sceRtcUnregisterCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0x6A676D2D)
@@ -67,7 +75,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 	fun sceRtc_7D1FBED3(cpu: CpuState): Unit = UNIMPLEMENTED(0x7D1FBED3)
 	fun sceRtcFormatRFC2822LocalTime(cpu: CpuState): Unit = UNIMPLEMENTED(0x7DE6711B)
 	fun sceRtcIsAlarmed(cpu: CpuState): Unit = UNIMPLEMENTED(0x81FCDA34)
-	fun sceRtcCompareTick(cpu: CpuState): Unit = UNIMPLEMENTED(0x9ED0AE87)
 	fun sceRtc_A93CF7D8(cpu: CpuState): Unit = UNIMPLEMENTED(0xA93CF7D8)
 	fun sceRtc_C2DDBEB5(cpu: CpuState): Unit = UNIMPLEMENTED(0xC2DDBEB5)
 	fun sceRtcFormatRFC2822(cpu: CpuState): Unit = UNIMPLEMENTED(0xC663B3B9)
@@ -92,7 +99,9 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionInt("sceRtcGetTick", 0x6FF40ACC, since = 150) { sceRtcGetTick(ptr, ptr64) }
 		registerFunctionInt("sceRtcGetCurrentClock", 0x4CFA57B0, since = 150) { sceRtcGetCurrentClock(ptr, int) }
 		registerFunctionInt("sceRtcGetCurrentClockLocalTime", 0xE7C27D1B, since = 150) { sceRtcGetCurrentClockLocalTime(ptr) }
-		registerFunctionInt("sceRtcTickAddMicroseconds", 0x26D25A5D, since = 150) { sceRtcTickAddMicroseconds(ptr, ptr, long) }
+		registerFunctionInt("sceRtcTickAddMicroseconds", 0x26D25A5D, since = 150) { sceRtcTickAddMicroseconds(ptr64, ptr64, long) }
+		registerFunctionInt("sceRtcCompareTick", 0x9ED0AE87, since = 150) { sceRtcCompareTick(ptr64, ptr64) }
+		registerFunctionInt("sceRtcTickAddTicks", 0x44F45E05, since = 150) { sceRtcTickAddTicks(ptr64, ptr64, long) }
 
 		registerFunctionRaw("sceRtcGetAccumulativeTime", 0x011F03C1, since = 150) { sceRtcGetAccumulativeTime(it) }
 		registerFunctionRaw("sceRtcGetAccumlativeTime", 0x029CA3B3, since = 150) { sceRtcGetAccumlativeTime(it) }
@@ -108,7 +117,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtcSetTime_t", 0x3A807CC8, since = 150) { sceRtcSetTime_t(it) }
 		registerFunctionRaw("sceRtcIsLeapYear", 0x42307A17, since = 150) { sceRtcIsLeapYear(it) }
 		registerFunctionRaw("sceRtcTickAddYears", 0x42842C77, since = 150) { sceRtcTickAddYears(it) }
-		registerFunctionRaw("sceRtcTickAddTicks", 0x44F45E05, since = 150) { sceRtcTickAddTicks(it) }
 		registerFunctionRaw("sceRtcCheckValid", 0x4B1B5E82, since = 150) { sceRtcCheckValid(it) }
 		registerFunctionRaw("sceRtcGetLastAdjustedTime", 0x62685E98, since = 150) { sceRtcGetLastAdjustedTime(it) }
 		registerFunctionRaw("sceRtcUnregisterCallback", 0x6A676D2D, since = 150) { sceRtcUnregisterCallback(it) }
@@ -117,7 +125,6 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
 		registerFunctionRaw("sceRtc_7D1FBED3", 0x7D1FBED3, since = 150) { sceRtc_7D1FBED3(it) }
 		registerFunctionRaw("sceRtcFormatRFC2822LocalTime", 0x7DE6711B, since = 150) { sceRtcFormatRFC2822LocalTime(it) }
 		registerFunctionRaw("sceRtcIsAlarmed", 0x81FCDA34, since = 150) { sceRtcIsAlarmed(it) }
-		registerFunctionRaw("sceRtcCompareTick", 0x9ED0AE87, since = 150) { sceRtcCompareTick(it) }
 		registerFunctionRaw("sceRtc_A93CF7D8", 0xA93CF7D8, since = 150) { sceRtc_A93CF7D8(it) }
 		registerFunctionRaw("sceRtc_C2DDBEB5", 0xC2DDBEB5, since = 150) { sceRtc_C2DDBEB5(it) }
 		registerFunctionRaw("sceRtcFormatRFC2822", 0xC663B3B9, since = 150) { sceRtcFormatRFC2822(it) }
