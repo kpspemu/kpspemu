@@ -46,7 +46,6 @@ open class InstructionDecoder {
 	val Int.imm7: Int get() =this.extract(0, 7)
 	val Int.imm4: Int get() =this.extract(0, 4)
 
-
 	inline val Int.one: Int get() = this.extract(7, 1)
 	inline val Int.two: Int get() = this.extract(15, 1)
 	inline val Int.one_two: Int get() = (1 + 1 * this.one + 2 * this.two)

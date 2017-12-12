@@ -8,6 +8,7 @@ import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.syncTest
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.lang.Console
+import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.toAsync
 import com.soywiz.korio.util.hex
@@ -55,6 +56,9 @@ class IntegrationTests {
 
 	@Test fun testVfpuColors() = testFile("cpu/vfpu/colors")
 
+	@Ignore
+	@Test fun testVfpuConvert() = testFile("cpu/vfpu/convert")
+
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
@@ -85,6 +89,8 @@ class IntegrationTests {
 			LoggerManager.setLevel("ElfPsp", LogLevel.ERROR)
 		}
 
+		var generatedError: Throwable? = null
+
 		try {
 			//println("[1]")
 			while (emulator.running) {
@@ -99,7 +105,9 @@ class IntegrationTests {
 		} catch (e: Throwable) {
 			Console.error("Partial output generated:")
 			Console.error("'" + emulator.output.toString() + "'")
-			throw e
+			//throw e
+			e.printStackTrace()
+			generatedError = e
 		}
 
 		val ignoresRegex = ignores.map {
@@ -115,5 +123,6 @@ class IntegrationTests {
 		}
 		MyAssert.assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
 		//assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
+		generatedError?.let { throw it }
 	}
 }

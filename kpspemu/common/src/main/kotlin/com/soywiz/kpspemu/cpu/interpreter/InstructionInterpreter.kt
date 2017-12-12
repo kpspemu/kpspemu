@@ -339,6 +339,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	private val VDEST = IntArray(16)
 	private val VSRC = IntArray(16)
 
+	override fun lv_q(s: CpuState) = s {
+		val start = IR.s_imm14
+		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> s.setVfprI(r, mem.lw(start + i * 4 + 4)) }
+	}
+
 	override fun lvl_q(s: CpuState) = s {
 		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
 		mem.lvl_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
@@ -347,6 +352,11 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun lvr_q(s: CpuState) = s {
 		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
 		mem.lvr_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
+	}
+
+	override fun sv_q(s: CpuState) = s {
+		val start = IR.s_imm14
+		vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> mem.sw(start + i * 4, s.getVfprI(r)) }
 	}
 
 	override fun svl_q(s: CpuState) = s {
@@ -376,21 +386,44 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		(((i ushr 10) and 63) shl 5) or
 		(((i ushr 19) and 31) shl 11)
 
-	private fun _vtXXXX_q(s: CpuState, func: (Int) -> Int) = s {
+	private fun CpuState._vtXXXX_q(func: (Int) -> Int) = this {
 		if (IR.one_two != 4) invalidOp("Not implemented _vtXXXX_q for VectorSize=${IR.one_two}")
 		getVectorRegisters(VDEST, IR.vd, VectorSize.Pair)
-		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize.Quad)
+		getVectorRegisterValuesInt(this, VSRC, IR.vs, VectorSize.Quad)
 		//println(VSRC.toList())
 		VFPRI[VDEST[0]] = func(VSRC[0]) or (func(VSRC[1]) shl 16)
 		VFPRI[VDEST[1]] = func(VSRC[2]) or (func(VSRC[3]) shl 16)
 	}
 
-	override fun vt4444_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_4444)
-	override fun vt5551_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_5551)
-	override fun vt5650_q(s: CpuState) = _vtXXXX_q(s, this::cc_8888_to_5650)
+	override fun vt4444_q(s: CpuState) = s._vtXXXX_q(this::cc_8888_to_4444)
+	override fun vt5551_q(s: CpuState) = s._vtXXXX_q(this::cc_8888_to_5551)
+	override fun vt5650_q(s: CpuState) = s._vtXXXX_q(this::cc_8888_to_5650)
 
-	override fun sv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> mem.sw(start + i * 4, s.getVfprI(r)) } }
-	override fun lv_q(s: CpuState) = s { val start = IR.s_imm14; vectorRegisters(IR.vt5_1, VectorSize.Quad) { i, r -> s.setVfprI(r, mem.lw(start + i * 4 + 4)) } }
+	//static vc2i(index: number, value: number) {
+	//	return (value << ((3 - index) * 8)) & 0xFF000000;
+	//}
+	//static vuc2i(index: number, value: number) {
+	//	return ((((value >>> (index * 8)) & 0xFF) * 0x01010101) >> 1) & ~0x80000000;
+	//}
+	//vc2i(i: Instruction) { return this._vset2(i, (index, src) => call('MathVfpu.vc2i', [imm32(index), src[0]]), 0, 1, 'int', 'int'); }
+	//vuc2i(i: Instruction) { return this._vset2(i, (index, src) => call('MathVfpu.vuc2i', [imm32(index), src[0]]), 0, 1, 'int', 'int'); }
+	//private _vset2(i: Instruction, generate: (index: number, src: _ast.ANodeExprLValue[]) => _ast.ANodeExpr, destSize: number = 0, srcSize: number = 0, destType = 'float', srcType = 'float') {
+	//	var st:_ast.ANodeExpr[] = [];
+	//	var src = this._vset_readVS(st, i, srcType, srcSize);
+	//	this._vset_storeVD(st, i, destType, destSize, (index: number) => generate(index, src));
+	//	return stms(st);
+	//}
+
+	private fun _vc2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
+		getVectorRegisters(VSRC, IR.vs, VectorSize.Single)
+		getVectorRegisters(VDEST, IR.vd, VectorSize.Quad)
+		val value = VFPRI[VSRC[0]]
+		for (n in 0 until 4) VFPRI[VDEST[n]] = func(n, value)
+	}
+
+	override fun vc2i(s: CpuState) = _vc2i(s) { index, value -> (value shl ((3 - index) * 8)) and 0xFF000000.toInt() }
+	override fun vuc2i(s: CpuState) = _vc2i(s) { index, value -> ((((value ushr (index * 8)) and 0xFF) * 0x01010101) shr 1) and 0x80000000.toInt().inv() }
+
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
 	override fun vcst(s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
 	override fun mtv(s: CpuState) = s { VD_I = RT }
@@ -522,8 +555,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vlgb(s: CpuState) = unimplemented(s, Instructions.vlgb)
 	override fun vqmul(s: CpuState) = unimplemented(s, Instructions.vqmul)
 	override fun vs2i(s: CpuState) = unimplemented(s, Instructions.vs2i)
-	override fun vc2i(s: CpuState) = unimplemented(s, Instructions.vc2i)
-	override fun vuc2i(s: CpuState) = unimplemented(s, Instructions.vuc2i)
 	override fun vsbn(s: CpuState) = unimplemented(s, Instructions.vsbn)
 	override fun vsbz(s: CpuState) = unimplemented(s, Instructions.vsbz)
 	override fun vsocp(s: CpuState) = unimplemented(s, Instructions.vsocp)
@@ -539,11 +570,17 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Vectorial utilities
 
-	enum class VectorSize(val id: Int) { Single(1), Pair(2), Triple(3), Quad(4) }
-	enum class MatrixSize(val id: Int) { M_2x2(2), M_3x3(3), M_4x4(4);
-
+	enum class VectorSize(val id: Int) {
+		Single(1), Pair(2), Triple(3), Quad(4);
 		companion object {
-			val items = arrayListOf(M_2x2, M_2x2, M_2x2, M_3x3, M_4x4)
+			val items = arrayOf(Single, Single, Pair, Triple, Quad)
+			operator fun invoke(size: Int) = items[size]
+		}
+	}
+	enum class MatrixSize(val id: Int) { M_2x2(2), M_3x3(3), M_4x4(4);
+		companion object {
+			val items = arrayOf(M_2x2, M_2x2, M_2x2, M_3x3, M_4x4)
+			operator fun invoke(size: Int) = items[size]
 		}
 	}
 
@@ -625,6 +662,13 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	//		}
 	//	}
 	//}
+
+	private val tempRegs = IntArray(16)
+
+	fun getVectorRegister(vectorReg: Int, N: VectorSize = VectorSize.Single, index: Int = 0): Int {
+		vectorRegisters(vectorReg, N) { i, r -> tempRegs[i] = r }
+		return tempRegs[index]
+	}
 
 	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: VectorSize) {
 		vectorRegisters(vectorReg, N) { i, r ->
