@@ -58,6 +58,8 @@ class IntegrationTests {
 
 	@Test fun testVfpuConvert() = testFile("cpu/vfpu/convert")
 
+	@Test fun testVfpuVavg() = testFile("cpu/vfpu/vavg")
+
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),

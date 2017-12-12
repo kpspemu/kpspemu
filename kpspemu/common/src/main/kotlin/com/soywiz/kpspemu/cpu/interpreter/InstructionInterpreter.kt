@@ -609,6 +609,18 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vmul(s: CpuState) = s { setVD_VSVT { vs[it] * vt[it] } }
 	override fun vdiv(s: CpuState) = s { setVD_VSVT { vs[it] / vt[it] } }
 	override fun vadd(s: CpuState) = s { setVD_VSVT { vs[it] + vt[it] } }
+	override fun vavg(s: CpuState) =  s {
+		val size = IR.one_two
+		getVectorRegisterValuesFloat(s, VSRCF, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize.Single)
+		VFPR[VDEST[0]] = ((0 until size).sumByDouble { (VSRCF[it] / size).toDouble() }).toFloat()
+	}
+	override fun vfad(s: CpuState) = s {
+		val size = IR.one_two
+		getVectorRegisterValuesFloat(s, VSRCF, IR.vs, VectorSize(size))
+		getVectorRegisters(VDEST, IR.vd, VectorSize.Single)
+		VFPR[VDEST[0]] = ((0 until size).sumByDouble { VSRCF[it].toDouble() }).toFloat()
+	}
 	override fun vsub(s: CpuState) = s { setVD_VSVT { vs[it] - vt[it] } }
 	override fun vrot(s: CpuState) = s {
 		val vectorSize = IR.one_two
@@ -689,7 +701,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vhtfm3(s: CpuState) = unimplemented(s, Instructions.vhtfm3)
 	override fun vhtfm4(s: CpuState) = unimplemented(s, Instructions.vhtfm4)
 	override fun vsrt3(s: CpuState) = unimplemented(s, Instructions.vsrt3)
-	override fun vfad(s: CpuState) = unimplemented(s, Instructions.vfad)
 	override fun vmin(s: CpuState) = unimplemented(s, Instructions.vmin)
 	override fun vmax(s: CpuState) = unimplemented(s, Instructions.vmax)
 	override fun vidt(s: CpuState) = unimplemented(s, Instructions.vidt)
@@ -704,7 +715,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vcmp(s: CpuState) = unimplemented(s, Instructions.vcmp)
 	override fun vcmovf(s: CpuState) = unimplemented(s, Instructions.vcmovf)
 	override fun vcmovt(s: CpuState) = unimplemented(s, Instructions.vcmovt)
-	override fun vavg(s: CpuState) = unimplemented(s, Instructions.vavg)
 	override fun vscmp(s: CpuState) = unimplemented(s, Instructions.vscmp)
 	override fun vmscl(s: CpuState) = unimplemented(s, Instructions.vmscl)
 	override fun vmfvc(s: CpuState) = unimplemented(s, Instructions.vmfvc)

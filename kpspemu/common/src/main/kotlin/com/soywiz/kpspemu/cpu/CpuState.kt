@@ -117,7 +117,9 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	var _FI = _FMem.asInt32Buffer()
 
 	val _VFPRMem = MemBufferAlloc(128 * 4)
-	val _VFPR = _VFPRMem.asFloat32Buffer()
+	val _VFPR = _VFPRMem.asFloat32Buffer().apply {
+		for (n in 0 until 128) this[n] = Float.NaN
+	}
 	val _VFPR_I = _VFPRMem.asInt32Buffer()
 
 	var fcr0: Int = 0x00003351
