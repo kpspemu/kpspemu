@@ -34,7 +34,8 @@ Or open `build.gradle` with intelliJ and open `kspspemu/common/src/main/kotlin/c
 ### Youtube Coding Video Blog
 
 * Vertex Decoder [[Part 1](https://youtu.be/-a6Igq_XiPc)] [[Part 2](https://youtu.be/TZzSfTxDjTo)]
-* [Fix Ortho Sample (madd ins + sceCtrl)](https://youtu.be/REF_wFJE85c) 
+* [Fix Ortho Sample (madd ins + sceCtrl)](https://youtu.be/REF_wFJE85c)
+* 2017-12-12: [Splitting ThreadManForUser in intelliJ](https://www.youtube.com/watch?v=fdcpPWjxl1A)
 
 ### Current state:
 Right now it is capable to run some homebrew in interpreted mode and starts to run some early simple commercial games.
