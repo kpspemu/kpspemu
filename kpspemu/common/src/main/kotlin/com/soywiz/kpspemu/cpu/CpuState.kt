@@ -6,6 +6,7 @@ import com.soywiz.kmem.*
 import com.soywiz.korio.error.invalidArg
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
+import com.soywiz.korio.util.clamp
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.DummyMemory
@@ -134,9 +135,9 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	var fcr28: Int = 0
 	var fcr31: Int = 0x00000e00
 
-	var vpfxs = VfpuSourceTargetPrefix()
-	var vpfxt = VfpuSourceTargetPrefix()
-	var vpfxd = VfpuDestinationPrefix()
+	var vpfxs = VfpuSourceTargetPrefix(VFPRC, CpuState.VFPU_CTRL.SPREFIX)
+	var vpfxt = VfpuSourceTargetPrefix(VFPRC, CpuState.VFPU_CTRL.TPREFIX)
+	var vpfxd = VfpuDestinationPrefix(VFPRC, CpuState.VFPU_CTRL.DPREFIX)
 
 	fun updateFCR31(value: Int) {
 		fcr31 = value and 0x0183FFFF
@@ -390,30 +391,29 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	}
 }
 
-open class VfpuPrefix(val defaultValue: Int) {
-	var info = defaultValue
+open class VfpuPrefix(val defaultValue: Int, val array: IntArray, val arrayIndex: Int) {
+	var info get() = array[arrayIndex]; set(value) = run { array[arrayIndex] = value }
 	var enabled = false
-
-	fun setUnknown() {
-		info = defaultValue
-		enabled = false
-	}
 
 	fun setEnable(v: Int) {
 		info = v
 		enabled = true
 	}
+
+	fun consume() {
+		enabled = false
+	}
 }
 
-class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
-	private val temp = FloatArray(16)
+class VfpuSourceTargetPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt(), array, arrayIndex) {
+	private val temp = Float32BufferAlloc(16)
 
-	fun applyAndConsume(input: FloatArray, output: FloatArray = input, size: Int = input.size) {
+	fun applyAndConsume(input: Float32Buffer, output: Float32Buffer = input, size: Int = input.size) {
 		apply(input, output, size)
 		enabled = false
 	}
 
-	fun apply(input: FloatArray, output: FloatArray = input, size: Int = input.size) {
+	fun apply(input: Float32Buffer, output: Float32Buffer = input, size: Int = input.size) {
 		if (!enabled) {
 			for (n in 0 until size) output[n] = input[n]
 		} else {
@@ -442,7 +442,23 @@ class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
 	}
 }
 
-class VfpuDestinationPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
+class VfpuDestinationPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt(), array, arrayIndex) {
+	fun mask(n: Int) = ((info ushr (8 + n * 1)) and 1) != 0
+	fun saturation(n: Int) = (info ushr (0 + n * 2)) and 3
+
+	fun transform(n: Int, original: Float): Float {
+		if (mask(n)) {
+			return original
+		} else {
+			return when (saturation(n)) {
+				1 -> original.clamp(0f, 1f)
+				3 -> original.clamp(-1f, 1f)
+				else -> original
+			}
+		}
+
+	}
+
 }
 
 /*
@@ -563,64 +579,76 @@ class CpuState(val mem: Memory, val syscalls: Syscalls = TraceSyscallHandler()) 
 }
 */
 
+enum class VfpuSingleRegisters {
+	S000,  S010,  S020,  S030,  S100,  S110,  S120,  S130,
+	S200,  S210,  S220,  S230,  S300,  S310,  S320,  S330,
+	S400,  S410,  S420,  S430,  S500,  S510,  S520,  S530,
+	S600,  S610,  S620,  S630,  S700,  S710,  S720,  S730,
+	S001,  S011,  S021,  S031,  S101,  S111,  S121,  S131,
+	S201,  S211,  S221,  S231,  S301,  S311,  S321,  S331,
+	S401,  S411,  S421,  S431,  S501,  S511,  S521,  S531,
+	S601,  S611,  S621,  S631,  S701,  S711,  S721,  S731,
+	S002,  S012,  S022,  S032,  S102,  S112,  S122,  S132,
+	S202,  S212,  S222,  S232,  S302,  S312,  S322,  S332,
+	S402,  S412,  S422,  S432,  S502,  S512,  S522,  S532,
+	S602,  S612,  S622,  S632,  S702,  S712,  S722,  S732,
+	S003,  S013,  S023,  S033,  S103,  S113,  S123,  S133,
+	S203,  S213,  S223,  S233,  S303,  S313,  S323,  S333,
+	S403,  S413,  S423,  S433,  S503,  S513,  S523,  S533,
+	S603,  S613,  S623,  S633,  S703,  S713,  S723,  S733;
+
+	companion object {
+		val values = values()
+	}
+}
+
+enum class VfpuPairRegisters {
+	C000,  C010,  C020,  C030,  C100,  C110,  C120,  C130,
+	C200,  C210,  C220,  C230,  C300,  C310,  C320,  C330,
+	C400,  C410,  C420,  C430,  C500,  C510,  C520,  C530,
+	C600,  C610,  C620,  C630,  C700,  C710,  C720,  C730,
+	R000,  R001,  R002,  R003,  R100,  R101,  R102,  R103,
+	R200,  R201,  R202,  R203,  R300,  R301,  R302,  R303,
+	R400,  R401,  R402,  R403,  R500,  R501,  R502,  R503,
+	R600,  R601,  R602,  R603,  R700,  R701,  R702,  R703,
+	C002,  C012,  C022,  C032,  C102,  C112,  C122,  C132,
+	C202,  C212,  C222,  C232,  C302,  C312,  C322,  C332,
+	C402,  C412,  C422,  C432,  C502,  C512,  C522,  C532,
+	C602,  C612,  C622,  C632,  C702,  C712,  C722,  C732,
+	R020,  R021,  R022,  R023,  R120,  R121,  R122,  R123,
+	R220,  R221,  R222,  R223,  R320,  R321,  R322,  R323,
+	R420,  R421,  R422,  R423,  R520,  R521,  R522,  R523,
+	R620,  R621,  R622,  R623,  R720,  R721,  R722,  R723;
+
+	companion object {
+		val values = values()
+	}
+}
+
+enum class VfpuTripletRegisters {
+	C000,  C010,  C020,  C030,  C100,  C110,  C120,  C130,
+	C200,  C210,  C220,  C230,  C300,  C310,  C320,  C330,
+	C400,  C410,  C420,  C430,  C500,  C510,  C520,  C530,
+	C600,  C610,  C620,  C630,  C700,  C710,  C720,  C730,
+	R000,  R001,  R002,  R003,  R100,  R101,  R102,  R103,
+	R200,  R201,  R202,  R203,  R300,  R301,  R302,  R303,
+	R400,  R401,  R402,  R403,  R500,  R501,  R502,  R503,
+	R600,  R601,  R602,  R603,  R700,  R701,  R702,  R703,
+	C001,  C011,  C021,  C031,  C101,  C111,  C121,  C131,
+	C201,  C211,  C221,  C231,  C301,  C311,  C321,  C331,
+	C401,  C411,  C421,  C431,  C501,  C511,  C521,  C531,
+	C601,  C611,  C621,  C631,  C701,  C711,  C721,  C731,
+	R010,  R011,  R012,  R013,  R110,  R111,  R112,  R113,
+	R210,  R211,  R212,  R213,  R310,  R311,  R312,  R313,
+	R410,  R411,  R412,  R413,  R510,  R511,  R512,  R513,
+	R610,  R611,  R612,  R613,  R710,  R711,  R712,  R713;
+
+	companion object {
+		val values = VfpuPairRegisters.values()
+	}
+}
+
 /*
-+static const char * const vfpu_sreg_names[128] = {
-+  "S000",  "S010",  "S020",  "S030",  "S100",  "S110",  "S120",  "S130",
-+  "S200",  "S210",  "S220",  "S230",  "S300",  "S310",  "S320",  "S330",
-+  "S400",  "S410",  "S420",  "S430",  "S500",  "S510",  "S520",  "S530",
-+  "S600",  "S610",  "S620",  "S630",  "S700",  "S710",  "S720",  "S730",
-+  "S001",  "S011",  "S021",  "S031",  "S101",  "S111",  "S121",  "S131",
-+  "S201",  "S211",  "S221",  "S231",  "S301",  "S311",  "S321",  "S331",
-+  "S401",  "S411",  "S421",  "S431",  "S501",  "S511",  "S521",  "S531",
-+  "S601",  "S611",  "S621",  "S631",  "S701",  "S711",  "S721",  "S731",
-+  "S002",  "S012",  "S022",  "S032",  "S102",  "S112",  "S122",  "S132",
-+  "S202",  "S212",  "S222",  "S232",  "S302",  "S312",  "S322",  "S332",
-+  "S402",  "S412",  "S422",  "S432",  "S502",  "S512",  "S522",  "S532",
-+  "S602",  "S612",  "S622",  "S632",  "S702",  "S712",  "S722",  "S732",
-+  "S003",  "S013",  "S023",  "S033",  "S103",  "S113",  "S123",  "S133",
-+  "S203",  "S213",  "S223",  "S233",  "S303",  "S313",  "S323",  "S333",
-+  "S403",  "S413",  "S423",  "S433",  "S503",  "S513",  "S523",  "S533",
-+  "S603",  "S613",  "S623",  "S633",  "S703",  "S713",  "S723",  "S733"
-+};
-+
-+static const char * const vfpu_vpreg_names[128] = {
-+  "C000",  "C010",  "C020",  "C030",  "C100",  "C110",  "C120",  "C130",
-+  "C200",  "C210",  "C220",  "C230",  "C300",  "C310",  "C320",  "C330",
-+  "C400",  "C410",  "C420",  "C430",  "C500",  "C510",  "C520",  "C530",
-+  "C600",  "C610",  "C620",  "C630",  "C700",  "C710",  "C720",  "C730",
-+  "R000",  "R001",  "R002",  "R003",  "R100",  "R101",  "R102",  "R103",
-+  "R200",  "R201",  "R202",  "R203",  "R300",  "R301",  "R302",  "R303",
-+  "R400",  "R401",  "R402",  "R403",  "R500",  "R501",  "R502",  "R503",
-+  "R600",  "R601",  "R602",  "R603",  "R700",  "R701",  "R702",  "R703",
-+  "C002",  "C012",  "C022",  "C032",  "C102",  "C112",  "C122",  "C132",
-+  "C202",  "C212",  "C222",  "C232",  "C302",  "C312",  "C322",  "C332",
-+  "C402",  "C412",  "C422",  "C432",  "C502",  "C512",  "C522",  "C532",
-+  "C602",  "C612",  "C622",  "C632",  "C702",  "C712",  "C722",  "C732",
-+  "R020",  "R021",  "R022",  "R023",  "R120",  "R121",  "R122",  "R123",
-+  "R220",  "R221",  "R222",  "R223",  "R320",  "R321",  "R322",  "R323",
-+  "R420",  "R421",  "R422",  "R423",  "R520",  "R521",  "R522",  "R523",
-+  "R620",  "R621",  "R622",  "R623",  "R720",  "R721",  "R722",  "R723"
-+};
-+
-+static const char * const vfpu_vtreg_names[128] = {
-+  "C000",  "C010",  "C020",  "C030",  "C100",  "C110",  "C120",  "C130",
-+  "C200",  "C210",  "C220",  "C230",  "C300",  "C310",  "C320",  "C330",
-+  "C400",  "C410",  "C420",  "C430",  "C500",  "C510",  "C520",  "C530",
-+  "C600",  "C610",  "C620",  "C630",  "C700",  "C710",  "C720",  "C730",
-+  "R000",  "R001",  "R002",  "R003",  "R100",  "R101",  "R102",  "R103",
-+  "R200",  "R201",  "R202",  "R203",  "R300",  "R301",  "R302",  "R303",
-+  "R400",  "R401",  "R402",  "R403",  "R500",  "R501",  "R502",  "R503",
-+  "R600",  "R601",  "R602",  "R603",  "R700",  "R701",  "R702",  "R703",
-+  "C001",  "C011",  "C021",  "C031",  "C101",  "C111",  "C121",  "C131",
-+  "C201",  "C211",  "C221",  "C231",  "C301",  "C311",  "C321",  "C331",
-+  "C401",  "C411",  "C421",  "C431",  "C501",  "C511",  "C521",  "C531",
-+  "C601",  "C611",  "C621",  "C631",  "C701",  "C711",  "C721",  "C731",
-+  "R010",  "R011",  "R012",  "R013",  "R110",  "R111",  "R112",  "R113",
-+  "R210",  "R211",  "R212",  "R213",  "R310",  "R311",  "R312",  "R313",
-+  "R410",  "R411",  "R412",  "R413",  "R510",  "R511",  "R512",  "R513",
-+  "R610",  "R611",  "R612",  "R613",  "R710",  "R711",  "R712",  "R713"
-+};
-+
 +static const char * const vfpu_vqreg_names[128] = {
 +  "C000",  "C010",  "C020",  "C030",  "C100",  "C110",  "C120",  "C130",
 +  "C200",  "C210",  "C220",  "C230",  "C300",  "C310",  "C320",  "C330",

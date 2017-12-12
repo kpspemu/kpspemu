@@ -200,6 +200,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun lh(s: CpuState) = s { RT = mem.lh(RS_IMM16) }
 	override fun lhu(s: CpuState) = s { RT = mem.lhu(RS_IMM16) }
 	override fun lw(s: CpuState) = s { RT = mem.lw(RS_IMM16) }
+	override fun ll(s: CpuState) = s { RT = mem.lw(RS_IMM16) }
 
 	override fun lwl(s: CpuState) = s { RT = mem.lwl(RS_IMM16, RT) }
 	override fun lwr(s: CpuState) = s { RT = mem.lwr(RS_IMM16, RT) }
@@ -210,6 +211,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun sb(s: CpuState) = s { mem.sb(RS_IMM16, RT) }
 	override fun sh(s: CpuState) = s { mem.sh(RS_IMM16, RT) }
 	override fun sw(s: CpuState) = s { mem.sw(RS_IMM16, RT) }
+	override fun sc(s: CpuState) = s { mem.sw(RS_IMM16, RT); RT = 1 }
 
 	override fun lwc1(s: CpuState) = s { FT_I = mem.lw(RS_IMM16) }
 	override fun swc1(s: CpuState) = s { mem.sw(RS_IMM16, FT_I) }
@@ -504,7 +506,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vone(s: CpuState) = s { setVD_ { 1f } }
 
 	// Vector operations (one operand)
-	override fun vmov(s: CpuState) = s { setVD_VS { vs[it] } }
+	override fun vmov(s: CpuState) = s { setVD_VS(prefixes = true) { vs[it] } }
 	override fun vabs(s: CpuState) = s { setVD_VS { abs(vs[it]) } }
 	override fun vsqrt(s: CpuState) = s { setVD_VS { sqrt(vs[it]) } }
 	override fun vneg(s: CpuState) = s { setVD_VS { -vs[it] } }
@@ -684,16 +686,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	override fun mfvc(s: CpuState) = s { RT = VFPRC[IR.imm7] }
-	override fun mtvc(s: CpuState) = s {
-		vpfxs
-		when (IR.imm7) {
-			0 -> return@s this.vpfxs.setUnknown()
-			1 -> return@s this.vpfxt.setUnknown()
-			2 -> return@s this.vpfxd.setUnknown()
-		}
-		VFPRC[IR.imm7] = RT
-
-	}
+	override fun mtvc(s: CpuState) = s { VFPRC[IR.imm7] = RT }
 
 	private fun _vtfm_x(s: CpuState, size: Int) = s { vfpuContext.run {
 		getVectorRegisterValues(b_vt, IR.vt, size)
@@ -890,15 +883,17 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		var Int32Buffer.z: Int get() = this[2]; set(value) = run { this[2] = value }
 		var Int32Buffer.w: Int get() = this[3]; set(value) = run { this[3] = value }
 
-		fun CpuState.readVs(reg: Int = IR.vs, size: Int = IR.one_two): Float32Buffer {
+		fun CpuState.readVs(reg: Int = IR.vs, size: Int = IR.one_two, prefixes: Boolean = false): Float32Buffer {
 			vsSize = size
 			getVectorRegisterValues(b_vs, reg, size)
+			if (prefixes) this.vpfxs.applyAndConsume(vs, size = size)
 			return vs
 		}
 
-		fun CpuState.readVt(reg: Int = IR.vt, size: Int = IR.one_two): Float32Buffer {
+		fun CpuState.readVt(reg: Int = IR.vt, size: Int = IR.one_two, prefixes: Boolean = false): Float32Buffer {
 			vtSize = size
 			getVectorRegisterValues(b_vt, reg, size)
+			if (prefixes) this.vpfxt.applyAndConsume(vt, size = size)
 			return vt
 		}
 
@@ -908,8 +903,15 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			return vd
 		}
 
-		fun CpuState.writeVd(reg: Int = IR.vd, size: Int = IR.one_two) {
-			setVectorRegisterValues(b_vd, reg, size)
+		fun CpuState.writeVd(reg: Int = IR.vd, size: Int = IR.one_two, prefixes: Boolean = false) {
+			if (prefixes) {
+				vectorRegisters(reg, size) { i, r ->
+					if (!vpfxd.mask(i)) setVfpr(r, vpfxd.transform(i, vd[i]))
+				}
+				vpfxd.consume()
+			} else {
+				vectorRegisters(reg, size) { i, r -> setVfprI(r, vdi[i]) }
+			}
 		}
 
 		fun sreadVs(s: CpuState, reg: Int = s.IR.vs, size: Int = s.IR.one_two) = s.readVs(reg, size)
@@ -920,45 +922,45 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	val vfpuContext = VfpuContext()
 
-	fun CpuState.setVD_(destSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	fun CpuState.setVD_(destSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vdSize = destSize
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
-		writeVd(size = destSize)
+		writeVd(size = destSize, prefixes = prefixes)
 	}
 
-	fun CpuState.setVD_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	fun CpuState.setVD_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vdSize = destSize
-		readVs(size = srcSize)
+		readVs(size = srcSize, prefixes = prefixes)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
-		writeVd(size = destSize)
+		writeVd(size = destSize, prefixes = prefixes)
 	}
 
-	fun CpuState.setVDI_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
+	fun CpuState.setVDI_VS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Int) = vfpuContext.run {
 		vdSize = destSize
-		readVs(size = srcSize)
+		readVs(size = srcSize, prefixes = prefixes)
 		for (n in 0 until destSize) vdi[n] = callback(vfpuContext, n)
-		writeVd(size = destSize)
+		writeVd(size = destSize, prefixes = prefixes)
 	}
 
-	fun CpuState.setVD_VDVS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	fun CpuState.setVD_VDVS(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vdSize = destSize
-		readVs(size = srcSize)
+		readVs(size = srcSize, prefixes = prefixes)
 		readVd(size = destSize)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
-		writeVd(size = destSize)
+		writeVd(size = destSize, prefixes = prefixes)
 	}
 
-	fun CpuState.setVD_VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
+	fun CpuState.setVD_VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Float) = vfpuContext.run {
 		vfpuContext.vdSize = destSize
-		readVs(size = srcSize)
-		readVt(size = targetSize)
+		readVs(size = srcSize, prefixes = prefixes)
+		readVt(size = targetSize, prefixes = prefixes)
 		for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
-		writeVd(size = destSize)
+		writeVd(size = destSize, prefixes = prefixes)
 	}
 
-	fun CpuState._VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, callback: VfpuContext.(i: Int) -> Unit) = vfpuContext.run {
-		readVs(size = srcSize)
-		readVt(size = targetSize)
+	fun CpuState._VSVT(destSize: Int = IR.one_two, srcSize: Int = IR.one_two, targetSize: Int = srcSize, prefixes: Boolean = false, callback: VfpuContext.(i: Int) -> Unit) = vfpuContext.run {
+		readVs(size = srcSize, prefixes = prefixes)
+		readVt(size = targetSize, prefixes = prefixes)
 		for (n in 0 until destSize) callback(vfpuContext, n)
 	}
 
@@ -995,9 +997,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	// Not implemented instructions!
-
-	override fun ll(s: CpuState) = unimplemented(s, Instructions.ll)
-	override fun sc(s: CpuState) = unimplemented(s, Instructions.sc)
 
 	override fun cache(s: CpuState) = unimplemented(s, Instructions.cache)
 	override fun sync(s: CpuState) = unimplemented(s, Instructions.sync)
