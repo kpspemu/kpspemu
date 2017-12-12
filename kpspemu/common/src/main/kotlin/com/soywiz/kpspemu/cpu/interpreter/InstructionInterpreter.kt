@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.cpu.interpreter
 
 import com.soywiz.kmem.FastMemory
 import com.soywiz.kmem.get
+import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Console
 import com.soywiz.korio.lang.format
@@ -438,6 +439,15 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vs2i(s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 16 }
 	override fun vus2i(s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 15 }
 
+	private fun _vi2c(s: CpuState, gen: (value: Int) -> Int) = s {
+		getVectorRegisterValuesInt(s, VSRC, IR.vs, VectorSize.Quad)
+		getVectorRegisters(VDEST, IR.vd, VectorSize.Single)
+		VFPRI[VDEST[0]] = RGBA.packFast(gen(VSRC[0]), gen(VSRC[1]), gen(VSRC[2]), gen(VSRC[3]))
+	}
+
+	override fun vi2c(s: CpuState) = _vi2c(s) { it.extract8(24) }
+	override fun vi2uc(s: CpuState) = _vi2c(s) { if (it < 0) 0 else it.extract8(23) }
+
 	override fun viim(s: CpuState) = s { VT = S_IMM16.toFloat() }
 	override fun vcst(s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
 	override fun mtv(s: CpuState) = s { VD_I = RT }
@@ -522,8 +532,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vhdp(s: CpuState) = unimplemented(s, Instructions.vhdp)
 	override fun vcrs_t(s: CpuState) = unimplemented(s, Instructions.vcrs_t)
 	override fun vcrsp_t(s: CpuState) = unimplemented(s, Instructions.vcrsp_t)
-	override fun vi2c(s: CpuState) = unimplemented(s, Instructions.vi2c)
-	override fun vi2uc(s: CpuState) = unimplemented(s, Instructions.vi2uc)
 	override fun vtfm2(s: CpuState) = unimplemented(s, Instructions.vtfm2)
 	override fun vtfm3(s: CpuState) = unimplemented(s, Instructions.vtfm3)
 	override fun vtfm4(s: CpuState) = unimplemented(s, Instructions.vtfm4)
