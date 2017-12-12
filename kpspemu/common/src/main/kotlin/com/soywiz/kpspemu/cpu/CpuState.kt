@@ -406,10 +406,18 @@ open class VfpuPrefix(val defaultValue: Int) {
 }
 
 class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
-	fun transformValues(input: FloatArray, output: FloatArray, size: Int = input.size) {
+	private val temp = FloatArray(16)
+
+	fun applyAndConsume(input: FloatArray, output: FloatArray = input, size: Int = input.size) {
+		apply(input, output, size)
+		enabled = false
+	}
+
+	fun apply(input: FloatArray, output: FloatArray = input, size: Int = input.size) {
 		if (!enabled) {
 			for (n in 0 until size) output[n] = input[n]
 		} else {
+			arraycopy(input, 0, temp, 0, size)
 			for (n in 0 until size) {
 				val sourceIndex = (info ushr (0 + n * 2)) and 3
 				val sourceAbsolute = ((info ushr (8 + n * 1)) and 1) != 0
@@ -425,7 +433,7 @@ class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
 						else -> invalidOp
 					}
 				} else {
-					if (sourceAbsolute) input[sourceIndex].absoluteValue else input[sourceIndex]
+					if (sourceAbsolute) temp[sourceIndex].absoluteValue else temp[sourceIndex]
 				}
 
 				output[n] = if (sourceNegate) -value else value

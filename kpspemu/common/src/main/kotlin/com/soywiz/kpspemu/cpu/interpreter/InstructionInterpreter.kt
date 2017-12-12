@@ -338,20 +338,16 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	private val VDEST2 = IntArray2(4, 4)
-	private val VDEST = IntArray(16)
 	private val VSRC = IntArray(16)
-	private val VTARGET = IntArray(16)
-
-	private val VSRCF = FloatArray(16)
 
 	private fun _lv_x(s: CpuState, size: Int) = s {
-		getVectorRegisters(VSRC, IR.vt5_1, VectorSize(size))
+		getVectorRegisters(VSRC, IR.vt5_1, size)
 		val start = RS_IMM14
 		for (n in 0 until size) s.VFPRI[VSRC[n]] = mem.lw(start + n * 4)
 	}
 
 	private fun _sv_x(s: CpuState, size: Int) = s {
-		getVectorRegisters(VSRC, IR.vt5_1, VectorSize(size))
+		getVectorRegisters(VSRC, IR.vt5_1, size)
 		val start = RS_IMM14
 		for (n in 0 until size) mem.sw(start + n * 4, s.VFPRI[VSRC[n]])
 	}
@@ -363,22 +359,22 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun sv_q(s: CpuState) = _sv_x(s, 4)
 
 	override fun lvl_q(s: CpuState) = s {
-		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		getVectorRegisters(VSRC, IR.vt5_1, 4)
 		mem.lvl_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
 	}
 
 	override fun lvr_q(s: CpuState) = s {
-		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		getVectorRegisters(VSRC, IR.vt5_1, 4)
 		mem.lvr_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
 	}
 
 	override fun svl_q(s: CpuState) = s {
-		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		getVectorRegisters(VSRC, IR.vt5_1, 4)
 		mem.svl_q(RS_IMM14) { getVfprI(VSRC[it]) }
 	}
 
 	override fun svr_q(s: CpuState) = s {
-		getVectorRegisters(VSRC, IR.vt5_1, VectorSize.Quad)
+		getVectorRegisters(VSRC, IR.vt5_1, 4)
 		mem.svr_q(RS_IMM14) { getVfprI(VSRC[it]) }
 	}
 
@@ -433,151 +429,37 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vi2uc(s: CpuState) = _vi2c(s) { if (it < 0) 0 else it.extract8(23) }
 
 	private fun _vi2s(s: CpuState, gen: (value: Int) -> Int) = s {
-		val size = IR.one_two
-		val dsize = size / 2
-		getVectorRegisterValuesInt(VSRC, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize(dsize))
-		for (n in 0 until dsize) {
-			val l = gen(VSRC[n * 2 + 0])
-			val r = gen(VSRC[n * 2 + 1])
-			VFPRI[VDEST[n]] = l or (r shl 16)
+		setVDI_VS(destSize = IR.one_two / 2) {
+			val l = gen(vsi[it * 2 + 0])
+			val r = gen(vsi[it * 2 + 1])
+			l or (r shl 16)
 		}
 	}
 
 	override fun vi2s(s: CpuState) = _vi2s(s) { it ushr 16 }
 	override fun vi2us(s: CpuState) = _vi2s(s) { if (it < 0) 0 else it shr 15 }
-
-
-	override fun vi2f(s: CpuState) = s {
-		val size = IR.one_two
-		getVectorRegisterValuesInt(VSRC, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize(size))
-		for (n in 0 until size) {
-			VFPR[VDEST[n]] = VSRC[n] * 2f.pow(-IR.imm5)
-		}
-	}
+	override fun vi2f(s: CpuState) = s { setVD_VS { vsi[it] * 2f.pow(-IR.imm5) } }
 
 	private fun _vf2ix(s: CpuState, func: (value: Float, imm5: Int) -> Int) = s {
-		val size = IR.one_two
-		getVectorRegisterValuesFloat(VSRCF, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize(size))
-		for (n in 0 until size) {
-			//println("${VSRCF[n]} : ${IR.imm5}")
-			val value = VSRCF[n]
-			VFPRI[VDEST[n]] = if (value.isNaN()) 0x7FFFFFFF else func(value, IR.imm5)
-		}
+		setVDI_VS { if (vs[it].isNaN()) 0x7FFFFFFF else func(vs[it], IR.imm5) }
 	}
 
-	// @TODO: Verify these ones!
 	override fun vf2id(s: CpuState) = _vf2ix(s) { value, imm5 -> floor(value * 2f.pow(imm5)).toInt() }
-
 	override fun vf2iu(s: CpuState) = _vf2ix(s) { value, imm5 -> ceil(value * 2f.pow(imm5)).toInt() }
 	override fun vf2in(s: CpuState) = _vf2ix(s) { value, imm5 -> Math.rint((value * 2f.pow(imm5))) }
 	override fun vf2iz(s: CpuState) = _vf2ix(s) { value, imm5 -> val rs = value * 2f.pow(imm5); if (value >= 0) floor(rs).toInt() else ceil(rs).toInt() }
 
 	override fun vf2h(s: CpuState) = s {
-		val size = IR.one_two
-		val dsize = size / 2
-		getVectorRegisterValuesInt(VSRC, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize(dsize))
-		for (n in 0 until dsize) {
-			val l = HalfFloat.floatBitsToHalfFloatBits(VSRC[n * 2 + 0])
-			val r = HalfFloat.floatBitsToHalfFloatBits(VSRC[n * 2 + 1])
-			VFPRI[VDEST[n]] = (l) or (r shl 16)
+		setVDI_VS(destSize = IR.one_two / 2) {
+			val l = HalfFloat.floatBitsToHalfFloatBits(vsi[it * 2 + 0])
+			val r = HalfFloat.floatBitsToHalfFloatBits(vsi[it * 2 + 1])
+			(l) or (r shl 16)
 		}
 	}
 
 	override fun vh2f(s: CpuState) = s {
-		val size = IR.one_two
-		val dsize = size * 2
-		getVectorRegisterValuesInt(VSRC, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize(dsize))
-		for (n in 0 until size) {
-			val value = VSRC[n]
-			VFPRI[VDEST[n * 2 + 0]] = HalfFloat.halfFloatBitsToFloatBits(value.extract(0, 16))
-			VFPRI[VDEST[n * 2 + 1]] = HalfFloat.halfFloatBitsToFloatBits(value.extract(16, 16))
-		}
-	}
-
-	// Move this outside
-	fun HalfFloat.toFloat() = this.f
-	fun Float.toHalfFloat() = HalfFloat(this)
-	data class HalfFloat(val v: Char) {
-		constructor(v: Float) : this(floatBitsToHalfFloatBits(v.reinterpretAsInt()).toChar())
-		val f: Float get() = halfFloatBitsToFloatBits(v.toInt()).reinterpretAsFloat()
-		override fun toString(): String = "$f"
-		fun toBits() = v
-
-		companion object {
-			fun fromBits(v: Char) = HalfFloat(v)
-
-			fun halfFloatBitsToFloat(imm16: Int): Float = Float.fromBits(halfFloatBitsToFloatBits(imm16))
-			fun floatToHalfFloatBits(i: Float): Int = floatBitsToHalfFloatBits(i.toRawBits())
-
-			fun halfFloatBitsToFloatBits(imm16: Int): Int {
-				val s = imm16 shr 15 and 0x00000001 // sign
-				var e = imm16 shr 10 and 0x0000001f // exponent
-				var f = imm16 shr 0 and 0x000003ff // fraction
-
-				// need to handle 0x7C00 INF and 0xFC00 -INF?
-				if (e == 0) {
-					// need to handle +-0 case f==0 or f=0x8000?
-					if (f == 0) {
-						// Plus or minus zero
-						return s shl 31
-					}
-					// Denormalized number -- renormalize it
-					while (f and 0x00000400 == 0) {
-						f = f shl 1
-						e -= 1
-					}
-					e += 1
-					f = f and 0x00000400.inv()
-				} else if (e == 31) {
-					return if (f == 0) {
-						// Inf
-						s shl 31 or 0x7f800000
-					} else s shl 31 or 0x7f800000 or f
-					// NaN
-					// fraction is not shifted by PSP
-				}
-
-				e += (127 - 15)
-				f = f shl 13
-
-				return s shl 31 or (e shl 23) or f
-			}
-
-			fun floatBitsToHalfFloatBits(i: Int): Int {
-				val s = i shr 16 and 0x00008000              // sign
-				val e = (i shr 23 and 0x000000ff) - (127 - 15) // exponent
-				var f = i shr 0 and 0x007fffff              // fraction
-
-				// need to handle NaNs and Inf?
-				if (e <= 0) {
-					if (e < -10) {
-						return if (s != 0) {
-							// handle -0.0
-							0x8000
-						} else 0
-					}
-					f = f or 0x00800000 shr 1 - e
-					return s or (f shr 13)
-				} else if (e == 0xff - (127 - 15)) {
-					if (f == 0) {
-						// Inf
-						return s or 0x7c00
-					}
-					// NAN
-					f = f shr 13
-					f = 0x3ff // PSP always encodes NaN with this value
-					return s or 0x7c00 or f or if (f == 0) 1 else 0
-				}
-				return if (e > 30) {
-					// Overflow
-					s or 0x7c00
-				} else s or (e shl 10) or (f shr 13)
-			}
+		setVDI_VS(destSize = IR.one_two * 2) {
+			HalfFloat.halfFloatBitsToFloatBits(vsi[it / 2].extract((it % 2) * 16, 16))
 		}
 	}
 
@@ -588,16 +470,14 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vpfxd(s: CpuState) = s { vpfxd.setEnable(IR) }
 	override fun vpfxs(s: CpuState) = s { vpfxs.setEnable(IR) }
 	override fun vavg(s: CpuState) =  s {
-		val size = IR.one_two
-		getVectorRegisterValuesFloat(VSRCF, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize.Single)
-		VFPR[VDEST[0]] = ((0 until size).sumByDouble { (VSRCF[it] / size).toDouble() }).toFloat()
+		setVD_VS(destSize = 1) {
+			((0 until vsSize).sumByDouble { (vs[it] / vsSize).toDouble() }).toFloat()
+		}
 	}
 	override fun vfad(s: CpuState) = s {
-		val size = IR.one_two
-		getVectorRegisterValuesFloat(VSRCF, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize.Single)
-		VFPR[VDEST[0]] = ((0 until size).sumByDouble { VSRCF[it].toDouble() }).toFloat()
+		setVD_VS(destSize = 1) {
+			((0 until vsSize).sumByDouble { vs[it].toDouble() }).toFloat()
+		}
 	}
 	override fun vrot(s: CpuState) = s {
 		val vectorSize = IR.one_two
@@ -803,27 +683,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		(0 until side).map { ms[col, row] * mt[row, col] }.sum() }
 	}
 
-	// Missing
-
-	override fun ll(s: CpuState) = unimplemented(s, Instructions.ll)
-	override fun sc(s: CpuState) = unimplemented(s, Instructions.sc)
-
-	override fun cache(s: CpuState) = unimplemented(s, Instructions.cache)
-	override fun sync(s: CpuState) = unimplemented(s, Instructions.sync)
-	override fun dbreak(s: CpuState) = unimplemented(s, Instructions.dbreak)
-	override fun halt(s: CpuState) = unimplemented(s, Instructions.halt)
-	override fun dret(s: CpuState) = unimplemented(s, Instructions.dret)
-	override fun eret(s: CpuState) = unimplemented(s, Instructions.eret)
-	override fun mfdr(s: CpuState) = unimplemented(s, Instructions.mfdr)
-	override fun mtdr(s: CpuState) = unimplemented(s, Instructions.mtdr)
-	override fun cfc0(s: CpuState) = unimplemented(s, Instructions.cfc0)
-	override fun ctc0(s: CpuState) = unimplemented(s, Instructions.ctc0)
-	override fun mfc0(s: CpuState) = unimplemented(s, Instructions.mfc0)
-	override fun mtc0(s: CpuState) = unimplemented(s, Instructions.mtc0)
-	override fun mfv(s: CpuState) = unimplemented(s, Instructions.mfv)
-	override fun mfvc(s: CpuState) = s {
-		RT = VFPRC[IR.imm7]
-	}
+	override fun mfvc(s: CpuState) = s { RT = VFPRC[IR.imm7] }
 	override fun mtvc(s: CpuState) = s {
 		vpfxs
 		when (IR.imm7) {
@@ -836,26 +696,26 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	private fun _vtfm_x(s: CpuState, size: Int) = s { vfpuContext.run {
-		getVectorRegisterValues(b_vt, IR.vt, VectorSize(size))
+		getVectorRegisterValues(b_vt, IR.vt, size)
 
 		for (n in 0 until size) {
-			getVectorRegisterValues(b_vs, IR.vs + n, VectorSize(size))
+			getVectorRegisterValues(b_vs, IR.vs + n, size)
 			vfpuContext.vd[n] = (0 until size).sumByDouble { (vs[it] * vt[it]).toDouble() }.toFloat()
 		}
 
-		setVectorRegisterValues(b_vd, IR.vd, VectorSize(size))
+		setVectorRegisterValues(b_vd, IR.vd, size)
 	} }
 
 	private fun _vhtfm_x(s: CpuState, size: Int) = s { vfpuContext.run {
-		getVectorRegisterValues(b_vt, IR.vt, VectorSize(size - 1))
+		getVectorRegisterValues(b_vt, IR.vt, size - 1)
 
 		vt[size - 1] = 1f
 		for (n in 0 until size) {
-			getVectorRegisterValues(b_vs, IR.vs + n, VectorSize(size))
+			getVectorRegisterValues(b_vs, IR.vs + n, size)
 			vfpuContext.vd[n] = (0 until size).sumByDouble { (vs[it] * vt[it]).toDouble() }.toFloat()
 		}
 
-		setVectorRegisterValues(b_vd, IR.vd, VectorSize(size))
+		setVectorRegisterValues(b_vd, IR.vd, size)
 	} }
 
 	override fun vtfm2(s: CpuState) = _vtfm_x(s, 2)
@@ -893,37 +753,22 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	// Vectorial utilities
 
-	enum class VectorSize(val id: Int) {
-		Single(1), Pair(2), Triple(3), Quad(4);
-
-		companion object {
-			val items = arrayOf(Single, Single, Pair, Triple, Quad)
-			operator fun invoke(size: Int) = items[size]
-		}
-	}
-
-	enum class MatrixSize(val id: Int) { M_2x2(2), M_3x3(3), M_4x4(4);
-		companion object {
-			val items = arrayOf(M_2x2, M_2x2, M_2x2, M_3x3, M_4x4)
-			operator fun invoke(size: Int) = items[size]
-		}
-	}
-
-	fun CpuState.getMatrixRegsValues(out: FloatArray2, matrixReg: Int, N: MatrixSize): Int {
+	fun CpuState.getMatrixRegsValues(out: FloatArray2, matrixReg: Int, N: Int): Int {
 		val side = getMatrixRegs(tempRegs2, matrixReg, N)
 		for (j in 0 until side) for (i in 0 until side) out[j, i] = getVfpr(tempRegs2[j, i])
 		return side
 	}
 
-	fun getMatrixRegs(out: IntArray2, matrixReg: Int, N: MatrixSize): Int {
-		val side = N.id
+	fun getMatrixRegs(out: IntArray2, matrixReg: Int, N: Int): Int {
+		val side = N
 		val mtx = (matrixReg ushr 2) and 7
 		val col = matrixReg and 3
 		val transpose = ((matrixReg ushr 5) and 1) != 0
 		val row = when (N) {
-			MatrixSize.M_2x2 -> (matrixReg ushr 5) and 2
-			MatrixSize.M_3x3 -> (matrixReg ushr 6) and 1
-			MatrixSize.M_4x4 -> (matrixReg ushr 5) and 2
+			2 -> (matrixReg ushr 5) and 2
+			3 -> (matrixReg ushr 6) and 1
+			4 -> (matrixReg ushr 5) and 2
+			else -> invalidOp
 		}
 
 		for (i in 0 until side) {
@@ -952,7 +797,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	private val mc = MatrixContext()
 
 	fun CpuState.setMatrixVD(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
-		getMatrixRegs(VDEST2, IR.vd, MatrixSize(side))
+		getMatrixRegs(VDEST2, IR.vd, side)
 		mc.side = side
 		for (col in 0 until side) for (row in 0 until side) {
 			setVfpr(VDEST2[col, row], callback(mc.setPos(col, row)))
@@ -960,8 +805,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	fun CpuState.setMatrixVD_VS(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
-		getMatrixRegs(VDEST2, IR.vd, MatrixSize(side))
-		getMatrixRegsValues(mc.ms, IR.vs, MatrixSize(side))
+		getMatrixRegs(VDEST2, IR.vd, side)
+		getMatrixRegsValues(mc.ms, IR.vs, side)
 		mc.side = side
 		for (col in 0 until side) for (row in 0 until side) {
 			setVfpr(VDEST2[col, row], callback(mc.setPos(col, row)))
@@ -969,9 +814,9 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	fun CpuState.setMatrixVD_VSVT(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
-		getMatrixRegs(VDEST2, IR.vd, MatrixSize(side))
-		getMatrixRegsValues(mc.ms, IR.vs, MatrixSize(side))
-		getMatrixRegsValues(mc.mt, IR.vt, MatrixSize(side))
+		getMatrixRegs(VDEST2, IR.vd, side)
+		getMatrixRegsValues(mc.ms, IR.vs, side)
+		getMatrixRegsValues(mc.mt, IR.vt, side)
 
 		mc.side = side
 		for (col in 0 until side) for (row in 0 until side) {
@@ -979,65 +824,34 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		}
 	}
 
-	//fun CpuState.setMatrix(leftList: IntArray, generator: (column: Int, row: Int, index: Int) -> Float) {
-	//	val side = sqrt(leftList.size.toDouble()).toInt()
-	//	var n = 0
-	//	for (i in 0 until side) {
-	//		for (j in 0 until side) {
-	//			setVfpr(leftList[n++], generator(j, i, n))
-	//		}
-	//	}
-	//}
-
-	private val tempRegs = IntArray(16)
 	private val tempRegs2 = IntArray2(4, 4)
 
-	fun getVectorRegister(vectorReg: Int, N: VectorSize = VectorSize.Single, index: Int = 0): Int {
-		vectorRegisters(vectorReg, N) { i, r -> tempRegs[i] = r }
-		return tempRegs[index]
-	}
-
-	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: VectorSize) {
+	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: Int) {
 		vectorRegisters(vectorReg, N) { i, r -> out[i] = r }
 	}
 
-	fun CpuState.getVectorRegisterValuesInt(out: IntArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r -> out[i] = getVfprI(r) }
-	}
-
-	fun CpuState.setVectorRegisterValuesInt(inp: IntArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r -> setVfprI(r, inp[i]) }
-	}
-
-	fun CpuState.getVectorRegisterValuesFloat(out: FloatArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r -> out[i] = getVfpr(r) }
-	}
-
-	fun CpuState.setVectorRegisterValuesFloat(inp: FloatArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r -> setVfpr(r, inp[i]) }
-	}
-
-	fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: VectorSize) {
+	fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: Int) {
 		vectorRegisters(vectorReg, N) { i, r -> out.i[i] = getVfprI(r) }
 	}
 
-	fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: VectorSize) {
+	fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: Int) {
 		vectorRegisters(vectorReg, N) { i, r -> setVfprI(r, inp.i[i]) }
 	}
 
 	// @TODO: Precalculate this! & mark as inline once this is simplified!
-	fun vectorRegisters(vectorReg: Int, N: VectorSize, callback: (index: Int, r: Int) -> Unit) {
+	fun vectorRegisters(vectorReg: Int, N: Int, callback: (index: Int, r: Int) -> Unit) {
 		val mtx = vectorReg.extract(2, 3)
 		val col = vectorReg.extract(0, 2)
 		val row: Int
-		val length: Int = N.id
-		val transpose = (N != VectorSize.Single) && vectorReg.extractBool(5)
+		val length: Int = N
+		val transpose = (N != 1) && vectorReg.extractBool(5)
 
 		when (N) {
-			VectorSize.Single -> row = (vectorReg ushr 5) and 3
-			VectorSize.Pair -> row = (vectorReg ushr 5) and 2
-			VectorSize.Triple -> row = (vectorReg ushr 6) and 1
-			VectorSize.Quad -> row = (vectorReg ushr 5) and 2
+			1 -> row = (vectorReg ushr 5) and 3
+			2 -> row = (vectorReg ushr 5) and 2
+			3 -> row = (vectorReg ushr 6) and 1
+			4 -> row = (vectorReg ushr 5) and 2
+			else -> invalidOp
 		}
 
 		for (i in 0 until length) {
@@ -1078,24 +892,24 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 		fun CpuState.readVs(reg: Int = IR.vs, size: Int = IR.one_two): Float32Buffer {
 			vsSize = size
-			getVectorRegisterValues(b_vs, reg, VectorSize(size))
+			getVectorRegisterValues(b_vs, reg, size)
 			return vs
 		}
 
 		fun CpuState.readVt(reg: Int = IR.vt, size: Int = IR.one_two): Float32Buffer {
 			vtSize = size
-			getVectorRegisterValues(b_vt, reg, VectorSize(size))
+			getVectorRegisterValues(b_vt, reg, size)
 			return vt
 		}
 
 		fun CpuState.readVd(reg: Int = IR.vd, size: Int = IR.one_two): Float32Buffer {
 			vdSize = size
-			getVectorRegisterValues(b_vd, reg, VectorSize(size))
+			getVectorRegisterValues(b_vd, reg, size)
 			return vd
 		}
 
 		fun CpuState.writeVd(reg: Int = IR.vd, size: Int = IR.one_two) {
-			setVectorRegisterValues(b_vd, reg, VectorSize(size))
+			setVectorRegisterValues(b_vd, reg, size)
 		}
 
 		fun sreadVs(s: CpuState, reg: Int = s.IR.vs, size: Int = s.IR.one_two) = s.readVs(reg, size)
@@ -1170,6 +984,8 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		VFPU_LOG2TEN(log2(10f)),
 		VFPU_SQRT3_2(sqrt(3f) / 2f);
 
+		// @TODO: Kotlin Bug. It is used!
+		@Suppress("unused")
 		constructor(value: Double) : this(value.toFloat())
 
 		companion object {
@@ -1177,5 +993,24 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 			operator fun get(index: Int) = values[index]
 		}
 	}
+
+	// Not implemented instructions!
+
+	override fun ll(s: CpuState) = unimplemented(s, Instructions.ll)
+	override fun sc(s: CpuState) = unimplemented(s, Instructions.sc)
+
+	override fun cache(s: CpuState) = unimplemented(s, Instructions.cache)
+	override fun sync(s: CpuState) = unimplemented(s, Instructions.sync)
+	override fun dbreak(s: CpuState) = unimplemented(s, Instructions.dbreak)
+	override fun halt(s: CpuState) = unimplemented(s, Instructions.halt)
+	override fun dret(s: CpuState) = unimplemented(s, Instructions.dret)
+	override fun eret(s: CpuState) = unimplemented(s, Instructions.eret)
+	override fun mfdr(s: CpuState) = unimplemented(s, Instructions.mfdr)
+	override fun mtdr(s: CpuState) = unimplemented(s, Instructions.mtdr)
+	override fun cfc0(s: CpuState) = unimplemented(s, Instructions.cfc0)
+	override fun ctc0(s: CpuState) = unimplemented(s, Instructions.ctc0)
+	override fun mfc0(s: CpuState) = unimplemented(s, Instructions.mfc0)
+	override fun mtc0(s: CpuState) = unimplemented(s, Instructions.mtc0)
+	override fun mfv(s: CpuState) = unimplemented(s, Instructions.mfv)
 }
 
