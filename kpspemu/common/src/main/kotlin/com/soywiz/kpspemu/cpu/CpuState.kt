@@ -4,11 +4,13 @@ import com.soywiz.dynarek.JvmField
 import com.soywiz.kds.Extra
 import com.soywiz.kmem.*
 import com.soywiz.korio.error.invalidArg
+import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.korio.util.extract
 import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
+import kotlin.math.absoluteValue
 
 abstract class EmulatorControlFlowException : Exception()
 
@@ -131,27 +133,6 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 	var fcr27: Int = 0
 	var fcr28: Int = 0
 	var fcr31: Int = 0x00000e00
-
-	open class VfpuPrefix(val defaultValue: Int) {
-		var value = defaultValue
-		var enabled = false
-
-		fun setUnknown() {
-			value = defaultValue
-			enabled = false
-		}
-
-		fun setEnable(v: Int) {
-			value = v
-			enabled = true
-		}
-	}
-
-	class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
-	}
-
-	class VfpuDestinationPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
-	}
 
 	var vpfxs = VfpuSourceTargetPrefix()
 	var vpfxt = VfpuSourceTargetPrefix()
@@ -407,6 +388,53 @@ class CpuState(val name: String, val globalCpuState: GlobalCpuState, val mem: Me
 		const val NI = 14
 		const val NS = 15
 	}
+}
+
+open class VfpuPrefix(val defaultValue: Int) {
+	var info = defaultValue
+	var enabled = false
+
+	fun setUnknown() {
+		info = defaultValue
+		enabled = false
+	}
+
+	fun setEnable(v: Int) {
+		info = v
+		enabled = true
+	}
+}
+
+class VfpuSourceTargetPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
+	fun transformValues(input: FloatArray, output: FloatArray, size: Int = input.size) {
+		if (!enabled) {
+			for (n in 0 until size) output[n] = input[n]
+		} else {
+			for (n in 0 until size) {
+				val sourceIndex = (info ushr (0 + n * 2)) and 3
+				val sourceAbsolute = ((info ushr (8 + n * 1)) and 1) != 0
+				val sourceConstant = ((info ushr (12 + n * 1)) and 1) != 0
+				val sourceNegate = ((info ushr (16 + n * 1)) and 1) != 0
+
+				val value: Float = if (sourceConstant) {
+					when (sourceIndex) {
+						0 -> if (sourceAbsolute) 3f else 0f
+						1 -> if (sourceAbsolute) 1f / 3f else 1f
+						2 -> if (sourceAbsolute) 1f / 4f else 2f
+						3 -> if (sourceAbsolute) 1f / 6f else 1f / 2f
+						else -> invalidOp
+					}
+				} else {
+					if (sourceAbsolute) input[sourceIndex].absoluteValue else input[sourceIndex]
+				}
+
+				output[n] = if (sourceNegate) -value else value
+			}
+		}
+	}
+}
+
+class VfpuDestinationPrefix : VfpuPrefix(0xDC0000E4.toInt()) {
 }
 
 /*

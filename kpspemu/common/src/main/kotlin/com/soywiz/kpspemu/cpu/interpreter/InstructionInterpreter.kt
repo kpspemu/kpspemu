@@ -340,6 +340,7 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	private val VDEST = IntArray(16)
 	private val VSRC = IntArray(16)
+	private val VTARGET = IntArray(16)
 	private val VSRCF = FloatArray(16)
 
 	private fun _lv_x(s: CpuState, size: Int) = s {
@@ -896,39 +897,29 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	enum class MatrixSize(val id: Int) { M_2x2(2), M_3x3(3), M_4x4(4);
-
 		companion object {
 			val items = arrayOf(M_2x2, M_2x2, M_2x2, M_3x3, M_4x4)
 			operator fun invoke(size: Int) = items[size]
 		}
 	}
 
-	// VFPU
-	fun matrixRegs(matrixReg: Int, N: MatrixSize, callback: (col: Int, row: Int, r: Int) -> Unit): IntArray {
+	fun CpuState.getMatrixRegsValues(out: FloatArray2, matrixReg: Int, N: MatrixSize): Int {
+		val side = getMatrixRegs(tempRegs, matrixReg, N)
+		for (j in 0 until side) for (i in 0 until side) out[j, i] = getVfpr(tempRegs[j * 4 + i])
+		return side
+	}
+
+	fun getMatrixRegs(out: IntArray, matrixReg: Int, N: MatrixSize): Int {
+		val side = N.id
 		val mtx = (matrixReg ushr 2) and 7
 		val col = matrixReg and 3
-
-		var row = 0
-		var side = 0
-
-		when (N) {
-			MatrixSize.M_2x2 -> {
-				row = (matrixReg ushr 5) and 2
-				side = 2
-			}
-			MatrixSize.M_3x3 -> {
-				row = (matrixReg ushr 6) and 1
-				side = 3
-			}
-			MatrixSize.M_4x4 -> {
-				row = (matrixReg ushr 5) and 2
-				side = 4
-			}
+		val transpose = ((matrixReg ushr 5) and 1) != 0
+		val row = when (N) {
+			MatrixSize.M_2x2 -> (matrixReg ushr 5) and 2
+			MatrixSize.M_3x3 -> (matrixReg ushr 6) and 1
+			MatrixSize.M_4x4 -> (matrixReg ushr 5) and 2
 		}
 
-		val transpose = ((matrixReg ushr 5) and 1) != 0
-
-		val regs = IntArray(side * side)
 		for (i in 0 until side) {
 			for (j in 0 until side) {
 				var r = mtx * 4
@@ -937,13 +928,25 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 				} else {
 					r += ((col + j) and 3) + ((row + i) and 3) * 32
 				}
-				callback(j, i, r)
+				out[j * 4 + i] = r
 			}
 		}
-		return regs
+
+		return side
 	}
 
-	fun matrixRegsVD(ir: Int, callback: (col: Int, row: Int, r: Int) -> Unit) = matrixRegs(ir.vd, MatrixSize.items[ir.one_two], callback)
+	// VFPU
+	fun matrixRegs(matrixReg: Int, N: MatrixSize, callback: (col: Int, row: Int, r: Int) -> Unit) {
+		val side = N.id
+		getMatrixRegs(tempRegs, matrixReg, N)
+		for (i in 0 until side) {
+			for (j in 0 until side) {
+				callback(j, i, tempRegs[j * 4 + i])
+			}
+		}
+	}
+
+	fun matrixRegsVD(ir: Int, callback: (col: Int, row: Int, r: Int) -> Unit) = matrixRegs(ir.vd, MatrixSize(ir.one_two), callback)
 
 	class MatrixContext {
 		var side: Int = 0
@@ -956,20 +959,37 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 
 	private val mc = MatrixContext()
 
-	fun CpuState.setMatrixVD(callback: MatrixContext.() -> Float) {
-		matrixRegsVD(IR) { col, row, r ->
-			mc.col = col
-			mc.row = row
-			setVfpr(r, callback(mc))
+	fun CpuState.setMatrixVD(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
+		getMatrixRegs(VDEST, IR.vd, MatrixSize(side))
+		mc.side = side
+		for (j in 0 until side) for (i in 0 until side) {
+			mc.col = j
+			mc.row = i
+			setVfpr(VDEST[j * 4 + i], callback(mc))
 		}
 	}
 
-	fun CpuState.setMatrixVD_VS(callback: MatrixContext.() -> Float) {
-		println("setMatrixVD_VS")
+	fun CpuState.setMatrixVD_VS(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
+		getMatrixRegs(VDEST, IR.vd, MatrixSize(side))
+		getMatrixRegsValues(mc.ms, IR.vs, MatrixSize(side))
+		mc.side = side
+		for (j in 0 until side) for (i in 0 until side) {
+			mc.col = j
+			mc.row = i
+			setVfpr(VDEST[j * 4 + i], callback(mc))
+		}
 	}
 
-	fun CpuState.setMatrixVD_VSVT(callback: MatrixContext.() -> Float) {
-		println("setMatrixVD_VSVT")
+	fun CpuState.setMatrixVD_VSVT(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
+		getMatrixRegs(VDEST, IR.vd, MatrixSize(side))
+		getMatrixRegsValues(mc.ms, IR.vs, MatrixSize(side))
+		getMatrixRegsValues(mc.mt, IR.vt, MatrixSize(side))
+		mc.side = side
+		for (j in 0 until side) for (i in 0 until side) {
+			mc.col = j
+			mc.row = i
+			setVfpr(VDEST[j * 4 + i], callback(mc))
+		}
 	}
 
 	//fun CpuState.setMatrix(leftList: IntArray, generator: (column: Int, row: Int, index: Int) -> Float) {
@@ -990,45 +1010,31 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	}
 
 	fun getVectorRegisters(out: IntArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			out[i] = r
-		}
+		vectorRegisters(vectorReg, N) { i, r -> out[i] = r }
 	}
 
 	fun CpuState.getVectorRegisterValuesInt(out: IntArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			out[i] = getVfprI(r)
-		}
+		vectorRegisters(vectorReg, N) { i, r -> out[i] = getVfprI(r) }
 	}
 
 	fun CpuState.setVectorRegisterValuesInt(inp: IntArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			setVfprI(r, inp[i])
-		}
+		vectorRegisters(vectorReg, N) { i, r -> setVfprI(r, inp[i]) }
 	}
 
 	fun CpuState.getVectorRegisterValuesFloat(out: FloatArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			out[i] = getVfpr(r)
-		}
+		vectorRegisters(vectorReg, N) { i, r -> out[i] = getVfpr(r) }
 	}
 
 	fun CpuState.setVectorRegisterValuesFloat(inp: FloatArray, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			setVfpr(r, inp[i])
-		}
+		vectorRegisters(vectorReg, N) { i, r -> setVfpr(r, inp[i]) }
 	}
 
 	fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			out.i[i] = getVfprI(r)
-		}
+		vectorRegisters(vectorReg, N) { i, r -> out.i[i] = getVfprI(r) }
 	}
 
 	fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: VectorSize) {
-		vectorRegisters(vectorReg, N) { i, r ->
-			setVfprI(r, inp.i[i])
-		}
+		vectorRegisters(vectorReg, N) { i, r -> setVfprI(r, inp.i[i]) }
 	}
 
 	// @TODO: Precalculate this! & mark as inline once this is simplified!
@@ -1125,33 +1131,6 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 		getVectorRegisterValues(vfpuContext.b_vs, IR.vs, VectorSize(srcSize))
 		getVectorRegisterValues(vfpuContext.b_vt, IR.vt, VectorSize(targetSize))
 		for (n in 0 until destSize) callback(vfpuContext, n)
-	}
-
-	fun transformValues(input: FloatArray, output: FloatArray, info: Int, enabled: Boolean) {
-		if (!enabled) {
-			for (n in 0 until input.size) output[n] = input[n]
-		} else {
-			for (n in 0 until input.size) {
-				val sourceIndex = (info ushr (0 + n * 2)) and 3
-				val sourceAbsolute = ((info ushr (8 + n * 1)) and 1) != 0
-				val sourceConstant = ((info ushr (12 + n * 1)) and 1) != 0
-				val sourceNegate = ((info ushr (16 + n * 1)) and 1) != 0
-
-				val value: Float = if (sourceConstant) {
-					when (sourceIndex) {
-						0 -> if (sourceAbsolute) 3f else 0f
-						1 -> if (sourceAbsolute) 1f / 3f else 1f
-						2 -> if (sourceAbsolute) 1f / 4f else 2f
-						3 -> if (sourceAbsolute) 1f / 6f else 1f / 2f
-						else -> invalidOp
-					}
-				} else {
-					if (sourceAbsolute) input[sourceIndex].absoluteValue else input[sourceIndex]
-				}
-
-				output[n] = if (sourceNegate) -value else value
-			}
-		}
 	}
 
 	//fun getMatrixRegs(matrixReg: Int, N: MatrixSize) {
