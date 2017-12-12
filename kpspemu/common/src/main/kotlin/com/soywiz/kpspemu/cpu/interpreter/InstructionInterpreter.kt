@@ -417,23 +417,16 @@ object InstructionInterpreter : InstructionEvaluator<CpuState>() {
 	override fun vuc2i(s: CpuState) = _vc2i(s) { index, value -> ((((value ushr (index * 8)) and 0xFF) * 0x01010101) shr 1) and 0x80000000.toInt().inv() }
 
 	private fun _vs2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
-		val size = IR.one_two
-		getVectorRegisters(VSRC, IR.vs, VectorSize(size))
-		getVectorRegisters(VDEST, IR.vd, VectorSize(size * 2))
-		for (n in 0 until size) {
-			val value = VFPRI[VSRC[n]]
-			VFPRI[VDEST[n * 2 + 0]] = func(0, value)
-			VFPRI[VDEST[n * 2 + 1]] = func(1, value)
-		}
+		setVDI_VS(destSize = IR.one_two * 2) { func(it % 2, vsi[it / 2]) }
 	}
 
 	override fun vs2i(s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 16 }
 	override fun vus2i(s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 15 }
 
 	private fun _vi2c(s: CpuState, gen: (value: Int) -> Int) = s {
-		getVectorRegisterValuesInt(VSRC, IR.vs, VectorSize.Quad)
-		getVectorRegisters(VDEST, IR.vd, VectorSize.Single)
-		VFPRI[VDEST[0]] = RGBA.packFast(gen(VSRC[0]), gen(VSRC[1]), gen(VSRC[2]), gen(VSRC[3]))
+		setVDI_VS(destSize = 1, srcSize = 4) {
+			RGBA.packFast(gen(vsi[0]), gen(vsi[1]), gen(vsi[2]), gen(vsi[3]))
+		}
 	}
 
 	override fun vi2c(s: CpuState) = _vi2c(s) { it.extract8(24) }
