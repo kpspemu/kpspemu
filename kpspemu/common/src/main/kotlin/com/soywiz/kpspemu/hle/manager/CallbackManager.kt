@@ -6,12 +6,24 @@ import com.soywiz.kpspemu.mem.Ptr
 class CallbackManager(emulator: Emulator) : Manager<PspCallback>("Callback", emulator, initialId = 1) {
 	fun create(name: String, func: Ptr, arg: Int): PspCallback = PspCallback(this, allocId(), name, func, arg)
 
-	fun queueFunction1(funcPC: Int, funcARG: Int) {
+	override fun reset() {
+		super.reset()
+	}
+
+	fun queueFunction1(funcPC: Int, arg1: Int) {
 		// @TODO: Implement this!
 	}
 
-	override fun reset() {
-		super.reset()
+	fun queueCallback(callback: PspCallback, arg2: Int) {
+		// @TODO: Implement this!
+	}
+
+	fun cancelCallback(callback: PspCallback) {
+		// @TODO: Implement this!
+	}
+
+	fun executeCallbacks() {
+		// @TODO: Implement this!
 	}
 }
 
@@ -21,6 +33,4 @@ class PspCallback(
 	name: String,
 	val func: Ptr,
 	val arg: Int
-) : Resource(callbackManager, id, name){
-
-}
+) : Resource(callbackManager, id, name)

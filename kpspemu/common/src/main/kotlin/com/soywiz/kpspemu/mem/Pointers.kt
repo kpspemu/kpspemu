@@ -8,6 +8,7 @@ import com.soywiz.korio.stream.ByteArrayBuilderSmall
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.SyncStreamBase
 import com.soywiz.korio.stream.toSyncStream
+import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.unsigned
 import com.soywiz.kpspemu.util.Struct
 import com.soywiz.kpspemu.util.StructType
@@ -18,6 +19,7 @@ data class PtrArray(val ptr: Ptr, val size: Int) {
 	val addr: Int get() = ptr.addr
 	val low: Int get() = ptr.addr
 	val high: Int get() = low + size
+	override fun toString(): String = "PtrArray($ptr, $size)"
 }
 
 interface BasePtr {
@@ -30,6 +32,7 @@ class Ptr32(override val ptr: Ptr) : BasePtr {
 	operator fun get(index: Int): Int = ptr.lw(index * 4)
 	operator fun set(index: Int, value: Int) = ptr.sw(index * 4, value)
 	operator fun plus(offset: Int) = Ptr32(ptr + offset * 4)
+	override fun toString(): String = "Ptr32($ptr)"
 }
 
 class Ptr64(override val ptr: Ptr) : BasePtr {
@@ -38,6 +41,7 @@ class Ptr64(override val ptr: Ptr) : BasePtr {
 	operator fun get(index: Int): Long = ptr.ldw(index * 8)
 	operator fun set(index: Int, value: Long) = ptr.sdw(index * 8, value)
 	operator fun plus(offset: Int) = Ptr64(ptr + offset * 8)
+	override fun toString(): String = "Ptr64($ptr)"
 }
 
 class PtrStruct<T>(val kind: StructType<T>, override val ptr: Ptr) : BasePtr {
@@ -48,6 +52,8 @@ class PtrStruct<T>(val kind: StructType<T>, override val ptr: Ptr) : BasePtr {
 	operator fun get(index: Int): T = kind.read(ptr.openSync(index * kindSize))
 	operator fun set(index: Int, value: T) = kind.write(ptr.openSync(index * kindSize), value)
 	operator fun plus(offset: Int) = PtrStruct(kind, ptr + offset * kindSize)
+
+	override fun toString(): String = "PtrStruct($kind, $ptr)"
 }
 
 interface Ptr : BasePtr {
@@ -82,6 +88,7 @@ object DummyPtr : Ptr {
 	override fun lh(offset: Int): Int = 0
 	override fun lw(offset: Int): Int = 0
 	override fun plus(offset: Int): Ptr = DummyPtr
+	override fun toString(): String = "DummyPtr(${addr.hex})"
 }
 
 val nullPtr = DummyPtr
@@ -107,7 +114,7 @@ data class MemPtr(val mem: Memory, override val addr: Int) : Ptr {
 	override fun lb(offset: Int): Int = mem.lb(addr + offset)
 	override fun lh(offset: Int): Int = mem.lh(addr + offset)
 	override fun lw(offset: Int): Int = mem.lw(addr + offset)
-	override fun toString(): String = "Ptr(0x%08X)".format(addr)
+	override fun toString(): String = "MemPtr(${addr.hex})"
 	override fun plus(offset: Int): Ptr = MemPtr(mem, addr + offset)
 }
 

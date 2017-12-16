@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.klock.Klock
+import com.soywiz.klock.TimeSpan
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.util.hasFlag
 import com.soywiz.korio.util.nextAlignedTo
@@ -31,11 +31,35 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 		val info = SceKernelVplInfo()
 		lateinit var part: MemoryPartition
 
+		data class WaitHandle(val size: Int, val signal: Signal<Unit> = Signal())
+
+		val waits = ArrayList<WaitHandle>()
+
 		fun getUpdatedInfo() = info.apply {
 			info.freeSize = part.getTotalFreeMemoryInt()
+			info.numWaitThreads = waits.size
 		}
 
-		val onFree = Signal<Unit>()
+		suspend fun waitFree(size: Int, timeout: TimeSpan? = null) {
+			val wait = WaitHandle(size)
+			waits += wait
+			try {
+				wait.signal.waitOneOptTimeout(timeout)
+			} finally {
+				waits -= wait
+			}
+		}
+
+		fun onFree() {
+			val availableMem = part.getMaxContiguousFreeMemoryInt()
+			for (wait in waits) {
+				if (availableMem >= wait.size) {
+					waits.remove(wait)
+					wait.signal(Unit)
+					return
+				}
+			}
+		}
 	}
 
 	val vpls = ResourceList(
@@ -63,7 +87,6 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 
 	// @TODO: Wait for available space when not trying
 	suspend fun _sceKernelAllocateVpl(uid: Int, size: Int, outPtr: Ptr32, timeoutPtr: Ptr32, doTry: Boolean): Int {
-		val timeStart = Klock.currentTimeMillis()
 		val vpl = vpl(uid)
 		retry@ while (true) {
 			try {
@@ -72,14 +95,18 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 				outPtr[0] = ptr.low_i
 				return 0
 			} catch (e: OutOfMemoryError) {
-				if (!doTry && timeoutPtr.isNotNull) {
+				//println("OutOfMemory: ${e.message}")
+				if (!doTry && timeoutPtr.isNotNull && timeoutPtr.get() != 0) {
+					//println("WAIT! timeout=$timeoutPtr :: timeout=${timeoutPtr.get()}")
 					try {
-						vpl.onFree.waitOneTimeout(timeoutPtr.get().microseconds)
+						vpl.waitFree(size, timeoutPtr.get().microseconds)
 						continue@retry
 					} catch (e: TimeoutException) {
 						timeoutPtr.set(0)
 						return SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT
 					}
+				} else {
+					//println("DO NOT WAIT!")
 				}
 				return SceKernelErrors.ERROR_OUT_OF_MEMORY
 			}
@@ -87,6 +114,7 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 	}
 
 	suspend fun sceKernelAllocateVpl(uid: Int, size: Int, outPtr: Ptr32, timeoutPtr: Ptr32): Int {
+		//println("sceKernelAllocateVpl: $uid, $size, $outPtr, timeoutPtr=$timeoutPtr")
 		return _sceKernelAllocateVpl(uid, size, outPtr, timeoutPtr, doTry = false)
 	}
 
@@ -100,6 +128,8 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 	}
 
 	fun sceKernelDeleteVpl(uid: Int): Int {
+		val vpl = vpl(uid)
+		for (wait in vpl.waits) wait.signal(Unit)
 		vpls.freeById(uid)
 		return 0
 	}
@@ -107,7 +137,7 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 	fun sceKernelFreeVpl(uid: Int, ptr: Int): Int {
 		val vpl = vpl(uid)
 		vpl.part.getAtLow(ptr.unsigned)?.unallocate()
-		vpl.onFree(Unit)
+		vpl.onFree()
 		return 0
 	}
 

@@ -51,6 +51,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
 		}
 		thread.state.GP = currentThread.state.GP
 		thread.start()
+		threadManager.suspend()
 		return 0
 	}
 

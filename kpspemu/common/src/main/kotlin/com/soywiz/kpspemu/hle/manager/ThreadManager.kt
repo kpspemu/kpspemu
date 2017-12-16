@@ -56,7 +56,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		val thread = PspThread(this, allocId(), name, entryPoint, stack, initPriority, attributes, optionPtr)
 		logger.info { "stack:%08X-%08X (%d)".format(stack.low.toInt(), stack.high.toInt(), stack.size.toInt()) }
 
-		memoryManager.userPartition.dump()
+		//memoryManager.userPartition.dump()
 
 		attr = attr or PspThreadAttributes.User
 		attr = attr or PspThreadAttributes.LowFF
