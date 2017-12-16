@@ -78,6 +78,9 @@ class IntegrationTests {
 	@Ignore
 	@Test fun testThreadsVplAllocate() = testFile("threads/vpl/allocate")
 
+	@Ignore
+	@Test fun testThreadsThreadsCreate() = testFile("threads/threads/create")
+
 	fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
 		testFile(
 			KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
