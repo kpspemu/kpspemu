@@ -10,7 +10,10 @@ import com.soywiz.kpspemu.hle.error.SceKernelException
 import com.soywiz.kpspemu.hle.manager.PspThread
 import com.soywiz.kpspemu.hle.manager.SceKernelThreadInfo
 import com.soywiz.kpspemu.mem
-import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.mem.isNotNull
+import com.soywiz.kpspemu.mem.readBytes
+import com.soywiz.kpspemu.mem.write
 import com.soywiz.kpspemu.threadManager
 import com.soywiz.kpspemu.util.waitOne
 
@@ -37,7 +40,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
 	fun sceKernelStartThread(currentThread: PspThread, threadId: Int, userDataLength: Int, userDataPtr: Ptr): Int {
 		logger.trace { "sceKernelStartThread: $threadId, $userDataLength, $userDataPtr" }
 		//println("sceKernelStartThread: $threadId")
-		val thread = threadManager.getById(threadId)
+		val thread = thread(threadId)
 		if (userDataPtr.isNotNull) {
 			val localUserDataPtr = thread.putDataInStack(userDataPtr.readBytes(userDataLength))
 			thread.state.r4 = userDataLength
@@ -71,11 +74,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
 
 
 	suspend fun _sceKernelWaitThreadEnd(currentThread: PspThread, threadId: Int, timeout: Ptr, cb: Boolean): Int {
-		val thread = threadManager.tryGetById(threadId)
-		if (thread == null) {
-			logger.warn { "_sceKernelWaitThreadEnd: Thread not found! $threadId" }
-			return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
-		}
+		val thread = thread(threadId)
 		currentThread.waitInfo = threadId
 		thread.onEnd.add {
 			println("ENDED!")
@@ -90,7 +89,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
 
 	fun sceKernelReferThreadStatus(currentThread: PspThread, threadId: Int, out: Ptr): Int {
 		val actualThreadId = if (threadId == -1) currentThread.id else threadId
-		val thread = threadManager.tryGetById(actualThreadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+		val thread = thread(actualThreadId)
 
 		val info = SceKernelThreadInfo()
 
@@ -125,7 +124,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
 	fun sceKernelGetThreadId(thread: PspThread): Int = thread.id
 
 	fun sceKernelTerminateThread(threadId: Int): Int {
-		val newThread = threadManager.tryGetById(threadId) ?: return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD
+		val newThread = thread(threadId)
 		newThread.stop("_sceKernelTerminateThread")
 		newThread.exitStatus = 0x800201ac.toInt()
 		return 0

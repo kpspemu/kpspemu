@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.klock.DateTime
 import com.soywiz.klock.Klock
+import com.soywiz.klock.seconds
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator
@@ -17,6 +18,8 @@ class TimeManager(override val emulator: Emulator) : WithEmulator {
 	fun reset() {
 	}
 }
+
+val Number.microseconds get() = (this.toDouble() / 1000000.0).seconds
 
 data class ScePspDateTime(
 	var year: Int = 0,
