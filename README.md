@@ -1,10 +1,10 @@
 # kpspemu
 
-![](/docs/kpspemu-logo-100x100.png)
-
 PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for now
 
 [![Build Status](https://travis-ci.org/kpspemu/kpspemu.svg?branch=master)](https://travis-ci.org/kpspemu/kpspemu)
+
+![](/docs/kpspemu-logo-200x200.png)
 
 [![](/docs/cube.png)](https://kpspemu.github.io/kpspemu-demo/cube/)
 [![](/docs/0.3.2-SNAPSHOT-JVM.png)](https://kpspemu.github.io/kpspemu-demo/0.3.2/)
