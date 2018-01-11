@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.ctrl
 
-import com.soywiz.korio.util.umod
+import com.soywiz.kds.umod
 import com.soywiz.korma.math.clamp
 import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.WithEmulator

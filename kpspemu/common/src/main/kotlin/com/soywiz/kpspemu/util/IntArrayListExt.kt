@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korma.ds.IntArrayList
+import com.soywiz.kds.IntArrayList
 
 fun IntArrayList.copyOfIntArray() = this.data.copyOf(this.size)
 fun IntArrayList.copyOfShortArray(): ShortArray {

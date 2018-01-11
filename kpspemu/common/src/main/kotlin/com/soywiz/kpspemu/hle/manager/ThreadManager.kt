@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.Extra
+import com.soywiz.kds.umod
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.sleep
@@ -10,7 +11,6 @@ import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.util.hasFlag
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.nextAlignedTo
-import com.soywiz.korio.util.umod
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter

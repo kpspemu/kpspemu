@@ -6,8 +6,6 @@ import com.soywiz.kmem.*
 import com.soywiz.korio.error.invalidArg
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.extract
-import com.soywiz.korio.util.insert
 import com.soywiz.kpspemu.mem.DummyMemory
 import com.soywiz.kpspemu.mem.Memory
 import com.soywiz.kpspemu.util.pspAbs

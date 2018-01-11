@@ -2,8 +2,8 @@
 
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.kds.ext.reduceAcumulate
-import com.soywiz.kds.ext.splice
+import com.soywiz.kds.reduceAcumulate
+import com.soywiz.kds.splice
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.format
 import com.soywiz.kpspemu.Emulator

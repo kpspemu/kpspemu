@@ -1,15 +1,15 @@
 package com.soywiz.kpspemu.util.io
 
 import com.soywiz.klock.DateTime
+import com.soywiz.kmem.getBits
 import com.soywiz.kmem.indexOf
+import com.soywiz.kmem.toUInt
 import com.soywiz.korio.async.AsyncSequence
 import com.soywiz.korio.async.asyncGenerate
 import com.soywiz.korio.compression.Inflater
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.getBits
 import com.soywiz.korio.util.toIntClamp
-import com.soywiz.korio.util.toUInt
 import com.soywiz.korio.vfs.*
 import kotlin.math.max
 

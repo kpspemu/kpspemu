@@ -3,7 +3,7 @@ apply plugin: 'kotlin-platform-common'
 dependencies {
     compile "com.soywiz:dynarek-common:$dynarekVersion"
     compile "com.soywiz:klogger-common:$kloggerVersion"
-    compile "com.soywiz:klock-common:$klockVersion"
+    if (klockVersion != '') compile "com.soywiz:klock-common:$klockVersion"
     compile "com.soywiz:korag-common:$koragVersion"
     compile "com.soywiz:korim-common:$korimVersion"
     compile "com.soywiz:korau-common:$korauVersion"

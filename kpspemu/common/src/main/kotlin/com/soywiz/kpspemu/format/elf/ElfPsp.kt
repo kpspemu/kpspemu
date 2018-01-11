@@ -3,8 +3,8 @@ package com.soywiz.kpspemu.format.elf
 import com.soywiz.klogger.Logger
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.extract
-import com.soywiz.korio.util.insert
+import com.soywiz.kmem.extract
+import com.soywiz.kmem.insert
 import com.soywiz.korio.util.join
 import com.soywiz.korma.numeric.nextAlignedTo
 import com.soywiz.kpspemu.AddressInfo

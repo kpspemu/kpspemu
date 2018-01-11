@@ -1,8 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.util.extract
-import com.soywiz.korio.util.insert
-import com.soywiz.korio.util.signExtend
+import com.soywiz.kmem.*
 
 // https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
 // http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html

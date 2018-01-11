@@ -4,7 +4,6 @@ import com.soywiz.korim.color.ColorFormat
 import com.soywiz.korim.color.ColorFormat16
 import com.soywiz.korim.color.ColorFormatBase
 import com.soywiz.korio.util.IdEnum
-import com.soywiz.korio.util.extractScaledFFDefault
 
 enum class CullingDirection(override val id: Int) : IdEnum {
 	COUNTER_CLOCK_WISE(0),
