@@ -474,7 +474,7 @@ class KpspemuMainScene(
         sceneView += hud
 
         //sceneView.onMove { hudOpen() }
-        sceneView.onOut { hudClose() }
+        //sceneView.onOut { hudClose() }
         sceneView.onClick { toggleHud() }
         //sceneView.onKeyTyped { println(it.keyCode) }
         sceneView.onKeyDown { updateKey(it.keyCode, true) }
