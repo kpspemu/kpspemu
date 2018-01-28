@@ -49,7 +49,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 		var attr = attributes
 		val ssize = max(stackSize, 0x200).nextAlignedTo(0x100)
 		//val ssize = max(stackSize, 0x20000).nextAlignedTo(0x10000)
-		val stack = memoryManager.userPartition.allocateHigh(ssize, "${name}_stack")
+		val stack = memoryManager.stackPartition.allocateHigh(ssize, "${name}_stack")
 
 		println(stack.toString2())
 
