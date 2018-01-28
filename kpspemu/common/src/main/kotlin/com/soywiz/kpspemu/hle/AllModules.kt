@@ -44,4 +44,5 @@ fun ModuleManager.registerNativeModules() {
     register(sceMp3(emulator))
     register(sceVaudio(emulator))
     register(sceLibFont(emulator))
+    register(pspDveManager(emulator))
 }
