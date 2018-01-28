@@ -18,9 +18,7 @@ suspend fun IsoVfs2(file: VfsFile): VfsFile = ISO2.openVfs(file.open(VfsOpenMode
 suspend fun IsoVfs2(s: AsyncStream): VfsFile = ISO2.openVfs(s)
 suspend fun AsyncStream.openAsIso2(): VfsFile {
 	val iso = IsoVfs2(this)
-	for (file in iso.listRecursive()) {
-		println(file)
-	}
+	//for (file in iso.listRecursive()) println(file)
 	return iso
 }
 suspend fun VfsFile.openAsIso2() = IsoVfs2(this)
