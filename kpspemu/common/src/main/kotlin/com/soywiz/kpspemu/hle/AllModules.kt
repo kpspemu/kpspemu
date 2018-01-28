@@ -43,4 +43,5 @@ fun ModuleManager.registerNativeModules() {
 	register(sceReg(emulator))
 	register(sceMp3(emulator))
 	register(sceVaudio(emulator))
+	register(sceLibFont(emulator))
 }
