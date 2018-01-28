@@ -62,6 +62,7 @@ class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010
 			PspGeSyncType.PSP_GE_LIST_DONE, PspGeSyncType.PSP_GE_LIST_DRAWING_DONE -> {
 				emulator.gpuRenderer.queuedJobs.waitValue(0)
 			}
+			else -> Unit // @TODO: @BUG in JS: See https://youtrack.jetbrains.com/issue/KT-22544
 		}
 		//display.waitVblank()
 		return 0

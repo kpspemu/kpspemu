@@ -90,7 +90,7 @@ class TableGenerator {
     private fun _createSwitch(writer: Indenter, instructions: List<InstructionType>, baseMask: Int = 0xFFFFFFFF.toInt(), level: Int = 0) {
         if (level >= 10) throw Exception("ERROR: Recursive detection")
         val commonMask = this.getCommonMask(instructions, baseMask)
-        val groups: HashMap<Int, ArrayList<InstructionType>> = LinkedHashMap()
+        val groups = LinkedHashMap<Int, ArrayList<InstructionType>>()
         for (item in instructions) {
             val commonValue = item.vm.value and commonMask
             val group = groups.getOrPut(commonValue) { arrayListOf() }
