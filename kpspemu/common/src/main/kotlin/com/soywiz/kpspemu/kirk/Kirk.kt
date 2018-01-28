@@ -4,7 +4,7 @@ import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.IdEnum
-import com.soywiz.korio.util.hexString
+import com.soywiz.korio.util.nextAlignedTo
 import com.soywiz.kpspemu.util.*
 import com.soywiz.krypto.AES
 
@@ -50,8 +50,10 @@ object Kirk {
 		val Keys = AES.decryptAes128Cbc(input.slice().readBytes(32), KirkKeys.kirk1_key)
 		val KeyAes = Keys.copyOfRange(0, 16)
 		var KeyCmac = Keys.copyOfRange(16, 32)
-		val PaddedDataSize = (header.DataSize + 15) and (-16)
-		val Output = AES.decryptAes128Cbc(input.slice().skip(header.DataOffset + AES128CMACHeader.size).readBytes(PaddedDataSize), KeyAes)
+		val PaddedDataSize = header.DataSize.nextAlignedTo(16)
+		val PaddedData = ByteArray(PaddedDataSize)
+		input.slice().skip(header.DataOffset + AES128CMACHeader.size).read(PaddedData)
+		val Output = AES.decryptAes128Cbc(PaddedData, KeyAes)
 		output.write(Output, 0, header.DataSize)
 	}
 
