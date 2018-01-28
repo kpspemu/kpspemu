@@ -9,11 +9,11 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class ElfTest {
-	@Test
-	fun name() = syncTest {
-		val emulator = Emulator(coroutineContext)
-		val elf = emulator.loadElf(Samples.MINIFIRE_ELF.openSync())
-		assertEquals(0x08900008, elf.moduleInfo.PC)
-		assertEquals(0x00004821, elf.moduleInfo.GP)
-	}
+    @Test
+    fun name() = syncTest {
+        val emulator = Emulator(coroutineContext)
+        val elf = emulator.loadElf(Samples.MINIFIRE_ELF.openSync())
+        assertEquals(0x08900008, elf.moduleInfo.PC)
+        assertEquals(0x00004821, elf.moduleInfo.GP)
+    }
 }

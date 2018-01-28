@@ -5,103 +5,103 @@ import com.soywiz.korio.lang.UTF8
 import com.soywiz.korio.stream.*
 
 class Psf {
-	data class DataType(val id: Int) {
-		companion object {
-			val BINARY = DataType(0)
-			val TEXT = DataType(2)
-			val INT = DataType(4)
-		}
-	}
+    data class DataType(val id: Int) {
+        companion object {
+            val BINARY = DataType(0)
+            val TEXT = DataType(2)
+            val INT = DataType(4)
+        }
+    }
 
-	class HeaderStruct(
-		val magic: Int,
-		val version: Int,
-		val keyTable: Int,
-		val valueTable: Int,
-		val numberOfPairs: Int
-	) {
-		companion object {
-			fun read(s: SyncStream): HeaderStruct = HeaderStruct(
-				magic = s.readS32_le(),
-				version = s.readS32_le(),
-				keyTable = s.readS32_le(),
-				valueTable = s.readS32_le(),
-				numberOfPairs = s.readS32_le()
-			)
-		}
-	}
+    class HeaderStruct(
+        val magic: Int,
+        val version: Int,
+        val keyTable: Int,
+        val valueTable: Int,
+        val numberOfPairs: Int
+    ) {
+        companion object {
+            fun read(s: SyncStream): HeaderStruct = HeaderStruct(
+                magic = s.readS32_le(),
+                version = s.readS32_le(),
+                keyTable = s.readS32_le(),
+                valueTable = s.readS32_le(),
+                numberOfPairs = s.readS32_le()
+            )
+        }
+    }
 
-	interface IEntryStruct {
-		val key: String
-		val value: Any?
-	}
+    interface IEntryStruct {
+        val key: String
+        val value: Any?
+    }
 
-	class EntryStruct(
-		val keyOffset: Int,
-		private val unknown: Int,
-		val dataType: DataType,
-		val valueSize: Int,
-		val valueSizePad: Int,
-		val valueOffset: Int
-	) : IEntryStruct {
-		override var key: String = ""
-		override var value: Any? = null
+    class EntryStruct(
+        val keyOffset: Int,
+        private val unknown: Int,
+        val dataType: DataType,
+        val valueSize: Int,
+        val valueSizePad: Int,
+        val valueOffset: Int
+    ) : IEntryStruct {
+        override var key: String = ""
+        override var value: Any? = null
 
-		companion object {
-			fun read(s: SyncStream): EntryStruct = EntryStruct(
-				keyOffset = s.readU16_le(),
-				unknown = s.readU8(),
-				dataType = DataType(s.readU8()),
-				valueSize = s.readS32_le(),
-				valueSizePad = s.readS32_le(),
-				valueOffset = s.readS32_le()
-			)
-		}
+        companion object {
+            fun read(s: SyncStream): EntryStruct = EntryStruct(
+                keyOffset = s.readU16_le(),
+                unknown = s.readU8(),
+                dataType = DataType(s.readU8()),
+                valueSize = s.readS32_le(),
+                valueSizePad = s.readS32_le(),
+                valueOffset = s.readS32_le()
+            )
+        }
 
-		override fun toString(): String = "Entry($key, $value)"
-	}
+        override fun toString(): String = "Entry($key, $value)"
+    }
 
-	companion object {
-		operator suspend fun invoke(stream: AsyncStream): Psf = Psf().apply { load(stream.readAll().openSync()) }
-		operator fun invoke(stream: SyncStream): Psf = Psf().apply { load(stream) }
-		operator fun invoke(bytes: ByteArray): Psf = Psf().apply { load(bytes.openSync()) }
-		fun fromStream(stream: SyncStream): Psf = Psf().apply { load(stream) }
-	}
+    companion object {
+        operator suspend fun invoke(stream: AsyncStream): Psf = Psf().apply { load(stream.readAll().openSync()) }
+        operator fun invoke(stream: SyncStream): Psf = Psf().apply { load(stream) }
+        operator fun invoke(bytes: ByteArray): Psf = Psf().apply { load(bytes.openSync()) }
+        fun fromStream(stream: SyncStream): Psf = Psf().apply { load(stream) }
+    }
 
-	lateinit var entries: List<EntryStruct>; private set
-	lateinit var entriesByName: Map<String, Any?>; private set
-	lateinit var header: HeaderStruct; private set
+    lateinit var entries: List<EntryStruct>; private set
+    lateinit var entriesByName: Map<String, Any?>; private set
+    lateinit var header: HeaderStruct; private set
 
-	fun getString(key: String): String? = entriesByName[key]?.toString()
-	fun getInt(key: String): Int? = entriesByName[key]?.toString()?.toInt()
-	fun getDouble(key: String): Double? = entriesByName[key]?.toString()?.toDouble()
+    fun getString(key: String): String? = entriesByName[key]?.toString()
+    fun getInt(key: String): Int? = entriesByName[key]?.toString()?.toInt()
+    fun getDouble(key: String): Double? = entriesByName[key]?.toString()?.toDouble()
 
-	fun load(stream: SyncStream) {
-		val header = HeaderStruct.read(stream)
-		this.header = header
-		if (header.magic != 0x46535000) invalidOp("Not a PSF file")
-		val entries = (0 until header.numberOfPairs).map { EntryStruct.read(stream) }
-		val entriesByName = LinkedHashMap<String, Any?>()
+    fun load(stream: SyncStream) {
+        val header = HeaderStruct.read(stream)
+        this.header = header
+        if (header.magic != 0x46535000) invalidOp("Not a PSF file")
+        val entries = (0 until header.numberOfPairs).map { EntryStruct.read(stream) }
+        val entriesByName = LinkedHashMap<String, Any?>()
 
-		val keysStream = stream.sliceWithStart(header.keyTable.toLong())
-		val valuesStream = stream.sliceWithStart(header.valueTable.toLong())
+        val keysStream = stream.sliceWithStart(header.keyTable.toLong())
+        val valuesStream = stream.sliceWithStart(header.valueTable.toLong())
 
-		for (entry in entries) {
-			val key = keysStream.sliceWithStart(entry.keyOffset.toLong()).readStringz(UTF8)
-			val valueStream = valuesStream.sliceWithSize(entry.valueOffset.toLong(), entry.valueSize.toLong())
-			entry.key = key
+        for (entry in entries) {
+            val key = keysStream.sliceWithStart(entry.keyOffset.toLong()).readStringz(UTF8)
+            val valueStream = valuesStream.sliceWithSize(entry.valueOffset.toLong(), entry.valueSize.toLong())
+            entry.key = key
 
-			when (entry.dataType) {
-				DataType.BINARY -> entry.value = valueStream.readSlice(0)
-				DataType.INT -> entry.value = valueStream.readS32_le()
-				DataType.TEXT -> entry.value = valueStream.readStringz(UTF8)
-				else -> invalidOp("Unknown dataType: ${entry.dataType}")
-			}
+            when (entry.dataType) {
+                DataType.BINARY -> entry.value = valueStream.readSlice(0)
+                DataType.INT -> entry.value = valueStream.readS32_le()
+                DataType.TEXT -> entry.value = valueStream.readStringz(UTF8)
+                else -> invalidOp("Unknown dataType: ${entry.dataType}")
+            }
 
-			entriesByName[entry.key] = entry.value
-		}
+            entriesByName[entry.key] = entry.value
+        }
 
-		this.entries = entries
-		this.entriesByName = entriesByName
-	}
+        this.entries = entries
+        this.entriesByName = entriesByName
+    }
 }

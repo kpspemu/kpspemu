@@ -19,96 +19,96 @@ import com.soywiz.kpspemu.mem.Memory
 import kotlin.coroutines.experimental.CoroutineContext
 
 class Emulator(
-	val coroutineContext: CoroutineContext,
-	val syscalls: SyscallManager = SyscallManager(),
-	val mem: Memory = Memory(),
-	var gpuRenderer: GpuRenderer = DummyGpuRenderer()
+    val coroutineContext: CoroutineContext,
+    val syscalls: SyscallManager = SyscallManager(),
+    val mem: Memory = Memory(),
+    var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) : AsyncDependency {
-	val logger = Logger("Emulator")
-	val timeManager = TimeManager(this)
-	val nameProvider = AddressInfo()
-	val breakpoints = Breakpoints()
-	val globalCpuState = GlobalCpuState()
-	var output = StringBuilder()
-	val ge: Ge = Ge(this)
-	val gpu: Gpu = Gpu(this)
-	val battery: PspBattery = PspBattery(this)
-	val interruptManager: InterruptManager = InterruptManager(this)
-	val display: PspDisplay = PspDisplay(this)
-	val deviceManager = DeviceManager(this)
-	val configManager = ConfigManager()
-	val memoryManager = MemoryManager(this)
-	val threadManager = ThreadManager(this)
-	val moduleManager = ModuleManager(this)
-	val callbackManager = CallbackManager(this)
-	val controller = PspController(this)
-	val fileManager = FileManager(this)
-	val imem = object : IMemory {
-		override fun read8(addr: Int): Int = mem.lbu(addr)
-	}
+    val logger = Logger("Emulator")
+    val timeManager = TimeManager(this)
+    val nameProvider = AddressInfo()
+    val breakpoints = Breakpoints()
+    val globalCpuState = GlobalCpuState()
+    var output = StringBuilder()
+    val ge: Ge = Ge(this)
+    val gpu: Gpu = Gpu(this)
+    val battery: PspBattery = PspBattery(this)
+    val interruptManager: InterruptManager = InterruptManager(this)
+    val display: PspDisplay = PspDisplay(this)
+    val deviceManager = DeviceManager(this)
+    val configManager = ConfigManager()
+    val memoryManager = MemoryManager(this)
+    val threadManager = ThreadManager(this)
+    val moduleManager = ModuleManager(this)
+    val callbackManager = CallbackManager(this)
+    val controller = PspController(this)
+    val fileManager = FileManager(this)
+    val imem = object : IMemory {
+        override fun read8(addr: Int): Int = mem.lbu(addr)
+    }
 
-	suspend override fun init() {
-		configManager.init()
-		deviceManager.init()
+    suspend override fun init() {
+        configManager.init()
+        deviceManager.init()
 
-		configManager.storage.subscribe {
-			deviceManager.setStorage(it)
-		}
-	}
+        configManager.storage.subscribe {
+            deviceManager.setStorage(it)
+        }
+    }
 
-	val running: Boolean get() = threadManager.aliveThreadCount >= 1
-	var globalTrace: Boolean = false
-	var sdkVersion: Int = 150
+    val running: Boolean get() = threadManager.aliveThreadCount >= 1
+    var globalTrace: Boolean = false
+    var sdkVersion: Int = 150
 
-	init {
-		CpuBreakException.initialize(mem)
-	}
+    init {
+        CpuBreakException.initialize(mem)
+    }
 
-	fun invalidateInstructionCache(ptr: Int = 0, size: Int = Int.MAX_VALUE) {
-		logger.trace { "invalidateInstructionCache($ptr, $size)" }
-	}
+    fun invalidateInstructionCache(ptr: Int = 0, size: Int = Int.MAX_VALUE) {
+        logger.trace { "invalidateInstructionCache($ptr, $size)" }
+    }
 
-	fun dataCache(ptr: Int = 0, size: Int = Int.MAX_VALUE, writeback: Boolean, invalidate: Boolean) {
-		logger.trace { "writebackDataCache($ptr, $size, writeback=$writeback, invalidate=$invalidate)" }
-	}
+    fun dataCache(ptr: Int = 0, size: Int = Int.MAX_VALUE, writeback: Boolean, invalidate: Boolean) {
+        logger.trace { "writebackDataCache($ptr, $size, writeback=$writeback, invalidate=$invalidate)" }
+    }
 
-	suspend fun reset() {
-		globalTrace = false
-		sdkVersion = 150
-		syscalls.reset()
-		mem.reset()
-		CpuBreakException.initialize(mem)
-		gpuRenderer.reset()
-		timeManager.reset()
-		nameProvider.reset()
-		//breakpoints.reset() // Do not reset breakpoints?
-		globalCpuState.reset()
-		output = StringBuilder()
-		ge.reset()
-		gpu.reset()
-		battery.reset()
-		interruptManager.reset()
-		display.reset()
-		deviceManager.reset()
-		memoryManager.reset()
-		threadManager.reset()
-		moduleManager.reset()
-		callbackManager.reset()
-		controller.reset()
-		fileManager.reset()
-	}
+    suspend fun reset() {
+        globalTrace = false
+        sdkVersion = 150
+        syscalls.reset()
+        mem.reset()
+        CpuBreakException.initialize(mem)
+        gpuRenderer.reset()
+        timeManager.reset()
+        nameProvider.reset()
+        //breakpoints.reset() // Do not reset breakpoints?
+        globalCpuState.reset()
+        output = StringBuilder()
+        ge.reset()
+        gpu.reset()
+        battery.reset()
+        interruptManager.reset()
+        display.reset()
+        deviceManager.reset()
+        memoryManager.reset()
+        threadManager.reset()
+        moduleManager.reset()
+        callbackManager.reset()
+        controller.reset()
+        fileManager.reset()
+    }
 }
 
 interface WithEmulator {
-	val emulator: Emulator
+    val emulator: Emulator
 }
 
 class AddressInfo : NameProvider {
-	val names = hashMapOf<Int, String>()
-	override fun getName(addr: Int): String? = names[addr]
-	fun reset() {
-		names.clear()
-	}
+    val names = hashMapOf<Int, String>()
+    override fun getName(addr: Int): String? = names[addr]
+    fun reset() {
+        names.clear()
+    }
 }
 
 val WithEmulator.mem: Memory get() = emulator.mem

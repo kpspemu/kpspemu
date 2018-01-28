@@ -4,33 +4,33 @@ import com.soywiz.kpspemu.Emulator
 import com.soywiz.kpspemu.mem.Ptr
 
 class CallbackManager(emulator: Emulator) : Manager<PspCallback>("Callback", emulator, initialId = 1) {
-	fun create(name: String, func: Ptr, arg: Int): PspCallback = PspCallback(this, allocId(), name, func, arg)
+    fun create(name: String, func: Ptr, arg: Int): PspCallback = PspCallback(this, allocId(), name, func, arg)
 
-	override fun reset() {
-		super.reset()
-	}
+    override fun reset() {
+        super.reset()
+    }
 
-	fun queueFunction1(funcPC: Int, arg1: Int) {
-		// @TODO: Implement this!
-	}
+    fun queueFunction1(funcPC: Int, arg1: Int) {
+        // @TODO: Implement this!
+    }
 
-	fun queueCallback(callback: PspCallback, arg2: Int) {
-		// @TODO: Implement this!
-	}
+    fun queueCallback(callback: PspCallback, arg2: Int) {
+        // @TODO: Implement this!
+    }
 
-	fun cancelCallback(callback: PspCallback) {
-		// @TODO: Implement this!
-	}
+    fun cancelCallback(callback: PspCallback) {
+        // @TODO: Implement this!
+    }
 
-	fun executeCallbacks() {
-		// @TODO: Implement this!
-	}
+    fun executeCallbacks() {
+        // @TODO: Implement this!
+    }
 }
 
 class PspCallback(
-	val callbackManager: CallbackManager,
-	id: Int,
-	name: String,
-	val func: Ptr,
-	val arg: Int
+    val callbackManager: CallbackManager,
+    id: Int,
+    name: String,
+    val func: Ptr,
+    val arg: Int
 ) : Resource(callbackManager, id, name)

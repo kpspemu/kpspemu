@@ -43,16 +43,20 @@ class IntegrationTests {
     fun testLsu() = testFile("cpu/lsu/lsu")
 
     @Test
-    fun testFpu() = testFile("cpu/fpu/fpu", ignores = listOf(
+    fun testFpu() = testFile(
+        "cpu/fpu/fpu", ignores = listOf(
             "mul.s 0.296558 * 62.000000, CAST_1 = 18.38657^",
             "mul.s 0.296558 * 62.000000, FLOOR_3 = 18.38657^"
-    ))
+        )
+    )
 
     @Test
-    fun testFcr() = testFile("cpu/fpu/fcr", ignores = listOf(
+    fun testFcr() = testFile(
+        "cpu/fpu/fcr", ignores = listOf(
             "Underflow:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^",
             "Inexact:\n  fcr0: 00003351, fcr25: 00000000, fcr26: 00000000, fcr27: 00000000, fcr28: 00000000, fcr31: ^^^^^^^^"
-    ))
+        )
+    )
 
     //@Test fun testRtcRtc() = testFile("rtc/rtc")
 
@@ -108,21 +112,29 @@ class IntegrationTests {
 
     fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
         testFile(
-                KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
-                KpspTests.pspautotests["$name.expected"].readString(),
-                ignores,
-                processor
+            KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
+            KpspTests.pspautotests["$name.expected"].readString(),
+            ignores,
+            processor
         )
     }
 
-    suspend fun testFile(elf: SyncStream, expected: String, ignores: List<String>, processor: (String) -> String = { it }) {
+    suspend fun testFile(
+        elf: SyncStream,
+        expected: String,
+        ignores: List<String>,
+        processor: (String) -> String = { it }
+    ) {
         val emulator = Emulator(getCoroutineContext())
         emulator.display.exposeDisplay = false
         emulator.registerNativeModules()
         //val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
         emulator.fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
         emulator.fileManager.executableFile = "ms0:/PSP/GAME/virtual/EBOOT.PBP"
-        emulator.deviceManager.mount(emulator.fileManager.currentDirectory, MemoryVfsMix("EBOOT.PBP" to elf.clone().toAsync()))
+        emulator.deviceManager.mount(
+            emulator.fileManager.currentDirectory,
+            MemoryVfsMix("EBOOT.PBP" to elf.clone().toAsync())
+        )
         val info = emulator.loadElfAndSetRegisters(elf, listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP"))
 
         if (TRACE1) {

@@ -108,10 +108,10 @@ class Light(val data: IntArray, val index: Int) {
 
 class Lightning(val data: IntArray) {
     val lights = listOf(
-            Light(data, 0),
-            Light(data, 1),
-            Light(data, 2),
-            Light(data, 3)
+        Light(data, 0),
+        Light(data, 1),
+        Light(data, 2),
+        Light(data, 3)
     )
 
     val lightModel get() = LightModelEnum(param8(this.data[Op.LIGHTMODE], 0))
@@ -122,7 +122,11 @@ class Lightning(val data: IntArray) {
 
 class MipmapState(val texture: TextureState, private val data: IntArray, val index: Int) {
     val bufferWidth get() = param16(this.data[Op.TEXBUFWIDTH0 + this.index], 0)
-    val address get() = param24(this.data[Op.TEXADDR0 + this.index]) or (param8(this.data[Op.TEXBUFWIDTH0 + this.index], 16) shl 24)
+    val address
+        get() = param24(this.data[Op.TEXADDR0 + this.index]) or (param8(
+            this.data[Op.TEXBUFWIDTH0 + this.index],
+            16
+        ) shl 24)
     val addressEnd get() = this.address + this.sizeInBytes
     val textureWidth get() = 1 shl param4(this.data[Op.TSIZE0 + this.index], 0)
     val textureHeight get() = 1 shl param4(this.data[Op.TSIZE0 + this.index], 8)
@@ -137,7 +141,9 @@ interface ClutReader {
 }
 
 class ClutState(val data: IntArray) : ClutReader {
-    fun getHashFast(): Int = (this.data[Op.CMODE] shl 0) + (this.data[Op.CLOAD] shl 8) + (this.data[Op.CLUTADDR] shl 16) + (this.data[Op.CLUTADDRUPPER] shl 24)
+    fun getHashFast(): Int =
+        (this.data[Op.CMODE] shl 0) + (this.data[Op.CLOAD] shl 8) + (this.data[Op.CLUTADDR] shl 16) + (this.data[Op.CLUTADDRUPPER] shl 24)
+
     val cmode get() = this.data[Op.CMODE]
     val cload get() = this.data[Op.CLOAD]
     val address get() = param24(this.data[Op.CLUTADDR]) or ((this.data[Op.CLUTADDRUPPER] shl 8) and 0xFF000000.toInt())
@@ -163,7 +169,8 @@ class ClutState(val data: IntArray) : ClutReader {
 
 class TextureState(val geState: GeState) {
     val data: IntArray = geState.data
-    fun getTextureMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x4(this@TextureState.data, Op.MAT_TEXTURE, out) }
+    fun getTextureMatrix(out: Matrix4 = Matrix4()) =
+        out.apply { getMatrix4x4(this@TextureState.data, Op.MAT_TEXTURE, out) }
 
     val clut = ClutState(this.data)
 
@@ -190,14 +197,14 @@ class TextureState(val geState: GeState) {
     val mipmap get() = this.mipmaps[0]
 
     val mipmaps = listOf(
-            MipmapState(this, this.data, 0),
-            MipmapState(this, this.data, 1),
-            MipmapState(this, this.data, 2),
-            MipmapState(this, this.data, 3),
-            MipmapState(this, this.data, 4),
-            MipmapState(this, this.data, 5),
-            MipmapState(this, this.data, 6),
-            MipmapState(this, this.data, 7)
+        MipmapState(this, this.data, 0),
+        MipmapState(this, this.data, 1),
+        MipmapState(this, this.data, 2),
+        MipmapState(this, this.data, 3),
+        MipmapState(this, this.data, 4),
+        MipmapState(this, this.data, 5),
+        MipmapState(this, this.data, 6),
+        MipmapState(this, this.data, 7)
     )
 
     private val envColorColor = Color()
@@ -417,7 +424,9 @@ class GeState {
     val baseAddress: Int get() = (data[Op.BASE] shl 8) and 0xFF000000.toInt()
 
     var baseOffset: Int
-        set(value) = run { data[Op.OFFSETADDR] = (data[Op.OFFSETADDR] and 0xFF000000.toInt()) or ((value ushr 8) and 0x00FFFFFF) }
+        set(value) = run {
+            data[Op.OFFSETADDR] = (data[Op.OFFSETADDR] and 0xFF000000.toInt()) or ((value ushr 8) and 0x00FFFFFF)
+        }
         get() = data[Op.OFFSETADDR] shl 8
 
     fun writeInt(key: Int, offset: Int, value: Int): Unit = run { data[offset + data[key]++] = value }
@@ -441,7 +450,8 @@ class GeState {
     fun getProjMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x4(this@GeState.data, Op.MAT_PROJ, out) }
     fun getViewMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x3(this@GeState.data, Op.MAT_VIEW, out) }
     fun getWorldMatrix(out: Matrix4 = Matrix4()) = out.apply { getMatrix4x3(this@GeState.data, Op.MAT_WORLD, out) }
-    fun getBoneMatrix(index: Int, out: Matrix4 = Matrix4()) = out.apply { getMatrix4x3(this@GeState.data, Op.MAT_BONES + 12 * index, out) }
+    fun getBoneMatrix(index: Int, out: Matrix4 = Matrix4()) =
+        out.apply { getMatrix4x3(this@GeState.data, Op.MAT_BONES + 12 * index, out) }
 
     ///////////////////////////////
 
@@ -472,7 +482,8 @@ class GeState {
 }
 
 class SkinningState(val data: IntArray) {
-    fun getBoneMatrix(index: Int, out: Matrix4 = Matrix4()) = out.apply { getMatrix4x3(this@SkinningState.data, Op.MAT_BONES + 12 * index, out) }
+    fun getBoneMatrix(index: Int, out: Matrix4 = Matrix4()) =
+        out.apply { getMatrix4x3(this@SkinningState.data, Op.MAT_BONES + 12 * index, out) }
 }
 
 private fun getFloat(value: Int) = Float.fromBits(value shl 8)
@@ -608,12 +619,12 @@ fun VertexType.init(state: GeState) = init(state.vertexType)
 
 @Suppress("ArrayInDataClass")
 data class VertexRaw(
-        var type: VertexType = VertexType.DUMMY,
-        var color: Int = 0,
-        val normal: FloatArray = FloatArray(3),
-        val pos: FloatArray = FloatArray(3),
-        val tex: FloatArray = FloatArray(3),
-        val weights: FloatArray = FloatArray(8)
+    var type: VertexType = VertexType.DUMMY,
+    var color: Int = 0,
+    val normal: FloatArray = FloatArray(3),
+    val pos: FloatArray = FloatArray(3),
+    val tex: FloatArray = FloatArray(3),
+    val weights: FloatArray = FloatArray(8)
 ) {
     override fun toString(): String {
         val parts = arrayListOf<String>()
@@ -626,7 +637,14 @@ data class VertexRaw(
         return "VertexRaw(${parts.joinToString(", ")})"
     }
 
-    fun clone() = VertexRaw(type = VertexType.DUMMY, color = color, normal = normal.copyOf(), pos = pos.copyOf(), tex = tex.copyOf(), weights = weights.copyOf())
+    fun clone() = VertexRaw(
+        type = VertexType.DUMMY,
+        color = color,
+        normal = normal.copyOf(),
+        pos = pos.copyOf(),
+        tex = tex.copyOf(),
+        weights = weights.copyOf()
+    )
 }
 
 class VertexReader {
@@ -664,7 +682,12 @@ class VertexReader {
         }
     }
 
-    fun SyncStream.readNumericType(count: Int, type: NumericEnum, out: FloatArray = FloatArray(4), normalized: Boolean): FloatArray = out.apply {
+    fun SyncStream.readNumericType(
+        count: Int,
+        type: NumericEnum,
+        out: FloatArray = FloatArray(4),
+        normalized: Boolean
+    ): FloatArray = out.apply {
         when (type) {
             NumericEnum.VOID -> Unit
             NumericEnum.BYTE -> readBytes(count, out, normalized)
@@ -701,13 +724,26 @@ class VertexReader {
         s.readNumericType(type.posComponents, type.pos, out.pos, normalized = false)
         //println("  Pos[1]: ${s.position}")
 
-        s.safeSkipToAlign(max(type.weight.nbytes, type.tex.nbytes, type.col.nbytes, type.normal.nbytes, type.pos.nbytes))
+        s.safeSkipToAlign(
+            max(
+                type.weight.nbytes,
+                type.tex.nbytes,
+                type.col.nbytes,
+                type.normal.nbytes,
+                type.pos.nbytes
+            )
+        )
         //println("Align: ${s.position}")
 
         return out
     }
 
-    fun read(type: VertexType, count: Int, s: SyncStream, out: Array<VertexRaw> = Array(count) { VertexRaw() }): Array<VertexRaw> {
+    fun read(
+        type: VertexType,
+        count: Int,
+        s: SyncStream,
+        out: Array<VertexRaw> = Array(count) { VertexRaw() }
+    ): Array<VertexRaw> {
         for (n in 0 until count) readOne(s, type, out[n])
         return out
     }

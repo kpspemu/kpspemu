@@ -172,7 +172,17 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
             }
         }
         bb.flush()
-        bb.addUnoptimizedShape(PrimitiveType.TRIANGLES, indices.copyOfShortArray(), vertices, vertexCount, hasPosition = true, hasColor = false, hasTexture = useTexture, hasNormal = false, hasWeights = false)
+        bb.addUnoptimizedShape(
+            PrimitiveType.TRIANGLES,
+            indices.copyOfShortArray(),
+            vertices,
+            vertexCount,
+            hasPosition = true,
+            hasColor = false,
+            hasTexture = useTexture,
+            hasNormal = false,
+            hasWeights = false
+        )
     }
 
     // @TODO: Unused yet! Needed for bezier

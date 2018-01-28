@@ -13,7 +13,6 @@ import com.soywiz.korge.bitmapfont.BitmapFont
 import com.soywiz.korge.input.onClick
 import com.soywiz.korge.input.onKeyDown
 import com.soywiz.korge.input.onKeyUp
-import com.soywiz.korge.input.onOut
 import com.soywiz.korge.render.RenderContext
 import com.soywiz.korge.render.Texture
 import com.soywiz.korge.scene.*
@@ -77,18 +76,29 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         Korge(KpspemuModule, injector = AsyncInjector()
-                .mapSingleton(Emulator::class) { Emulator(getCoroutineContext()) }
-                .mapSingleton(PromptConfigurator::class) { PromptConfigurator(get(Browser::class), get(Emulator::class)) }
-                .mapPrototype(KpspemuMainScene::class) { KpspemuMainScene(get(Browser::class), get(Emulator::class), get(PromptConfigurator::class)) }
-                .mapPrototype(DebugScene::class) { DebugScene(get(Browser::class), get(Emulator::class)) }
-                .mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
+            .mapSingleton(Emulator::class) { Emulator(getCoroutineContext()) }
+            .mapSingleton(PromptConfigurator::class) {
+                PromptConfigurator(
+                    get(Browser::class),
+                    get(Emulator::class)
+                )
+            }
+            .mapPrototype(KpspemuMainScene::class) {
+                KpspemuMainScene(
+                    get(Browser::class),
+                    get(Emulator::class),
+                    get(PromptConfigurator::class)
+                )
+            }
+            .mapPrototype(DebugScene::class) { DebugScene(get(Browser::class), get(Emulator::class)) }
+            .mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
 
-                // @TODO: Kotlin.JS unresolved bug!
-                //.mapSingleton { Emulator(getCoroutineContext()) }
-                //.mapSingleton { PromptConfigurator(get(), get()) }
-                //.mapPrototype { KpspemuMainScene(get(), get(), get()) }
-                //.mapPrototype { DebugScene(get(), get()) }
-                //.mapSingleton { Browser(get()) }
+            // @TODO: Kotlin.JS unresolved bug!
+            //.mapSingleton { Emulator(getCoroutineContext()) }
+            //.mapSingleton { PromptConfigurator(get(), get()) }
+            //.mapPrototype { KpspemuMainScene(get(), get(), get()) }
+            //.mapPrototype { DebugScene(get(), get()) }
+            //.mapSingleton { Browser(get()) }
         )
     }
 }
@@ -118,9 +128,9 @@ abstract class SceneWithProcess() : Scene() {
 }
 
 class KpspemuMainScene(
-        val browser: Browser,
-        override val emulator: Emulator,
-        val promptConfigurator: PromptConfigurator
+    val browser: Browser,
+    override val emulator: Emulator,
+    val promptConfigurator: PromptConfigurator
 ) : SceneWithProcess(), WithEmulator {
     companion object {
         val logger = Logger("KpspemuMainScene")
@@ -346,8 +356,8 @@ class KpspemuMainScene(
             }
 
             controller.updateAnalog(
-                    x = when { keys[PspEmuKeys.J] -> -1f; keys[PspEmuKeys.L] -> +1f; else -> 0f; },
-                    y = when { keys[PspEmuKeys.I] -> -1f; keys[PspEmuKeys.K] -> +1f; else -> 0f; }
+                x = when { keys[PspEmuKeys.J] -> -1f; keys[PspEmuKeys.L] -> +1f; else -> 0f; },
+                y = when { keys[PspEmuKeys.I] -> -1f; keys[PspEmuKeys.K] -> +1f; else -> 0f; }
             )
         }
 
@@ -378,28 +388,30 @@ class KpspemuMainScene(
             x = 8.0
             y = 272.0 - 24.0 * 1
         }.onClick {
-            createEmulatorWithExe(browser.openFile())
-        }
+                createEmulatorWithExe(browser.openFile())
+            }
 
         val directButton = views.simpleButton("Auto", font = hudFont).apply {
             x = 8.0
             y = 272.0 - 24.0 * 2
         }.onClick {
-            agRenderer.renderMode = when (agRenderer.renderMode) {
-                AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
-                AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
-                else -> AGRenderer.RenderMode.AUTO
-            //AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
-            //AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
-            //AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
-            }
+                agRenderer.renderMode = when (agRenderer.renderMode) {
+                    AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+                    AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
+                    else -> AGRenderer.RenderMode.AUTO
+                //AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+                //AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
+                //AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
+                }
 
-            it.view.setText(when (agRenderer.renderMode) {
-                AGRenderer.RenderMode.AUTO -> "Auto"
-                AGRenderer.RenderMode.NORMAL -> "Normal"
-                AGRenderer.RenderMode.DIRECT -> "Direct"
-            })
-        }
+                it.view.setText(
+                    when (agRenderer.renderMode) {
+                        AGRenderer.RenderMode.AUTO -> "Auto"
+                        AGRenderer.RenderMode.NORMAL -> "Normal"
+                        AGRenderer.RenderMode.DIRECT -> "Direct"
+                    }
+                )
+            }
 
         lateinit var pauseButton: View
 
@@ -412,23 +424,23 @@ class KpspemuMainScene(
             x = 8.0
             y = 272.0 - 24.0 * 3
         }.onClick {
-            pause(!paused)
-        }!!
+                pause(!paused)
+            }!!
 
         val stepButton = views.simpleButton("Step", font = hudFont).apply {
             x = 8.0
             y = 272.0 - 24.0 * 4
         }.onClick {
-            pause(true)
-            forceSteps++
-        }
+                pause(true)
+                forceSteps++
+            }
 
         val promptButton = views.simpleButton("prompt", font = hudFont).apply {
             x = 8.0
             y = 272.0 - 24.0 * 5
         }.onClick {
-            promptConfigurator.prompt()
-        }
+                promptConfigurator.prompt()
+            }
 
 
         hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
@@ -654,13 +666,13 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
                         fileManager.currentDirectory = ms_PSP_GAME_folder
                         fileManager.executableFile = "$ms_PSP_GAME_folder/EBOOT.PBP"
                         deviceManager.mount(
-                                ms_PSP_GAME_folder,
-                                MergedVfs(
-                                        listOf(
-                                                deviceManager.ms[PSP_GAME_folder].jail(),
-                                                container
-                                        )
-                                ).root
+                            ms_PSP_GAME_folder,
+                            MergedVfs(
+                                listOf(
+                                    deviceManager.ms[PSP_GAME_folder].jail(),
+                                    container
+                                )
+                            ).root
                         )
                     }
                 }

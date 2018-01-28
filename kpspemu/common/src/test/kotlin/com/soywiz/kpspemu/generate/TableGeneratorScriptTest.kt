@@ -80,14 +80,23 @@ class TableGenerator {
                 if ((i.instructionType and INSTR_TYPE_BREAK) != 0) itypes += "INSTR_TYPE_BREAK"
                 if (itypes.isEmpty()) itypes += "0"
 
-                println("val ${i.name.kescape()} = ID(${i.name.quote()}, VM(${i.vm.format.quote()}), ${i.format.quote()}, $addressTypeStr, ${itypes.joinToString(" or ")})")
+                println(
+                    "val ${i.name.kescape()} = ID(${i.name.quote()}, VM(${i.vm.format.quote()}), ${i.format.quote()}, $addressTypeStr, ${itypes.joinToString(
+                        " or "
+                    )})"
+                )
             }
 
             println("val instructions = listOf(${instructions.map { it.name.kescape() }.joinToString(", ")})")
         }
     }
 
-    private fun _createSwitch(writer: Indenter, instructions: List<InstructionType>, baseMask: Int = 0xFFFFFFFF.toInt(), level: Int = 0) {
+    private fun _createSwitch(
+        writer: Indenter,
+        instructions: List<InstructionType>,
+        baseMask: Int = 0xFFFFFFFF.toInt(),
+        level: Int = 0
+    ) {
         if (level >= 10) throw Exception("ERROR: Recursive detection")
         val commonMask = this.getCommonMask(instructions, baseMask)
         val groups = LinkedHashMap<Int, ArrayList<InstructionType>>()

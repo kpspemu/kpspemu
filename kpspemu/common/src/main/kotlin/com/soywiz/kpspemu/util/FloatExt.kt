@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.util
 
 inline fun <T> Iterable<T>.sumByFloat(crossinline selector: (T) -> Float): Float {
-	var out = 0f
-	for (i in this) out += selector(i)
-	return out
+    var out = 0f
+    for (i in this) out += selector(i)
+    return out
 }
 
 val Float.pspSign: Float get() = if (this == 0f || this == -0f) 0f else if ((this.toRawBits() ushr 31) != 0) -1f else +1f

@@ -3,15 +3,15 @@ package com.soywiz.kpspemu.format.elf
 import com.soywiz.klogger.Logger
 
 class ElfDwarf {
-	val logger = Logger("ElfDwarf")
+    val logger = Logger("ElfDwarf")
 
-	fun parseElfLoader(elfLoader: Elf): Unit {
-		logger.info("ElfDwarfLoader.parseElfLoader: Not implemented")
-	}
+    fun parseElfLoader(elfLoader: Elf): Unit {
+        logger.info("ElfDwarfLoader.parseElfLoader: Not implemented")
+    }
 
-	fun getSymbolAt(address: Int): Unit {
-		Unit
-	}
+    fun getSymbolAt(address: Int): Unit {
+        Unit
+    }
 }
 
 /*
