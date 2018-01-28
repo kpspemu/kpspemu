@@ -145,10 +145,14 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 	val u_texMatrix = Uniform("u_texMatrix", VarType.Mat4)
 	val textureMatrix = Matrix4()
 	val textureUnit = AG.TextureUnit(null, linear = false)
+	val u_Col = Uniform("u_Col", VarType.Float4)
+    val color = FloatArray(4)
+
 	private val uniforms = mapOf(
 		u_modelViewProjMatrix to batch.modelViewProjMatrix,
 		u_tex to textureUnit,
-		u_texMatrix to textureMatrix
+		u_texMatrix to textureMatrix,
+        u_Col to color
 	)
 
 	private fun renderBatches(views: Views, ctx: RenderContext, scale: Double) {
@@ -316,6 +320,17 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
 		textureUnit.texture = texture
 		textureUnit.linear = !state.texture.filterMinification.nearest
+        if (vtype.hasColor) {
+            color[0] = 1f
+            color[1] = 1f
+            color[2] = 1f
+            color[3] = 1f
+        } else {
+            color[0] = state.ambientModelColor.r
+            color[1] = state.ambientModelColor.g
+            color[2] = state.ambientModelColor.b
+            color[3] = state.ambientModelColor.a
+        }
 		//println(state.blending.functionSource)
 		//println(state.blending.functionDestination)
 
@@ -370,6 +385,9 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 		val v_Col = Varying("v_Col", VarType.Byte4)
 		val t_Col = Temp(0, VarType.Byte4)
 		val layout = VertexLayout(listOf(a_Tex, a_Col, a_Pos).filterNotNull(), vtype.size)
+		//println("ambientModelColor:" + state.ambientModelColor)
+		//println("diffuseModelColor:" + state.diffuseModelColor)
+		//println("specularModelColor:" + state.specularModelColor)
 
 		val program = Program(
 			name = "$vtype",
@@ -383,7 +401,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 				}
 			},
 			fragment = FragmentShader {
-				SET(out, vec4(1f.lit, 1f.lit, 1f.lit, 1f.lit))
+                SET(out, u_Col)
 
 				if (a_Col != null) {
 					SET(out, out * v_Col)

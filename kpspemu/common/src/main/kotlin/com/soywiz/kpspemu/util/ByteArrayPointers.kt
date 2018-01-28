@@ -52,8 +52,8 @@ fun ByteArray.p_u8() = p_u8(this, 0)
 fun UByteArray.p_u32() = p_u32(this.data, 0)
 fun ByteArray.p_u32() = p_u32(this, 0)
 
-fun p_void.p_u8() = p_u8(ba, pos)
-fun p_void.p_u32() = p_u32(ba, pos)
+fun p_void.p_u8(): p_u8 = p_u8(ba, pos)
+fun p_void.p_u32(): p_u32 = p_u32(ba, pos)
 fun p_void.openSync(len: Int): SyncStream = this.ba.openSync().sliceWithSize(this.pos, len)
 
 fun ByteArray.unsigned() = UByteArray(this)

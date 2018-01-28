@@ -6,7 +6,7 @@ buildscript {
     ext.klockVersion = ""
     ext.kryptoVersion = '0.4.0'
     ext.korauAtrac3plusVersion = '0.19.1'
-    ext.koragVersion = "0.19.1"
+    ext.koragVersion = "0.19.2"
     ext.korauVersion = "0.19.1"
     ext.korioVersion = "0.19.1"
     ext.korgeVersion = "0.19.2"

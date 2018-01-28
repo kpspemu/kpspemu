@@ -257,7 +257,7 @@ class DepthTestState(val data: IntArray) {
     val rangeFar get() = (this.data[Op.MINZ] and 0xFFFF).toDouble() / 65535.0
 }
 
-class Color(var r: Float = 0f, var g: Float = 0f, var b: Float = 0f, var a: Float = 1f) {
+data class Color(var r: Float = 0f, var g: Float = 0f, var b: Float = 0f, var a: Float = 1f) {
     companion object {
         fun add(a: Color, b: Color, dest: Color = Color()): Color {
             dest.r = a.r + b.r

@@ -56,7 +56,7 @@ class IntegrationTests {
 
     //@Test fun testRtcRtc() = testFile("rtc/rtc")
 
-    @Ignore
+    @Ignore // ("almost but fails in edge cases")
     @Test
     fun testRtcArithmetic() = testFile("rtc/arithmetic")
 
@@ -97,11 +97,14 @@ class IntegrationTests {
 
     @Ignore
     @Test
-    fun testThreadsVplAllocate() = testFile("threads/vpl/allocate")
+    fun testThreadsThreadsCreate() = testFile("threads/threads/create")
 
     @Ignore
     @Test
-    fun testThreadsThreadsCreate() = testFile("threads/threads/create")
+    fun testThreadsVplAllocate() = testFile("threads/vpl/allocate")
+
+    @Test
+    fun testThreadsVplVpl() = testFile("threads/vpl/vpl")
 
     fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
         testFile(
