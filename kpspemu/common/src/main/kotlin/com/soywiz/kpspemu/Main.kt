@@ -33,9 +33,7 @@ import com.soywiz.korinject.AsyncInjector
 import com.soywiz.korinject.Korinject
 import com.soywiz.korio.JvmStatic
 import com.soywiz.korio.Korio
-import com.soywiz.korio.async.AsyncThread
-import com.soywiz.korio.async.Promise
-import com.soywiz.korio.async.go
+import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.printStackTrace
@@ -592,19 +590,27 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
                     else -> TODO("Impossible!") // @TODO: Kotlin could detect this!
                 }
 
+                val ebootNames = linkedSetOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")
                 var afile: VfsFile? = null
                 done@ for (folder in listOf("PSP_GAME/SYSDIR", "")) {
                     umdLikeStructure = folder.isNotEmpty()
-                    for (filename in listOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")) {
-                        afile = container["$folder/$filename"]
-                        if (afile.exists()) {
+                    for (filename in ebootNames) {
+                        val tfile = container["$folder/$filename"]
+                        if (tfile.exists()) {
                             // Some BOOT.BIN files are filled with 0!
-                            if (afile.readRangeBytes(0 until 4).hexString != "00000000") {
+                            if (tfile.readRangeBytes(0 until 4).hexString != "00000000") {
+                                afile = tfile
                                 logger.warn { "Using $afile from iso" }
                                 break@done
                             }
                         }
                     }
+                }
+
+                // Search EBOOT.PBP in folders (2 levels max) inside zip files
+                if (format == PspFileFormat.ZIP && afile == null) {
+                    val suitableFiles = container.listRecursive { it.fullname.count { it == '/' } <= 2 }.filter { it.basename.toUpperCase() in ebootNames }.toList()
+                    afile = suitableFiles.firstOrNull()
                 }
 
                 if (afile == null) invalidOp("Can't find any suitable executable inside $format")
