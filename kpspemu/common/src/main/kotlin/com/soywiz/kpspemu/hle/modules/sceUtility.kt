@@ -7,6 +7,7 @@ import com.soywiz.kpspemu.hle.SceModule
 import com.soywiz.kpspemu.hle.error.SceKernelErrors
 import com.soywiz.kpspemu.mem.Ptr
 import com.soywiz.kpspemu.mem.capture
+import com.soywiz.kpspemu.mem.writeStringz
 import com.soywiz.kpspemu.util.*
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate", "FunctionName")
@@ -141,7 +142,15 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 	fun sceUtility_2995D020(cpu: CpuState): Unit = UNIMPLEMENTED(0x2995D020)
 	fun sceUtilityLoadModule(cpu: CpuState): Unit = UNIMPLEMENTED(0x2A2B3DE0)
 	fun sceUtility_2B96173B(cpu: CpuState): Unit = UNIMPLEMENTED(0x2B96173B)
-	fun sceUtilityGetSystemParamString(cpu: CpuState): Unit = UNIMPLEMENTED(0x34B78343)
+
+	fun sceUtilityGetSystemParamString(id: Int, strPtr: Ptr, len: Int): Int {
+		if (id == PSP_SYSTEMPARAM_ID_STRING_NICKNAME) {
+			strPtr.writeStringz("username")
+			return 0
+		}
+		return -1
+	}
+
 	fun sceUtility_3AAD51DC(cpu: CpuState): Unit = UNIMPLEMENTED(0x3AAD51DC)
 	fun sceNetplayDialogInitStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x3AD50AE7)
 	fun sceUtilityOskShutdownStart(cpu: CpuState): Unit = UNIMPLEMENTED(0x3DFAEBA9)
@@ -235,7 +244,7 @@ class sceUtility(emulator: Emulator) : SceModule(emulator, "sceUtility", 0x40010
 		registerFunctionRaw("sceUtility_2995D020", 0x2995D020, since = 150) { sceUtility_2995D020(it) }
 		registerFunctionRaw("sceUtilityLoadModule", 0x2A2B3DE0, since = 150) { sceUtilityLoadModule(it) }
 		registerFunctionRaw("sceUtility_2B96173B", 0x2B96173B, since = 150) { sceUtility_2B96173B(it) }
-		registerFunctionRaw("sceUtilityGetSystemParamString", 0x34B78343, since = 150) { sceUtilityGetSystemParamString(it) }
+		registerFunctionInt("sceUtilityGetSystemParamString", 0x34B78343, since = 150) { sceUtilityGetSystemParamString(int, ptr, int) }
 		registerFunctionRaw("sceUtility_3AAD51DC", 0x3AAD51DC, since = 150) { sceUtility_3AAD51DC(it) }
 		registerFunctionRaw("sceNetplayDialogInitStart", 0x3AD50AE7, since = 150) { sceNetplayDialogInitStart(it) }
 		registerFunctionRaw("sceUtilityOskShutdownStart", 0x3DFAEBA9, since = 150) { sceUtilityOskShutdownStart(it) }

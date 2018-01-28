@@ -1,6 +1,9 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.kmem.*
+import com.soywiz.korio.lang.Charset
+import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.toByteArray
 import com.soywiz.korio.stream.SyncStream
 import com.soywiz.korio.stream.openSync
 import com.soywiz.korio.stream.sliceWithSize
@@ -9,6 +12,14 @@ abstract class p_void(val ba: ByteArray, val pos: Int) {
 	override fun equals(other: Any?): Boolean {
 		if (other !is p_void) return false
 		return ba === other.ba && pos == other.pos
+	}
+
+	fun writeBytes(bytes: ByteArray, offset: Int = 0) {
+		arraycopy(bytes, 0, ba, pos + offset, ba.size)
+	}
+
+	fun writeStringz(str: String, charset: Charset = UTF8) {
+		writeBytes(str.toByteArray(charset) + byteArrayOf(0))
 	}
 
 	override fun hashCode(): Int = ba.hashCode() + pos

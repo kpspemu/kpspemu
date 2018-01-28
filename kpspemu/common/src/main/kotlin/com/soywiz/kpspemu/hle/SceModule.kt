@@ -48,6 +48,7 @@ class RegisterReader {
 			return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
 		}
 	val ptr: Ptr get() = MemPtr(mem, int)
+	val ptr8: Ptr8 get() = Ptr8(ptr)
 	val ptr32: Ptr32 get() = Ptr32(ptr)
 	val ptr64: Ptr64 get() = Ptr64(ptr)
 	val str: String? get() = mem.readStringzOrNull(int)

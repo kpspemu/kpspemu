@@ -3,11 +3,8 @@ package com.soywiz.kpspemu.mem
 import com.soywiz.korio.error.invalidOp
 import com.soywiz.korio.lang.Charset
 import com.soywiz.korio.lang.Charsets
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.stream.ByteArrayBuilderSmall
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.SyncStreamBase
-import com.soywiz.korio.stream.toSyncStream
+import com.soywiz.korio.lang.toByteArray
+import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.hex
 import com.soywiz.korio.util.unsigned
 import com.soywiz.kpspemu.util.Struct
@@ -24,6 +21,15 @@ data class PtrArray(val ptr: Ptr, val size: Int) {
 
 interface BasePtr {
 	val ptr: Ptr
+}
+
+class Ptr8(override val ptr: Ptr) : BasePtr {
+	fun get(): Int = this[0]
+	fun set(value: Int) = run { this[0] = value }
+	operator fun get(index: Int): Int = ptr.lb(index)
+	operator fun set(index: Int, value: Int) = ptr.sb(index, value)
+	operator fun plus(offset: Int) = Ptr32(ptr + offset * 1)
+	override fun toString(): String = "Ptr8($ptr)"
 }
 
 class Ptr32(override val ptr: Ptr) : BasePtr {
@@ -136,7 +142,7 @@ fun Ptr.readBytes(count: Int, offset: Int = 0): ByteArray {
 }
 
 fun Ptr.readStringz(charset: Charset = Charsets.UTF_8): String {
-	val out = ByteArrayBuilderSmall()
+	val out = ByteArrayBuilder()
 	var n = 0
 	while (true) {
 		val c = this.lb(n++)
@@ -145,6 +151,10 @@ fun Ptr.readStringz(charset: Charset = Charsets.UTF_8): String {
 		if (out.size >= 0x1000) invalidOp("String is too big!")
 	}
 	return out.toString(charset)
+}
+
+fun Ptr.writeStringz(str: String, charset: Charset = Charsets.UTF_8): Unit {
+	writeBytes(str.toByteArray(charset) + byteArrayOf(0))
 }
 
 fun Ptr.openSync(offset: Int = 0): SyncStream {
