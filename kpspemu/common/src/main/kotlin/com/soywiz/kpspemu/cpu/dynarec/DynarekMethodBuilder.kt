@@ -6,10 +6,10 @@ import com.soywiz.kpspemu.cpu.InstructionDispatcher
 import com.soywiz.kpspemu.cpu.InstructionEvaluator
 
 class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
-	override fun add(s: InstructionInfo) = s { RD = RS + RT }
-	override fun addiu(s: InstructionInfo) = s { RT = RS + S_IMM16 }
-	override fun sll(s: InstructionInfo) = s { RD = RT shl POS }
-	override fun lui(s: InstructionInfo) = s { RT = (U_IMM16_V shl 16).lit }
+	override fun add(i: Int, s: InstructionInfo) = s { RD = RS + RT }
+	override fun addiu(i: Int, s: InstructionInfo) = s { RT = RS + S_IMM16 }
+	override fun sll(i: Int, s: InstructionInfo) = s { RD = RT shl POS }
+	override fun lui(i: Int, s: InstructionInfo) = s { RT = (U_IMM16_V shl 16).lit }
 }
 
 data class InstructionInfo(var PC: Int, var IR: Int)

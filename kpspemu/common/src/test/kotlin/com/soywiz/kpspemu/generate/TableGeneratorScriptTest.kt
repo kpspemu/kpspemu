@@ -109,7 +109,7 @@ class TableGenerator {
                 //for ((groupKey, group) in groups) {
                 val case = "${(groupKey ushr maskShift).str()} ->"
                 if (group.size == 1) {
-                    writer.line("$case return e.${group[0].name.kescape()}(s)")
+                    writer.line("$case return e.${group[0].name.kescape()}(i, s)")
                 } else {
                     writer.line("$case ")
                     writer.indent { this._createSwitch(writer, group, commonMask.inv(), level + 1) }
