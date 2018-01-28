@@ -609,8 +609,16 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
 
                 // Search EBOOT.PBP in folders (2 levels max) inside zip files
                 if (format == PspFileFormat.ZIP && afile == null) {
-                    val suitableFiles = container.listRecursive { it.fullname.count { it == '/' } <= 2 }.filter { it.basename.toUpperCase() in ebootNames }.toList()
+                    val suitableFiles = container
+                        .listRecursive { it.fullname.count { it == '/' } <= 2 }.filter { it.basename.toUpperCase() in ebootNames }
+                        .toList()
+                        .sortedBy { it.fullname.count { it == '/' } }
                     afile = suitableFiles.firstOrNull()
+                    // Rebase container
+                    if (afile != null) {
+                        container = afile.parent.jail()
+                        //println(afile.parent)
+                    }
                 }
 
                 if (afile == null) invalidOp("Can't find any suitable executable inside $format")
