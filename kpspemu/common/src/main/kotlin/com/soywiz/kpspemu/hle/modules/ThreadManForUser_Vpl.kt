@@ -110,9 +110,8 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
                         return SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT
                     }
                 } else {
-                    //println("DO NOT WAIT!")
+                    return SceKernelErrors.ERROR_KERNEL_NO_MEMORY
                 }
-                return SceKernelErrors.ERROR_OUT_OF_MEMORY
             }
         }
     }
