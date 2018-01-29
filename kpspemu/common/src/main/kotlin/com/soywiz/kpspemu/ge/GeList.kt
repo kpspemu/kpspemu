@@ -103,7 +103,8 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
                 PC = (state.baseAddress + p and 0b11.inv()) and Memory.MASK
             }
             Op.RET -> {
-                TODO("RET")
+                state.baseOffset = callstack[--callstackIndex] shl 2
+                PC = callstack[--callstackIndex]
             }
             Op.FINISH -> finish(p)
             Op.SIGNAL -> signal(p)
