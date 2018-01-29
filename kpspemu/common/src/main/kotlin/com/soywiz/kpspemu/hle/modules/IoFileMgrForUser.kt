@@ -401,7 +401,6 @@ class IoFileMgrForUser(emulator: Emulator) :
     fun sceIoSetAsyncCallback(cpu: CpuState): Unit = UNIMPLEMENTED(0xA12A0514)
     fun sceIoSync(cpu: CpuState): Unit = UNIMPLEMENTED(0xAB96437F)
     fun sceIoChangeAsyncPriority(cpu: CpuState): Unit = UNIMPLEMENTED(0xB293727F)
-    fun sceIoAssign(cpu: CpuState): Unit = UNIMPLEMENTED(0xB2A628C1)
     fun sceIoChstat(cpu: CpuState): Unit = UNIMPLEMENTED(0xB8A740F4)
     fun sceIoGetAsyncStat(cpu: CpuState): Unit = UNIMPLEMENTED(0xCB05F8D6)
     fun sceIoWaitAsync(cpu: CpuState): Unit = UNIMPLEMENTED(0xE23EEC33)
@@ -413,10 +412,16 @@ class IoFileMgrForUser(emulator: Emulator) :
         return 0
     }
 
+    suspend fun sceIoAssign(dev1: String?, dev2: String?, dev3: String?, mode: Int, unk1: Ptr, unk2: Long): Int {
+        logger.warn { "sceIoAssign($dev1, $dev2, $dev3, $mode, $unk1, $unk2) not implemented" }
+        return 0
+    }
+
 
     override fun registerModule() {
         // Devices
         registerFunctionSuspendInt("sceIoDevctl", 0x54F5FB11, since = 150) { sceIoDevctl(str, int, ptr, int, ptr, int) }
+        registerFunctionSuspendInt("sceIoAssign", 0xB2A628C1, since = 150) { sceIoAssign(str, str, str, int, ptr, long) }
 
         // Files
         registerFunctionSuspendInt("sceIoOpen", 0x109F50BC, since = 150) { sceIoOpen(thread, str, int, int) }
@@ -466,7 +471,6 @@ class IoFileMgrForUser(emulator: Emulator) :
         registerFunctionRaw("sceIoSetAsyncCallback", 0xA12A0514, since = 150) { sceIoSetAsyncCallback(it) }
         registerFunctionRaw("sceIoSync", 0xAB96437F, since = 150) { sceIoSync(it) }
         registerFunctionRaw("sceIoChangeAsyncPriority", 0xB293727F, since = 150) { sceIoChangeAsyncPriority(it) }
-        registerFunctionRaw("sceIoAssign", 0xB2A628C1, since = 150) { sceIoAssign(it) }
         registerFunctionRaw("sceIoChstat", 0xB8A740F4, since = 150) { sceIoChstat(it) }
         registerFunctionRaw("sceIoGetAsyncStat", 0xCB05F8D6, since = 150) { sceIoGetAsyncStat(it) }
         registerFunctionRaw("sceIoWaitAsync", 0xE23EEC33, since = 150) { sceIoWaitAsync(it) }
