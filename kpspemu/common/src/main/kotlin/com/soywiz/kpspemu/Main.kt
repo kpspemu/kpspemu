@@ -10,6 +10,7 @@ import com.soywiz.korag.Korag
 import com.soywiz.korau.Korau
 import com.soywiz.korge.Korge
 import com.soywiz.korge.bitmapfont.BitmapFont
+import com.soywiz.korge.html.Html
 import com.soywiz.korge.input.onClick
 import com.soywiz.korge.input.onKeyDown
 import com.soywiz.korge.input.onKeyUp
@@ -36,6 +37,7 @@ import com.soywiz.korio.Korio
 import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.error.invalidOp
+import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.lang.printStackTrace
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.openAsync
@@ -50,6 +52,7 @@ import com.soywiz.korma.Matrix2d
 import com.soywiz.korma.geom.Rectangle
 import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.Korui
+import com.soywiz.korui.ui.Frame
 import com.soywiz.kpspemu.ctrl.PspCtrlButtons
 import com.soywiz.kpspemu.format.*
 import com.soywiz.kpspemu.format.elf.CryptedElf
@@ -312,7 +315,8 @@ class KpspemuMainScene(
             //println("updateKey: $keyCode, $pressed")
             keys[keyCode and 0xFF] = pressed
             when (keyCode) {
-                PspEmuKeys.RETURN -> controller.updateButton(PspCtrlButtons.start, pressed)
+                PspEmuKeys.RETURN_JVM -> controller.updateButton(PspCtrlButtons.start, pressed)
+                PspEmuKeys.RETURN_JS -> controller.updateButton(PspCtrlButtons.start, pressed)
                 PspEmuKeys.SPACE -> controller.updateButton(PspCtrlButtons.select, pressed)
                 PspEmuKeys.W -> controller.updateButton(PspCtrlButtons.triangle, pressed)
                 PspEmuKeys.A -> controller.updateButton(PspCtrlButtons.square, pressed)
@@ -481,6 +485,18 @@ class KpspemuMainScene(
         }
         sceneView += debugSceneContainer
 
+        val dropContainer = views.container().apply {
+            visible = false
+            this += views.solidRect(1024, 1024, RGBA(0xA0, 0xA0, 0xA0, 0x7F))
+            this += views.text("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
+                //format = Html.Format(format, align = Html.Alignment.MIDDLE_CENTER)
+                format = Html.Format(format, align = Html.Alignment.LEFT)
+                x = 480.0 * 0.5
+                y = 272.0 * 0.5
+            }
+        }
+        sceneView += dropContainer
+
         sceneView += hud
 
         //sceneView.onMove { hudOpen() }
@@ -489,6 +505,27 @@ class KpspemuMainScene(
         //sceneView.onKeyTyped { println(it.keyCode) }
         sceneView.onKeyDown { updateKey(it.keyCode, true) }
         sceneView.onKeyUp { updateKey(it.keyCode, false) }
+
+        this.cancellables += injector.getOrNull(Frame::class)?.onDropFiles(
+            enter = {
+                dropContainer.visible = true
+                println("DROP ENTER")
+                true
+            },
+            exit = {
+                dropContainer.visible = false
+                println("DROP EXIT")
+            },
+            drop = { files ->
+                dropContainer.visible = false
+                println("DROPFILES: $files")
+                spawn(coroutineContext) {
+                    sleep(0.1.seconds)
+                    createEmulatorWithExe(files.first())
+                }
+            }
+        ) ?: Closeable { }
+
 
         if (OS.isBrowserJs) {
             val hash = KPspEmuNative.documentLocationHash.trim('#')
@@ -563,12 +600,192 @@ open class LoadProcess {
     open suspend fun readParamSfo(psf: Psf): Unit = Unit
 }
 
+class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess: LoadProcess = LoadProcess()) {
+    lateinit var stream: AsyncStream
+    var umdLikeStructure = false
+    var layerName = file.basename
+    var container = file.parent.jail()
+    var gameName = "virtual"
+    var steps = 0
+    val logger = emulator.logger
+    var format: PspFileFormat? = null
+
+    suspend fun loadCso() {
+        stream = stream.openAsCso()
+        layerName = "$layerName.iso"
+    }
+
+    suspend fun loadElf(): PspElf {
+        when {
+            umdLikeStructure -> {
+                emulator.fileManager.currentDirectory = "umd0:"
+                emulator.fileManager.executableFile = "umd0:/PSP_GAME/USRDIR/EBOOT.BIN"
+                emulator.deviceManager.mount("game0:", container)
+                emulator.deviceManager.mount("disc0:", container)
+                emulator.deviceManager.mount("umd0:", container)
+            }
+            else -> {
+                val ngameName = PathInfo(gameName).basename
+                val PSP_GAME_folder = "PSP/GAME/$ngameName"
+                val ms_PSP_GAME_folder = "ms0:/$PSP_GAME_folder"
+                emulator.deviceManager.ms[PSP_GAME_folder].mkdirsSafe()
+                emulator.fileManager.currentDirectory = ms_PSP_GAME_folder
+                emulator.fileManager.executableFile = "$ms_PSP_GAME_folder/EBOOT.PBP"
+                emulator.deviceManager.mount(
+                    ms_PSP_GAME_folder,
+                    MergedVfs(
+                        listOf(
+                            emulator.deviceManager.ms[PSP_GAME_folder].jail(),
+                            container
+                        )
+                    ).root
+                )
+            }
+        }
+
+        logger.warn { "Loading executable mounted at ARG0: ${emulator.fileManager.executableFile} : CWD: ${emulator.fileManager.currentDirectory}..." }
+        for (mount in emulator.deviceManager.mountable.mounts) {
+            logger.warn { "  - Mount: ${mount.key}   -->   ${mount.value}" }
+        }
+        return emulator.loadElfAndSetRegisters(stream.readAll().openSync(), listOf(emulator.fileManager.executableFile))
+    }
+
+    suspend fun loadEncryptedElf() {
+        val encryptedData = stream.readAll()
+        //val decryptedData = CryptedElf.decrypt(encryptedData)
+        val decryptedData = CryptedElf.decrypt(encryptedData)
+        if (decryptedData.detectPspFormat() != PspFileFormat.ELF) {
+            val encryptedFile = tempVfs["BOOT.BIN.encrypted"]
+            val decryptedFile = tempVfs["BOOT.BIN.decrypted"]
+            encryptedFile.writeBytes(encryptedData)
+            decryptedFile.writeBytes(decryptedData)
+            invalidOp("Error decrypting file. Written to: ${decryptedFile.absolutePath} & ${encryptedFile.absolutePath}")
+        }
+        //LocalVfs("c:/temp/decryptedData.bin").write(decryptedData)
+        stream = decryptedData.openAsync()
+    }
+
+    suspend fun loadPbp() {
+        val pbp = Pbp(stream)
+        val icon0 = pbp.ICON0_PNG.readAll()
+        if (icon0.isNotEmpty()) loadProcess.readIcon0(icon0)
+        val paramSfo = pbp.PARAM_SFO.readAll()
+        if (paramSfo.isNotEmpty()) {
+            val psf = Psf(pbp.PARAM_SFO)
+            gameName = psf.getString("DISC_ID") ?: "virtual"
+            loadProcess.readParamSfo(psf)
+        }
+        stream = pbp.PSP_DATA
+    }
+
+    suspend fun loadIsoOrZip() {
+        logger.warn { " - Reading file (ISO/ZIP)" }
+
+        container = when (format) {
+            PspFileFormat.ISO -> stream.openAsIso2()
+            PspFileFormat.ZIP -> stream.openAsZip2()
+            else -> TODO("Impossible!") // @TODO: Kotlin could detect this!
+        }
+
+        logger.warn { " - Searching for executable" }
+
+        val ebootNames = linkedSetOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")
+        var afile: VfsFile? = null
+        done@ for (folder in listOf("PSP_GAME/SYSDIR", "")) {
+            umdLikeStructure = folder.isNotEmpty()
+            for (filename in ebootNames) {
+                val tfile = container["$folder/$filename"]
+                if (tfile.exists()) {
+                    // Some BOOT.BIN files are filled with 0!
+                    if (tfile.readRangeBytes(0 until 4).hexString != "00000000") {
+                        afile = tfile
+                        logger.warn { "Using $afile from iso" }
+                        break@done
+                    }
+                }
+            }
+        }
+
+        // Search EBOOT.PBP in folders (2 levels max) inside zip files
+        if (format == PspFileFormat.ZIP && afile == null) {
+            logger.warn { " - Searching for executable in subfolders" }
+
+            val suitableFiles = container
+                .listRecursive { it.fullname.count { it == '/' } <= 2 }
+                .toList()
+                .filter { it.basename.toUpperCase() in ebootNames }
+                .sortedBy { it.fullname.count { it == '/' } }
+            afile = suitableFiles.firstOrNull()
+            // Rebase container
+            if (afile != null) {
+                container = afile.parent.jail()
+                //println(afile.parent)
+            }
+        }
+
+        if (afile == null) invalidOp("Can't find any suitable executable inside $format")
+
+        for (icon0 in listOf(container["PSP_GAME/ICON0.PNG"])) {
+            if (icon0.exists()) loadProcess.readIcon0(icon0.readAll())
+        }
+
+        for (paramSfo in listOf(container["PSP_GAME/PARAM.SFO"])) {
+            if (paramSfo.exists()) {
+                val psf = Psf(paramSfo.readAll())
+                gameName = psf.getString("DISC_ID") ?: "virtual"
+                loadProcess.readParamSfo(psf)
+            }
+        }
+
+        stream = afile.open()
+    }
+
+    suspend fun loadExecutableAndStart(): PspElf {
+        stream = file.open().preloadSmall()
+
+        umdLikeStructure = false
+        layerName = file.basename
+        container = file.parent.jail()
+        gameName = "virtual"
+        steps = 0
+
+        logger.warn { "Opening $file" }
+        while (true) {
+            if (stream.size() < 0x10) {
+                logger.warn { " - Layer(${stream.size()}): Format ???" }
+                invalidOp("Layer is too small")
+            }
+            format = stream.detectPspFormat(layerName) ?: invalidOp("Unsupported file format '$file'")
+            steps++
+            if (steps >= 10) {
+                invalidOp("Too much containers!")
+            }
+            logger.warn { " - Layer(${stream.size()}): Format $format" }
+            when (format) {
+                PspFileFormat.CSO -> loadCso()
+                PspFileFormat.ISO -> loadIsoOrZip()
+                PspFileFormat.ZIP -> loadIsoOrZip()
+                PspFileFormat.PBP -> loadPbp()
+                PspFileFormat.ENCRYPTED_ELF -> loadEncryptedElf()
+                PspFileFormat.ELF -> return loadElf()
+            }
+        }
+    }
+}
+
+suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProcess = LoadProcess()): PspElf {
+    return EmulatorLoader(this, file, loadProcess).loadExecutableAndStart()
+}
+
+// @TODO: @JS @BUG: THIS FUNCTION HAS PROBLEMS WITH Kotlin.JS AND ENTERS IN AN INFINITE LOOP, SO I HAVE SPLITTED IT
+/*
 suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProcess = LoadProcess()): PspElf {
     var stream = file.open().preloadSmall()
     var umdLikeStructure = false
     var layerName = file.basename
     var container = file.parent.jail()
     var gameName = "virtual"
+    var steps = 0
 
     logger.warn { "Opening $file" }
     while (true) {
@@ -577,6 +794,10 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
             invalidOp("Layer is too small")
         }
         val format = stream.detectPspFormat(layerName) ?: invalidOp("Unsupported file format '$file'")
+        steps++
+        if (steps >= 10) {
+            invalidOp("Too much containers!")
+        }
         logger.warn { " - Layer(${stream.size()}): Format $format" }
         when (format) {
             PspFileFormat.CSO -> {
@@ -584,11 +805,15 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
                 layerName = "$layerName.iso"
             }
             PspFileFormat.ISO, PspFileFormat.ZIP -> {
+                logger.warn { " - Reading file (ISO/ZIP)" }
+
                 container = when (format) {
                     PspFileFormat.ISO -> stream.openAsIso2()
                     PspFileFormat.ZIP -> stream.openAsZip2()
                     else -> TODO("Impossible!") // @TODO: Kotlin could detect this!
                 }
+
+                logger.warn { " - Searching for executable" }
 
                 val ebootNames = linkedSetOf("EBOOT.BIN", "EBOOT.ELF", "EBOOT.PBP", "BOOT.BIN")
                 var afile: VfsFile? = null
@@ -608,18 +833,21 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
                 }
 
                 // Search EBOOT.PBP in folders (2 levels max) inside zip files
-                if (format == PspFileFormat.ZIP && afile == null) {
-                    val suitableFiles = container
-                        .listRecursive { it.fullname.count { it == '/' } <= 2 }.filter { it.basename.toUpperCase() in ebootNames }
-                        .toList()
-                        .sortedBy { it.fullname.count { it == '/' } }
-                    afile = suitableFiles.firstOrNull()
-                    // Rebase container
-                    if (afile != null) {
-                        container = afile.parent.jail()
-                        //println(afile.parent)
-                    }
-                }
+                //if (format == PspFileFormat.ZIP && afile == null) {
+                //    logger.warn { " - Searching for executable in subfolders" }
+                //
+                //    val suitableFiles = container
+                //        .listRecursive { it.fullname.count { it == '/' } <= 2 }
+                //        .toList()
+                //        .filter { it.basename.toUpperCase() in ebootNames }
+                //        .sortedBy { it.fullname.count { it == '/' } }
+                //    afile = suitableFiles.firstOrNull()
+                //    // Rebase container
+                //    if (afile != null) {
+                //        container = afile.parent.jail()
+                //        //println(afile.parent)
+                //    }
+                //}
 
                 if (afile == null) invalidOp("Can't find any suitable executable inside $format")
 
@@ -701,4 +929,4 @@ suspend fun Emulator.loadExecutableAndStart(file: VfsFile, loadProcess: LoadProc
         }
     }
 }
-
+*/

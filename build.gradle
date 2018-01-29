@@ -11,8 +11,9 @@ buildscript {
     ext.korioVersion = "0.19.1"
     ext.korgeVersion = "0.19.2"
     ext.korimVersion = "0.19.1"
-    ext.koruiVersion = "0.19.2"
+    ext.koruiVersion = "0.19.3"
     ext.kotlinVersion = '1.2.21'
+    //ext.kotlinVersion = '1.2.10'
 
     repositories {
         jcenter()

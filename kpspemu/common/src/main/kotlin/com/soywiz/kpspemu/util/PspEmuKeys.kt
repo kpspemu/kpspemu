@@ -2,7 +2,8 @@ package com.soywiz.kpspemu.util
 
 @Suppress("unused")
 object PspEmuKeys {
-    val RETURN = 10
+    val RETURN_JVM = 10
+    val RETURN_JS = 13
     val SPACE = 32
 
     val PGUP = 33
