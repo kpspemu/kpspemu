@@ -1,30 +1,17 @@
 package com.soywiz.kpspemu.hle
 
-import com.soywiz.kds.IntMap
-import com.soywiz.klogger.Logger
-import com.soywiz.korio.coroutine.Continuation
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.Console
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.lang.portableSimpleName
-import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.nextAlignedTo
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.WithEmulator
-import com.soywiz.kpspemu.coroutineContext
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.EmulatorControlFlowException
-import com.soywiz.kpspemu.hle.error.SceKernelException
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.hle.manager.WaitObject
-import com.soywiz.kpspemu.hle.manager._thread
-import com.soywiz.kpspemu.hle.manager.thread
+import com.soywiz.kds.*
+import com.soywiz.klogger.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.error.*
+import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
-import com.soywiz.kpspemu.threadManager
-import com.soywiz.kpspemu.util.StructType
-import kotlin.coroutines.experimental.CoroutineContext
-import kotlin.coroutines.experimental.startCoroutine
+import com.soywiz.kpspemu.util.*
+import kotlin.coroutines.experimental.*
 
 class RegisterReader {
     var pos: Int = 4

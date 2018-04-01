@@ -1,24 +1,26 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.dynarekVersion = "0.3.0"
-    ext.kloggerVersion = "0.4.0"
-    ext.klockVersion = ""
-    ext.kryptoVersion = '0.4.0'
-    ext.korauAtrac3plusVersion = '0.19.1'
-    ext.koragVersion = "0.19.2"
-    ext.korauVersion = "0.19.1"
-    ext.korioVersion = "0.19.1"
-    ext.korgeVersion = "0.19.2"
-    ext.korimVersion = "0.19.1"
-    ext.koruiVersion = "0.19.3"
-    ext.kotlinVersion = '1.2.21'
+    ext.korlibsVersion = "0.22.0"
+    ext.dynarekVersion = ext.korlibsVersion
+    ext.kloggerVersion = ext.korlibsVersion
+    ext.klockVersion = ext.korlibsVersion
+    ext.kryptoVersion = ext.korlibsVersion
+    ext.korauAtrac3plusVersion = ext.korlibsVersion
+    ext.koragVersion = ext.korlibsVersion
+    ext.korauVersion = ext.korlibsVersion
+    ext.korioVersion = ext.korlibsVersion
+    ext.korgeVersion = ext.korlibsVersion
+    ext.korimVersion = ext.korlibsVersion
+    ext.koruiVersion = ext.korlibsVersion
+
+    ext.kotlinVersion = '1.2.31'
     //ext.kotlinVersion = '1.2.10'
 
     repositories {
+        mavenLocal()
         jcenter()
         maven { url "https://plugins.gradle.org/m2/" }
-        mavenLocal()
     }
 
     dependencies {
@@ -34,7 +36,7 @@ allprojects {
     }
 
     group 'com.soywiz'
-    version '0.4.1-SNAPSHOT'
+    version '0.5.0-SNAPSHOT'
 
     if (project == rootProject) {
         new File(rootProject.rootDir, "kpspemu/common/src/main/kotlin/com/soywiz/kpspemu/KpspemuVersion.kt").write(

@@ -8,3 +8,4 @@
 /config
 memdump.bin
 *.iml
+.DS_Store
