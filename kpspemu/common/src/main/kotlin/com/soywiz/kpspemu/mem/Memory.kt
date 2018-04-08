@@ -1,15 +1,11 @@
 package com.soywiz.kpspemu.mem
 
-import com.soywiz.kmem.arraycopy
+import com.soywiz.kmem.*
 import com.soywiz.kmem.get
 import com.soywiz.kmem.set
-import com.soywiz.korio.lang.Console
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.readStringz
-import com.soywiz.korio.stream.sliceWithSize
-import com.soywiz.korio.stream.sliceWithStart
-import com.soywiz.korio.util.hex
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
 
 const private val MEMORY_MASK = 0x0FFFFFFF
 const private val MASK = MEMORY_MASK
@@ -29,12 +25,19 @@ private val SWR_SHIFT = intArrayOf(0, 8, 16, 24)
 abstract class Memory protected constructor(dummy: Boolean) {
     companion object {
         val MASK = MEMORY_MASK
-        const val MAIN_OFFSET = 0x08000000
         const val HIGH_MASK = 0xf0000000.toInt()
 
-        val SCRATCHPAD = MemorySegment("scatchpad", 0x0000000 until 0x00010000)
-        val VIDEOMEM = MemorySegment("videomem", 0x04000000 until 0x4200000)
-        val MAINMEM = MemorySegment("mainmem", MAIN_OFFSET until 0x0a000000)
+        inline val SCATCHPAD_OFFSET get() = 0x0000000
+        inline val VIDEO_OFFSET get() = 0x04000000
+        inline val MAIN_OFFSET get() = 0x08000000
+
+        inline val SCATCHPAD_SIZE get() = 64 * 1024 // 64 KB
+        inline val MAIN_SIZE get() = 32 * 1024 * 1024 // 32 MB
+        inline val VIDEO_SIZE get() = 2 * 1024 * 1024 // 2 MB
+
+        val SCRATCHPAD = MemorySegment("scatchpad", SCATCHPAD_OFFSET until (SCATCHPAD_OFFSET + SCATCHPAD_SIZE))
+        val VIDEOMEM = MemorySegment("videomem", VIDEO_OFFSET until (VIDEO_OFFSET + VIDEO_SIZE))
+        val MAINMEM = MemorySegment("mainmem", MAIN_OFFSET until (MAIN_OFFSET + MAIN_SIZE))
 
         operator fun invoke(): Memory = com.soywiz.kpspemu.mem.NormalMemory()
         //operator fun invoke(): Memory = com.soywiz.kpspemu.mem.SmallMemory()
@@ -318,7 +321,9 @@ abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(t
     override fun fill(value: Int, address: Int, size: Int) {
         val m = this.i8
         val start = index(address)
-        for (n in 0 until size) m[start + n] = value.toByte() // @TODO: Use native fill!
+        val vb = value.toByte()
+        // @TODO: Use native fill!
+        for (n in start until start + size) m[n] = vb
     }
 
     override fun getFastMem(): com.soywiz.kmem.FastMemory? = fmem
@@ -329,13 +334,13 @@ class NormalMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x0a00000
     override fun index(address: Int) = address and 0x0FFFFFFF
 }
 
-class SmallMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x02000000 + 0x0200000 + 0x00010000)) {
+class SmallMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(Memory.MAINMEM.size + Memory.VIDEOMEM.size + Memory.SCRATCHPAD.size)) {
     override fun index(address: Int): Int {
         val addr = address and 0x0FFFFFFF
         return when {
-            addr >= 0x08000000 -> addr - 0x08000000
-            addr >= 0x04000000 -> addr - 0x04000000 + 0x02000000
-            else -> addr + 0x04000000 + 0x02000000
+            addr >= Memory.MAIN_OFFSET -> (addr - Memory.MAIN_OFFSET) // MAIN
+            addr >= Memory.VIDEO_OFFSET -> (addr - Memory.VIDEO_OFFSET) + Memory.MAIN_SIZE
+            else -> addr + Memory.MAIN_SIZE + + Memory.VIDEO_SIZE
         }
     }
 }
