@@ -365,8 +365,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 
     var PC: DExpr<Int>
         set(value) = sstms.run {
-            SET(p0[CpuState::_PC], value)
-            //SET(p0[CpuState::_nPC], value)
+            STM(CpuState::setPC.invoke(p0, value))
         }
         get() = sstms.run { p0[CpuState::_PC] }
 

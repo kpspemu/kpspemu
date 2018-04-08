@@ -23,7 +23,6 @@ import com.soywiz.korge.view.Image
 import com.soywiz.korim.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
-import com.soywiz.korim.font.*
 import com.soywiz.korim.format.*
 import com.soywiz.korim.vector.*
 import com.soywiz.korinject.*
@@ -744,7 +743,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
 
         container = when (format) {
             PspFileFormat.ISO -> stream.openAsIso2()
-            PspFileFormat.ZIP -> stream.openAsZip2()
+            PspFileFormat.ZIP -> stream.openAsZip()
             else -> TODO("Impossible!") // @TODO: Kotlin could detect this!
         }
 

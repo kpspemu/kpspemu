@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.format
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.compression.*
+import com.soywiz.korio.compression.deflate.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
@@ -53,7 +54,7 @@ class Cso private constructor() {
         if (isBlockUncompressed(block)) {
             return readCompressedBlock(block)
         } else {
-            return readCompressedBlock(block).uncompressZlibRaw()
+            return readCompressedBlock(block).syncUncompress(Deflate)
         }
     }
 

@@ -305,7 +305,8 @@ class CpuState(
             LO = (value ushr 0).toInt()
         }
 
-    inline fun setPC(pc: Int) {
+    @JsName("setPC")
+    fun setPC(pc: Int) {
         _PC = pc
         _nPC = pc + 4
     }

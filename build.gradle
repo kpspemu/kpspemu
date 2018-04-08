@@ -1,7 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.korlibsVersion = "0.23.0"
+    ext.korlibsVersion = "0.24.0"
     ext.dynarekVersion = ext.korlibsVersion
     ext.kloggerVersion = ext.korlibsVersion
     ext.klockVersion = ext.korlibsVersion
@@ -30,8 +30,8 @@ buildscript {
 allprojects {
     repositories {
         mavenLocal()
+        maven { url "https://dl.bintray.com/soywiz/soywiz" }
         jcenter()
-        mavenLocal()
     }
 
     group 'com.soywiz'
