@@ -1,12 +1,9 @@
 package com.soywiz.kpspemu.ui
 
-import com.soywiz.korge.bitmapfont.BitmapFont
-import com.soywiz.korge.input.onOut
-import com.soywiz.korge.input.onOver
-import com.soywiz.korge.view.View
-import com.soywiz.korge.view.Views
-import com.soywiz.korge.view.text
-import com.soywiz.korim.color.RGBA
+import com.soywiz.korge.bitmapfont.*
+import com.soywiz.korge.input.*
+import com.soywiz.korge.view.*
+import com.soywiz.korim.color.*
 
 fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = this.defaultFont): View {
     val button = container()
@@ -15,6 +12,7 @@ fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: Bi
 
     val bg = solidRect(width, height, colorOut)
     val txt = text(text, font = font, textSize = height.toDouble() - 2.0).apply {
+        this.name = "label"
         this.x = 4.0
         this.y = 2.0
         //this.bgcolor = Colors.GREEN

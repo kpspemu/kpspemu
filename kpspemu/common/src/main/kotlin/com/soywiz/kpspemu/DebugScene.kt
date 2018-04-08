@@ -1,37 +1,23 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.korge.bitmapfont.BitmapFont
-import com.soywiz.korge.bitmapfont.convert
-import com.soywiz.korge.html.Html
-import com.soywiz.korge.input.onClick
-import com.soywiz.korge.input.onKeyDown
-import com.soywiz.korge.input.onOut
-import com.soywiz.korge.input.onOver
-import com.soywiz.korge.scene.Scene
-import com.soywiz.korge.service.Browser
-import com.soywiz.korge.view.Container
-import com.soywiz.korge.view.Text
-import com.soywiz.korge.view.Views
-import com.soywiz.korge.view.text
-import com.soywiz.korim.color.Colors
-import com.soywiz.korim.color.RGBA
-import com.soywiz.korio.async.AsyncSignal
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.substr
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.GlobalCpuState
-import com.soywiz.kpspemu.cpu.dis.Disassembler
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.mem.DummyMemory
-import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.ui.simpleButton
-import com.soywiz.kpspemu.util.AutoArrayList
-import com.soywiz.kpspemu.util.PspEmuKeys
-import com.soywiz.kpspemu.util.expr.ExprNode
-import com.soywiz.kpspemu.util.expr.toDynamicInt
-import com.soywiz.kpspemu.util.shex
-import kotlin.reflect.KMutableProperty0
+import com.soywiz.korge.bitmapfont.*
+import com.soywiz.korge.html.*
+import com.soywiz.korge.input.*
+import com.soywiz.korge.scene.*
+import com.soywiz.korge.service.*
+import com.soywiz.korge.view.*
+import com.soywiz.korim.color.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.dis.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.ui.*
+import com.soywiz.kpspemu.util.*
+import com.soywiz.kpspemu.util.expr.*
+import kotlin.reflect.*
 
 /**
  * You can enable this scene using F2
@@ -175,7 +161,7 @@ class DebugScene(
         val BG_OUT = RGBA(0, 0, 0xFF, 0x7f)
         val onGprClick = AsyncSignal<GprView>()
 
-        val text = views.text("").apply {
+        val text = views.text("", font = font).apply {
             this@GprView += this
             filtering = false
             x = 0.0
@@ -202,7 +188,7 @@ class DebugScene(
     }
 
     class GprListView(browser: Browser, views: Views, val font: BitmapFont) : Container(views) {
-        var state = CpuState("GprListView", GlobalCpuState(), DummyMemory)
+        var state = CpuState("GprListView", GlobalCpuState(DummyMemory))
         val regs = (0 until 32).map { regIndex ->
             GprView(views, font, "r$regIndex", { state.setGpr(regIndex, it) }, { state.getGpr(regIndex) }).apply {
                 this@GprListView += this
@@ -241,7 +227,7 @@ class DebugScene(
 
     class HexdumpLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
         Container(views) {
-        val text = views.text("-").apply {
+        val text = views.text("-", font = font).apply {
             this@HexdumpLineView += this
             filtering = false
             x = 0.0
@@ -291,7 +277,7 @@ class DebugScene(
         val onLineClick = AsyncSignal<Unit>()
         var over = false
 
-        val text = views.text("-").apply {
+        val text = views.text("-", font = font).apply {
             this@DissasemblerLineView += this
             filtering = false
             x = 0.0

@@ -1,12 +1,9 @@
 package com.soywiz.kpspemu.cpu.dis
 
-import com.soywiz.korio.lang.Console
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.util.hex
-import com.soywiz.kpspemu.cpu.InstructionDecoder
-import com.soywiz.kpspemu.cpu.InstructionOpcodeDecoder
-import com.soywiz.kpspemu.cpu.InstructionType
-import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.mem.*
 
 interface NameProvider {
     fun getName(addr: Int): String?
@@ -56,6 +53,7 @@ object Disassembler : InstructionDecoder() {
                 "%a" -> "${i.pos}"
                 "%O" -> "PC + ${i.s_imm16}"
                 "%C" -> "0x%04X".format(i.syscall)
+                "%c" -> "0x%04X".format(i.syscall)
                 "%I" -> "${i.u_imm16}"
                 "%i" -> "${i.s_imm16}"
                 else -> type

@@ -1,19 +1,16 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
 import com.soywiz.kmem.*
-import com.soywiz.korim.color.RGBA
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.Console
-import com.soywiz.korio.lang.format
+import com.soywiz.korim.color.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
-import com.soywiz.korma.math.Math
-import com.soywiz.korma.math.isAlmostZero
+import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.cpu.*
-import com.soywiz.kpspemu.cpu.CpuState.VCondition
-import com.soywiz.kpspemu.cpu.dis.NameProvider
-import com.soywiz.kpspemu.cpu.dis.disasmMacro
-import com.soywiz.kpspemu.hle.manager._thread
-import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.kpspemu.cpu.CpuState.*
+import com.soywiz.kpspemu.cpu.dis.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
 
@@ -108,6 +105,7 @@ class CpuInterpreter(
     }
 }
 
+
 @Suppress("FunctionName")
 // http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
 class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>() {
@@ -118,6 +116,11 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         callback()
         s.advance_pc(4)
     }
+
+    //inline val mem: Memory get() = s.mem
+    val mem = s.mem
+
+    val itemp = IntArray(2)
 
     inline var Int.HI_LO: Long; get() = s.HI_LO; set(value) = run { s.HI_LO = value }
     inline var Int.LO: Int; get() = s.LO; set(value) = run { s.LO = value }
@@ -144,30 +147,32 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     inline val Int.SIZE_I: Int get() = this.size_i
     inline val Int.RS_IMM16: Int; get() = RS + S_IMM16
     inline val Int.RS_IMM14: Int; get() = RS + S_IMM14 * 4
-    //inline val mem: Memory get() = s.mem
-    val mem = s.mem
-
-    val itemp = IntArray(2)
 
     // ALU
     override fun lui(i: Int, s: CpuState) = i { RT = (U_IMM16 shl 16) }
 
-    override fun movz(i: Int, s: CpuState) = i { if (RT == 0) RD = RS }
-    override fun movn(i: Int, s: CpuState) = i { if (RT != 0) RD = RS }
+    override fun movz(i: Int, s: CpuState) = i { RD = s.movz(RT, RD, RS) }
+    override fun movn(i: Int, s: CpuState) = i { RD = s.movn(RT, RD, RS) }
 
-    override fun ext(i: Int, s: CpuState) = i { RT = RS.extract(POS, SIZE_E) }
-    override fun ins(i: Int, s: CpuState) = i { RT = RT.insert(RS, POS, SIZE_I) }
+    //override fun movz(i: Int, s: CpuState) = i { if (RT == 0) RD = RS }
+    //override fun movn(i: Int, s: CpuState) = i { if (RT != 0) RD = RS }
 
-    override fun clz(i: Int, s: CpuState) = i { RD = BitUtils.clz(RS) }
-    override fun clo(i: Int, s: CpuState) = i { RD = BitUtils.clo(RS) }
-    override fun seb(i: Int, s: CpuState) = i { RD = BitUtils.seb(RT) }
-    override fun seh(i: Int, s: CpuState) = i { RD = BitUtils.seh(RT) }
+    override fun ext(i: Int, s: CpuState) = i { RT = s.ext(RS, POS, SIZE_E) }
+    override fun ins(i: Int, s: CpuState) = i { RT = s.ins(RT, RS, POS, SIZE_I) }
 
-    override fun wsbh(i: Int, s: CpuState) = i { RD = BitUtils.wsbh(RT) }
-    override fun wsbw(i: Int, s: CpuState) = i { RD = BitUtils.wsbw(RT) }
+    //override fun ext(i: Int, s: CpuState) = i { RT = RS.extract(POS, SIZE_E) }
+    //override fun ins(i: Int, s: CpuState) = i { RT = RT.insert(RS, POS, SIZE_I) }
 
-    override fun max(i: Int, s: CpuState) = i { RD = kotlin.math.max(RS, RT) }
-    override fun min(i: Int, s: CpuState) = i { RD = kotlin.math.min(RS, RT) }
+    override fun clz(i: Int, s: CpuState) = i { RD = s.clz(RS) }
+    override fun clo(i: Int, s: CpuState) = i { RD = s.clo(RS) }
+    override fun seb(i: Int, s: CpuState) = i { RD = s.seb(RT) }
+    override fun seh(i: Int, s: CpuState) = i { RD = s.seh(RT) }
+
+    override fun wsbh(i: Int, s: CpuState) = i { RD = s.wsbh(RT) }
+    override fun wsbw(i: Int, s: CpuState) = i { RD = s.wsbw(RT) }
+
+    override fun max(i: Int, s: CpuState) = i { RD = s.max(RS, RT) }
+    override fun min(i: Int, s: CpuState) = i { RD = s.min(RS, RT) }
 
     override fun add(i: Int, s: CpuState) = i { RD = RS + RT }
     override fun addu(i: Int, s: CpuState) = i { RD = RS + RT }
@@ -176,6 +181,17 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     override fun addi(i: Int, s: CpuState) = i { RT = RS + S_IMM16 }
     override fun addiu(i: Int, s: CpuState) = i { RT = RS + S_IMM16 }
 
+
+    override fun div(i: Int, s: CpuState) = i { s.div(RS, RT) }
+    override fun divu(i: Int, s: CpuState) = i { s.divu(RS, RT) }
+    override fun mult(i: Int, s: CpuState) = i { s.mult(RS, RT) }
+    override fun multu(i: Int, s: CpuState) = i { s.multu(RS, RT) }
+    override fun madd(i: Int, s: CpuState) = i { s.madd(RS, RT) }
+    override fun maddu(i: Int, s: CpuState) = i { s.maddu(RS, RT) }
+    override fun msub(i: Int, s: CpuState) = i { s.msub(RS, RT) }
+    override fun msubu(i: Int, s: CpuState) = i { s.msubu(RS, RT) }
+
+    /*
     override fun div(i: Int, s: CpuState) = i { LO = RS / RT; HI = RS % RT }
     override fun divu(i: Int, s: CpuState) = i {
         val d = RT
@@ -188,14 +204,13 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun mult(i: Int, s: CpuState) = i { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
+   override fun mult(i: Int, s: CpuState) = i { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
     override fun multu(i: Int, s: CpuState) = i { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
-
     override fun madd(i: Int, s: CpuState) = i { HI_LO += RS.toLong() * RT.toLong() }
     override fun maddu(i: Int, s: CpuState) = i { HI_LO += RS.unsigned * RT.unsigned }
-
     override fun msub(i: Int, s: CpuState) = i { HI_LO -= RS.toLong() * RT.toLong() }
     override fun msubu(i: Int, s: CpuState) = i { HI_LO -= RS.unsigned * RT.unsigned }
+    */
 
 
     override fun mflo(i: Int, s: CpuState) = i { RD = LO }
@@ -211,47 +226,54 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
 
     override fun xor(i: Int, s: CpuState) = i { RD = RS xor RT }
     override fun and(i: Int, s: CpuState) = i { RD = RS and RT }
-    override fun nor(i: Int, s: CpuState) = i { RD = (RS or RT).inv() }
+    //override fun nor(i: Int, s: CpuState) = i { RD = (RS or RT).inv() }
+    override fun nor(i: Int, s: CpuState) = i { RD = s.nor(RS, RT) }
 
     override fun ori(i: Int, s: CpuState) = i { RT = RS or U_IMM16 }
     override fun xori(i: Int, s: CpuState) = i { RT = RS xor U_IMM16 }
     override fun andi(i: Int, s: CpuState) = i { RT = RS and U_IMM16 }
 
-    override fun sll(i: Int, s: CpuState) = i { RD = RT shl POS }
-    override fun sra(i: Int, s: CpuState) = i { RD = RT shr POS }
-    override fun srl(i: Int, s: CpuState) = i { RD = RT ushr POS }
+    override fun sll(i: Int, s: CpuState) = i { RD = s.sll(RT, POS) }
+    override fun sra(i: Int, s: CpuState) = i { RD = s.sra(RT, POS) }
+    override fun srl(i: Int, s: CpuState) = i { RD = s.srl(RT, POS) }
+    override fun sllv(i: Int, s: CpuState) = i { RD = s.sll(RT, RS) }
+    override fun srav(i: Int, s: CpuState) = i { RD = s.sra(RT, RS) }
+    override fun srlv(i: Int, s: CpuState) = i { RD = s.srl(RT, RS ) }
 
-    override fun sllv(i: Int, s: CpuState) = i { RD = RT shl (RS and 0b11111) }
-    override fun srav(i: Int, s: CpuState) = i { RD = RT shr (RS and 0b11111) }
-    override fun srlv(i: Int, s: CpuState) = i { RD = RT ushr (RS and 0b11111) }
+    //override fun sll(i: Int, s: CpuState) = i { RD = RT shl POS }
+    //override fun sra(i: Int, s: CpuState) = i { RD = RT shr POS }
+    //override fun srl(i: Int, s: CpuState) = i { RD = RT ushr POS }
+    //override fun sllv(i: Int, s: CpuState) = i { RD = RT shl (RS and 0b11111) }
+    //override fun srav(i: Int, s: CpuState) = i { RD = RT shr (RS and 0b11111) }
+    //override fun srlv(i: Int, s: CpuState) = i { RD = RT ushr (RS and 0b11111) }
 
-    override fun bitrev(i: Int, s: CpuState) = i { RD = BitUtils.bitrev32(RT) }
+    override fun bitrev(i: Int, s: CpuState) = i { RD = s.bitrev32(RT) }
 
-    override fun rotr(i: Int, s: CpuState) = i { RD = BitUtils.rotr(RT, POS) }
-    override fun rotrv(i: Int, s: CpuState) = i { RD = BitUtils.rotr(RT, RS) }
+    override fun rotr(i: Int, s: CpuState) = i { RD = s.rotr(RT, POS) }
+    override fun rotrv(i: Int, s: CpuState) = i { RD = s.rotr(RT, RS) }
 
     // Memory
-    override fun lb(i: Int, s: CpuState) = i { RT = mem.lb(RS_IMM16) }
+    override fun lb(i: Int, s: CpuState) = i { RT = s.lb(RS_IMM16) }
 
-    override fun lbu(i: Int, s: CpuState) = i { RT = mem.lbu(RS_IMM16) }
-    override fun lh(i: Int, s: CpuState) = i { RT = mem.lh(RS_IMM16) }
-    override fun lhu(i: Int, s: CpuState) = i { RT = mem.lhu(RS_IMM16) }
-    override fun lw(i: Int, s: CpuState) = i { RT = mem.lw(RS_IMM16) }
-    override fun ll(i: Int, s: CpuState) = i { RT = mem.lw(RS_IMM16) }
+    override fun lbu(i: Int, s: CpuState) = i { RT = s.lbu(RS_IMM16) }
+    override fun lh(i: Int, s: CpuState) = i { RT = s.lh(RS_IMM16) }
+    override fun lhu(i: Int, s: CpuState) = i { RT = s.lhu(RS_IMM16) }
+    override fun lw(i: Int, s: CpuState) = i { RT = s.lw(RS_IMM16) }
+    override fun ll(i: Int, s: CpuState) = i { RT = s.lw(RS_IMM16) }
 
-    override fun lwl(i: Int, s: CpuState) = i { RT = mem.lwl(RS_IMM16, RT) }
-    override fun lwr(i: Int, s: CpuState) = i { RT = mem.lwr(RS_IMM16, RT) }
+    override fun lwl(i: Int, s: CpuState) = i { RT = s.lwl(RS_IMM16, RT) }
+    override fun lwr(i: Int, s: CpuState) = i { RT = s.lwr(RS_IMM16, RT) }
 
-    override fun swl(i: Int, s: CpuState) = i { mem.swl(RS_IMM16, RT) }
-    override fun swr(i: Int, s: CpuState) = i { mem.swr(RS_IMM16, RT) }
+    override fun swl(i: Int, s: CpuState) = i { s.swl(RS_IMM16, RT) }
+    override fun swr(i: Int, s: CpuState) = i { s.swr(RS_IMM16, RT) }
 
-    override fun sb(i: Int, s: CpuState) = i { mem.sb(RS_IMM16, RT) }
-    override fun sh(i: Int, s: CpuState) = i { mem.sh(RS_IMM16, RT) }
-    override fun sw(i: Int, s: CpuState) = i { mem.sw(RS_IMM16, RT) }
-    override fun sc(i: Int, s: CpuState) = i { mem.sw(RS_IMM16, RT); RT = 1 }
+    override fun sb(i: Int, s: CpuState) = i { s.sb(RS_IMM16, RT) }
+    override fun sh(i: Int, s: CpuState) = i { s.sh(RS_IMM16, RT) }
+    override fun sw(i: Int, s: CpuState) = i { s.sw(RS_IMM16, RT) }
+    override fun sc(i: Int, s: CpuState) = i { s.sw(RS_IMM16, RT); RT = 1 }
 
-    override fun lwc1(i: Int, s: CpuState) = i { FT_I = mem.lw(RS_IMM16) }
-    override fun swc1(i: Int, s: CpuState) = i { mem.sw(RS_IMM16, FT_I) }
+    override fun lwc1(i: Int, s: CpuState) = i { FT_I = s.lw(RS_IMM16) }
+    override fun swc1(i: Int, s: CpuState) = i { s.sw(RS_IMM16, FT_I) }
 
     // Special
     override fun syscall(i: Int, s: CpuState) = s.preadvance { syscall(SYSCALL) }
@@ -259,12 +281,16 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     override fun _break(i: Int, s: CpuState) = s.preadvance { throw CpuBreakException(SYSCALL) }
 
     // Set less
-    override fun slt(i: Int, s: CpuState) = s { RD = (RS < RT).toInt() }
+    //override fun slt(i: Int, s: CpuState) = s { RD = (RS < RT).toInt() }
+    //override fun sltu(i: Int, s: CpuState) = s { RD = (RS ult RT).toInt() }
 
-    override fun sltu(i: Int, s: CpuState) = s { RD = (RS ult RT).toInt() }
+    //override fun slti(i: Int, s: CpuState) = s { RT = (RS < S_IMM16).toInt() }
+    //override fun sltiu(i: Int, s: CpuState) = s { RT = (RS ult S_IMM16).toInt() }
 
-    override fun slti(i: Int, s: CpuState) = s { RT = (RS < S_IMM16).toInt() }
-    override fun sltiu(i: Int, s: CpuState) = s { RT = (RS ult S_IMM16).toInt() }
+    override fun slt(i: Int, s: CpuState) = s { RD = s.slt(RS, RT) }
+    override fun sltu(i: Int, s: CpuState) = s { RD = s.sltu(RS, RT) }
+    override fun slti(i: Int, s: CpuState) = s { RT = s.slt(RS, S_IMM16) }
+    override fun sltiu(i: Int, s: CpuState) = s { RT = s.sltu(RS, S_IMM16) }
 
 
     // Branch

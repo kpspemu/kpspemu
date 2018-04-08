@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.lang.format
+import com.soywiz.korio.lang.*
 
 object Instructions {
     val add = ID("add", VM("000000:rs:rt:rd:00000:100000"), "%d, %s, %t", ADDR_TYPE_NONE, 0)
@@ -645,6 +645,10 @@ data class InstructionType(
     val addressType: Int,
     val instructionType: Int
 ) {
+    val formatEscaped by lazy { Regex.escapeReplacement(format) }
+    val replacements by lazy { Regex("%\\w+").findAll(format).map { it.value }.toList() }
+    val formatRegex by lazy { Regex(formatEscaped.replace(Regex("%\\w+")) { "([\\-\\+\\w]+)" }.replace(Regex("\\s+")) { "\\s*" }) }
+
     fun match(i32: Int) = (i32 and this.vm.mask) == (this.vm.value and this.vm.mask)
     private fun isInstructionType(mask: Int) = (this.instructionType and mask) != 0
     val isSyscall get() = this.isInstructionType(INSTR_TYPE_SYSCALL)

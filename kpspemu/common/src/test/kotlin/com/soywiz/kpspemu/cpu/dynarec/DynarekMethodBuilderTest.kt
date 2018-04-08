@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.cpu.dynarec
 
-import com.soywiz.dynarek.generateDynarek
-import com.soywiz.dynarek.js.generateJsBody
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.GlobalCpuState
-import com.soywiz.kpspemu.mem.Memory
-import mytest.assertEquals
-import org.junit.Test
+import com.soywiz.dynarek.*
+import com.soywiz.dynarek.js.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.mem.*
+import mytest.*
+import kotlin.test.*
 
 class DynarekMethodBuilderTest {
     @Test
@@ -18,7 +17,7 @@ class DynarekMethodBuilderTest {
         val func = mb.generateFunction()
         println(func.generateJsBody(strict = false))
 
-        val state = CpuState("DynarekMethodBuilderTest", GlobalCpuState(), Memory())
+        val state = CpuState("DynarekMethodBuilderTest", GlobalCpuState(Memory()))
         val ff = func.generateDynarek()
         ff(state)
         assertEquals(0x08900004, state.r4)

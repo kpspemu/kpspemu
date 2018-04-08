@@ -1,21 +1,32 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.kds.Extra
-import com.soywiz.kds.umod
-import com.soywiz.klogger.Logger
-import com.soywiz.korio.async.sleep
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.util.hasFlag
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.nextAlignedTo
+import com.soywiz.kds.*
+import com.soywiz.klogger.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
-import com.soywiz.kpspemu.cpu.interpreter.CpuInterpreter
+import com.soywiz.kpspemu.cpu.dynarec.*
+import com.soywiz.kpspemu.cpu.interpreter.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
-import kotlin.math.max
+import kotlin.collections.List
+import kotlin.collections.count
+import kotlin.collections.distinct
+import kotlin.collections.filter
+import kotlin.collections.first
+import kotlin.collections.firstOrNull
+import kotlin.collections.getOrNull
+import kotlin.collections.hashMapOf
+import kotlin.collections.joinToString
+import kotlin.collections.map
+import kotlin.collections.set
+import kotlin.collections.sorted
+import kotlin.collections.sortedBy
+import kotlin.collections.toList
+import kotlin.math.*
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
 //const val INSTRUCTIONS_PER_STEP = 1_000_000
@@ -264,7 +275,7 @@ class PspThread internal constructor(
     val waiting: Boolean get() = waitObject != null
     var priority: Int = initPriority
     override val emulator get() = manager.emulator
-    val state = CpuState("state.thread.$name", emulator.globalCpuState, emulator.mem, emulator.syscalls).apply {
+    val state = CpuState("state.thread.$name", emulator.globalCpuState, emulator.syscalls).apply {
         _thread = this@PspThread
         setPC(entryPoint)
         SP = stack.high.toInt()
@@ -273,6 +284,7 @@ class PspThread internal constructor(
         println("CREATED THREAD('$name'): PC=${PC.hex}, SP=${SP.hex}")
     }
     val interpreter = CpuInterpreter(state, emulator.breakpoints, emulator.nameProvider)
+    val dynarek = DynarekRunner(state, emulator.breakpoints, emulator.nameProvider)
     //val interpreter = FastCpuInterpreter(state)
 
     init {
@@ -347,7 +359,11 @@ class PspThread internal constructor(
         //println("Step: Thread.${this.name}")
         preemptionCount++
         try {
-            interpreter.steps(INSTRUCTIONS_PER_STEP, trace)
+            if (emulator.interpreted) {
+                interpreter.steps(INSTRUCTIONS_PER_STEP, trace)
+            } else {
+                dynarek.steps(INSTRUCTIONS_PER_STEP, trace)
+            }
             return 0
         } catch (e: CpuBreakException) {
             when (e.id) {

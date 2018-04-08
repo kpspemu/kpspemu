@@ -1,13 +1,13 @@
 package com.soywiz.kpspemu.ui
 
-import com.soywiz.korge.service.Browser
-import com.soywiz.korio.CancellationException
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.vfs.applicationVfs
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.KpspemuMainScene
-import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.korge.service.*
+import com.soywiz.korio.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.vfs.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.native.*
 
 class PromptConfigurator(
     private val browser: Browser,
@@ -20,6 +20,7 @@ class PromptConfigurator(
         actions["dropbox"] = { dropbox() }
         actions["storage"] = { storage() }
         actions["memdump"] = { memdump() }
+        actions["refresh"] = { KPspEmuNative.invalidateCache() }
     }
 
     suspend fun prompt() {

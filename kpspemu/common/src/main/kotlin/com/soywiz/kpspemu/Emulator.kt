@@ -1,22 +1,17 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.klogger.Logger
-import com.soywiz.korau.format.util.IMemory
-import com.soywiz.korinject.AsyncDependency
-import com.soywiz.kpspemu.battery.PspBattery
-import com.soywiz.kpspemu.cpu.Breakpoints
-import com.soywiz.kpspemu.cpu.CpuBreakException
-import com.soywiz.kpspemu.cpu.GlobalCpuState
-import com.soywiz.kpspemu.cpu.dis.NameProvider
-import com.soywiz.kpspemu.ctrl.PspController
-import com.soywiz.kpspemu.display.PspDisplay
-import com.soywiz.kpspemu.ge.DummyGpuRenderer
-import com.soywiz.kpspemu.ge.Ge
-import com.soywiz.kpspemu.ge.Gpu
-import com.soywiz.kpspemu.ge.GpuRenderer
+import com.soywiz.klogger.*
+import com.soywiz.korau.format.util.*
+import com.soywiz.korinject.*
+import com.soywiz.kpspemu.battery.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.dis.*
+import com.soywiz.kpspemu.ctrl.*
+import com.soywiz.kpspemu.display.*
+import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.manager.*
-import com.soywiz.kpspemu.mem.Memory
-import kotlin.coroutines.experimental.CoroutineContext
+import com.soywiz.kpspemu.mem.*
+import kotlin.coroutines.experimental.*
 
 class Emulator(
     val coroutineContext: CoroutineContext,
@@ -24,11 +19,14 @@ class Emulator(
     val mem: Memory = Memory(),
     var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) : AsyncDependency {
+    var interpreted = false
+    //var interpreted = true
+
     val logger = Logger("Emulator")
     val timeManager = TimeManager(this)
     val nameProvider = AddressInfo()
     val breakpoints = Breakpoints()
-    val globalCpuState = GlobalCpuState()
+    val globalCpuState = GlobalCpuState(mem)
     var output = StringBuilder()
     val ge: Ge = Ge(this)
     val gpu: Gpu = Gpu(this)
@@ -66,6 +64,7 @@ class Emulator(
 
     fun invalidateInstructionCache(ptr: Int = 0, size: Int = Int.MAX_VALUE) {
         logger.trace { "invalidateInstructionCache($ptr, $size)" }
+        globalCpuState.mcache.invalidateInstructionCache(ptr, size)
     }
 
     fun dataCache(ptr: Int = 0, size: Int = Int.MAX_VALUE, writeback: Boolean, invalidate: Boolean) {

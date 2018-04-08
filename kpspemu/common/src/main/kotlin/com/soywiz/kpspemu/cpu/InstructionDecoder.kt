@@ -1,7 +1,22 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.kmem.extract
-import com.soywiz.kmem.signExtend
+import com.soywiz.kmem.*
+
+data class InstructionData(var value: Int, var pc: Int) {
+    var lsb: Int get() = value.extract(6, 5); set(v) = run { value = value.insert(v, 6, 5) }
+    var msb: Int get() = value.extract(11, 5); set(v) = run { value = value.insert(v, 11, 5) }
+    var pos: Int get() = value.extract(6, 5); set(v) = run { value = value.insert(v, 6, 5) }
+
+    var s_imm16: Int get() = value.extract(0, 16) shl 16 shr 16; set(v) = run { value = value.insert(v, 0, 16) }
+    var u_imm16: Int get() = value.extract(0, 16); set(v) = run { value = value.insert(v, 0, 16) }
+    var u_imm26: Int get() = value.extract(0, 26); set(v) = run { value = value.insert(v, 0, 26) }
+
+    var rd: Int get() = value.extract(11, 5); set(v) = run { value = value.insert(v, 11, 5) }
+    var rt: Int get() = value.extract(16, 5); set(v) = run { value = value.insert(v, 16, 5) }
+    var rs: Int get() = value.extract(21, 5); set(v) = run { value = value.insert(v, 21, 5) }
+
+    var jump_address get() = u_imm26 * 4; set(v) = run { u_imm26 = v / 4 }
+}
 
 // https://www.cs.umd.edu/users/meesh/411/SimpleMips.htm
 // http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html

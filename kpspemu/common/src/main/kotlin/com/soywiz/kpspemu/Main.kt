@@ -1,75 +1,56 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.dynarek.Dynarek
-import com.soywiz.kds.umod
-import com.soywiz.klock.Klock
-import com.soywiz.klogger.Klogger
-import com.soywiz.klogger.Logger
-import com.soywiz.kmem.Kmem
-import com.soywiz.korag.Korag
-import com.soywiz.korau.Korau
-import com.soywiz.korge.Korge
+import com.soywiz.dynarek.*
+import com.soywiz.kds.*
+import com.soywiz.klock.*
+import com.soywiz.klogger.*
+import com.soywiz.kmem.*
+import com.soywiz.korag.*
+import com.soywiz.korau.*
+import com.soywiz.korge.*
+import com.soywiz.korge.bitmapfont.*
 import com.soywiz.korge.bitmapfont.BitmapFont
-import com.soywiz.korge.html.Html
-import com.soywiz.korge.input.onClick
-import com.soywiz.korge.input.onKeyDown
-import com.soywiz.korge.input.onKeyUp
-import com.soywiz.korge.render.RenderContext
-import com.soywiz.korge.render.Texture
+import com.soywiz.korge.event.*
+import com.soywiz.korge.html.*
+import com.soywiz.korge.input.*
+import com.soywiz.korge.render.*
 import com.soywiz.korge.scene.*
-import com.soywiz.korge.service.Browser
-import com.soywiz.korge.time.milliseconds
-import com.soywiz.korge.time.seconds
-import com.soywiz.korge.tween.get
-import com.soywiz.korge.tween.tween
+import com.soywiz.korge.service.*
+import com.soywiz.korge.tween.*
 import com.soywiz.korge.view.*
-import com.soywiz.korim.Korim
-import com.soywiz.korim.bitmap.Bitmap
-import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korim.color.RGBA
-import com.soywiz.korim.font.BitmapFontGenerator
-import com.soywiz.korim.format.PNG
-import com.soywiz.korim.vector.Context2d
-import com.soywiz.korinject.AsyncInjector
-import com.soywiz.korinject.Korinject
-import com.soywiz.korio.JvmStatic
-import com.soywiz.korio.Korio
+import com.soywiz.korge.view.Container
+import com.soywiz.korge.view.Image
+import com.soywiz.korim.*
+import com.soywiz.korim.bitmap.*
+import com.soywiz.korim.color.*
+import com.soywiz.korim.font.*
+import com.soywiz.korim.format.*
+import com.soywiz.korim.vector.*
+import com.soywiz.korinject.*
+import com.soywiz.korio.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.getCoroutineContext
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.Closeable
-import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.stream.AsyncStream
-import com.soywiz.korio.stream.openAsync
-import com.soywiz.korio.stream.openSync
-import com.soywiz.korio.stream.readAll
-import com.soywiz.korio.util.OS
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.hexString
+import com.soywiz.korio.coroutine.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
 import com.soywiz.korio.vfs.*
-import com.soywiz.korma.Korma
-import com.soywiz.korma.Matrix2d
+import com.soywiz.korma.*
+import com.soywiz.korma.geom.*
 import com.soywiz.korma.geom.Rectangle
-import com.soywiz.korma.geom.SizeInt
-import com.soywiz.korui.Korui
-import com.soywiz.korui.ui.Frame
-import com.soywiz.kpspemu.ctrl.PspCtrlButtons
+import com.soywiz.korui.*
+import com.soywiz.korui.ui.*
+import com.soywiz.kpspemu.ctrl.*
 import com.soywiz.kpspemu.format.*
-import com.soywiz.kpspemu.format.elf.CryptedElf
-import com.soywiz.kpspemu.format.elf.PspElf
-import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
-import com.soywiz.kpspemu.ge.GeBatchData
-import com.soywiz.kpspemu.ge.GpuRenderer
-import com.soywiz.kpspemu.hle.registerNativeModules
-import com.soywiz.kpspemu.native.KPspEmuNative
-import com.soywiz.kpspemu.ui.PromptConfigurator
-import com.soywiz.kpspemu.ui.simpleButton
-import com.soywiz.kpspemu.util.PspEmuKeys
-import com.soywiz.kpspemu.util.io.openAsIso2
-import com.soywiz.kpspemu.util.io.openAsZip2
-import com.soywiz.kpspemu.util.mkdirsSafe
-import kotlin.math.roundToInt
-import kotlin.reflect.KClass
+import com.soywiz.kpspemu.format.elf.*
+import com.soywiz.kpspemu.ge.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.native.*
+import com.soywiz.kpspemu.ui.*
+import com.soywiz.kpspemu.util.*
+import com.soywiz.kpspemu.util.io.*
+import kotlin.math.*
+import kotlin.reflect.*
 
 fun main(args: Array<String>) = Main.main(args)
 
@@ -145,11 +126,38 @@ class KpspemuMainScene(
     //lateinit var exeFile: VfsFile
     val tex by lazy { views.texture(display.bmp) }
     val agRenderer by lazy { AGRenderer(this, tex) }
-    val hudFont by lazy { BitmapFont(views.ag, "Lucida Console", 32, BitmapFontGenerator.LATIN_ALL, mipmaps = false) }
+    lateinit var hudFont: BitmapFont
     var running = true
     var ended = false
     var paused = false
     var forceSteps = 0
+
+    val buttonMapping = mapOf(
+        GamepadButton.BUTTON0 to PspCtrlButtons.cross,
+        GamepadButton.BUTTON1 to PspCtrlButtons.circle,
+        GamepadButton.BUTTON2 to PspCtrlButtons.square,
+        GamepadButton.BUTTON3 to PspCtrlButtons.triangle,
+
+        GamepadButton.L1 to PspCtrlButtons.leftTrigger,
+        GamepadButton.R1 to PspCtrlButtons.rightTrigger,
+
+        GamepadButton.SELECT to PspCtrlButtons.select,
+        GamepadButton.START to PspCtrlButtons.start,
+
+        GamepadButton.L2 to PspCtrlButtons.select,
+        GamepadButton.R2 to PspCtrlButtons.start,
+
+        GamepadButton.L3 to PspCtrlButtons.select,
+        GamepadButton.R3 to PspCtrlButtons.start,
+
+        GamepadButton.LEFT to PspCtrlButtons.left,
+        GamepadButton.RIGHT to PspCtrlButtons.right,
+        GamepadButton.UP to PspCtrlButtons.up,
+        GamepadButton.DOWN to PspCtrlButtons.down
+    )
+
+    val gamepadButtons = GamepadButton.values()
+    val gamepadButtonsStatus = DoubleArray(GamepadButton.MAX_INDEX) { Double.NaN }
 
     suspend fun resetEmulator() {
         running = true
@@ -190,7 +198,7 @@ class KpspemuMainScene(
         }
     }
     val titleText by lazy {
-        views.text("").apply {
+        views.text("", font = hudFont).apply {
             alpha = 0.5
         }
     }
@@ -280,6 +288,15 @@ class KpspemuMainScene(
         }
     }
 
+    private suspend fun loadMainFont() {
+        try {
+            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views.ag)
+        } catch (e: Throwable) {
+            //e.printStackTrace()
+            hudFont = DebugBitmapFont.DEBUG_BMP_FONT.convert(views.ag, mipmaps = false)
+        }
+    }
+
     suspend override fun sceneInit(sceneView: Container) {
         registerSceneProcess { cpuProcess() }
         registerSceneProcess { displayProcess() }
@@ -305,6 +322,10 @@ class KpspemuMainScene(
         println("KORAU: ${Korau.VERSION}")
         println("KORUI: ${Korui.VERSION}")
         println("KORGE: ${Korge.VERSION}")
+
+        println("Loading main font...")
+        loadMainFont()
+        println("Loaded main font")
 
         hud = views.container()
         //createEmulatorWithExe(exeFile)
@@ -388,32 +409,32 @@ class KpspemuMainScene(
 
         val loadButton = views.simpleButton("Load...", font = hudFont).apply {
             x = 8.0
-            y = 272.0 - 24.0 * 1
+            y = 272.0 - 20.0 * 1
         }.onClick {
-                createEmulatorWithExe(browser.openFile())
-            }
+            createEmulatorWithExe(browser.openFile())
+        }
 
         val directButton = views.simpleButton("Auto", font = hudFont).apply {
             x = 8.0
-            y = 272.0 - 24.0 * 2
+            y = 272.0 - 20.0 * 2
         }.onClick {
-                agRenderer.renderMode = when (agRenderer.renderMode) {
-                    AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
-                    AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
-                    else -> AGRenderer.RenderMode.AUTO
-                //AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
-                //AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
-                //AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
-                }
-
-                it.view.setText(
-                    when (agRenderer.renderMode) {
-                        AGRenderer.RenderMode.AUTO -> "Auto"
-                        AGRenderer.RenderMode.NORMAL -> "Normal"
-                        AGRenderer.RenderMode.DIRECT -> "Direct"
-                    }
-                )
+            agRenderer.renderMode = when (agRenderer.renderMode) {
+                AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+                AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
+                else -> AGRenderer.RenderMode.AUTO
+            //AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+            //AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
+            //AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
             }
+
+            it.view.setText(
+                when (agRenderer.renderMode) {
+                    AGRenderer.RenderMode.AUTO -> "Auto"
+                    AGRenderer.RenderMode.NORMAL -> "Normal"
+                    AGRenderer.RenderMode.DIRECT -> "Direct"
+                }
+            )
+        }
 
         lateinit var pauseButton: View
 
@@ -424,25 +445,40 @@ class KpspemuMainScene(
 
         pauseButton = views.simpleButton("Pause", font = hudFont).apply {
             x = 8.0
-            y = 272.0 - 24.0 * 3
+            y = 272.0 - 20.0 * 3
         }.onClick {
-                pause(!paused)
-            }!!
+            pause(!paused)
+        }!!
 
         val stepButton = views.simpleButton("Step", font = hudFont).apply {
             x = 8.0
-            y = 272.0 - 24.0 * 4
+            y = 272.0 - 20.0 * 4
         }.onClick {
-                pause(true)
-                forceSteps++
+            pause(true)
+            forceSteps++
+        }
+
+        val promptButton = views.simpleButton("Prompt", font = hudFont).apply {
+            x = 8.0
+            y = 272.0 - 20.0 * 5
+        }.onClick {
+            promptConfigurator.prompt()
+        }
+
+        val interpretedButton = views.simpleButton("", font = hudFont).apply {
+            x = 8.0
+            y = 272.0 - 20.0 * 6
+
+            fun update() {
+                this["label"].setText(if (emulator.interpreted) "Interpreted" else "Dynarek")
             }
 
-        val promptButton = views.simpleButton("prompt", font = hudFont).apply {
-            x = 8.0
-            y = 272.0 - 24.0 * 5
-        }.onClick {
-                promptConfigurator.prompt()
+            onClick {
+                emulator.interpreted = !emulator.interpreted
+                update()
             }
+            update()
+        }
 
 
         hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
@@ -452,6 +488,7 @@ class KpspemuMainScene(
         hud += pauseButton
         hud += stepButton
         hud += promptButton
+        hud += interpretedButton
         hud += icon0Image.apply {
             scale = 0.5
             x = 100.0
@@ -526,7 +563,7 @@ class KpspemuMainScene(
             }
         ) ?: Closeable { }
 
-
+        KPspEmuNative.initialization()
         if (OS.isBrowserJs) {
             val hash = KPspEmuNative.documentLocationHash.trim('#')
             val location = hash.trim('#').trim()
@@ -536,6 +573,30 @@ class KpspemuMainScene(
                 createEmulatorWithExe(localCurrentDirVfs[location])
             }
         }
+
+        sceneView.addEventListener<GamepadUpdatedEvent> { e ->
+            val gamepad = e.gamepad
+            for (button in gamepadButtons) {
+                val value = gamepad[button]
+                if (gamepadButtonsStatus[button.index] != value) {
+                    gamepadButtonsStatus[button.index] = value
+                    val pspButton = buttonMapping[button]
+                    if (pspButton != null) {
+                        emulator.controller.updateButton(pspButton, value >= 0.5)
+                    }
+                    when (button) {
+                        GamepadButton.LX -> emulator.controller.currentFrame.lx =
+                                (((value + 1.0) / 2.0) * 255.0).toInt()
+                        GamepadButton.LY -> emulator.controller.currentFrame.ly =
+                                (((-value + 1.0) / 2.0) * 255.0).toInt()
+                    }
+                }
+            }
+        }
+
+        //sceneView.addEventListener<StageResizedEvent> { e ->
+        //    println("RESIZED!")
+        //}
     }
 
     lateinit var debugSceneContainer: SceneContainer
