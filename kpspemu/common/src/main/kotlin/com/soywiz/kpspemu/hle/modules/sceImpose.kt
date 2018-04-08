@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.Ptr32
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.mem.*
 
 @Suppress("UNUSED_PARAMETER")
 class sceImpose(emulator: Emulator) : SceModule(emulator, "sceImpose", 0x40010011, "impose.prx", "sceImpose_Driver") {

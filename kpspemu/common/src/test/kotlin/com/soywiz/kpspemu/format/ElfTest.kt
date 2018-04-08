@@ -1,12 +1,12 @@
 package com.soywiz.kpspemu.format
 
-import com.soywiz.korio.async.syncTest
-import com.soywiz.korio.stream.openSync
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.embedded.Samples
-import com.soywiz.kpspemu.format.elf.loadElf
+import com.soywiz.korio.async.*
+import com.soywiz.korio.stream.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.embedded.*
+import com.soywiz.kpspemu.format.elf.*
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class ElfTest {
     @Test

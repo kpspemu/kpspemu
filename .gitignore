@@ -9,3 +9,5 @@
 memdump.bin
 *.iml
 .DS_Store
+./kpspemu/jvm/generated.class
+

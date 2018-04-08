@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.format
 
 import KpspTests
-import com.soywiz.korio.async.syncTest
-import com.soywiz.korio.stream.openSync
-import com.soywiz.korio.stream.readAll
-import com.soywiz.kpspemu.format.elf.Elf
+import com.soywiz.korio.async.*
+import com.soywiz.korio.stream.*
+import com.soywiz.kpspemu.format.elf.*
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class PbpTest {
     @Test

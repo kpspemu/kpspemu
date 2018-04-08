@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.util.toInt
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate")
 class scePower(emulator: Emulator) : SceModule(emulator, "scePower", 0x40010011, "power.prx", "scePower_Service") {

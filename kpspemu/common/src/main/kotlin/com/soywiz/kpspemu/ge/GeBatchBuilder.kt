@@ -1,10 +1,8 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.kmem.FastMemory
-import com.soywiz.kmem.get
-import com.soywiz.kmem.set
-import com.soywiz.kpspemu.mem
-import kotlin.math.max
+import com.soywiz.kmem.*
+import com.soywiz.kpspemu.*
+import kotlin.math.*
 
 class GeBatchBuilder(val ge: Ge) {
     val state = ge.state

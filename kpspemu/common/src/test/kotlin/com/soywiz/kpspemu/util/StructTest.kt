@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korio.stream.MemorySyncStream
-import com.soywiz.korio.util.IdEnum
-import mytest.assertEquals
-import org.junit.Test
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
+import mytest.*
+import org.junit.*
 
 class StructTest {
     data class Header(

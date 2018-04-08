@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.battery
 
-import com.soywiz.korio.util.IdEnum
-import com.soywiz.kpspemu.Emulator
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
 
 class PspBattery(val emulator: Emulator) {
     var charging = false

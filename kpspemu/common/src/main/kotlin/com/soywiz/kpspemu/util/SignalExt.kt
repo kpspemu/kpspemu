@@ -1,11 +1,8 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.klock.TimeSpan
-import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.async.suspendCancellableCoroutine
-import com.soywiz.korio.async.waitOne
-import com.soywiz.korio.lang.Closeable
+import com.soywiz.klock.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.lang.*
 
 suspend fun <T> Signal<T>.waitOneTimeout(timeout: TimeSpan): T = suspendCancellableCoroutine { c ->
     var close: Closeable? = null

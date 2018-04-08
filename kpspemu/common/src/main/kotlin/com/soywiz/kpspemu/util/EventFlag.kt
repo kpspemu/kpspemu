@@ -1,8 +1,7 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.waitOne
-import kotlin.reflect.KProperty
+import com.soywiz.korio.async.*
+import kotlin.reflect.*
 
 class EventFlag<T>(val initial: T) {
     var value: T = initial

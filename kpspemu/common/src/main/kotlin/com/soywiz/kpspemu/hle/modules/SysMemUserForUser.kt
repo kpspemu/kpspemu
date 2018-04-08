@@ -1,17 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.util.hex
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.MemoryAnchor
-import com.soywiz.kpspemu.hle.manager.MemoryPartition
-import com.soywiz.kpspemu.hle.manager.MemoryPartitions
-import com.soywiz.kpspemu.hle.manager.OutOfMemoryError
-import com.soywiz.kpspemu.memoryManager
-import com.soywiz.kpspemu.util.ResourceItem
-import com.soywiz.kpspemu.util.ResourceList
+import com.soywiz.korio.error.*
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.util.*
 
 @Suppress("UNUSED_PARAMETER")
 class SysMemUserForUser(emulator: Emulator) :

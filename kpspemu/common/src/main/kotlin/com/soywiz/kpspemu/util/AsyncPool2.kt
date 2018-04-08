@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korio.async.ProduceConsumer
-import com.soywiz.korio.lang.AtomicInteger
+import com.soywiz.korio.async.*
+import com.soywiz.korio.lang.*
 
 interface Resetable {
     fun reset(): Unit

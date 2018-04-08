@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korio.util.IdEnum
+import com.soywiz.korio.util.*
 
 // @TODO: Update korio with this: Allows to handle negative values!
 open class SmallCompanion2<T : IdEnum>(val values: Array<T>) {

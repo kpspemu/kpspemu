@@ -1,28 +1,26 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.klogger.Logger
-import com.soywiz.kmem.extract
-import com.soywiz.kmem.insert
-import com.soywiz.korio.lang.Debugger
-import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.lang.format
-import com.soywiz.korio.lang.toByteArray
+import com.soywiz.klogger.*
+import com.soywiz.kmem.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.join
 import com.soywiz.korma.numeric.nextAlignedTo
-import com.soywiz.kpspemu.AddressInfo
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.GP
-import com.soywiz.kpspemu.hle.NativeFunction
-import com.soywiz.kpspemu.hle.manager.MemoryManager
-import com.soywiz.kpspemu.hle.manager.ModuleManager
-import com.soywiz.kpspemu.hle.manager.SyscallManager
-import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.mem.openSync
-import com.soywiz.kpspemu.mem.ptr
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.reflect.KProperty
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
+import kotlin.collections.List
+import kotlin.collections.arrayListOf
+import kotlin.collections.filter
+import kotlin.collections.last
+import kotlin.collections.map
+import kotlin.collections.plus
+import kotlin.collections.set
+import kotlin.collections.sortedBy
+import kotlin.math.*
+import kotlin.reflect.*
 
 data class ElfPspModuleInfo(
     val moduleAtributes: Int,

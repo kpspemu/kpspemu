@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
+import com.soywiz.kpspemu.*
 
 @Suppress("UNUSED_PARAMETER")
 open class UtilsForUser(emulator: Emulator) :

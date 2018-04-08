@@ -1,10 +1,8 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.kds.LinkedList
-import com.soywiz.korio.async.Promise
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.async.suspendCancellableCoroutine
-import com.soywiz.korio.lang.Closeable
+import com.soywiz.kds.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.lang.*
 
 class Signal2<T>(val onRegister: () -> Unit = {}) { //: AsyncSequence<T> {
     inner class Node(val once: Boolean, val item: (T) -> Unit) : Closeable {

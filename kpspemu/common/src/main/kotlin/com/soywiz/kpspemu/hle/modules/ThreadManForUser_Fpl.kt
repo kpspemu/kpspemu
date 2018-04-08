@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceSubmodule
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
 
 class ThreadManForUser_Fpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     fun sceKernelCreateFpl(cpu: CpuState): Unit = UNIMPLEMENTED(0xC07BB470)

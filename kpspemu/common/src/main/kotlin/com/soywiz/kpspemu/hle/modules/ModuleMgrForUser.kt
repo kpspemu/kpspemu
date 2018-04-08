@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.util.hex
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.mem.*
 
 @Suppress("MemberVisibilityCanPrivate", "UNUSED_PARAMETER")
 class ModuleMgrForUser(emulator: Emulator) :

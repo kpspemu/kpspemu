@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.format
 
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 
 class Psf {

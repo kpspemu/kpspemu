@@ -1,4 +1,4 @@
-import org.junit.Assert
+import org.junit.*
 
 actual object MyAssert {
     actual fun <T> assertEquals(expect: T?, actual: T?) {

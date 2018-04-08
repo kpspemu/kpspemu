@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
 
 class sceNetAdhocMatching(emulator: Emulator) :
     SceModule(emulator, "sceNetAdhocMatching", 0x00010011, "pspnet_adhoc_matching.prx", "sceNetAdhocMatching_Library") {

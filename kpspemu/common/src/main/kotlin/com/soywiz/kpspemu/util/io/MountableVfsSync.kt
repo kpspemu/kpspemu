@@ -1,10 +1,8 @@
 package com.soywiz.kpspemu.util.io
 
-import com.soywiz.klogger.Logger
-import com.soywiz.korio.FileNotFoundException
-import com.soywiz.korio.vfs.Vfs
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.VfsUtil
+import com.soywiz.klogger.*
+import com.soywiz.korio.*
+import com.soywiz.korio.vfs.*
 
 fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
     val logger = Logger("MountableVfsSync")

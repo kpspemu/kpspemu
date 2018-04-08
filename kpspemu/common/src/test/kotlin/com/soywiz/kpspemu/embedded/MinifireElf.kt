@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.embedded
 
-import com.soywiz.korio.crypto.Base64
+import com.soywiz.korio.crypto.*
 
 object Samples {
     val MINIFIRE_ELF by lazy {

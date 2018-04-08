@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
 
 class sceNetAdhocctl(emulator: Emulator) :
     SceModule(emulator, "sceNetAdhocctl", 0x00010011, "pspnet_adhocctl.prx", "sceNetAdhocctl_Library") {

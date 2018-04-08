@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.kpspemu.debug.BaseBreakpoints
+import com.soywiz.kpspemu.debug.*
 
 class Breakpoints : BaseBreakpoints {
     private val breakpoints = LinkedHashMap<Int, Boolean>()

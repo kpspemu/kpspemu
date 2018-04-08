@@ -1,15 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
 import com.soywiz.klock.*
-import com.soywiz.korio.util.clamp
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.ScePspDateTime
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.Ptr64
-import com.soywiz.kpspemu.mem.PtrStruct
-import com.soywiz.kpspemu.timeManager
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
 
 @Suppress("UNUSED_PARAMETER")
 class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rtc.prx", "sceRTC_Service") {

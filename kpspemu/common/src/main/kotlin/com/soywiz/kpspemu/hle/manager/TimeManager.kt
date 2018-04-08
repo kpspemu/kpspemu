@@ -1,11 +1,8 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.klock.DateTime
-import com.soywiz.klock.Klock
-import com.soywiz.klock.seconds
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.klock.*
+import com.soywiz.korio.stream.*
+import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
 
 class TimeManager(override val emulator: Emulator) : WithEmulator {

@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.klock.Klock
+import com.soywiz.klock.*
 
 fun Klock.currentTimeMicroInt(): Int {
     val millisDouble = currentTimeMillisDouble()

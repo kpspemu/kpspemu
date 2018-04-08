@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.ge
 
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class VertexTypeTest {
     @Test

@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.hle.*
 
 @Suppress("UNUSED_PARAMETER")
 class pspDveManager(emulator: Emulator) :
@@ -44,6 +44,16 @@ class pspDveManager(emulator: Emulator) :
 
     override fun registerModule() {
         registerFunctionInt("pspDveMgrCheckVideoOut", 0x2ACFCB6D, since = 150) { pspDveMgrCheckVideoOut() }
-        registerFunctionInt("pspDveMgrSetVideoOut", 0xF9C86C73, since = 150) { pspDveMgrSetVideoOut(int, int, int, int, int, int, int) }
+        registerFunctionInt("pspDveMgrSetVideoOut", 0xF9C86C73, since = 150) {
+            pspDveMgrSetVideoOut(
+                int,
+                int,
+                int,
+                int,
+                int,
+                int,
+                int
+            )
+        }
     }
 }

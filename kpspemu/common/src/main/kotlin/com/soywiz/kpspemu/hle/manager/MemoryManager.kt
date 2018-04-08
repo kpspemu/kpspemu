@@ -2,12 +2,11 @@
 
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.kds.reduceAcumulate
-import com.soywiz.kds.splice
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.format
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.util.shex
+import com.soywiz.kds.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.util.*
 
 class MemoryManager(val emulator: Emulator) {
     val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()

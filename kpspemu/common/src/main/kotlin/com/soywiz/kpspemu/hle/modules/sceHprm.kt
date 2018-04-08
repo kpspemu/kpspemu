@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.mem.*
 
 class sceHprm(emulator: Emulator) :
     SceModule(emulator, "sceHprm", 0x40010011, "hpremote_02g.prx", "sceHP_Remote_Driver") {

@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.klogger.Logger
+import com.soywiz.klogger.*
 
 class ElfDwarf {
     val logger = Logger("ElfDwarf")

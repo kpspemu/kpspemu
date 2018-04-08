@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.hle.error
 
-import com.soywiz.klogger.Logger
+import com.soywiz.klogger.*
 
 class SceKernelException(val errorCode: Int) : Exception()
 

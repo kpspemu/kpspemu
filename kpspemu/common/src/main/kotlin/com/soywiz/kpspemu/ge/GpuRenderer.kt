@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.kpspemu.util.EventFlag
+import com.soywiz.kpspemu.util.*
 
 abstract class GpuRenderer {
     open val queuedJobs = EventFlag(0)

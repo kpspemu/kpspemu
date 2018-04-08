@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.klogger.Logger
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
+import com.soywiz.klogger.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
 
 class InterruptManager(val emulator: Emulator) {
     val logger = Logger("InterruptManager")

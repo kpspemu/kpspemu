@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.kirk
 
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.IdEnum
-import com.soywiz.korio.util.nextAlignedTo
+import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.util.*
-import com.soywiz.krypto.AES
+import com.soywiz.krypto.*
 
 object Kirk {
     fun hleUtilsBufferCopyWithRange(

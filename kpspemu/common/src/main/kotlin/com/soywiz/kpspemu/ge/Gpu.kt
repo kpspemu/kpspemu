@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kpspemu.*
 
 class Gpu(override val emulator: Emulator) : WithEmulator {
     val batchQueue = arrayListOf<GeBatchData>()

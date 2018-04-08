@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.hle.SceSubmodule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.mem.Ptr64
-import com.soywiz.kpspemu.mem.isNull
-import com.soywiz.kpspemu.rtc
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
+import com.soywiz.kpspemu.mem.*
 
 class ThreadManForUser_Time(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     fun sceKernelGetSystemTimeWide(): Long = rtc.getTimeInMicroseconds()

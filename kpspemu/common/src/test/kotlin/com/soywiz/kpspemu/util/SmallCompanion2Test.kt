@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korio.util.IdEnum
-import mytest.assertEquals
-import org.junit.Test
+import com.soywiz.korio.util.*
+import mytest.*
+import org.junit.*
 
 class SmallCompanion2Test {
     enum class WaveformEffectType(override val id: Int) : IdEnum {

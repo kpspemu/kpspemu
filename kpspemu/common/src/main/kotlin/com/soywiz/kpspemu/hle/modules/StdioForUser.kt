@@ -1,16 +1,13 @@
 package com.soywiz.kpspemu.hle.modules
 
 
-import com.soywiz.kmem.readByteArray
-import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.lang.toString
-import com.soywiz.korio.stream.AsyncStreamBase
-import com.soywiz.korio.stream.asVfsFile
-import com.soywiz.korio.stream.toAsyncStream
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.FileDescriptor
+import com.soywiz.kmem.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
 
 
 @Suppress("UNUSED_PARAMETER")

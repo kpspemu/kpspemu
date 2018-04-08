@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.korim.font.BitmapFont
-import com.soywiz.korim.format.PNG
-import com.soywiz.korio.crypto.Base64
-import com.soywiz.korma.geom.RectangleInt
+import com.soywiz.korim.font.*
+import com.soywiz.korim.format.*
+import com.soywiz.korio.crypto.*
+import com.soywiz.korma.geom.*
 
 object DebugBitmapFont {
     val DEBUG_BMP_FONT by lazy {

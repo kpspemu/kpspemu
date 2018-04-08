@@ -1,4 +1,4 @@
-import com.soywiz.korio.vfs.localCurrentDirVfs
+import com.soywiz.korio.vfs.*
 
 object KpspTests {
     val root = localCurrentDirVfs["../.."].jail()

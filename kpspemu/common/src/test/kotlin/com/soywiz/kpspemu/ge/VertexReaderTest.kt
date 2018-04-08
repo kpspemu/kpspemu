@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korio.crypto.Hex
-import com.soywiz.korio.stream.openSync
+import com.soywiz.korio.crypto.*
+import com.soywiz.korio.stream.*
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class VertexReaderTest {
     @Test

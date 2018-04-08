@@ -1,18 +1,13 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceSubmodule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.hle.error.sceKernelException
-import com.soywiz.kpspemu.hle.manager.Manager
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.hle.manager.Resource
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.write
-import com.soywiz.kpspemu.util.Signal2
-import com.soywiz.kpspemu.util.waitOne
-import kotlin.math.min
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.util.*
+import kotlin.math.*
 
 class ThreadManForUser_Sema(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     class PspSemaphore(

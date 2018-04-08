@@ -1,19 +1,10 @@
 package com.soywiz.kpspemu.mem
 
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.Charset
-import com.soywiz.korio.lang.Charsets
-import com.soywiz.korio.lang.toByteArray
-import com.soywiz.korio.stream.ByteArrayBuilder
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.SyncStreamBase
-import com.soywiz.korio.stream.toSyncStream
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.unsigned
-import com.soywiz.kpspemu.util.Struct
-import com.soywiz.kpspemu.util.StructType
-import com.soywiz.kpspemu.util.read
-import com.soywiz.kpspemu.util.write
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.util.*
 
 data class PtrArray(val ptr: Ptr, val size: Int) {
     val addr: Int get() = ptr.addr

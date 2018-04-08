@@ -1,8 +1,7 @@
 package com.soywiz.kpspemu.mem
 
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.SyncStreamBase
+import com.soywiz.korio.error.*
+import com.soywiz.korio.stream.*
 
 
 fun Memory.openSync(): SyncStream {

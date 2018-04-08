@@ -1,15 +1,12 @@
 package com.soywiz.kpspemu.generate
 
-import com.soywiz.korio.async.syncTest
-import com.soywiz.korio.serialization.xml.readXml
-import com.soywiz.korio.util.Indenter
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.quote
-import com.soywiz.korio.util.quoted
-import com.soywiz.korio.vfs.localCurrentDirVfs
-import com.soywiz.kpspemu.hle.psplibdoc.LibDoc
+import com.soywiz.korio.async.*
+import com.soywiz.korio.serialization.xml.*
+import com.soywiz.korio.util.*
+import com.soywiz.korio.vfs.*
+import com.soywiz.kpspemu.hle.psplibdoc.*
 import org.junit.Test
-import kotlin.test.Ignore
+import kotlin.test.*
 
 class ModuleStubGenerator {
     @Ignore

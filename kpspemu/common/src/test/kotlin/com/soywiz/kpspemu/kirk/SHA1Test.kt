@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.kirk
 
-import com.soywiz.korio.lang.toByteArray
-import com.soywiz.korio.util.hex
-import mytest.assertEquals
-import org.junit.Test
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
+import mytest.*
+import org.junit.*
 
 class SHA1Test {
     @Test

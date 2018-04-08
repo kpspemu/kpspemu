@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.callbackManager
-import com.soywiz.kpspemu.hle.SceSubmodule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.hle.error.sceKernelException
-import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
+import com.soywiz.kpspemu.mem.*
 
 class ThreadManForUser_Callback(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     private fun callback(id: Int) =

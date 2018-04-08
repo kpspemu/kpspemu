@@ -1,14 +1,13 @@
 package com.soywiz.kpspemu.format
 
-import com.soywiz.kds.CacheMap
-import com.soywiz.kmem.arraycopy
-import com.soywiz.korio.compression.uncompressZlibRaw
-import com.soywiz.korio.error.invalidOp
+import com.soywiz.kds.*
+import com.soywiz.kmem.*
+import com.soywiz.korio.compression.*
+import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.hasFlag
-import com.soywiz.korio.vfs.VfsFile
-import kotlin.math.ceil
-import kotlin.math.min
+import com.soywiz.korio.util.*
+import com.soywiz.korio.vfs.*
+import kotlin.math.*
 
 class Cso private constructor() {
     val CACHED_BLOCKS = 0x10

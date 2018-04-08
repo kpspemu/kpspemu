@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
 
 class sceNet(emulator: Emulator) : SceModule(emulator, "sceNet", 0x00010011, "pspnet.prx", "sceNet_Library") {
     fun sceNetGetLocalEtherAddr(cpu: CpuState): Unit = UNIMPLEMENTED(0x0BF0A3AE)

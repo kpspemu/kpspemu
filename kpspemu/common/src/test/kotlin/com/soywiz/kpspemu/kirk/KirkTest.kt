@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.kirk
 
-import org.junit.Test
+import org.junit.*
 
 class KirkTest {
     @Test

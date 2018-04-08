@@ -1,16 +1,12 @@
 package com.soywiz.kpspemu.util.io
 
-import com.soywiz.klogger.Logger
-import com.soywiz.korio.async.asyncGenerate
-import com.soywiz.korio.coroutine.withCoroutineContext
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.ASCII
-import com.soywiz.korio.lang.format
+import com.soywiz.klogger.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.coroutine.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.vfs.Vfs
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.VfsOpenMode
-import com.soywiz.korio.vfs.VfsStat
+import com.soywiz.korio.vfs.*
 
 suspend fun IsoVfs2(file: VfsFile): VfsFile = ISO2.openVfs(file.open(VfsOpenMode.READ))
 suspend fun IsoVfs2(s: AsyncStream): VfsFile = ISO2.openVfs(s)

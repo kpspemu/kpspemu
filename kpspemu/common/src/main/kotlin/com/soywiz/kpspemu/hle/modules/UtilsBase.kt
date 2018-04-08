@@ -1,15 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.klock.Klock
-import com.soywiz.korma.random.MtRand
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.isNotNull
-import com.soywiz.kpspemu.rtc
-import com.soywiz.kpspemu.timeManager
-import com.soywiz.kpspemu.util.currentTimeMicroDouble
+import com.soywiz.klock.*
+import com.soywiz.korma.random.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.util.*
 
 open class UtilsBase(emulator: Emulator, name: String, flags: Int, prx: String, prxName: String) :
     SceModule(emulator, name, flags, prx, prxName) {

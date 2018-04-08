@@ -1,12 +1,8 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.kmem.*
-import com.soywiz.korio.lang.Charset
-import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.lang.toByteArray
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.openSync
-import com.soywiz.korio.stream.sliceWithSize
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
 
 abstract class p_void(val ba: ByteArray, val pos: Int) {
     override fun equals(other: Any?): Boolean {

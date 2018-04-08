@@ -1,34 +1,20 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kmem.arraycopy
-import com.soywiz.korio.async.Promise
-import com.soywiz.korio.async.go
-import com.soywiz.korio.async.spawn
-import com.soywiz.korio.async.toList
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.lang.toString
-import com.soywiz.korio.stream.AsyncStream
-import com.soywiz.korio.stream.AsyncStreamBase
-import com.soywiz.korio.stream.toAsyncStream
-import com.soywiz.korio.util.toInt
+import com.soywiz.kmem.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
 import com.soywiz.korio.vfs.*
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.coroutineContext
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.display
-import com.soywiz.kpspemu.fileManager
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.hle.error.sceKernelException
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
-import com.soywiz.kpspemu.util.PoolItem
-import com.soywiz.kpspemu.util.mkdirsSafe
-import com.soywiz.kpspemu.util.write
-import kotlin.math.max
-import kotlin.math.min
+import com.soywiz.kpspemu.util.*
+import kotlin.math.*
 
 @Suppress("UNUSED_PARAMETER")
 class IoFileMgrForUser(emulator: Emulator) :
@@ -421,7 +407,16 @@ class IoFileMgrForUser(emulator: Emulator) :
     override fun registerModule() {
         // Devices
         registerFunctionSuspendInt("sceIoDevctl", 0x54F5FB11, since = 150) { sceIoDevctl(str, int, ptr, int, ptr, int) }
-        registerFunctionSuspendInt("sceIoAssign", 0xB2A628C1, since = 150) { sceIoAssign(str, str, str, int, ptr, long) }
+        registerFunctionSuspendInt("sceIoAssign", 0xB2A628C1, since = 150) {
+            sceIoAssign(
+                str,
+                str,
+                str,
+                int,
+                ptr,
+                long
+            )
+        }
 
         // Files
         registerFunctionSuspendInt("sceIoOpen", 0x109F50BC, since = 150) { sceIoOpen(thread, str, int, int) }

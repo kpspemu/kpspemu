@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import org.junit.Test
+import org.junit.*
 
 class SparseMemoryTest {
     @Test

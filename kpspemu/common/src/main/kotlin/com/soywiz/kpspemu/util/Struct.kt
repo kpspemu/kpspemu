@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korio.lang.Charset
-import com.soywiz.korio.lang.UTF8
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.IdEnum
-import kotlin.reflect.KMutableProperty1
+import com.soywiz.korio.util.*
+import kotlin.reflect.*
 
 open class Struct<T>(val create: () -> T, vararg val items: Item<T, *>) : StructType<T> {
     override val size: Int = items.map { it.type.size }.sum()

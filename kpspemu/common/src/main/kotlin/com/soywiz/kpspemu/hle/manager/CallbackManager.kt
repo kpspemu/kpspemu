@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.mem.*
 
 class CallbackManager(emulator: Emulator) : Manager<PspCallback>("Callback", emulator, initialId = 1) {
     fun create(name: String, func: Ptr, arg: Int): PspCallback = PspCallback(this, allocId(), name, func, arg)

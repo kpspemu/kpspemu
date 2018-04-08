@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.kirk
 
 import com.soywiz.kmem.*
 import com.soywiz.korio.math.reverseBytes
-import kotlin.math.ceil
+import kotlin.math.*
 
 // @TODO: Move to Krypto
 object SHA1 {

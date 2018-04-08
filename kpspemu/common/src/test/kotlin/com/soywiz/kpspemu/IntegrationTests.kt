@@ -2,22 +2,17 @@ package com.soywiz.kpspemu
 
 import KpspTests
 import MyAssert
-import com.soywiz.klogger.LogLevel
-import com.soywiz.klogger.Loggers
-import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.async.syncTest
-import com.soywiz.korio.coroutine.getCoroutineContext
-import com.soywiz.korio.lang.Console
-import com.soywiz.korio.lang.printStackTrace
-import com.soywiz.korio.stream.SyncStream
-import com.soywiz.korio.stream.toAsync
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.quote
-import com.soywiz.korio.vfs.MemoryVfsMix
-import com.soywiz.kpspemu.format.elf.loadElfAndSetRegisters
-import com.soywiz.kpspemu.hle.registerNativeModules
+import com.soywiz.klogger.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.coroutine.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
+import com.soywiz.korio.vfs.*
+import com.soywiz.kpspemu.format.elf.*
+import com.soywiz.kpspemu.hle.*
 import org.junit.Test
-import kotlin.test.Ignore
+import kotlin.test.*
 
 class IntegrationTests {
     val TRACE = false

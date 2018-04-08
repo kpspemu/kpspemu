@@ -1,10 +1,9 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korma.Matrix2d
-import com.soywiz.korma.Matrix4
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.korim.bitmap.*
+import com.soywiz.korma.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.mem.*
 
 data class GeBatchData(
     val state: IntArray,

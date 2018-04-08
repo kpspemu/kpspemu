@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.hle.SceModule
-import kotlin.reflect.KClass
+import com.soywiz.korio.error.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.hle.*
+import kotlin.reflect.*
 
 class ModuleManager(val emulator: Emulator) {
     val modules = LinkedHashMap<String, SceModule>()

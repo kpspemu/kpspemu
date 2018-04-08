@@ -1,14 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.read
-import com.soywiz.kpspemu.util.AS
-import com.soywiz.kpspemu.util.INT32
-import com.soywiz.kpspemu.util.STRINGZ
-import com.soywiz.kpspemu.util.Struct
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.util.*
 
 class sceReg(emulator: Emulator) : SceModule(emulator, "sceReg", 0x40010011, "registry.prx", "sceRegistry_Service") {
     fun sceRegOpenRegistry(regParamPtr: Ptr, mode: Int, regHandlePtr: Ptr): Int {

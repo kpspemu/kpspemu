@@ -1,13 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceSubmodule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.hle.error.sceKernelException
-import com.soywiz.kpspemu.hle.manager.EventFlagWaitTypeSet
-import com.soywiz.kpspemu.hle.manager.PspEventFlag
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.util.ResourceList
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.util.*
 
 class ThreadManForUser_EventFlags(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }

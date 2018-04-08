@@ -1,12 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.display
-import com.soywiz.kpspemu.ge.PixelFormat
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.mem.Ptr32
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.ge.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
 
 @Suppress("UNUSED_PARAMETER")
 class sceDisplay(emulator: Emulator) :

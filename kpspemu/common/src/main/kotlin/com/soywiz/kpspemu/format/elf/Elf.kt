@@ -1,11 +1,17 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.kmem.UByteArray
-import com.soywiz.korio.error.invalidOp
+import com.soywiz.kmem.*
+import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.Flags
-import com.soywiz.korio.util.NumericEnum
-import com.soywiz.kpspemu.mem.Memory
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.mem.*
+import kotlin.collections.LinkedHashMap
+import kotlin.collections.List
+import kotlin.collections.MutableMap
+import kotlin.collections.listOf
+import kotlin.collections.map
+import kotlin.collections.set
+import kotlin.collections.toMap
 
 class Elf private constructor(val stream: SyncStream) {
     companion object {

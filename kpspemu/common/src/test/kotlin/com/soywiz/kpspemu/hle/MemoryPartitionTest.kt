@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.hle
 
-import com.soywiz.kpspemu.hle.manager.MemoryPartition
+import com.soywiz.kpspemu.hle.manager.*
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class MemoryPartitionTest {
     val base = MemoryPartition("demo", 0, 100, false)

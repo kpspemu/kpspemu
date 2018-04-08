@@ -1,12 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.controller
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.display
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.mem.Ptr
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
 
 class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "ctrl.prx", "sceController_Service") {
     private fun _sceCtrlPeekBuffer(sceCtrlDataPtr: Ptr, count: Int, positive: Boolean): Int {

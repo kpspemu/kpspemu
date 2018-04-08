@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.kpspemu.mem.Memory
-import org.junit.Test
+import com.soywiz.kpspemu.mem.*
+import org.junit.*
 
 class MemoryTest {
     @Test

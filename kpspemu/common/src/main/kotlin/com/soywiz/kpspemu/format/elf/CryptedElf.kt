@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.format.elf
 
-import com.soywiz.kmem.UByteArray
-import com.soywiz.korio.crypto.Hex
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.korio.util.hex
-import com.soywiz.kpspemu.kirk.Kirk
+import com.soywiz.kmem.*
+import com.soywiz.korio.crypto.*
+import com.soywiz.korio.error.*
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.kirk.*
 import com.soywiz.kpspemu.util.*
 
 // https://github.com/hrydgard/ppsspp/blob/1f9fabee579422053d49e2de557aec6f20ee4405/Core/ELF/PrxDecrypter.cpp

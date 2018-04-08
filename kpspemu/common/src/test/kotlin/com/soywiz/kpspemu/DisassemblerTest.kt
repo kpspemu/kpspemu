@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.kpspemu.cpu.dis.Disassembler
+import com.soywiz.kpspemu.cpu.dis.*
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class DisassemblerTest {
     val dis = Disassembler

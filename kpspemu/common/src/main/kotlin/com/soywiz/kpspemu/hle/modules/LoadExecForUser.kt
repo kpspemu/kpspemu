@@ -1,13 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.RA
-import com.soywiz.kpspemu.cpu.dis.getPrintInstructionAt
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.manager.PspThread
-import com.soywiz.kpspemu.mem
-import com.soywiz.kpspemu.threadManager
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.cpu.dis.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
 
 class LoadExecForUser(emulator: Emulator) :
     SceModule(emulator, "LoadExecForUser", 0x40010011, "loadexec_02g.prx", "sceLoadExec") {

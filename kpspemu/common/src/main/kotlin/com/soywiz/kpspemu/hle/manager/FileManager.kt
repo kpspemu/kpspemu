@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.korio.async.Promise
-import com.soywiz.korio.lang.UTF8
-import com.soywiz.korio.stream.AsyncStream
-import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korio.vfs.VfsUtil
-import com.soywiz.kpspemu.Emulator
+import com.soywiz.korio.async.*
+import com.soywiz.korio.lang.*
+import com.soywiz.korio.stream.*
+import com.soywiz.korio.vfs.*
+import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
 
 class FileManager(val emulator: Emulator) {

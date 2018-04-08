@@ -1,8 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.kds.Pool
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.WithEmulator
+import com.soywiz.kds.*
+import com.soywiz.kpspemu.*
 
 class ResourceNotFoundException(msg: String) : Exception(msg)
 

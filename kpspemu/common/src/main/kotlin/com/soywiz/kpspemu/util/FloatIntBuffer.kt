@@ -1,8 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.kmem.MemBufferAlloc
-import com.soywiz.kmem.asFloat32Buffer
-import com.soywiz.kmem.asInt32Buffer
+import com.soywiz.kmem.*
 
 class FloatIntBuffer(val size: Int) {
     val mem = MemBufferAlloc(size * 4)

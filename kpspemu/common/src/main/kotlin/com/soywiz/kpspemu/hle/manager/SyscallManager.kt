@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.hle.manager
 
-import com.soywiz.kds.IntMap
-import com.soywiz.klogger.Logger
-import com.soywiz.korio.lang.format
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.cpu.Syscalls
-import com.soywiz.kpspemu.hle.NativeFunction
+import com.soywiz.kds.*
+import com.soywiz.klogger.*
+import com.soywiz.korio.lang.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
 
 class SyscallManager : Syscalls {
     val logger = Logger("SyscallManager")

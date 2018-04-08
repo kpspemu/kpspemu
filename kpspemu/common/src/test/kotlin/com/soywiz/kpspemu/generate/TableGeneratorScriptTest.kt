@@ -1,11 +1,10 @@
 package com.soywiz.kpspemu.generate
 
-import com.soywiz.kmem.countTrailingZeros
-import com.soywiz.korio.util.Indenter
-import com.soywiz.korio.util.quote
+import com.soywiz.kmem.*
+import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.cpu.*
 import org.junit.Test
-import kotlin.test.Ignore
+import kotlin.test.*
 
 fun main(args: Array<String>) {
     val switch = TableGenerator.createSwitch(Instructions.instructions)

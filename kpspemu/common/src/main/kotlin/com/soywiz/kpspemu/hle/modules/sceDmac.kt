@@ -1,9 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.mem
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
 
 class sceDmac(emulator: Emulator) : SceModule(emulator, "sceDmac", 0x40010011, "lowio.prx", "sceLowIO_Driver") {
     fun _sceDmacMemcpy(src: Int, dst: Int, size: Int): Int {

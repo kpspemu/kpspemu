@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.cpu
 
-import com.soywiz.korio.lang.format
+import com.soywiz.korio.lang.*
 
 interface Syscalls {
     fun syscall(state: CpuState, id: Int): Unit

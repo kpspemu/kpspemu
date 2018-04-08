@@ -1,17 +1,25 @@
 package com.soywiz.kpspemu.util.io
 
-import com.soywiz.klock.DateTime
-import com.soywiz.kmem.getBits
-import com.soywiz.kmem.indexOf
-import com.soywiz.kmem.toUInt
-import com.soywiz.korio.async.AsyncSequence
-import com.soywiz.korio.async.asyncGenerate
-import com.soywiz.korio.compression.Inflater
-import com.soywiz.korio.coroutine.getCoroutineContext
+import com.soywiz.klock.*
+import com.soywiz.kmem.*
+import com.soywiz.korio.async.*
+import com.soywiz.korio.compression.*
+import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.toIntClamp
+import com.soywiz.korio.util.*
 import com.soywiz.korio.vfs.*
-import kotlin.math.max
+import kotlin.collections.LinkedHashMap
+import kotlin.collections.MutableMap
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.contains
+import kotlin.collections.copyOfRange
+import kotlin.collections.getOrPut
+import kotlin.collections.iterator
+import kotlin.collections.listOf
+import kotlin.collections.plus
+import kotlin.collections.set
+import kotlin.math.*
 
 suspend fun ZipVfs2(s: AsyncStream, zipFile: VfsFile? = null): VfsFile {
     //val s = zipFile.open(VfsOpenMode.READ)

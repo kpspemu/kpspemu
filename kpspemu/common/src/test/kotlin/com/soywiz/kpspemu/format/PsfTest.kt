@@ -1,9 +1,9 @@
 package com.soywiz.kpspemu.format
 
 import KpspTests
-import com.soywiz.korio.async.syncTest
-import mytest.assertEquals
-import org.junit.Test
+import com.soywiz.korio.async.*
+import mytest.*
+import org.junit.*
 
 class PsfTest {
     @Test

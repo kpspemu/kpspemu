@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import kotlin.math.max
+import kotlin.math.*
 
 fun max(a: Float, b: Float, c: Float) = max(max(a, b), c)
 fun max(a: Float, b: Float, c: Float, d: Float) = max(max(max(a, b), c), d)

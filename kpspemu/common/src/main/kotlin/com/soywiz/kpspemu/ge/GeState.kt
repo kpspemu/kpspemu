@@ -3,17 +3,13 @@
 package com.soywiz.kpspemu.ge
 
 import com.soywiz.kmem.*
-import com.soywiz.korim.color.RGBA_4444
-import com.soywiz.korim.color.RGBA_5551
-import com.soywiz.korim.color.RGB_565
-import com.soywiz.korio.error.invalidOp
+import com.soywiz.korim.color.*
+import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.hex
-import com.soywiz.korio.util.nextAlignedTo
-import com.soywiz.korio.util.toInt
-import com.soywiz.korma.Matrix4
-import com.soywiz.kpspemu.mem.Memory
-import com.soywiz.kpspemu.util.max
+import com.soywiz.korio.util.*
+import com.soywiz.korma.*
+import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.util.*
 
 
 fun bool1(p: Int): Boolean = p != 0

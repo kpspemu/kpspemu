@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.kmem.arraycopy
-import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korio.error.invalidOp
-import com.soywiz.kpspemu.mem.Memory
-import kotlin.math.pow
+import com.soywiz.kmem.*
+import com.soywiz.korim.bitmap.*
+import com.soywiz.korio.error.*
+import com.soywiz.kpspemu.mem.*
+import kotlin.math.*
 
 fun Bitmap32.setTo(
     colorFormat: PixelFormat,

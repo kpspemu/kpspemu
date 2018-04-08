@@ -1,14 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kds.Pool
-import com.soywiz.kmem.arraycopy
-import com.soywiz.korau.sound.NativeAudioStream
-import com.soywiz.korau.sound.addSamples
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.mem
-import kotlin.math.min
+import com.soywiz.kds.*
+import com.soywiz.kmem.*
+import com.soywiz.korau.sound.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import kotlin.math.*
 
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
     object AudioFormat {

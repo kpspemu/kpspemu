@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korma.math.reinterpretAsFloat
-import com.soywiz.korma.math.reinterpretAsInt
+import com.soywiz.korma.math.*
 
 // Move this outside
 fun HalfFloat.toFloat() = this.f

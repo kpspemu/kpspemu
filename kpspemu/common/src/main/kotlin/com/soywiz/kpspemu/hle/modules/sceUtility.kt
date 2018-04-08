@@ -1,13 +1,11 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.util.IdEnum
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
-import com.soywiz.kpspemu.hle.error.SceKernelErrors
-import com.soywiz.kpspemu.mem.Ptr
-import com.soywiz.kpspemu.mem.capture
-import com.soywiz.kpspemu.mem.writeStringz
+import com.soywiz.korio.util.*
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.error.*
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
 @Suppress("UNUSED_PARAMETER", "MemberVisibilityCanPrivate", "FunctionName")

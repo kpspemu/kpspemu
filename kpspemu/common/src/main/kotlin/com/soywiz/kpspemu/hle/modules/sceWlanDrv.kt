@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.cpu.CpuState
-import com.soywiz.kpspemu.hle.SceModule
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.cpu.*
+import com.soywiz.kpspemu.hle.*
 
 class sceWlanDrv(emulator: Emulator) : SceModule(emulator, "sceWlanDrv", 0x40010011, "wlan.prx", "sceWlan_Driver") {
     fun sceWlanGetEtherAddr(cpu: CpuState): Unit = UNIMPLEMENTED(0x0C622081)

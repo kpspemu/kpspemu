@@ -1,8 +1,9 @@
 package com.soywiz.kpspemu.hle
 
-import com.soywiz.kpspemu.Emulator
-import com.soywiz.kpspemu.hle.manager.ModuleManager
+import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.hle.modules.*
+import com.soywiz.kpspemu.hle.modules.InterruptManager
 
 fun Emulator.registerNativeModules() = moduleManager.registerNativeModules()
 
