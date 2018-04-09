@@ -1,7 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.korlibsVersion = "0.24.0"
+    ext.korlibsVersion = "0.25.0"
     ext.dynarekVersion = ext.korlibsVersion
     ext.kloggerVersion = ext.korlibsVersion
     ext.klockVersion = ext.korlibsVersion

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu
 import com.soywiz.klogger.*
 import com.soywiz.korau.format.util.*
 import com.soywiz.korinject.*
+import com.soywiz.korio.async.*
 import com.soywiz.kpspemu.battery.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.*
@@ -22,6 +23,8 @@ class Emulator(
     var interpreted = false
     //var interpreted = true
 
+    val onHomePress = Signal<Unit>()
+    val onLoadPress = Signal<Unit>()
     val logger = Logger("Emulator")
     val timeManager = TimeManager(this)
     val nameProvider = AddressInfo()

@@ -20,6 +20,18 @@ class PspController(override val emulator: Emulator) : WithEmulator {
             this.ly = other.ly
         }
 
+        //fun press(button: PspCtrlButtons) {
+        //    buttons = buttons or button.bits
+        //}
+//
+        //fun release(button: PspCtrlButtons) {
+        //    buttons = buttons and button.bits.inv()
+        //}
+//
+        //fun update(button: PspCtrlButtons, pressed: Boolean) {
+        //    if (pressed) press(button) else release(button)
+        //}
+
         fun reset() {
             timestamp = 0
             buttons = 0
@@ -40,6 +52,12 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 
     fun updateButton(button: PspCtrlButtons, pressed: Boolean) {
         currentFrame.buttons = currentFrame.buttons.setBits(button.bits, pressed)
+        if (button == PspCtrlButtons.home && pressed) {
+            emulator.onHomePress(Unit)
+        }
+        if (button == PspCtrlButtons.hold && pressed) {
+            emulator.onLoadPress(Unit)
+        }
     }
 
     private fun fixFloat(v: Float): Int = ((v.clamp(-1f, 1f) * 127) + 128).toInt()

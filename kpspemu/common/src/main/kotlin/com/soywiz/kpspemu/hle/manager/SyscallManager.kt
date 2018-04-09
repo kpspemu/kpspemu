@@ -14,8 +14,8 @@ class SyscallManager : Syscalls {
         println("%08X: Called syscall: ### %04X".format(state.PC, id))
     }
 
-    var syscallToFunc = IntMap<(CpuState, Int) -> Unit>()
-    var syscallToName = IntMap<String>()
+    var syscallToFunc = FastIntMap<(CpuState, Int) -> Unit>()
+    var syscallToName = FastIntMap<String>()
 
     fun register(id: Int = -1, name: String, callback: (CpuState, Int) -> Unit): Int {
         val syscallId = if (id < 0) lasSyscallId++ else id
@@ -35,8 +35,8 @@ class SyscallManager : Syscalls {
     }
 
     fun reset() {
-        syscallToFunc = IntMap() // @TODO: clear
-        syscallToName = IntMap() // @TODO: clear
+        syscallToFunc = FastIntMap() // @TODO: clear
+        syscallToName = FastIntMap() // @TODO: clear
         lasSyscallId = 1
     }
 }

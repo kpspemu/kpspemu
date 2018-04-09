@@ -67,14 +67,14 @@ data class CpuStateFunctionCtx(val mem: Memory, val ff: CpuStateFunction, val pc
 }
 
 class MethodCache(private val mem: Memory) {
-    private val cachedFunctions = IntMap<CpuStateFunctionCtx>()
+    private val cachedFunctions = FastIntMap<CpuStateFunctionCtx>()
 
     fun reset() {
         cachedFunctions.clear()
     }
 
     fun getFunction(address: Int): CpuStateFunctionCtx {
-        if (!cachedFunctions.contains(address)) {
+        if (address !in cachedFunctions) {
             val dm = DynarekMethodBuilder()
             var pc = address
             var icount = 0
@@ -95,8 +95,7 @@ class MethodCache(private val mem: Memory) {
         if (ptr == 0 && size == Int.MAX_VALUE) {
             cachedFunctions.clear()
         } else {
-            // @TODO: Invalidate just required functions by iterating keys!!
-            cachedFunctions.clear()
+            cachedFunctions.removeRange(ptr, ptr + size - 1)
         }
     }
 }

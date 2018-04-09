@@ -136,7 +136,7 @@ fun Ptr.readBytes(count: Int, offset: Int = 0): ByteArray {
     return out
 }
 
-fun Ptr.readStringz(charset: Charset = Charsets.UTF_8): String {
+fun Ptr.readStringz(charset: Charset = UTF8): String {
     val out = ByteArrayBuilder()
     var n = 0
     while (true) {
@@ -148,7 +148,7 @@ fun Ptr.readStringz(charset: Charset = Charsets.UTF_8): String {
     return out.toString(charset)
 }
 
-fun Ptr.writeStringz(str: String, charset: Charset = Charsets.UTF_8): Unit {
+fun Ptr.writeStringz(str: String, charset: Charset = UTF8): Unit {
     writeBytes(str.toByteArray(charset) + byteArrayOf(0))
 }
 

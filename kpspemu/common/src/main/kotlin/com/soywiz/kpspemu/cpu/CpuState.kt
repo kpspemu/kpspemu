@@ -210,23 +210,27 @@ class CpuState(
     @JvmField @JsName("r30") var r30: Int = 0
     @JvmField @JsName("r31") var r31: Int = 0
 
+    //val gprProps = (0 until 32).map { getGprProp(it) }.toTypedArray()
+
     @JsName("getGpr") fun getGpr(index: Int): Int {
+        //return gprProps[index].get()
     	return when (index) {
     		0 -> 0;1 -> r1;2 -> r2;3 -> r3;4 -> r4;5 -> r5;6 -> r6;7 -> r7;
     		8 -> r8;9 -> r9;10 -> r10;11 -> r11;12 -> r12;13 -> r13;14 -> r14;15 -> r15;
     		16 -> r16;17 -> r17;18 -> r18;19 -> r19;20 -> r20;21 -> r21;22 -> r22;23 -> r23;
     		24 -> r24;25 -> r25;26 -> r26;27 -> r27;28 -> r28;29 -> r29;30 -> r30;31 -> r31;
-    		else -> invalidOp
+    		else -> 0
     	}
     }
 
     @JsName("setGpr") fun setGpr(index: Int, v: Int): Unit {
+        //if (index != 0) gprProps[index].set(v)
     	when (index) {
     		0 -> Unit;1 -> r1 = v;2 -> r2 = v;3 -> r3 = v;4 -> r4 = v;5 -> r5 = v;6 -> r6 = v;7 -> r7 = v;
     		8 -> r8 = v;9 -> r9 = v;10 -> r10 = v;11 -> r11 = v;12 -> r12 = v;13 -> r13 = v;14 -> r14 = v;15 -> r15 = v;
     		16 -> r16 = v;17 -> r17 = v;18 -> r18 = v;19 -> r19 = v;20 -> r20 = v;21 -> r21 = v;22 -> r22 = v;23 -> r23 = v;
     		24 -> r24 = v;25 -> r25 = v;26 -> r26 = v;27 -> r27 = v;28 -> r28 = v;29 -> r29 = v;30 -> r30 = v;31 -> r31 = v;
-    		else -> invalidOp
+    		else -> Unit
     	}
     }
 
@@ -428,6 +432,9 @@ class CpuState(
         const val NS = 15
     }
 
+    @JsName("xor") fun xor(RS: Int, RT: Int): Int = (RS xor RT)
+    @JsName("or") fun or(RS: Int, RT: Int): Int = (RS or RT)
+    @JsName("and") fun and(RS: Int, RT: Int): Int = (RS and RT)
     @JsName("nor") fun nor(RS: Int, RT: Int): Int = (RS or RT).inv()
 
     @JsName("bitrev32") fun bitrev32(a: Int): Int = BitUtils.bitrev32(a)
@@ -449,6 +456,8 @@ class CpuState(
     @JsName("seh") fun seh(v: Int) = BitUtils.seh(v)
     @JsName("wsbh") fun wsbh(v: Int) = BitUtils.wsbh(v)
     @JsName("wsbw") fun wsbw(v: Int) = BitUtils.wsbw(v)
+    @JsName("add") fun add(a: Int, b: Int): Int = a + b
+    @JsName("sub") fun sub(a: Int, b: Int): Int = a - b
     @JsName("max") fun max(a: Int, b: Int) = kotlin.math.max(a, b)
     @JsName("min") fun min(a: Int, b: Int) = kotlin.math.min(a, b)
     @JsName("div") fun div(RS: Int, RT: Int) = run { LO = RS / RT; HI = RS % RT }

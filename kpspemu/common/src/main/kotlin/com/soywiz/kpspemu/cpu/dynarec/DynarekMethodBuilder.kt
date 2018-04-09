@@ -6,7 +6,7 @@ import com.soywiz.kpspemu.cpu.*
 class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
 
     // ALU
-    override fun lui(i: Int, s: InstructionInfo) = s { RT = ((IR.u_imm16 shl 16).litHex) }
+    override fun lui(i: Int, s: InstructionInfo) = s { RT = ((IR.u_imm16 shl 16).lit) }
 
     override fun movz(i: Int, s: InstructionInfo) = s { RD = CpuState::movz.invoke(p0, RT, RD, RS) }
     override fun movn(i: Int, s: InstructionInfo) = s { RD = CpuState::movn.invoke(p0, RT, RD, RS) }
@@ -25,12 +25,12 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun max(i: Int, s: InstructionInfo) = s { RD = CpuState::max.invoke(p0, RS, RT) }
     override fun min(i: Int, s: InstructionInfo) = s { RD = CpuState::min.invoke(p0, RS, RT) }
 
-    override fun add(i: Int, s: InstructionInfo) = s { RD = RS + RT }
-    override fun addu(i: Int, s: InstructionInfo) = s { RD = RS + RT }
-    override fun sub(i: Int, s: InstructionInfo) = s { RD = RS - RT }
-    override fun subu(i: Int, s: InstructionInfo) = s { RD = RS - RT }
-    override fun addi(i: Int, s: InstructionInfo) = s { RT = RS + S_IMM16 }
-    override fun addiu(i: Int, s: InstructionInfo) = s { RT = RS + S_IMM16 }
+    override fun add(i: Int, s: InstructionInfo) = s { RD = CpuState::add.invoke(p0, RS, RT) }
+    override fun addu(i: Int, s: InstructionInfo) = s { RD = CpuState::add.invoke(p0, RS, RT) }
+    override fun sub(i: Int, s: InstructionInfo) = s { RD = CpuState::sub.invoke(p0, RS, RT) }
+    override fun subu(i: Int, s: InstructionInfo) = s { RD = CpuState::sub.invoke(p0, RS, RT) }
+    override fun addi(i: Int, s: InstructionInfo) = s { RT = CpuState::add.invoke(p0, RS, S_IMM16) }
+    override fun addiu(i: Int, s: InstructionInfo) = s { RT = CpuState::add.invoke(p0, RS, S_IMM16) }
 
     override fun div(i: Int, s: InstructionInfo) = s { STM(CpuState::div.invoke(p0, RS, RT)) }
     override fun divu(i: Int, s: InstructionInfo) = s { STM(CpuState::divu.invoke(p0, RS, RT)) }
@@ -51,26 +51,21 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun mtic(i: Int, s: InstructionInfo) = s { IC = RT }
 
     // ALU: Bit
-    override fun or(i: Int, s: InstructionInfo) = s { RD = RS or RT }
-
-    override fun xor(i: Int, s: InstructionInfo) = s { RD = RS xor RT }
-    override fun and(i: Int, s: InstructionInfo) = s { RD = RS and RT }
+    override fun or(i: Int, s: InstructionInfo) = s { RD = CpuState::or.invoke(p0, RS, RT) }
+    override fun xor(i: Int, s: InstructionInfo) = s { RD = CpuState::xor.invoke(p0, RS, RT) }
+    override fun and(i: Int, s: InstructionInfo) = s { RD = CpuState::and.invoke(p0, RS, RT) }
     override fun nor(i: Int, s: InstructionInfo) = s { RD = CpuState::nor.invoke(p0, RS, RT) }
-
-    override fun ori(i: Int, s: InstructionInfo) = s { RT = RS or U_IMM16 }
-    override fun xori(i: Int, s: InstructionInfo) = s { RT = RS xor U_IMM16 }
-    override fun andi(i: Int, s: InstructionInfo) = s { RT = RS and U_IMM16 }
+    override fun ori(i: Int, s: InstructionInfo) = s { RT = CpuState::or.invoke(p0, RS, U_IMM16) }
+    override fun xori(i: Int, s: InstructionInfo) = s { RT = CpuState::xor.invoke(p0, RS, U_IMM16) }
+    override fun andi(i: Int, s: InstructionInfo) = s { RT = CpuState::and.invoke(p0, RS, U_IMM16) }
 
     override fun sll(i: Int, s: InstructionInfo) = s { RD = CpuState::sll.invoke(p0, RT, POS) }
     override fun sra(i: Int, s: InstructionInfo) = s { RD = CpuState::sra.invoke(p0, RT, POS) }
     override fun srl(i: Int, s: InstructionInfo) = s { RD = CpuState::srl.invoke(p0, RT, POS) }
-
     override fun sllv(i: Int, s: InstructionInfo) = s { RD = CpuState::sll.invoke(p0, RT, RS) }
     override fun srav(i: Int, s: InstructionInfo) = s { RD = CpuState::sra.invoke(p0, RT, RS) }
     override fun srlv(i: Int, s: InstructionInfo) = s { RD = CpuState::srl.invoke(p0, RT, RS) }
-
     override fun bitrev(i: Int, s: InstructionInfo) = s { RD = CpuState::bitrev32.invoke(p0, RT) }
-
     override fun rotr(i: Int, s: InstructionInfo) = s { RD = CpuState::rotr.invoke(p0, RT, POS) }
     override fun rotrv(i: Int, s: InstructionInfo) = s { RD = CpuState::rotr.invoke(p0, RT, RS) }
 
@@ -140,10 +135,10 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     //override fun bc1fl(i: Int, s: InstructionInfo) = s.branchLikely { fcr31_cc.not() }
     //override fun bc1tl(i: Int, s: InstructionInfo) = s.branchLikely { fcr31_cc }
 
-    override fun j(i: Int, s: InstructionInfo) = s.jump { real_jump_address.litHex } // 0xf0000000
+    override fun j(i: Int, s: InstructionInfo) = s.jump { real_jump_address.lit } // 0xf0000000
     override fun jr(i: Int, s: InstructionInfo) = s.jump { RS }
-    override fun jal(i: Int, s: InstructionInfo) = s.jump({ RA = (ii.PC + 8).litHex }) { real_jump_address.litHex }
-    override fun jalr(i: Int, s: InstructionInfo) = s.jump({ RD = (ii.PC + 8).litHex }) { RS }
+    override fun jal(i: Int, s: InstructionInfo) = s.jump({ RA = (ii.PC + 8).lit }) { real_jump_address.lit }
+    override fun jalr(i: Int, s: InstructionInfo) = s.jump({ RD = (ii.PC + 8).lit }) { RS }
 
     // Float
     override fun cfc1(i: Int, s: InstructionInfo) = s { RT = CpuState::cfc1.invoke(p0, IR.rd.lit, RT) }
@@ -241,7 +236,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
                             RET()
                         } ELSE {
                             useTemp {
-                                PC = (ii.PC + 4).litHex
+                                PC = (ii.PC + 4).lit
                             }
                             if (!delayed.likely) {
                                 STM(newStms.build())
@@ -390,8 +385,8 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 
     //fun set_pc(value: Int) {
     //    sstms.run {
-    //        SET(p0[CpuState::_PC], value.litHex)
-    //        SET(p0[CpuState::_nPC], value.litHex)
+    //        SET(p0[CpuState::_PC], value.lit)
+    //        SET(p0[CpuState::_nPC], value.lit)
     //    }
     //}
 
@@ -408,7 +403,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
 
     inline fun InstructionInfo.preadvanceAndFlow(callback: CpuStateStmBuilder.(InstructionInfo) -> Unit): Unit {
         if (delayed == null) {
-            this@BaseDynarecMethodBuilder.PC = sstms.run { (ii.PC + 4).litHex }
+            this@BaseDynarecMethodBuilder.PC = sstms.run { (ii.PC + 4).lit }
         }
         callback(sstms, this)
         reachedFlow = true
@@ -430,7 +425,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
         callback: CpuStateStmBuilder.(InstructionInfo) -> DExpr<Boolean>
     ): Unit {
         sstms.run {
-            delayed = Delayed(callback(this, this@_branch), (ii.PC + IR.s_imm16 * 4 + 4).litHex, null, likely = likely)
+            delayed = Delayed(callback(this, this@_branch), (ii.PC + IR.s_imm16 * 4 + 4).lit, null, likely = likely)
         }
     }
 

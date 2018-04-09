@@ -56,7 +56,7 @@ class DebugScene(
         browser.alert("Expr: $exprStr\nResult: ${value.hex}")
     }
 
-    suspend override fun sceneInit(sceneView: Container) {
+    override suspend fun sceneInit(sceneView: Container) {
         sceneView.visible = false
 
         sceneView += views.solidRect(480, 272, RGBA(0xFF, 0xFF, 0xFF, 0xAF))
@@ -77,7 +77,7 @@ class DebugScene(
                 }
             }
         }
-        font = DebugBitmapFont.DEBUG_BMP_FONT.convert(views.ag, mipmaps = false)
+        font = getDebugBmpFontOnce()
 
         sceneView += views.solidRect(480, 272, RGBA.packRGB_A(Colors.BLUE, 0x5F)).apply {
             mouseEnabled = false

@@ -8,7 +8,6 @@ import com.soywiz.kmem.*
 import com.soywiz.korag.*
 import com.soywiz.korau.*
 import com.soywiz.korge.*
-import com.soywiz.korge.bitmapfont.*
 import com.soywiz.korge.bitmapfont.BitmapFont
 import com.soywiz.korge.event.*
 import com.soywiz.korge.html.*
@@ -72,6 +71,7 @@ object Main {
                 )
             }
             .mapPrototype(DebugScene::class) { DebugScene(get(Browser::class), get(Emulator::class)) }
+            .mapPrototype(TouchButtonsScene::class) { TouchButtonsScene(get(Emulator::class)) }
             .mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
 
             // @TODO: Kotlin.JS unresolved bug!
@@ -142,6 +142,7 @@ class KpspemuMainScene(
 
         GamepadButton.SELECT to PspCtrlButtons.select,
         GamepadButton.START to PspCtrlButtons.start,
+        GamepadButton.SYSTEM to PspCtrlButtons.home,
 
         GamepadButton.L2 to PspCtrlButtons.select,
         GamepadButton.R2 to PspCtrlButtons.start,
@@ -289,10 +290,11 @@ class KpspemuMainScene(
 
     private suspend fun loadMainFont() {
         try {
-            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views.ag)
+            //hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views.ag)
+            hudFont = getDebugBmpFontOnce()
         } catch (e: Throwable) {
             //e.printStackTrace()
-            hudFont = DebugBitmapFont.DEBUG_BMP_FONT.convert(views.ag, mipmaps = false)
+            hudFont = getDebugBmpFontOnce()
         }
     }
 
@@ -365,7 +367,7 @@ class KpspemuMainScene(
                         emulator.globalTrace = !emulator.globalTrace
                     }
                     PspEmuKeys.F10 -> {
-                        go(coroutineContext) { toggleHud() }
+                        go(coroutineContext) { hudToggle() }
                     }
                     PspEmuKeys.F11 -> {
                         // Dump threads
@@ -406,11 +408,21 @@ class KpspemuMainScene(
             y = 4.0
         }
 
+        emulator.onLoadPress {
+            async {
+                val file = browser.openFile()
+                async { hudClose() }
+                createEmulatorWithExe(file)
+            }
+        }
+
         val loadButton = views.simpleButton("Load...", font = hudFont).apply {
             x = 8.0
             y = 272.0 - 20.0 * 1
         }.onClick {
-            createEmulatorWithExe(browser.openFile())
+            val file = browser.openFile()
+            async { hudClose() }
+            createEmulatorWithExe(file)
         }
 
         val directButton = views.simpleButton("Auto", font = hudFont).apply {
@@ -533,11 +545,15 @@ class KpspemuMainScene(
         }
         sceneView += dropContainer
 
+        sceneView += views.sceneContainer().apply { changeTo<TouchButtonsScene>() }
         sceneView += hud
+        hud.alpha = 0.0
+        hud.mouseEnabled = false
 
         //sceneView.onMove { hudOpen() }
         //sceneView.onOut { hudClose() }
-        sceneView.onClick { toggleHud() }
+        //sceneView.onClick { toggleHud() }
+        emulator.onHomePress { async { hudToggle() } }
         //sceneView.onKeyTyped { println(it.keyCode) }
         sceneView.onKeyDown { updateKey(it.keyCode, true) }
         sceneView.onKeyUp { updateKey(it.keyCode, false) }
@@ -603,8 +619,8 @@ class KpspemuMainScene(
     val fpsCounter = FpsCounter()
     val hudQueue = AsyncThread()
 
-    suspend fun toggleHud() {
-        if (hud.alpha < 0.5) {
+    suspend fun hudToggle(open: Boolean = hud.alpha < 0.5) {
+        if (open) {
             hudOpen()
         } else {
             hudClose()
