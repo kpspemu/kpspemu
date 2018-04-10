@@ -48,7 +48,7 @@ class Emulator(
         override fun read8(addr: Int): Int = mem.lbu(addr)
     }
 
-    suspend override fun init() {
+    override suspend fun init() {
         configManager.init()
         deviceManager.init()
 

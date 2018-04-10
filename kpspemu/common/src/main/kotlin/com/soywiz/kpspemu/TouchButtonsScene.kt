@@ -46,8 +46,16 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
         addButton("start.png", PspCtrlButtons.start, IPoint2d(1280 - 160, 720), 0.5, 1.0)
         addButton("select.png", PspCtrlButtons.select, IPoint2d(1280 - 380, 720), 0.5, 1.0)
 
-        addButton("home.png", PspCtrlButtons.home, IPoint2d(380, 720), 0.5, 1.0)
-        addButton("load.png", PspCtrlButtons.hold, IPoint2d(600, 720), 0.5, 1.0)
+        addButton("home.png", PspCtrlButtons.home, IPoint2d(1280 / 2, 0), 1.1, 0.0).apply {
+            view.onClick {
+                emulator.onHomePress()
+            }
+        }
+        addButton("load.png", PspCtrlButtons.hold, IPoint2d(1280 / 2, 0), -0.1, 0.0).apply {
+            view.onClick {
+                emulator.onLoadPress()
+            }
+        }
 
         addThumb(IPoint2d(172.0, 600.0))
 

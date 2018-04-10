@@ -52,12 +52,12 @@ class PspController(override val emulator: Emulator) : WithEmulator {
 
     fun updateButton(button: PspCtrlButtons, pressed: Boolean) {
         currentFrame.buttons = currentFrame.buttons.setBits(button.bits, pressed)
-        if (button == PspCtrlButtons.home && pressed) {
-            emulator.onHomePress(Unit)
-        }
-        if (button == PspCtrlButtons.hold && pressed) {
-            emulator.onLoadPress(Unit)
-        }
+        //if (button == PspCtrlButtons.home && pressed) {
+        //    emulator.onHomePress(Unit)
+        //}
+        //if (button == PspCtrlButtons.hold && pressed) {
+        //    emulator.onLoadPress(Unit)
+        //}
     }
 
     private fun fixFloat(v: Float): Int = ((v.clamp(-1f, 1f) * 127) + 128).toInt()

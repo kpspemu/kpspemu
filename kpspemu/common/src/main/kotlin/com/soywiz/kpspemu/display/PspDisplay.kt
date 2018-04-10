@@ -20,6 +20,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
         const val HORIZONTAL_SECONDS = 1.0 / PspDisplay.HORIZONTAL_SYNC_HZ // 5.8333333333333E-5
         const val VERTICAL_SYNC_HZ = PspDisplay.HORIZONTAL_SYNC_HZ / PspDisplay.HCOUNT_PER_VBLANK // 59.998800024
         const val VERTICAL_SECONDS = 1.0 / PspDisplay.VERTICAL_SYNC_HZ // 0.016667
+        const val VERTICAL_MS = VERTICAL_SECONDS * 1000.0 // 16.667
     }
 
     val bmp = Bitmap32(480, 272)

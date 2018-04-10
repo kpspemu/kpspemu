@@ -8,13 +8,14 @@ import com.soywiz.kmem.*
 import com.soywiz.korag.*
 import com.soywiz.korau.*
 import com.soywiz.korge.*
-import com.soywiz.korge.bitmapfont.BitmapFont
+import com.soywiz.korge.bitmapfont.*
 import com.soywiz.korge.event.*
 import com.soywiz.korge.html.*
 import com.soywiz.korge.input.*
 import com.soywiz.korge.render.*
 import com.soywiz.korge.scene.*
 import com.soywiz.korge.service.*
+import com.soywiz.korge.time.*
 import com.soywiz.korge.tween.*
 import com.soywiz.korge.view.*
 import com.soywiz.korge.view.Container
@@ -39,6 +40,7 @@ import com.soywiz.korma.geom.Rectangle
 import com.soywiz.korui.*
 import com.soywiz.korui.ui.*
 import com.soywiz.kpspemu.ctrl.*
+import com.soywiz.kpspemu.display.*
 import com.soywiz.kpspemu.format.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.ge.*
@@ -93,6 +95,7 @@ object KpspemuModule : Module() {
     override val iconImage: Context2d.SizedDrawable? = com.soywiz.korim.vector.format.SVG(KpspemuAssets.LOGO)
     override val size: SizeInt get() = SizeInt(480, 272)
     override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
+    //override val targetFps = PspDisplay.VERTICAL_SYNC_HZ // @TODO: Bad performance!
 }
 
 abstract class SceneWithProcess() : Scene() {
@@ -243,7 +246,7 @@ class KpspemuMainScene(
             if (!paused || forceSteps > 0) {
                 if (forceSteps > 0) forceSteps--
                 if (running && emulator.running) {
-                    val startTime = Klock.currentTimeMillis()
+                    val startTime = Klock.currentTimeMillisDouble()
                     try {
                         emulator.threadManager.step()
                     } catch (e: Throwable) {
@@ -251,7 +254,7 @@ class KpspemuMainScene(
                         e.printStackTrace()
                         running = false
                     }
-                    val endTime = Klock.currentTimeMillis()
+                    val endTime = Klock.currentTimeMillisDouble()
                     agRenderer.stats.cpuTime = (endTime - startTime).toInt()
                 } else {
                     if (!ended) {
@@ -268,30 +271,22 @@ class KpspemuMainScene(
     }
 
     suspend fun displayProcess() {
+        var accumulatedMs = 0.0
         while (true) {
+            val toWait = PspDisplay.VERTICAL_MS + accumulatedMs
+            val toWaitInt = toWait.toInt()
+            accumulatedMs = toWait - toWaitInt
             controller.startFrame(timeManager.getTimeInMicrosecondsInt())
-
             emulator.interruptManager.dispatchVsync()
-            //sceneView.waitFrame()
-            sleep(MS_15)
-
-            /*
-            //sleep(MS_15)
-            sleep(MS_2)
-            emulator.interruptManager.dispatchVsync()
-            emulator.display.startVsync()
-            controller.endFrame()
-            sleep(MS_1)
-            emulator.display.endVsync()
-            */
+            sceneView.sleep(toWaitInt)
             controller.endFrame()
         }
     }
 
     private suspend fun loadMainFont() {
         try {
-            //hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views.ag)
-            hudFont = getDebugBmpFontOnce()
+            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views.ag)
+            //hudFont = getDebugBmpFontOnce()
         } catch (e: Throwable) {
             //e.printStackTrace()
             hudFont = getDebugBmpFontOnce()
@@ -514,12 +509,12 @@ class KpspemuMainScene(
         val displayView = object : View(views) {
             override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 480, 272) }
             override fun render(ctx: RenderContext, m: Matrix2d) {
-                val startTime = Klock.currentTimeMillis()
-                fpsCounter.tick(startTime.toDouble())
+                val startTime = Klock.currentTimeMillisDouble()
+                fpsCounter.tick(startTime)
                 //println("displayView.render.Thread: ${KorioNative.currentThreadId}")
                 agRenderer.render(views, ctx, m)
                 agRenderer.renderTexture(views, ctx, m)
-                val endTime = Klock.currentTimeMillis()
+                val endTime = Klock.currentTimeMillisDouble()
                 agRenderer.stats.renderTime = (endTime - startTime).toInt()
                 infoText.text = getInfoText()
                 agRenderer.stats.reset()
