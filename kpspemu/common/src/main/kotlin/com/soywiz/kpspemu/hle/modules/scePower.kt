@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.util.*
+import com.soywiz.kmem.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*

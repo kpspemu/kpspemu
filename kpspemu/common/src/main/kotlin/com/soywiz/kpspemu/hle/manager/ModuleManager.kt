@@ -18,6 +18,9 @@ class ModuleManager(val emulator: Emulator) {
     fun getByName(name: String): SceModule = modules[name] ?: invalidOp("Can't find module '$name'")
 
     fun reset() {
+        for (module in modules.values) {
+            module.stopModule()
+        }
         modules.clear()
     }
 }

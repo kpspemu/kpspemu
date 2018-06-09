@@ -1,7 +1,8 @@
 package com.soywiz.kpspemu.cpu.dis
 
+import com.soywiz.klogger.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.mem.*
 

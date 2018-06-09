@@ -7,7 +7,7 @@ import org.junit.*
 
 class PsfTest {
     @Test
-    fun name() = syncTest {
+    fun name() = suspendTest {
         val psf = Psf.fromStream(KpspTests.rootTestResources["controller.sfo"].readAsSyncStream())
         assertEquals(
             "[Entry(BOOTABLE, 1), Entry(CATEGORY, MG), Entry(REGION, 32768), Entry(TITLE, Basic controller sample)]",

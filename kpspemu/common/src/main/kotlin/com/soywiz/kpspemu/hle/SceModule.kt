@@ -2,9 +2,10 @@ package com.soywiz.kpspemu.hle
 
 import com.soywiz.kds.*
 import com.soywiz.klogger.*
+import com.soywiz.kmem.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.error.*
@@ -96,7 +97,10 @@ abstract class SceModule(
         registerModule()
     }
 
-    abstract protected fun registerModule(): Unit
+    open fun stopModule() {
+    }
+
+    protected abstract fun registerModule(): Unit
 
     private val rr: RegisterReader = RegisterReader()
 
@@ -242,7 +246,7 @@ abstract class SceModule(
             if (!completed) {
                 rthread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
                 if (rthread.tracing) println("  [S] Calling $name")
-                threadManager.suspend()
+                threadManager.suspendReturnVoid()
             }
         }
     }

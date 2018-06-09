@@ -3,16 +3,7 @@ package com.soywiz.kpspemu.cpu.assembler
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.cpu.*
-import kotlin.collections.LinkedHashMap
-import kotlin.collections.List
-import kotlin.collections.drop
-import kotlin.collections.getOrElse
-import kotlin.collections.getOrNull
-import kotlin.collections.map
-import kotlin.collections.reversed
 import kotlin.collections.set
-import kotlin.collections.toList
-import kotlin.collections.zip
 
 object Assembler : InstructionDecoder() {
     val mnemonicGpr = CpuState.gprInfosByMnemonic

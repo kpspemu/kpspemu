@@ -1,14 +1,15 @@
 package com.soywiz.kpspemu.mem
 
+import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.kmem.get
 import com.soywiz.kmem.set
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
 
-const private val MEMORY_MASK = 0x0FFFFFFF
-const private val MASK = MEMORY_MASK
+private const val MEMORY_MASK = 0x0FFFFFFF
+private const val MASK = MEMORY_MASK
 
 private val LWR_MASK = intArrayOf(0x00000000, 0xFF000000.toInt(), 0xFFFF0000.toInt(), 0xFFFFFF00.toInt())
 private val LWR_SHIFT = intArrayOf(0, 8, 16, 24)
@@ -334,13 +335,14 @@ class NormalMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x0a00000
     override fun index(address: Int) = address and 0x0FFFFFFF
 }
 
-class SmallMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(Memory.MAINMEM.size + Memory.VIDEOMEM.size + Memory.SCRATCHPAD.size)) {
+class SmallMemory :
+    FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(Memory.MAINMEM.size + Memory.VIDEOMEM.size + Memory.SCRATCHPAD.size)) {
     override fun index(address: Int): Int {
         val addr = address and 0x0FFFFFFF
         return when {
             addr >= Memory.MAIN_OFFSET -> (addr - Memory.MAIN_OFFSET) // MAIN
             addr >= Memory.VIDEO_OFFSET -> (addr - Memory.VIDEO_OFFSET) + Memory.MAIN_SIZE
-            else -> addr + Memory.MAIN_SIZE + + Memory.VIDEO_SIZE
+            else -> addr + Memory.MAIN_SIZE + +Memory.VIDEO_SIZE
         }
     }
 }

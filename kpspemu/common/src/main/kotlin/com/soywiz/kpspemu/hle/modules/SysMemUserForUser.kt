@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*

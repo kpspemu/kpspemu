@@ -5,13 +5,7 @@ import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.mem.*
-import kotlin.collections.LinkedHashMap
-import kotlin.collections.List
-import kotlin.collections.MutableMap
-import kotlin.collections.listOf
-import kotlin.collections.map
 import kotlin.collections.set
-import kotlin.collections.toMap
 
 class Elf private constructor(val stream: SyncStream) {
     companion object {

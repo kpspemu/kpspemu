@@ -3,7 +3,7 @@ package com.soywiz.kpspemu.cpu.dynarec
 import com.soywiz.dynarek.*
 import com.soywiz.dynarek.js.*
 import com.soywiz.kmem.*
-import com.soywiz.korio.util.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.assembler.*
 import com.soywiz.kpspemu.cpu.dis.*

@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korma.math.*
+import com.soywiz.kmem.*
 
 // Move this outside
 fun HalfFloat.toFloat() = this.f

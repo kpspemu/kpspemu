@@ -52,6 +52,7 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
 
     // ALU: Bit
     override fun or(i: Int, s: InstructionInfo) = s { RD = CpuState::or.invoke(p0, RS, RT) }
+
     override fun xor(i: Int, s: InstructionInfo) = s { RD = CpuState::xor.invoke(p0, RS, RT) }
     override fun and(i: Int, s: InstructionInfo) = s { RD = CpuState::and.invoke(p0, RS, RT) }
     override fun nor(i: Int, s: InstructionInfo) = s { RD = CpuState::nor.invoke(p0, RS, RT) }
@@ -142,6 +143,7 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
 
     // Float
     override fun cfc1(i: Int, s: InstructionInfo) = s { RT = CpuState::cfc1.invoke(p0, IR.rd.lit, RT) }
+
     override fun ctc1(i: Int, s: InstructionInfo) = s { STM(CpuState::ctc1.invoke(p0, IR.rd.lit, RT)) }
 
     override fun mfc1(i: Int, s: InstructionInfo) = s { RT = FS_I }
@@ -164,23 +166,23 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun abs_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fabs.invoke(p0, FS) }
     override fun sqrt_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fsqrt.invoke(p0, FS) }
 
-    override fun c_f_s(i: Int, s: InstructionInfo)    = s { fcr31_cc = CpuState::c_f_s.invoke(p0, FS, FT) }
-    override fun c_un_s(i: Int, s: InstructionInfo)   = s { fcr31_cc = CpuState::c_un_s.invoke(p0, FS, FT) }
-    override fun c_eq_s(i: Int, s: InstructionInfo)   = s { fcr31_cc = CpuState::c_eq_s.invoke(p0, FS, FT) }
-    override fun c_ueq_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ueq_s.invoke(p0, FS, FT) }
-    override fun c_olt_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_olt_s.invoke(p0, FS, FT) }
-    override fun c_ult_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ult_s.invoke(p0, FS, FT) }
-    override fun c_ole_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ole_s.invoke(p0, FS, FT) }
-    override fun c_ule_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ule_s.invoke(p0, FS, FT) }
+    override fun c_f_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_f_s.invoke(p0, FS, FT) }
+    override fun c_un_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_un_s.invoke(p0, FS, FT) }
+    override fun c_eq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_eq_s.invoke(p0, FS, FT) }
+    override fun c_ueq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ueq_s.invoke(p0, FS, FT) }
+    override fun c_olt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_olt_s.invoke(p0, FS, FT) }
+    override fun c_ult_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ult_s.invoke(p0, FS, FT) }
+    override fun c_ole_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ole_s.invoke(p0, FS, FT) }
+    override fun c_ule_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ule_s.invoke(p0, FS, FT) }
 
-    override fun c_sf_s(i: Int, s: InstructionInfo)   = s { fcr31_cc = CpuState::c_f_s.invoke(p0, FS, FT) }
+    override fun c_sf_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_f_s.invoke(p0, FS, FT) }
     override fun c_ngle_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_un_s.invoke(p0, FS, FT) }
-    override fun c_seq_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_eq_s.invoke(p0, FS, FT) }
-    override fun c_ngl_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ueq_s.invoke(p0, FS, FT) }
-    override fun c_lt_s(i: Int, s: InstructionInfo)   = s { fcr31_cc = CpuState::c_olt_s.invoke(p0, FS, FT) }
-    override fun c_nge_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ult_s.invoke(p0, FS, FT) }
-    override fun c_le_s(i: Int, s: InstructionInfo)   = s { fcr31_cc = CpuState::c_ole_s.invoke(p0, FS, FT) }
-    override fun c_ngt_s(i: Int, s: InstructionInfo)  = s { fcr31_cc = CpuState::c_ule_s.invoke(p0, FS, FT) }
+    override fun c_seq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_eq_s.invoke(p0, FS, FT) }
+    override fun c_ngl_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ueq_s.invoke(p0, FS, FT) }
+    override fun c_lt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_olt_s.invoke(p0, FS, FT) }
+    override fun c_nge_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ult_s.invoke(p0, FS, FT) }
+    override fun c_le_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ole_s.invoke(p0, FS, FT) }
+    override fun c_ngt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ule_s.invoke(p0, FS, FT) }
 }
 
 data class InstructionInfo(var PC: Int, var IR: Int)

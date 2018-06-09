@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.util.io
 
 import com.soywiz.klogger.*
 import com.soywiz.korio.*
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.file.*
 
 fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
     val logger = Logger("MountableVfsSync")
@@ -14,7 +14,7 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
 
         override fun mount(folder: String, file: VfsFile) = this.apply {
             _unmount(folder)
-            _mounts += com.soywiz.korio.vfs.VfsUtil.normalize(folder) to file
+            _mounts += VfsUtil.normalize(folder) to file
             resort()
         }
 
@@ -35,9 +35,9 @@ fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
             _mounts.sortBy { -it.first.length }
         }
 
-        suspend override fun transform(out: VfsFile): VfsFile {
+        override suspend fun VfsFile.transform(): VfsFile {
             //return super.transform(out)
-            return out
+            return this
         }
 
         override suspend fun access(path: String): VfsFile {

@@ -1,5 +1,7 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.kmem.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
@@ -7,7 +9,6 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
-
 
 @Suppress("UNUSED_PARAMETER")
 class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010011, "sc_sascore.prx", "sceSAScore") {

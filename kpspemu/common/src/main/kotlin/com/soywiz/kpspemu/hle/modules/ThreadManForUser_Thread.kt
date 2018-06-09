@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.util.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
@@ -23,6 +23,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
         attributes: Int,
         optionPtr: Ptr
     ): Int {
+        //println("sceKernelCreateThread: '$name', ${entryPoint.hex}, $initPriority, $stackSize, ${attributes.hex}, $optionPtr")
         logger.trace { "sceKernelCreateThread: '$name', ${entryPoint.hex}, $initPriority, $stackSize, ${attributes.hex}, $optionPtr" }
         val thread = threadManager.create(name ?: "unknown", entryPoint, initPriority, stackSize, attributes, optionPtr)
         val k0Struct = K0Structure(
@@ -32,12 +33,16 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
             f2 = -1
         )
         mem.sw(thread.stack.low.toInt(), thread.id)
+
         thread.state.K0 = thread.putDataInStack(K0Structure.toByteArray(k0Struct)).low
+
         //println("sceKernelCreateThread: ${thread.id}")
+        //println("thread.id = ${thread.id}")
         return thread.id
     }
 
-    fun sceKernelStartThread(currentThread: PspThread, threadId: Int, userDataLength: Int, userDataPtr: Ptr): Int {
+    fun sceKernelStartThread(currentThread: PspThread, threadId: Int, userDataLength: Int, userDataPtr: Ptr): Unit {
+        //println("sceKernelStartThread: $threadId, $userDataLength, $userDataPtr")
         logger.trace { "sceKernelStartThread: $threadId, $userDataLength, $userDataPtr" }
         //println("sceKernelStartThread: $threadId")
         val thread = thread(threadId)
@@ -51,8 +56,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
         }
         thread.state.GP = currentThread.state.GP
         thread.start()
-        threadManager.suspend()
-        return 0
+        threadManager.suspendReturnInt(0)
     }
 
     fun sceKernelGetThreadCurrentPriority(thread: PspThread): Int = thread.priority
@@ -138,15 +142,17 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
     }
 
     fun sceKernelDeleteThread(id: Int): Int {
+        println("sceKernelDeleteThread($id)")
         val thread = thread(id)
         thread.delete()
         return 0
     }
 
     fun sceKernelExitThread(thread: PspThread, exitStatus: Int): Unit {
+        println("sceKernelExitThread($thread) exitStatus=$exitStatus")
         thread.exitStatus = exitStatus
         thread.stop()
-        threadManager.suspend()
+        threadManager.suspendReturnVoid()
     }
 
     fun sceKernelChangeCurrentThreadAttr(currentThread: PspThread, removeAttributes: Int, addAttributes: Int): Int {
@@ -202,7 +208,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
                 ptr
             )
         }
-        registerFunctionInt("sceKernelStartThread", 0xF475845D, since = 150) {
+        registerFunctionVoid("sceKernelStartThread", 0xF475845D, since = 150) {
             sceKernelStartThread(
                 thread,
                 int,

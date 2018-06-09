@@ -8,8 +8,8 @@ import com.soywiz.korge.service.*
 import com.soywiz.korge.view.*
 import com.soywiz.korim.color.*
 import com.soywiz.korio.async.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.*
 import com.soywiz.kpspemu.hle.manager.*

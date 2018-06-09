@@ -16,7 +16,8 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
 
     class AudioChannel(val id: Int) {
         var reserved: Boolean = false
-        val stream by lazy { NativeAudioStream() }
+        var streamInitialized = false
+        val stream by lazy { streamInitialized = true; NativeAudioStream() }
         var audioFormat: Int = 0
         var line = ShortArray(0)
         var lineEx = ShortArray(0)
@@ -40,14 +41,27 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
         //var started = 0.0
         //var msBuffered = 0.0
         //val msPerLine: Int get() = ((sampleCount.toDouble() * 1000.0) / 44100.0).toInt()
+
+        fun stop() {
+            if (streamInitialized) {
+                stream.stop()
+            }
+        }
     }
 
     val channels = (0 until 32).map { AudioChannel(it) }
+
+    override fun stopModule() {
+        for (channel in channels) {
+            channel.stop()
+        }
+    }
 
     var lastId = 0
     val pool = Pool { AudioChannel(lastId++) }
 
     fun sceAudioChReserve(channelId: Int, sampleCount: Int, audioFormat: Int): Int {
+        println("WIP: sceAudioChReserve: $channelId, $sampleCount, $audioFormat")
         val actualChannelId = if (channelId >= 0) channelId else channels.indexOfFirst { !it.reserved }
         val channel = channels[actualChannelId]
         logger.info { "WIP: sceAudioChReserve: $channelId, $sampleCount, $audioFormat" }
@@ -56,10 +70,12 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
         //channel.msBuffered = 0.0
         channel.reserved = true
         channel.reconfigure(audioFormat = audioFormat, sampleCount = sampleCount)
+        println(" sceAudioChReserve ---> $actualChannelId")
         return actualChannelId
     }
 
     suspend fun _sceAudioOutputPannedBlocking(channelId: Int, leftVolume: Double, rightVolume: Double, ptr: Int): Int {
+        //println("WIP: sceAudioOutputPannedBlocking: ChannelId($channelId), Volumes($leftVolume, $rightVolume), Ptr(${ptr.hex32})")
         logger.trace { "WIP: sceAudioOutputPannedBlocking: ChannelId($channelId), Volumes($leftVolume, $rightVolume), Ptr($ptr)" }
         val channel = channels[channelId]
         mem.read(ptr, channel.line, 0, channel.line.size)
@@ -73,12 +89,14 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
                 channel.lineEx[m++] = sh
             }
         }
+
         channel.stream.addSamples(channel.lineEx)
         return 0
     }
 
     suspend fun sceAudioOutputPannedBlocking(channelId: Int, leftVolume: Int, rightVolume: Int, ptr: Int): Int {
         val channel = channels[channelId]
+        //println("sceAudioOutputPannedBlocking")
         // @TODO: Verify we multiply by default channel volumes
         return _sceAudioOutputPannedBlocking(
             channelId,
@@ -88,9 +106,14 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
         )
     }
 
-    suspend fun sceAudioOutputBlocking(channelId: Int, ptr: Int): Int {
+    suspend fun sceAudioOutputBlocking(channelId: Int, volume: Int, ptr: Int): Int {
         val channel = channels[channelId]
-        return _sceAudioOutputPannedBlocking(channelId, channel.volumeLeft, channel.volumeRight, ptr)
+        return _sceAudioOutputPannedBlocking(
+            channelId,
+            volume.shortVolumeToDouble() * channel.volumeLeft,
+            volume.shortVolumeToDouble() * channel.volumeRight,
+            ptr
+        )
     }
 
     private fun Int.shortVolumeToDouble() = this.toDouble() / 32767.0
@@ -114,8 +137,6 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
         channel.reconfigure(audioFormat = format)
         return 0
     }
-
-    fun sceAudioChReserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x5EC81C55)
 
     fun sceAudioOutput2Reserve(cpu: CpuState): Unit = UNIMPLEMENTED(0x01562BA3)
     fun sceAudioInputBlocking(cpu: CpuState): Unit = UNIMPLEMENTED(0x086E5895)
@@ -156,6 +177,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
         ) { sceAudioOutputPannedBlocking(int, int, int, int) }
         registerFunctionSuspendInt("sceAudioOutputBlocking", 0x136CAF51, since = 150) {
             sceAudioOutputBlocking(
+                int,
                 int,
                 int
             )

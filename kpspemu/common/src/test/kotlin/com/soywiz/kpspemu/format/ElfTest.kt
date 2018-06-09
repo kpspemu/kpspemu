@@ -10,7 +10,7 @@ import kotlin.test.*
 
 class ElfTest {
     @Test
-    fun name() = syncTest {
+    fun name() = suspendTest {
         val emulator = Emulator(coroutineContext)
         val elf = emulator.loadElf(Samples.MINIFIRE_ELF.openSync())
         assertEquals(0x08900008, elf.moduleInfo.PC)

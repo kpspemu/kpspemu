@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.format
 
+import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.vfs.*
 
 enum class PspFileFormat(val fileContainer: Boolean = false) {
     ELF, ENCRYPTED_ELF, PBP,

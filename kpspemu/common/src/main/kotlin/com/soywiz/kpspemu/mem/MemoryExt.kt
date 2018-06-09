@@ -3,7 +3,6 @@ package com.soywiz.kpspemu.mem
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
 
-
 fun Memory.openSync(): SyncStream {
     val mem = this
     return SyncStream(object : SyncStreamBase() {

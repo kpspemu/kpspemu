@@ -1,7 +1,8 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.korio.async.*
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.file.*
+import com.soywiz.korio.file.std.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
 import com.soywiz.kpspemu.util.dropbox.*

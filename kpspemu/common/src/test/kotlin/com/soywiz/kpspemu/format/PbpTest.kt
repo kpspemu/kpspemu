@@ -9,7 +9,7 @@ import kotlin.test.*
 
 class PbpTest {
     @Test
-    fun name() = syncTest {
+    fun name() = suspendTest {
         val pbp = Pbp.load(KpspTests.rootTestResources["lines.pbp"].open())
         assertEquals(listOf(408L, 0L, 0L, 0L, 0L, 0L, 30280L, 0L), pbp.streams.map { it.size() })
         assertEquals(408, pbp[Pbp.PARAM_SFO]!!.readAll().size)

@@ -1,12 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.kmem.*
 import com.soywiz.korau.format.atrac3plus.*
 import com.soywiz.korau.format.atrac3plus.Atrac3plusDecoder.Companion.ATRAC3P_FRAME_SAMPLES
 import com.soywiz.korau.format.atrac3plus.util.*
 import com.soywiz.korau.format.atrac3plus.util.Atrac3PlusUtil.PSP_CODEC_AT3
 import com.soywiz.korau.format.atrac3plus.util.Atrac3PlusUtil.PSP_CODEC_AT3PLUS
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*

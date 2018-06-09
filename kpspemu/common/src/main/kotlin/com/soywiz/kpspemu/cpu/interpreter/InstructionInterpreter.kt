@@ -1,10 +1,11 @@
 package com.soywiz.kpspemu.cpu.interpreter
 
+import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korim.color.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.CpuState.*
@@ -36,7 +37,6 @@ class CpuInterpreter(
         val dispatcher = this.dispatcher
         val cpu = this.cpu
         val mem = cpu.mem
-        val trace = this.trace
         var sPC = 0
         var n = 0
         //val fast = (mem as FastMemory).buffer
@@ -44,8 +44,7 @@ class CpuInterpreter(
         try {
             while (n < count) {
                 sPC = cpu._PC
-                if (trace) doTrace(sPC, cpu)
-                if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
+                checkTrace(sPC, cpu)
                 n++
                 //if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
                 if (trace) tracePC()
@@ -62,17 +61,24 @@ class CpuInterpreter(
         return n
     }
 
+    private fun checkTrace(sPC: Int, cpu: CpuState) {
+        if (trace) doTrace(sPC, cpu)
+        if (breakpoints.enabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
+        if (sPC in 0x08900DFC..0x08900E38) {
+            doTrace(sPC, cpu)
+        }
+        //doTrace(sPC, cpu)
+    }
+
     fun stepsFastMem(mem: FastMemory, memOffset: Int, count: Int, trace: Boolean): Int {
         val i32 = mem.i32
         val cpu = this.cpu
         var n = 0
         var sPC = 0
-        val breakpointsEnabled = breakpoints.enabled
         try {
             while (n < count) {
                 sPC = cpu._PC and 0x0FFFFFFF
-                if (trace) doTrace(sPC, cpu)
-                if (breakpointsEnabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
+                checkTrace(sPC, cpu)
                 n++
                 val IR = i32[(memOffset + sPC) ushr 2]
                 cpu.IR = IR
@@ -238,7 +244,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     override fun srl(i: Int, s: CpuState) = i { RD = s.srl(RT, POS) }
     override fun sllv(i: Int, s: CpuState) = i { RD = s.sll(RT, RS) }
     override fun srav(i: Int, s: CpuState) = i { RD = s.sra(RT, RS) }
-    override fun srlv(i: Int, s: CpuState) = i { RD = s.srl(RT, RS ) }
+    override fun srlv(i: Int, s: CpuState) = i { RD = s.srl(RT, RS) }
 
     //override fun sll(i: Int, s: CpuState) = i { RD = RT shl POS }
     //override fun sra(i: Int, s: CpuState) = i { RD = RT shr POS }

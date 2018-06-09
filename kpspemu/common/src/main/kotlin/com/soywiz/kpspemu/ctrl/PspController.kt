@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.ctrl
 
-import com.soywiz.kds.*
-import com.soywiz.korma.math.*
+import com.soywiz.kmem.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
 

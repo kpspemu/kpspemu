@@ -36,22 +36,26 @@ const urlsToCache = [
 ];
 console.log('loading service worker');
 
-self.addEventListener('install', function(event) {
+self.addEventListener('install', function (event) {
     // Perform install steps
     console.log('installing service worker');
 
-    async function load() {
+    async
+
+    function load() {
         try {
-            const cache = await caches.open(CACHE_NAME);
+            const cache = await
+            caches.open(CACHE_NAME);
             console.log('Opened cache ', CACHE_NAME);
             const tasks = [];
             for (const url of urlsToCache) {
                 console.log(` - ${url}`);
-                tasks.push({ url: url, promise: cache.add(new Request(url))});
+                tasks.push({url: url, promise: cache.add(new Request(url))});
             }
             for (const task of tasks) {
                 try {
-                    await task.promise;
+                    await
+                    task.promise;
                     console.log(' - cache added: ', task.url);
                 } catch (e) {
                     console.error(' - cache error: ', task.url);
@@ -66,16 +70,20 @@ self.addEventListener('install', function(event) {
     event.waitUntil(load());
 });
 
-self.addEventListener('fetch', function(event) {
+self.addEventListener('fetch', function (event) {
     console.log('Fetching...', CACHE_NAME, event.request);
-    async function myfetch() {
+    async
+
+    function myfetch() {
         try {
-            const response = await caches.match(event.request);
+            const response = await
+            caches.match(event.request);
             // Cache hit - return response
             if (response) {
                 return response;
             }
-            return await fetch(event.request);
+            return await
+            fetch(event.request);
             //const cache = await caches.open(CACHE_NAME);
             //return await cache.add(event.request);
         } catch (e) {
@@ -87,12 +95,12 @@ self.addEventListener('fetch', function(event) {
     event.respondWith(myfetch());
 });
 
-self.addEventListener('activate', function(event) {
+self.addEventListener('activate', function (event) {
     console.log('Service Worker: activated');
     // Perform some task
 });
 
-self.addEventListener('message', function(event) {
+self.addEventListener('message', function (event) {
     console.log("SW Received Message: " + event.data);
     switch (event.data) {
         case 'refresh':

@@ -1,3 +1,5 @@
+@file:Suppress("MayBeConstant", "RemoveRedundantCallsOfConversionMethods")
+
 package com.soywiz.kpspemu.hle.error
 
 import com.soywiz.klogger.*

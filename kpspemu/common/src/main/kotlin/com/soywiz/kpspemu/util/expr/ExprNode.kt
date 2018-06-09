@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.util.expr
 
 import com.soywiz.kds.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 import kotlin.math.*
 import kotlin.reflect.*
@@ -456,7 +457,7 @@ object Dynamic2 {
     fun toNumber(it: Any?): Number = when (it) {
         null -> 0.0
         is Number -> it
-        else -> it.toString().toNumber()
+        else -> Dynamic.toNumber(it.toString())
     }
 
     fun toInt(it: Any?): Int = when (it) {

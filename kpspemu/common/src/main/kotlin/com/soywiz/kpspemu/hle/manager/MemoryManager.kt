@@ -3,10 +3,23 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
-import com.soywiz.kpspemu.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.LinkedHashMap
+import kotlin.collections.MutableMap
+import kotlin.collections.arrayListOf
+import kotlin.collections.filter
+import kotlin.collections.firstOrNull
+import kotlin.collections.indexOfFirst
+import kotlin.collections.indexOfLast
+import kotlin.collections.map
+import kotlin.collections.maxBy
+import kotlin.collections.set
+import kotlin.collections.sortedBy
+import kotlin.collections.toMap
 
 class MemoryManager(val emulator: Emulator) {
     val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()

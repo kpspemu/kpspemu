@@ -1,7 +1,8 @@
 package com.soywiz.kpspemu.kirk
 
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
+import com.soywiz.krypto.*
 import mytest.*
 import org.junit.*
 

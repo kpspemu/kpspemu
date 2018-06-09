@@ -3,7 +3,6 @@ package com.soywiz.kpspemu.format.elf
 import com.soywiz.kmem.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.kirk.*
 import com.soywiz.kpspemu.util.*
 

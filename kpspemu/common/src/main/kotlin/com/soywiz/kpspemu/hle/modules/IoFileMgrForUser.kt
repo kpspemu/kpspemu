@@ -3,10 +3,9 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kmem.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
-import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*

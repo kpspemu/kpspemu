@@ -8,7 +8,7 @@ import kotlin.test.*
 
 class CsoTest {
     @Test
-    fun name() = syncTest {
+    fun name() = suspendTest {
         val csoFile = KpspTests.rootTestResources["cube.cso"]
         val isoFile = KpspTests.rootTestResources["cube.iso"]
         val cso = Cso(csoFile.open())

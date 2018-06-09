@@ -7,7 +7,7 @@ import com.soywiz.korge.input.*
 import com.soywiz.korge.scene.*
 import com.soywiz.korge.view.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.file.std.*
 import com.soywiz.korma.geom.*
 import com.soywiz.kpspemu.ctrl.*
 import kotlin.math.*
@@ -116,7 +116,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
 
         for (button in buttons) {
             button.view.visibleEnabled = touch
-            if (button.button == PspCtrlButtons.home ||button.button == PspCtrlButtons.hold) {
+            if (button.button == PspCtrlButtons.home || button.button == PspCtrlButtons.hold) {
                 button.view.visibleEnabled = true
             }
         }

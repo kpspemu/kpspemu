@@ -2,7 +2,7 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
-import com.soywiz.korio.util.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*

@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.native
 
-import com.soywiz.korio.vfs.*
+import com.soywiz.korio.file.std.*
 
 expect object KPspEmuNative {
     fun getCurrentDirectory(): String

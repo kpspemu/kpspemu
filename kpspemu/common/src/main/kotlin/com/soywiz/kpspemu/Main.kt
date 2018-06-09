@@ -1,12 +1,9 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.dynarek.*
-import com.soywiz.kds.*
 import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
-import com.soywiz.korau.*
 import com.soywiz.korge.*
 import com.soywiz.korge.bitmapfont.*
 import com.soywiz.korge.event.*
@@ -20,7 +17,6 @@ import com.soywiz.korge.tween.*
 import com.soywiz.korge.view.*
 import com.soywiz.korge.view.Container
 import com.soywiz.korge.view.Image
-import com.soywiz.korim.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
 import com.soywiz.korim.format.*
@@ -29,15 +25,16 @@ import com.soywiz.korinject.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.file.*
+import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
-import com.soywiz.korio.vfs.*
 import com.soywiz.korma.*
 import com.soywiz.korma.geom.*
 import com.soywiz.korma.geom.Rectangle
-import com.soywiz.korui.*
 import com.soywiz.korui.ui.*
 import com.soywiz.kpspemu.ctrl.*
 import com.soywiz.kpspemu.display.*
@@ -293,6 +290,14 @@ class KpspemuMainScene(
         }
     }
 
+    private fun requestUserLoadFile() {
+        async {
+            val file = browser.openFile()
+            async { hudClose() }
+            createEmulatorWithExe(file)
+        }
+    }
+
     suspend override fun sceneInit(sceneView: Container) {
         registerSceneProcess { cpuProcess() }
         registerSceneProcess { displayProcess() }
@@ -306,18 +311,6 @@ class KpspemuMainScene(
 
         resetEmulator()
         println("KPSPEMU: ${Kpspemu.VERSION}")
-        println("DYNAREK: ${Dynarek.VERSION}")
-        println("KORINJECT: ${Korinject.VERSION}")
-        println("KLOGGER: ${Klogger.VERSION}")
-        println("KMEM: ${Kmem.VERSION}")
-        println("KLOCK: ${Klock.VERSION}")
-        println("KORMA: ${Korma.VERSION}")
-        println("KORIO: ${Korio.VERSION}")
-        println("KORIM: ${Korim.VERSION}")
-        println("KORAG: ${Korag.VERSION}")
-        println("KORAU: ${Korau.VERSION}")
-        println("KORUI: ${Korui.VERSION}")
-        println("KORGE: ${Korge.VERSION}")
 
         println("Loading main font...")
         loadMainFont()
@@ -404,20 +397,14 @@ class KpspemuMainScene(
         }
 
         emulator.onLoadPress {
-            async {
-                val file = browser.openFile()
-                async { hudClose() }
-                createEmulatorWithExe(file)
-            }
+            requestUserLoadFile()
         }
 
         val loadButton = views.simpleButton("Load...", font = hudFont).apply {
             x = 8.0
             y = 272.0 - 20.0 * 1
         }.onClick {
-            val file = browser.openFile()
-            async { hudClose() }
-            createEmulatorWithExe(file)
+            requestUserLoadFile()
         }
 
         val directButton = views.simpleButton("Auto", font = hudFont).apply {
@@ -768,7 +755,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
                 val tfile = container["$folder/$filename"]
                 if (tfile.exists()) {
                     // Some BOOT.BIN files are filled with 0!
-                    if (tfile.readRangeBytes(0 until 4).hexString != "00000000") {
+                    if (tfile.readRangeBytes(0 until 4).hex != "00000000") {
                         afile = tfile
                         logger.warn { "Using $afile from iso" }
                         break@done
@@ -812,6 +799,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
     }
 
     suspend fun loadExecutableAndStart(): PspElf {
+        //stream = file.open().preloadSmall().buffered()
         stream = file.open().preloadSmall()
 
         umdLikeStructure = false

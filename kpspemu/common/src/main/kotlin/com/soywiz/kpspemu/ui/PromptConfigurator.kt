@@ -3,8 +3,8 @@ package com.soywiz.kpspemu.ui
 import com.soywiz.korge.service.*
 import com.soywiz.korio.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.native.*
@@ -40,13 +40,13 @@ class PromptConfigurator(
         }
     }
 
-    suspend private fun dropbox() {
+    private suspend fun dropbox() {
         val bearerConfig = emulator.configManager.dropboxBearer
         val bearer = browser.prompt("Set Dropbox Bearer token", bearerConfig.get())
         bearerConfig.set(bearer.trim())
     }
 
-    suspend private fun storage() {
+    private suspend fun storage() {
         val supportedStorages = listOf("local", "dropbox")
         val storageConfig = emulator.configManager.storage
         val storage = browser.prompt("Select storage engine ($supportedStorages)", storageConfig.get())
@@ -54,7 +54,7 @@ class PromptConfigurator(
         storageConfig.set(storage)
     }
 
-    suspend private fun memdump() {
+    private suspend fun memdump() {
         val outFile = applicationVfs["memdump.bin"]
         outFile.writeBytes(emulator.mem.readBytes(Memory.MAINMEM.start, Memory.MAINMEM.size))
         KpspemuMainScene.logger.warn { "Writted memory to $outFile" }

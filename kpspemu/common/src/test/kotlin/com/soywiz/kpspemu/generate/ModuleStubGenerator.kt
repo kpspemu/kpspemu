@@ -1,9 +1,11 @@
 package com.soywiz.kpspemu.generate
 
 import com.soywiz.korio.async.*
+import com.soywiz.korio.crypto.*
+import com.soywiz.korio.file.std.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.serialization.xml.*
 import com.soywiz.korio.util.*
-import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.hle.psplibdoc.*
 import org.junit.Test
 import kotlin.test.*
@@ -11,7 +13,7 @@ import kotlin.test.*
 class ModuleStubGenerator {
     @Ignore
     @Test
-    fun generateModules() = syncTest {
+    fun generateModules() = suspendTest {
         val root = localCurrentDirVfs["../../psplibdoc"]
         val doc = LibDoc.parse(root["psplibdoc_660.xml"].readXml())
         //doc.dump()

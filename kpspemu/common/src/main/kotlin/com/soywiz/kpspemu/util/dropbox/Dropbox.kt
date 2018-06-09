@@ -6,11 +6,12 @@ import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.file.*
+import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.http.*
 import com.soywiz.korio.serialization.json.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
 
@@ -159,6 +160,7 @@ fun <T : Comparable<T>> ClosedRange<T>.overlapsWith(that: ClosedRange<T>): Boole
 
 data class Option<out T>(val item: T?)
 
+@Suppress("SortModifiers")
 class DropboxVfs(val dropbox: Dropbox) : Vfs() {
     companion object {
         val logger = Logger("DropboxVfs")

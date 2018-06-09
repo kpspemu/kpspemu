@@ -1,14 +1,15 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.klogger.*
+import com.soywiz.kmem.*
 import com.soywiz.korag.*
 import com.soywiz.korag.shader.*
 import com.soywiz.korge.render.*
 import com.soywiz.korge.view.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.util.*

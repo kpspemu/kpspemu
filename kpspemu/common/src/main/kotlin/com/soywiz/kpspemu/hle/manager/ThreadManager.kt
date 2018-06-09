@@ -2,30 +2,18 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.*
 import com.soywiz.klogger.*
+import com.soywiz.kmem.*
 import com.soywiz.korio.async.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dynarec.*
 import com.soywiz.kpspemu.cpu.interpreter.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
-import kotlin.collections.List
-import kotlin.collections.count
-import kotlin.collections.distinct
-import kotlin.collections.filter
-import kotlin.collections.first
-import kotlin.collections.firstOrNull
-import kotlin.collections.getOrNull
-import kotlin.collections.hashMapOf
-import kotlin.collections.joinToString
-import kotlin.collections.map
 import kotlin.collections.set
-import kotlin.collections.sorted
-import kotlin.collections.sortedBy
-import kotlin.collections.toList
 import kotlin.math.*
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
@@ -88,7 +76,17 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
         return thread
     }
 
-    fun suspend() {
+    @Deprecated("USE suspendReturnInt or suspendReturnVoid")
+    fun suspend(): Nothing {
+        throw CpuBreakException(CpuBreakException.THREAD_WAIT)
+    }
+
+    fun suspendReturnInt(value: Int): Nothing {
+        currentThread?.state?.V0 = value
+        throw CpuBreakException(CpuBreakException.THREAD_WAIT)
+    }
+
+    fun suspendReturnVoid(): Nothing {
         throw CpuBreakException(CpuBreakException.THREAD_WAIT)
     }
 

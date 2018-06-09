@@ -3,9 +3,9 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.dynarek.*
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
@@ -177,61 +177,127 @@ class CpuState(
 
     // @TODO: Fast version for dynarek
 
-    @JvmField @JsName("r0") var r0: Int = 0
-    @JvmField @JsName("r1") var r1: Int = 0
-    @JvmField @JsName("r2") var r2: Int = 0
-    @JvmField @JsName("r3") var r3: Int = 0
-    @JvmField @JsName("r4") var r4: Int = 0
-    @JvmField @JsName("r5") var r5: Int = 0
-    @JvmField @JsName("r6") var r6: Int = 0
-    @JvmField @JsName("r7") var r7: Int = 0
-    @JvmField @JsName("r8") var r8: Int = 0
-    @JvmField @JsName("r9") var r9: Int = 0
-    @JvmField @JsName("r10") var r10: Int = 0
-    @JvmField @JsName("r11") var r11: Int = 0
-    @JvmField @JsName("r12") var r12: Int = 0
-    @JvmField @JsName("r13") var r13: Int = 0
-    @JvmField @JsName("r14") var r14: Int = 0
-    @JvmField @JsName("r15") var r15: Int = 0
-    @JvmField @JsName("r16") var r16: Int = 0
-    @JvmField @JsName("r17") var r17: Int = 0
-    @JvmField @JsName("r18") var r18: Int = 0
-    @JvmField @JsName("r19") var r19: Int = 0
-    @JvmField @JsName("r20") var r20: Int = 0
-    @JvmField @JsName("r21") var r21: Int = 0
-    @JvmField @JsName("r22") var r22: Int = 0
-    @JvmField @JsName("r23") var r23: Int = 0
-    @JvmField @JsName("r24") var r24: Int = 0
-    @JvmField @JsName("r25") var r25: Int = 0
-    @JvmField @JsName("r26") var r26: Int = 0
-    @JvmField @JsName("r27") var r27: Int = 0
-    @JvmField @JsName("r28") var r28: Int = 0
-    @JvmField @JsName("r29") var r29: Int = 0
-    @JvmField @JsName("r30") var r30: Int = 0
-    @JvmField @JsName("r31") var r31: Int = 0
+    @JvmField
+    @JsName("r0")
+    var r0: Int = 0
+    @JvmField
+    @JsName("r1")
+    var r1: Int = 0
+    @JvmField
+    @JsName("r2")
+    var r2: Int = 0
+    @JvmField
+    @JsName("r3")
+    var r3: Int = 0
+    @JvmField
+    @JsName("r4")
+    var r4: Int = 0
+    @JvmField
+    @JsName("r5")
+    var r5: Int = 0
+    @JvmField
+    @JsName("r6")
+    var r6: Int = 0
+    @JvmField
+    @JsName("r7")
+    var r7: Int = 0
+    @JvmField
+    @JsName("r8")
+    var r8: Int = 0
+    @JvmField
+    @JsName("r9")
+    var r9: Int = 0
+    @JvmField
+    @JsName("r10")
+    var r10: Int = 0
+    @JvmField
+    @JsName("r11")
+    var r11: Int = 0
+    @JvmField
+    @JsName("r12")
+    var r12: Int = 0
+    @JvmField
+    @JsName("r13")
+    var r13: Int = 0
+    @JvmField
+    @JsName("r14")
+    var r14: Int = 0
+    @JvmField
+    @JsName("r15")
+    var r15: Int = 0
+    @JvmField
+    @JsName("r16")
+    var r16: Int = 0
+    @JvmField
+    @JsName("r17")
+    var r17: Int = 0
+    @JvmField
+    @JsName("r18")
+    var r18: Int = 0
+    @JvmField
+    @JsName("r19")
+    var r19: Int = 0
+    @JvmField
+    @JsName("r20")
+    var r20: Int = 0
+    @JvmField
+    @JsName("r21")
+    var r21: Int = 0
+    @JvmField
+    @JsName("r22")
+    var r22: Int = 0
+    @JvmField
+    @JsName("r23")
+    var r23: Int = 0
+    @JvmField
+    @JsName("r24")
+    var r24: Int = 0
+    @JvmField
+    @JsName("r25")
+    var r25: Int = 0
+    @JvmField
+    @JsName("r26")
+    var r26: Int = 0
+    @JvmField
+    @JsName("r27")
+    var r27: Int = 0
+    @JvmField
+    @JsName("r28")
+    var r28: Int = 0
+    @JvmField
+    @JsName("r29")
+    var r29: Int = 0
+    @JvmField
+    @JsName("r30")
+    var r30: Int = 0
+    @JvmField
+    @JsName("r31")
+    var r31: Int = 0
 
     //val gprProps = (0 until 32).map { getGprProp(it) }.toTypedArray()
 
     @JsName("getGpr") fun getGpr(index: Int): Int {
         //return gprProps[index].get()
-    	return when (index) {
-    		0 -> 0;1 -> r1;2 -> r2;3 -> r3;4 -> r4;5 -> r5;6 -> r6;7 -> r7;
-    		8 -> r8;9 -> r9;10 -> r10;11 -> r11;12 -> r12;13 -> r13;14 -> r14;15 -> r15;
-    		16 -> r16;17 -> r17;18 -> r18;19 -> r19;20 -> r20;21 -> r21;22 -> r22;23 -> r23;
-    		24 -> r24;25 -> r25;26 -> r26;27 -> r27;28 -> r28;29 -> r29;30 -> r30;31 -> r31;
-    		else -> 0
-    	}
+        return when (index) {
+            0 -> 0;1 -> r1;2 -> r2;3 -> r3;4 -> r4;5 -> r5;6 -> r6;7 -> r7;
+            8 -> r8;9 -> r9;10 -> r10;11 -> r11;12 -> r12;13 -> r13;14 -> r14;15 -> r15;
+            16 -> r16;17 -> r17;18 -> r18;19 -> r19;20 -> r20;21 -> r21;22 -> r22;23 -> r23;
+            24 -> r24;25 -> r25;26 -> r26;27 -> r27;28 -> r28;29 -> r29;30 -> r30;31 -> r31;
+            else -> 0
+        }
     }
 
     @JsName("setGpr") fun setGpr(index: Int, v: Int): Unit {
         //if (index != 0) gprProps[index].set(v)
-    	when (index) {
-    		0 -> Unit;1 -> r1 = v;2 -> r2 = v;3 -> r3 = v;4 -> r4 = v;5 -> r5 = v;6 -> r6 = v;7 -> r7 = v;
-    		8 -> r8 = v;9 -> r9 = v;10 -> r10 = v;11 -> r11 = v;12 -> r12 = v;13 -> r13 = v;14 -> r14 = v;15 -> r15 = v;
-    		16 -> r16 = v;17 -> r17 = v;18 -> r18 = v;19 -> r19 = v;20 -> r20 = v;21 -> r21 = v;22 -> r22 = v;23 -> r23 = v;
-    		24 -> r24 = v;25 -> r25 = v;26 -> r26 = v;27 -> r27 = v;28 -> r28 = v;29 -> r29 = v;30 -> r30 = v;31 -> r31 = v;
-    		else -> Unit
-    	}
+        when (index) {
+            0 -> Unit;1 -> r1 = v;2 -> r2 = v;3 -> r3 = v;4 -> r4 = v;5 -> r5 = v;6 -> r6 = v;7 -> r7 = v;
+            8 -> r8 = v;9 -> r9 = v;10 -> r10 = v;11 -> r11 = v;12 -> r12 = v;13 -> r13 = v;14 -> r14 = v;15 -> r15 = v;
+            16 -> r16 = v;17 -> r17 = v;18 -> r18 = v;19 -> r19 = v;20 -> r20 = v;21 -> r21 = v;22 -> r22 =
+                v;23 -> r23 = v;
+            24 -> r24 = v;25 -> r25 = v;26 -> r26 = v;27 -> r27 = v;28 -> r28 = v;29 -> r29 = v;30 -> r30 =
+                v;31 -> r31 = v;
+            else -> Unit
+        }
     }
 
     // @TODO: Fast version for interpreted
@@ -386,7 +452,12 @@ class CpuState(
 
     val summary: String
     //get() = "REGS($id)[" + (0 until 32).map { "r%d=%d".format(it, getGpr(it)) }.joinToString(", ") + "]"
-        get() = "REGS($name:$id)[" + (0 until 32).map { "r%d=0x%08X".format(it, getGpr(it)) }.joinToString(", ") + "][PC = ${PC.hex}]"
+        get() = "REGS($name:$id)[" + (0 until 32).map {
+            "r%d=0x%08X".format(
+                it,
+                getGpr(it)
+            )
+        }.joinToString(", ") + "][PC = ${PC.hex}]"
 
     fun dump() {
         println(" DUMP:-- $summary")
@@ -446,6 +517,7 @@ class CpuState(
 
     ///IF(RT == 0.lit) { RD = RS }
     @JsName("movz") fun movz(RT: Int, RD: Int, RS: Int) = if (RT == 0) RS else RD
+
     @JsName("movn") fun movn(RT: Int, RD: Int, RS: Int) = if (RT != 0) RS else RD
 
     @JsName("ext") fun ext(RS: Int, POS: Int, SIZE_E: Int) = RS.extract(POS, SIZE_E)
@@ -473,8 +545,12 @@ class CpuState(
     }
 
     private val itemp = IntArray(2)
-    @JsName("mult") fun mult(RS: Int, RT: Int) = run { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
-    @JsName("multu") fun multu(RS: Int, RT: Int) = run { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
+    @JsName("mult") fun mult(RS: Int, RT: Int) =
+        run { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
+
+    @JsName("multu") fun multu(RS: Int, RT: Int) =
+        run { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
+
     @JsName("madd") fun madd(RS: Int, RT: Int) = run { HI_LO += RS.toLong() * RT.toLong() }
     @JsName("maddu") fun maddu(RS: Int, RT: Int) = run { HI_LO += RS.unsigned * RT.unsigned }
     @JsName("msub") fun msub(RS: Int, RT: Int) = run { HI_LO -= RS.toLong() * RT.toLong() }
@@ -507,6 +583,7 @@ class CpuState(
         val res = RS * RT
         return if (fcr31_fs && res.isAlmostZero()) 0f else res
     }
+
     @JsName("fdiv") fun fdiv(RS: Float, RT: Float): Float = RS / RT
     @JsName("fneg") fun fneg(v: Float): Float = -v
     @JsName("fabs") fun fabs(v: Float): Float = kotlin.math.abs(v)
@@ -547,8 +624,11 @@ class CpuState(
     @JsName("ceil_w_s") fun ceil_w_s(v: Float): Int = Math.ceil(v)
     @JsName("floor_w_s") fun floor_w_s(v: Float): Int = Math.floor(v)
 
-    private inline fun _cu(FS: Float, FT: Float, callback: () -> Boolean): Boolean = if (FS.isNaN() || FT.isNaN()) true else callback()
-    private inline fun _co(FS: Float, FT: Float, callback: () -> Boolean): Boolean = if (FS.isNaN() || FT.isNaN()) false else callback()
+    private inline fun _cu(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
+        if (FS.isNaN() || FT.isNaN()) true else callback()
+
+    private inline fun _co(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
+        if (FS.isNaN() || FT.isNaN()) false else callback()
 
     @JsName("c_f_s") fun c_f_s(FS: Float, FT: Float) = _co(FS, FT) { false }
     @JsName("c_un_s") fun c_un_s(FS: Float, FT: Float) = _cu(FS, FT) { false }

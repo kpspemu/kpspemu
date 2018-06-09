@@ -4,9 +4,9 @@ import com.soywiz.klogger.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.vfs.*
 
 suspend fun IsoVfs2(file: VfsFile): VfsFile = ISO2.openVfs(file.open(VfsOpenMode.READ))
 suspend fun IsoVfs2(s: AsyncStream): VfsFile = ISO2.openVfs(s)
@@ -43,14 +43,14 @@ object ISO2 {
                 extraInfo = intArrayOf(file.record.extent, 0, 0, 0, 0, 0)
             )
 
-            suspend override fun stat(path: String): VfsStat = try {
+            override suspend fun stat(path: String): VfsStat = try {
                 getVfsStat(isoFile[path])
             } catch (e: Throwable) {
                 createNonExistsStat(path)
             }
 
 
-            suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
+            override suspend fun open(path: String, mode: VfsOpenMode): AsyncStream {
                 println("Opening ISO path: $path")
                 val result = SCE_LBN_REGEX.matchEntire(path)
                 if (result != null) {
@@ -64,7 +64,7 @@ object ISO2 {
                 }
             }
 
-            suspend override fun list(path: String) = asyncGenerate(this@withCoroutineContext) {
+            override suspend fun list(path: String) = asyncGenerate(this@withCoroutineContext) {
                 val file = isoFile[path]
                 for (c in file.children) {
                     //yield(getVfsStat(c))

@@ -1,9 +1,10 @@
 package com.soywiz.kpspemu.mem
 
+import com.soywiz.kmem.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.util.*
 
 data class PtrArray(val ptr: Ptr, val size: Int) {

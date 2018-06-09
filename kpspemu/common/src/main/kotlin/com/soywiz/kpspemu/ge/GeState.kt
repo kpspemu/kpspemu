@@ -4,9 +4,9 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.kmem.*
 import com.soywiz.korim.color.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*

@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.kirk
 
+import com.soywiz.kmem.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
@@ -57,7 +58,7 @@ object Kirk {
         var KeyCmac = Keys.copyOfRange(16, 32)
         val PaddedDataSize = header.DataSize.nextAlignedTo(16)
         val PaddedData = ByteArray(PaddedDataSize)
-        input.slice().skip(header.DataOffset + AES128CMACHeader.size).read(PaddedData)
+        input.sliceStart().skip(header.DataOffset + AES128CMACHeader.size).read(PaddedData)
         val Output = AES.decryptAes128Cbc(PaddedData, KeyAes)
         output.write(Output, 0, header.DataSize)
     }

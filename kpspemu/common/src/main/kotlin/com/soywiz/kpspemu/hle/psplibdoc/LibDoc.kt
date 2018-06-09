@@ -1,8 +1,7 @@
 package com.soywiz.kpspemu.hle.psplibdoc
 
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.serialization.xml.*
-import com.soywiz.korio.util.*
-
 
 object LibDoc {
     //data class Libraries(val libraries: List<Library>)

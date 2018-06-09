@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.kds.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
-import com.soywiz.korio.util.*
 
 interface ResourceItem {
     val id: Int

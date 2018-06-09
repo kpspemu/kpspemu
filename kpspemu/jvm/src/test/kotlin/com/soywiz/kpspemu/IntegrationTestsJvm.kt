@@ -1,12 +1,14 @@
 package com.soywiz.kpspemu
 
+import KpspTests
+import MyAssert
 import com.soywiz.klogger.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.*
-import com.soywiz.korio.lang.*
+import com.soywiz.korio.crypto.*
+import com.soywiz.korio.file.std.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
-import com.soywiz.korio.vfs.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
 import org.junit.*
@@ -104,7 +106,7 @@ class IntegrationTestsJvm {
     @Test
     fun testThreadsVplVpl() = testFile("threads/vpl/vpl")
 
-    fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = syncTest {
+    fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = suspendTest {
         testFile(
             KpspTests.pspautotests["$name.prx"].readAsSyncStream(),
             KpspTests.pspautotests["$name.expected"].readString(),
@@ -132,14 +134,14 @@ class IntegrationTestsJvm {
         val info = emulator.loadElfAndSetRegisters(elf, listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP"))
 
         if (TRACE1) {
-            Loggers.defaultLevel = LogLevel.TRACE
+            Logger.defaultLevel = Logger.Level.TRACE
         }
 
         if (TRACE) {
             emulator.threadManager.trace("user_main", trace = true)
-            Loggers.defaultLevel = LogLevel.TRACE
+            Logger.defaultLevel = Logger.Level.TRACE
         } else {
-            Loggers.setLevel("ElfPsp", LogLevel.ERROR)
+            Logger.setLevel("ElfPsp", Logger.Level.ERROR)
         }
 
         var generatedError: Throwable? = null

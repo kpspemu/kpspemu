@@ -5,9 +5,8 @@ import com.soywiz.kmem.*
 import com.soywiz.korio.compression.*
 import com.soywiz.korio.compression.deflate.*
 import com.soywiz.korio.error.*
+import com.soywiz.korio.file.*
 import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
-import com.soywiz.korio.vfs.*
 import kotlin.math.*
 
 class Cso private constructor() {

@@ -3,7 +3,7 @@ package com.soywiz.kpspemu.cpu.dynarec
 import com.soywiz.dynarek.*
 import com.soywiz.dynarek.js.*
 import com.soywiz.kds.*
-import com.soywiz.korio.util.*
+import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.*
 import com.soywiz.kpspemu.cpu.interpreter.*
@@ -53,9 +53,9 @@ class DynarekRunner(
 }
 
 data class CpuStateFunctionCtx(val mem: Memory, val ff: CpuStateFunction, val pc: Int, val instructions: Int) {
-    val func = ff.generateDynarek()
+    val func = ff.generateDynarek("func_${pc.shex}")
     val jsbody by lazy { ff.generateJsBody(strict = false) }
-    val javaBody by lazy { ff.generateDynarekResult(1).data }
+    val javaBody by lazy { ff.generateDynarekResult("func_${pc.shex}", 1).data }
     val disasm by lazy {
         val out = arrayListOf<String>()
         for (n in 0 until instructions) {
@@ -67,28 +67,29 @@ data class CpuStateFunctionCtx(val mem: Memory, val ff: CpuStateFunction, val pc
 }
 
 class MethodCache(private val mem: Memory) {
-    private val cachedFunctions = FastIntMap<CpuStateFunctionCtx>()
+    private val cachedFunctions = IntMap<CpuStateFunctionCtx>()
 
     fun reset() {
         cachedFunctions.clear()
     }
 
-    fun getFunction(address: Int): CpuStateFunctionCtx {
-        if (address !in cachedFunctions) {
-            val dm = DynarekMethodBuilder()
-            var pc = address
-            var icount = 0
+    fun getFunction(address: Int): CpuStateFunctionCtx = cachedFunctions[address] ?: createFunction(address)
 
-            do {
-                dm.dispatch(pc, mem.lw(pc))
-                pc += 4
-                icount++
-                if (icount >= 10000) error("Function too big!")
-            } while (!dm.reachedFlow)
-            val func = dm.generateFunction()
-            cachedFunctions[address] = CpuStateFunctionCtx(mem, func, address, icount)
-        }
-        return cachedFunctions[address]!!
+    fun createFunction(address: Int): CpuStateFunctionCtx {
+        val dm = DynarekMethodBuilder()
+        var pc = address
+        var icount = 0
+
+        do {
+            dm.dispatch(pc, mem.lw(pc))
+            pc += 4
+            icount++
+            if (icount >= 10000) error("Function too big!")
+        } while (!dm.reachedFlow)
+        val func = dm.generateFunction()
+        val ff = CpuStateFunctionCtx(mem, func, address, icount)
+        cachedFunctions[address] = ff
+        return ff
     }
 
     fun invalidateInstructionCache(ptr: Int, size: Int) {
