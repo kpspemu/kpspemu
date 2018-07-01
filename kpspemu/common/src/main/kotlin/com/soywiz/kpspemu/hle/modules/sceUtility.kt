@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.i18n.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
@@ -73,9 +74,24 @@ class sceUtility(emulator: Emulator) :
     val wlanPowersave = 0
     val dateFormat = PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD
     val timeFormat = PSP_SYSTEMPARAM_TIME_FORMAT_24HR
-    val language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH
+    val language get() = Language.CURRENT.pspLanguage
     val timezone = 0
     val daylightSavings = PSP_SYSTEMPARAM_DAYLIGHTSAVINGS_STD
+
+    val Language.pspLanguage: Int get() = when (this) {
+        Language.ENGLISH -> PSP_SYSTEMPARAM_LANGUAGE_ENGLISH
+        Language.JAPANESE -> PSP_SYSTEMPARAM_LANGUAGE_JAPANESE
+        Language.KOREAN -> PSP_SYSTEMPARAM_LANGUAGE_KOREAN
+        Language.CHINESE -> PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED
+        Language.SPANISH -> PSP_SYSTEMPARAM_LANGUAGE_SPANISH
+        Language.ITALIAN -> PSP_SYSTEMPARAM_LANGUAGE_ITALIAN
+        Language.FRENCH -> PSP_SYSTEMPARAM_LANGUAGE_FRENCH
+        Language.GERMAN -> PSP_SYSTEMPARAM_LANGUAGE_GERMAN
+        Language.DUTCH -> PSP_SYSTEMPARAM_LANGUAGE_DUTCH
+        Language.RUSSIAN -> PSP_SYSTEMPARAM_LANGUAGE_RUSSIAN
+        Language.PORTUGUESE -> PSP_SYSTEMPARAM_LANGUAGE_PORTUGUESE
+        else -> PSP_SYSTEMPARAM_LANGUAGE_ENGLISH
+    }
 
     fun sceUtilityGetSystemParamInt(id: Int, value: Ptr): Int {
         logger.trace { "Not implemented: sceUtilityGetSystemParamInt:$id,$value" }
