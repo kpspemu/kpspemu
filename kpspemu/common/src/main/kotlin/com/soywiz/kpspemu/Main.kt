@@ -3,10 +3,8 @@ package com.soywiz.kpspemu
 import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
-import com.soywiz.korag.*
 import com.soywiz.korge.*
 import com.soywiz.korge.bitmapfont.*
-import com.soywiz.korge.event.*
 import com.soywiz.korge.html.*
 import com.soywiz.korge.input.*
 import com.soywiz.korge.render.*
@@ -35,6 +33,8 @@ import com.soywiz.korio.util.*
 import com.soywiz.korma.*
 import com.soywiz.korma.geom.*
 import com.soywiz.korma.geom.Rectangle
+import com.soywiz.korui.event.*
+import com.soywiz.korui.input.*
 import com.soywiz.korui.ui.*
 import com.soywiz.kpspemu.ctrl.*
 import com.soywiz.kpspemu.display.*
@@ -132,32 +132,32 @@ class KpspemuMainScene(
     var forceSteps = 0
 
     val buttonMapping = mapOf(
-        GamepadButton.BUTTON0 to PspCtrlButtons.cross,
-        GamepadButton.BUTTON1 to PspCtrlButtons.circle,
-        GamepadButton.BUTTON2 to PspCtrlButtons.square,
-        GamepadButton.BUTTON3 to PspCtrlButtons.triangle,
+        GameButton.BUTTON0 to PspCtrlButtons.cross,
+        GameButton.BUTTON1 to PspCtrlButtons.circle,
+        GameButton.BUTTON2 to PspCtrlButtons.square,
+        GameButton.BUTTON3 to PspCtrlButtons.triangle,
 
-        GamepadButton.L1 to PspCtrlButtons.leftTrigger,
-        GamepadButton.R1 to PspCtrlButtons.rightTrigger,
+        GameButton.L1 to PspCtrlButtons.leftTrigger,
+        GameButton.R1 to PspCtrlButtons.rightTrigger,
 
-        GamepadButton.SELECT to PspCtrlButtons.select,
-        GamepadButton.START to PspCtrlButtons.start,
-        GamepadButton.SYSTEM to PspCtrlButtons.home,
+        GameButton.SELECT to PspCtrlButtons.select,
+        GameButton.START to PspCtrlButtons.start,
+        GameButton.SYSTEM to PspCtrlButtons.home,
 
-        GamepadButton.L2 to PspCtrlButtons.select,
-        GamepadButton.R2 to PspCtrlButtons.start,
+        GameButton.L2 to PspCtrlButtons.select,
+        GameButton.R2 to PspCtrlButtons.start,
 
-        GamepadButton.L3 to PspCtrlButtons.select,
-        GamepadButton.R3 to PspCtrlButtons.start,
+        GameButton.L3 to PspCtrlButtons.select,
+        GameButton.R3 to PspCtrlButtons.start,
 
-        GamepadButton.LEFT to PspCtrlButtons.left,
-        GamepadButton.RIGHT to PspCtrlButtons.right,
-        GamepadButton.UP to PspCtrlButtons.up,
-        GamepadButton.DOWN to PspCtrlButtons.down
+        GameButton.LEFT to PspCtrlButtons.left,
+        GameButton.RIGHT to PspCtrlButtons.right,
+        GameButton.UP to PspCtrlButtons.up,
+        GameButton.DOWN to PspCtrlButtons.down
     )
 
-    val gamepadButtons = GamepadButton.values()
-    val gamepadButtonsStatus = DoubleArray(GamepadButton.MAX_INDEX) { Double.NaN }
+    val gamepadButtons = GameButton.values()
+    val gamepadButtonsStatus = DoubleArray(GameButton.MAX) { Double.NaN }
 
     suspend fun resetEmulator() {
         running = true
@@ -571,22 +571,19 @@ class KpspemuMainScene(
             }
         }
 
-        sceneView.addEventListener<GamepadUpdatedEvent> { e ->
+        sceneView.addEventListener<GamePadButtonEvent> { e ->
             val gamepad = e.gamepad
-            for (button in gamepadButtons) {
-                val value = gamepad[button]
-                if (gamepadButtonsStatus[button.index] != value) {
-                    gamepadButtonsStatus[button.index] = value
-                    val pspButton = buttonMapping[button]
-                    if (pspButton != null) {
-                        emulator.controller.updateButton(pspButton, value >= 0.5)
-                    }
-                    when (button) {
-                        GamepadButton.LX -> emulator.controller.currentFrame.lx =
-                                (((value + 1.0) / 2.0) * 255.0).toInt()
-                        GamepadButton.LY -> emulator.controller.currentFrame.ly =
-                                (((-value + 1.0) / 2.0) * 255.0).toInt()
-                    }
+            val button = e.button
+            val value = e.value
+            if (gamepadButtonsStatus[button.index] != value) {
+                gamepadButtonsStatus[button.index] = value
+                val pspButton = buttonMapping[button]
+                if (pspButton != null) {
+                    emulator.controller.updateButton(pspButton, value >= 0.5)
+                }
+                when (button) {
+                    GameButton.LX -> emulator.controller.currentFrame.lx = (((value + 1.0) / 2.0) * 255.0).toInt()
+                    GameButton.LY -> emulator.controller.currentFrame.ly = (((-value + 1.0) / 2.0) * 255.0).toInt()
                 }
             }
         }

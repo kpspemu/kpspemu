@@ -2,13 +2,13 @@ package com.soywiz.kpspemu
 
 import com.soywiz.korge.atlas.*
 import com.soywiz.korge.component.*
-import com.soywiz.korge.event.*
 import com.soywiz.korge.input.*
 import com.soywiz.korge.scene.*
 import com.soywiz.korge.view.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korma.geom.*
+import com.soywiz.korui.event.*
 import com.soywiz.kpspemu.ctrl.*
 import kotlin.math.*
 
@@ -94,10 +94,10 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
         })
 
         updateTouch()
-        sceneView.addEventListener<GamepadConnectionEvent> {
+        sceneView.addEventListener<GamePadConnectionEvent> {
             updateTouch()
         }
-        sceneView.addEventListener<StageResizedEvent> {
+        sceneView.addEventListener<ResizedEvent> {
             println("resized:" + views.input.isTouchDevice)
             updateTouch()
         }
