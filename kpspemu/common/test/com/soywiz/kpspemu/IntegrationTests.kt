@@ -21,8 +21,13 @@ class IntegrationTests : BaseTest() {
 
     //@Test fun testDmac() = testFile("dmac/dmactest")
 
+    enum class Mode { Interpreted, Dynarek }
+
     @Test
     fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
+
+    @Test
+    fun testCpuAluDynarek() = testFile("cpu/cpu_alu/cpu_alu", mode = Mode.Dynarek)
 
     @Test
     fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
@@ -104,12 +109,13 @@ class IntegrationTests : BaseTest() {
     @Test
     fun testThreadsVplVpl() = testFile("threads/vpl/vpl")
 
-    fun testFile(name: String, ignores: List<String> = listOf(), processor: (String) -> String = { it }) = pspSuspendTest {
+    fun testFile(name: String, ignores: List<String> = listOf(), mode: Mode = Mode.Interpreted, processor: (String) -> String = { it }) = pspSuspendTest {
         testFile(
-            pspautotests["$name.prx"].readAsSyncStream(),
-            pspautotests["$name.expected"].readString(),
-            ignores,
-            processor
+            elf = pspautotests["$name.prx"].readAsSyncStream(),
+            expected = pspautotests["$name.expected"].readString(),
+            ignores = ignores,
+            mode = mode,
+            processor = processor
         )
     }
 
@@ -117,10 +123,11 @@ class IntegrationTests : BaseTest() {
         elf: SyncStream,
         expected: String,
         ignores: List<String>,
+        mode: Mode = Mode.Interpreted,
         processor: (String) -> String = { it }
     ) {
         val emulator = Emulator(getCoroutineContext())
-        emulator.interpreted = true
+        emulator.interpreted = (mode == Mode.Interpreted)
         emulator.display.exposeDisplay = false
         emulator.registerNativeModules()
         //val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
