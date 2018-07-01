@@ -27,6 +27,12 @@ buildscript {
     }
 }
 
+if (project == rootProject) {
+    new File(rootProject.rootDir, "kpspemu/common/src/com/soywiz/kpspemu/KpspemuVersion.kt").write(
+            "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
+    )
+}
+
 allprojects {
     repositories {
         mavenLocal()
@@ -36,12 +42,6 @@ allprojects {
 
     group 'com.soywiz'
     version '0.6.1-SNAPSHOT'
-
-    if (project == rootProject) {
-        new File(rootProject.rootDir, "kpspemu/common/src/com/soywiz/kpspemu/KpspemuVersion.kt").write(
-                "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
-        )
-    }
 
     apply plugin: 'java'
     apply plugin: 'maven'
