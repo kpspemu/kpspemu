@@ -17,7 +17,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
     class AudioChannel(val id: Int) {
         var reserved: Boolean = false
         var streamInitialized = false
-        val stream by lazy { streamInitialized = true; NativeAudioStream() }
+        val stream by lazy { streamInitialized = true; NativeAudioStream(44100) }
         var audioFormat: Int = 0
         var line = ShortArray(0)
         var lineEx = ShortArray(0)
