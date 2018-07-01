@@ -38,7 +38,7 @@ allprojects {
     version '0.6.1-SNAPSHOT'
 
     if (project == rootProject) {
-        new File(rootProject.rootDir, "kpspemu/common/src/main/kotlin/com/soywiz/kpspemu/KpspemuVersion.kt").write(
+        new File(rootProject.rootDir, "kpspemu/common/src/com/soywiz/kpspemu/KpspemuVersion.kt").write(
                 "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
         )
     }

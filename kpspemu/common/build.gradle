@@ -1,5 +1,12 @@
 apply plugin: 'kotlin-platform-common'
 
+sourceSets {
+    main.kotlin.srcDirs += "src"
+    main.resources.srcDirs += "resources"
+    test.kotlin.srcDirs += "test"
+    test.resources.srcDirs += "testresources"
+}
+
 dependencies {
     compile "com.soywiz:dynarek-common:$dynarekVersion"
     compile "com.soywiz:klogger-common:$kloggerVersion"
