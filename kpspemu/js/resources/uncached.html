@@ -1,0 +1,64 @@
+<html>
+<head>
+    <title>kpspemu</title>
+    <!-- https://developer.apple.com/library/content/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html -->
+    <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!--
+    <meta name="viewport" content="initial-scale = 1.0,maximum-scale = 1.0" />
+    -->
+
+    <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+    <link rel="apple-touch-startup-image" href="apple-touch-icon.png"/>
+    <link rel="manifest" href="manifest.json"/>
+
+    <meta name="theme-color" content="#2196F3"/>
+    <meta name="apple-mobile-web-app-title" content="KPspEmu"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+    <meta name="format-detection" content="telephone=no"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        * {
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+        html {
+            overflow: hidden;
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            overflow: auto;
+            padding: 0;
+            margin: 0;
+            background: black;
+        }
+
+    </style>
+</head>
+<body>
+
+<script type="text/javascript" src="require.min.js"></script>
+<script type="text/javascript">
+    requirejs(['kpspemu'], function (app) {
+        window.app = app;
+
+        // @TODO: Main seems to be autoexecuted in JS
+        //console.log(app);
+        //app.com.soywiz.kpspemu.Main.main_kand9s$([]);
+    });
+</script>
+
+<noscript>
+    This application requires javascript to run.
+</noscript>
+
+<!--
+<script src="program.js" type="text/javascript"></script>
+-->
+</body>
+</html>
