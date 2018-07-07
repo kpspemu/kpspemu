@@ -1,7 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.korlibsVersion = "0.31.0"
+    ext.korlibsVersion = "0.32.0"
     ext.dynarekVersion = ext.korlibsVersion
     ext.kloggerVersion = ext.korlibsVersion
     ext.klockVersion = ext.korlibsVersion
@@ -14,16 +14,18 @@ buildscript {
     ext.korimVersion = ext.korlibsVersion
     ext.koruiVersion = ext.korlibsVersion
 
-    ext.kotlinVersion = '1.2.50'
-
     repositories {
         mavenLocal()
         jcenter()
+        maven { url "https://dl.bintray.com/soywiz/soywiz" }
+        maven { url "https://dl.bintray.com/jetbrains/kotlin-native-dependencies" }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
         maven { url "https://plugins.gradle.org/m2/" }
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlinNativeVersion"
     }
 }
 
@@ -36,18 +38,22 @@ if (project == rootProject) {
 allprojects {
     repositories {
         mavenLocal()
-        maven { url "https://dl.bintray.com/soywiz/soywiz" }
         jcenter()
+        maven { url "https://dl.bintray.com/soywiz/soywiz" }
+        maven { url "https://dl.bintray.com/jetbrains/kotlin-native-dependencies" }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
+        maven { url "https://plugins.gradle.org/m2/" }
     }
 
     group 'com.soywiz'
     version '0.6.1-SNAPSHOT'
 
-    apply plugin: 'java'
+    if (!project.name.endsWith("-native")) {
+        apply plugin: 'java'
+    }
     apply plugin: 'maven'
     apply plugin: 'signing'
     apply plugin: 'maven-publish'
-    apply plugin: 'idea'
 
     it.afterEvaluate {
         if (it.plugins.hasPlugin("kotlin-platform-common")) {

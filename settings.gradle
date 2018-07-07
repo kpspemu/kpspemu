@@ -4,6 +4,7 @@ include(
         'kpspemu-common',
         'kpspemu',
         'kpspemu-js',
+        //'kpspemu-native',
         'kpspemu-jvm-main',
         //'kpspemu-js-dce',
 )
@@ -12,6 +13,9 @@ def register(String base) {
     findProject(":$base-common")?.projectDir = file("$base/common")
     findProject(":$base")?.projectDir = file("$base/jvm")
     findProject(":$base-js")?.projectDir = file("$base/js")
+
+    //findProject(":$base-native")?.projectDir = file("$base/native")
+
     //findProject(":$base-js-dce")?.projectDir = file("$base/js-dce")
     findProject(":$base-jvm-main")?.projectDir = file("$base/jvm-main")
 }
