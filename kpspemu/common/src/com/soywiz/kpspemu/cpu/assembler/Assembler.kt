@@ -3,10 +3,12 @@ package com.soywiz.kpspemu.cpu.assembler
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.cpu.*
+import com.soywiz.std.*
 import kotlin.collections.set
 
+@ThreadLocal
 object Assembler : InstructionDecoder() {
-    val mnemonicGpr = CpuState.gprInfosByMnemonic
+    val mnemonicGpr get() = CpuState.gprInfosByMnemonic
 
     fun parseGpr(str: String): Int {
         if (str.startsWith("r")) return str.substring(1).toInt()

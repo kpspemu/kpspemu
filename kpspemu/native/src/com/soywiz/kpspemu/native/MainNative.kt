@@ -15,9 +15,9 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
 
-//fun main(args: Array<String>) = Main.main(args)
+fun main(args: Array<String>) = Main.main(args)
 
-//fun main(args: Array<String>) = Main.main(args)
+/*
 fun main(args: Array<String>) {
     Korio {
         val time = measureTime {
@@ -85,3 +85,4 @@ fun main(args: Array<String>) {
         println("TIME: ${time.time}")
     }
 }
+*/

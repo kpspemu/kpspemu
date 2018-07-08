@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.korio.async.*
-import com.soywiz.korio.lang.*
+import com.soywiz.std.*
 
 interface Resetable {
     fun reset(): Unit
@@ -12,7 +12,7 @@ interface PoolItem : Resetable {
 }
 
 class AsyncPool2<T : PoolItem>(val maxItems: Int = Int.MAX_VALUE, var initId: Int = 0, val create: suspend (Int) -> T) {
-    var createdItems = AtomicInteger()
+    var createdItems = NewAtomicInt(0)
     private val freedItem = ProduceConsumer<T>()
     val allocatedItems = LinkedHashMap<Int, T>()
 

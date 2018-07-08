@@ -72,9 +72,9 @@ class Cso private constructor() {
     //val compressedStream: AsyncStream get() = s
     suspend fun open(): AsyncStream {
         return object : AsyncStreamBase() {
-            suspend override fun close() = s.close()
-            suspend override fun setLength(value: Long) = invalidOp("Unsupported")
-            suspend override fun getLength(): Long = totalBytes
+            override suspend fun close() = s.close()
+            override suspend fun setLength(value: Long) = invalidOp("Unsupported")
+            override suspend fun getLength(): Long = totalBytes
 
             suspend fun readChunk(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
                 //if (len <= 0) return 0
