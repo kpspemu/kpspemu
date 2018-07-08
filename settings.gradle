@@ -2,19 +2,25 @@ rootProject.name = 'kpspemu-root'
 
 enableFeaturePreview('GRADLE_METADATA') // IMPORTANT OR IT WON'T WORK!
 
-include(
-        'kpspemu-common',
-        'kpspemu-jvm',
-        'kpspemu-js',
-        'kpspemu-native',
-        //'kpspemu-js-dce',
-)
+def nativeEnabled(rootProject) {
+    return System.getenv("CI") != "true"
+}
+
+include 'kpspemu-common'
+include 'kpspemu-jvm'
+include 'kpspemu-js'
+if (nativeEnabled(rootProject)) {
+    include 'kpspemu-native'
+}
+//include 'kpspemu-js-dce'
 
 def register(String base) {
     findProject(":$base-common")?.projectDir = file("$base/common")
     findProject(":$base-jvm")?.projectDir = file("$base/jvm")
     findProject(":$base-js")?.projectDir = file("$base/js")
-    findProject(":$base-native")?.projectDir = file("$base/native")
+    if (nativeEnabled(rootProject)) {
+        findProject(":$base-native")?.projectDir = file("$base/native")
+    }
 
     //findProject(":$base-js-dce")?.projectDir = file("$base/js-dce")
 }
