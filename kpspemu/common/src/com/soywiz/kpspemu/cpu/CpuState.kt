@@ -9,6 +9,7 @@ import com.soywiz.korio.lang.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.std.*
 
 abstract class EmulatorControlFlowException : Exception()
 
@@ -62,6 +63,7 @@ class CpuState(
 ) : Extra by Extra.Mixin() {
     val mem: Memory = globalCpuState.mem
 
+    @ThreadLocal
     companion object {
         val gprInfos = listOf(
             RegInfo(0, "r0", "zero", "Permanently 0"),
