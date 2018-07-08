@@ -1106,7 +1106,8 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
 
     val vfpuContext = VfpuContext()
 
-    inline fun CpuState.setVD_(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVD_(
         destSize: Int = IR.one_two,
         prefixes: Boolean = false,
         callback: VfpuContext.(i: Int) -> Float
@@ -1117,7 +1118,8 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    inline fun CpuState.setVDI_(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVDI_(
         destSize: Int = IR.one_two,
         prefixes: Boolean = false,
         callback: VfpuContext.(i: Int) -> Int
@@ -1128,7 +1130,8 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    inline fun CpuState.setVD_VS(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVD_VS(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         prefixes: Boolean = false,
@@ -1141,7 +1144,8 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    inline fun CpuState.setVDI_VS(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVDI_VS(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         prefixes: Boolean = false,
@@ -1154,7 +1158,8 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    inline fun CpuState.setVD_VDVS(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVD_VDVS(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         prefixes: Boolean = false,
@@ -1168,22 +1173,26 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    inline fun CpuState.setVD_VSVT(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVD_VSVT(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         targetSize: Int = srcSize,
         prefixes: Boolean = false,
         callback: VfpuContext.(i: Int) -> Float
-    ) = vfpuContext.run {
-        vfpuContext.vdSize = destSize
-        readVs(size = srcSize, prefixes = prefixes)
-        readVt(size = targetSize, prefixes = prefixes)
-        for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
-        writeVd(size = destSize, prefixes = prefixes)
-        consumePrefixes(prefixes)
+    ) {
+        vfpuContext.run {
+            vfpuContext.vdSize = destSize
+            readVs(size = srcSize, prefixes = prefixes)
+            readVt(size = targetSize, prefixes = prefixes)
+            for (n in 0 until destSize) vd[n] = callback(vfpuContext, n)
+            writeVd(size = destSize, prefixes = prefixes)
+            consumePrefixes(prefixes)
+        }
     }
 
-    inline fun CpuState.setVDI_VSVT(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState.setVDI_VSVT(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         targetSize: Int = srcSize,
@@ -1198,7 +1207,8 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    inline fun CpuState._VSVT(
+    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
+    fun CpuState._VSVT(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         targetSize: Int = srcSize,

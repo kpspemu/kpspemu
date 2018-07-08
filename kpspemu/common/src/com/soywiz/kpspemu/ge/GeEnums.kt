@@ -224,6 +224,8 @@ object PspRGBA_5551 : ColorFormat16(), ColorFormatBase by ColorFormatBase.Mixin(
     //override fun getA(v: Int): Int = if (v.extractScaledFFDefault(15, 1, default = 0xFF) == 0) 0xFF else 0x00
 }
 
+// @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1779
+/*
 enum class PixelFormat(
     override val id: Int,
     val bytesPerPixel: Double,
@@ -251,6 +253,46 @@ enum class PixelFormat(
 
     val requireClut: Boolean = isPalette
     fun getSizeInBytes(count: Int): Int = (bytesPerPixel * count).toInt()
+
+    companion object : IdEnum.SmallCompanion<PixelFormat>(values())
+}
+*/
+
+enum class PixelFormat(
+    override val id: Int,
+    val bytesPerPixel: Double,
+    val isRgba: Boolean = false,
+    val isPalette: Boolean = false,
+    val colorBits: Int = 0,
+    val paletteBits: Int = 0,
+    val dxtVersion: Int = 0,
+    val isCompressed: Boolean = false
+) : IdEnum {
+    RGBA_5650(0, 2.0, true, false, 16, 0, 0, false),
+    RGBA_5551(1, 2.0, true, false, 16, 0, 0, false),
+    RGBA_4444(2, 2.0, true, false, 16, 0, 0, false),
+    RGBA_8888(3, 4.0, true, false, 32, 0, 0, false),
+    PALETTE_T4(4, 0.5, false,  true, 0, 4, 0, false),
+    PALETTE_T8(5, 1.0, false,  true, 0, 8, 0, false),
+    PALETTE_T16(6, 2.0, false, true, 0, 16, 0, false),
+    PALETTE_T32(7, 4.0, false, true, 0, 32, 0, false),
+    COMPRESSED_DXT1(8, 0.5, false,  false, 0, 0, 1, true),
+    COMPRESSED_DXT3(9, 1.0, false,  false, 0, 0, 3, true),
+    COMPRESSED_DXT5(10, 1.0, false, false, 0, 0, 5, true);
+
+    val bitsPerPixel get() = (bytesPerPixel * 8).toInt()
+
+    val requireClut: Boolean get() = isPalette
+    fun getSizeInBytes(count: Int): Int = (bytesPerPixel * count).toInt()
+
+    val colorFormat: ColorFormat?
+        get() = when (this) {
+            RGBA_5650 -> PspRGB_565
+            RGBA_5551 -> PspRGBA_5551
+            RGBA_4444 -> com.soywiz.korim.color.RGBA_4444
+            RGBA_8888 -> com.soywiz.korim.color.RGBA
+            else -> null
+        }
 
     companion object : IdEnum.SmallCompanion<PixelFormat>(values())
 }
