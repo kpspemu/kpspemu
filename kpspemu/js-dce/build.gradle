@@ -1,3 +1,4 @@
+/*
 apply plugin: 'kotlin2js'
 apply plugin: 'kotlin-dce-js'
 
@@ -22,7 +23,7 @@ compileKotlin2Js {
     kotlinOptions.outputFile = "${projectDir}/web/kpspemu-dce.js"
     kotlinOptions.sourceMap = false
 }
-
+*/
 
 clean {
     delete new File("${projectDir}/web")

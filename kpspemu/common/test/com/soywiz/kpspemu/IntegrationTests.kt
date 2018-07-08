@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu
 
-import MyAssert
 import com.soywiz.klogger.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.coroutine.*
@@ -109,7 +108,12 @@ class IntegrationTests : BaseTest() {
     @Test
     fun testThreadsVplVpl() = testFile("threads/vpl/vpl")
 
-    fun testFile(name: String, ignores: List<String> = listOf(), mode: Mode = Mode.Interpreted, processor: (String) -> String = { it }) = pspSuspendTest {
+    fun testFile(
+        name: String,
+        ignores: List<String> = listOf(),
+        mode: Mode = Mode.Interpreted,
+        processor: (String) -> String = { it }
+    ) = pspSuspendTest {
         testFile(
             elf = pspautotests["$name.prx"].readAsSyncStream(),
             expected = pspautotests["$name.expected"].readString(),
@@ -182,7 +186,7 @@ class IntegrationTests : BaseTest() {
             }
             return out
         }
-        MyAssert.assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
+        assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
         //assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
         generatedError?.let { throw it }
     }

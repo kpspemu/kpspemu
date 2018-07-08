@@ -5,7 +5,6 @@ import com.soywiz.dynarek.js.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.mem.*
-import mytest.*
 import kotlin.test.*
 
 class DynarekMethodBuilderTest : BaseTest() {

@@ -70,7 +70,7 @@ class CpuInterpreter(
         //doTrace(sPC, cpu)
     }
 
-    fun stepsFastMem(mem: FastMemory, memOffset: Int, count: Int, trace: Boolean): Int {
+    fun stepsFastMem(mem: KmlNativeBuffer, memOffset: Int, count: Int, trace: Boolean): Int {
         val i32 = mem.i32
         val cpu = this.cpu
         var n = 0

@@ -282,7 +282,7 @@ class KpspemuMainScene(
 
     private suspend fun loadMainFont() {
         try {
-            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views.ag)
+            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views)
             //hudFont = getDebugBmpFontOnce()
         } catch (e: Throwable) {
             //e.printStackTrace()

@@ -3,7 +3,6 @@ package com.soywiz.kpspemu.util
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
-import mytest.*
 import kotlin.test.*
 
 class StructTest : BaseTest() {

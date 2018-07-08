@@ -2,17 +2,6 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
     ext.korlibsVersion = "0.32.0"
-    ext.dynarekVersion = ext.korlibsVersion
-    ext.kloggerVersion = ext.korlibsVersion
-    ext.klockVersion = ext.korlibsVersion
-    ext.kryptoVersion = ext.korlibsVersion
-    ext.korauAtrac3plusVersion = ext.korlibsVersion
-    ext.koragVersion = ext.korlibsVersion
-    ext.korauVersion = ext.korlibsVersion
-    ext.korioVersion = ext.korlibsVersion
-    ext.korgeVersion = ext.korlibsVersion
-    ext.korimVersion = ext.korlibsVersion
-    ext.koruiVersion = ext.korlibsVersion
 
     repositories {
         mavenLocal()
@@ -27,126 +16,140 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlinNativeVersion"
     }
+
+    ext.nativeTargets = ['macbook', 'linux']
+    ext.libDependencies = [
+            "kpspemu": [
+                    "com.soywiz:dynarek{SUFFIX}:$korlibsVersion",
+                    "com.soywiz:korge{SUFFIX}:$korlibsVersion",
+                    "com.soywiz:korau-atrac3plus{SUFFIX}:$korlibsVersion",
+                    "com.soywiz:krypto{SUFFIX}:$korlibsVersion",
+            ],
+    ]
+    ext.libExecutables = [
+            "kpspemu": true
+    ]
 }
 
-if (project == rootProject) {
-    new File(rootProject.rootDir, "kpspemu/common/src/com/soywiz/kpspemu/KpspemuVersion.kt").write(
-            "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
-    )
-}
+new File(rootProject.rootDir, "kpspemu/common/src/com/soywiz/kpspemu/KpspemuVersion.kt").write(
+        "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
+)
+
 
 allprojects {
+    def isJs = project.name.endsWith("-js")
+    def isJvm = project.name.endsWith("-jvm")
+    def isNative = project.name.endsWith("-native")
+    def isCommon = project.name.endsWith("-common")
+    def isKotlin = isJs || isJvm || isNative || isCommon
+
+    String suffix = ""
+    String jsuffix = ""
+    String projectNameWithoutSuffix = project.name[0..<project.name.lastIndexOf('-')]
+
+    if (isJs) jsuffix = suffix = "-js"
+    if (isJvm) {
+        suffix = "-jvm"; jsuffix = ""
+    }
+    if (isNative) jsuffix = suffix = "-native"
+    if (isCommon) jsuffix = suffix = "-common"
+
+    ext.suffix = suffix
+    ext.jsuffix = jsuffix
+
+    if (suffix != "") {
+        apply plugin: "kotlin-platform$suffix"
+    }
+    if (!isNative) {
+        apply plugin: "java"
+    }
+
     repositories {
         mavenLocal()
         jcenter()
-        maven { url "https://dl.bintray.com/soywiz/soywiz" }
+        maven { url "https://plugins.gradle.org/m2/" }
         maven { url "https://dl.bintray.com/jetbrains/kotlin-native-dependencies" }
         maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
-        maven { url "https://plugins.gradle.org/m2/" }
+        mavenCentral()
     }
 
-    group 'com.soywiz'
-    version '0.6.1-SNAPSHOT'
+    dependencies {
+        if (isKotlin && !isNative) {
+            compile "org.jetbrains.kotlin:kotlin-stdlib${jsuffix}:$kotlinVersion"
 
-    if (!project.name.endsWith("-native")) {
-        apply plugin: 'java'
-    }
-    apply plugin: 'maven'
-    apply plugin: 'signing'
-    apply plugin: 'maven-publish'
-
-    it.afterEvaluate {
-        if (it.plugins.hasPlugin("kotlin-platform-common")) {
-            dependencies {
-                compile "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion"
-                testCompile "org.jetbrains.kotlin:kotlin-test-common:$kotlinVersion"
+            testCompile "org.jetbrains.kotlin:kotlin-test${jsuffix}:$kotlinVersion"
+            if (isCommon) {
                 testCompile "org.jetbrains.kotlin:kotlin-test-annotations-common:$kotlinVersion"
             }
-
-            kotlin {
-                experimental { coroutines 'enable' }
-            }
         }
-        if (it.plugins.hasPlugin("kotlin-platform-jvm") || it.plugins.hasPlugin("kotlin")) {
-            dependencies {
-                compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-                testCompile "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-                testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
-                testCompile "junit:junit:4.12"
-            }
-
-            kotlin {
-                experimental { coroutines 'enable' }
-            }
-
-            compileJava.options.encoding = 'UTF-8'
-            compileTestJava.options.encoding = 'UTF-8'
-
-            sourceCompatibility = 1.8
-            targetCompatibility = 1.8
+        if (isJvm) {
+            testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+            testCompile "junit:junit:4.12"
         }
 
-        // https://discuss.kotlinlang.org/t/unit-testing-in-kotlin-js/3943
-        // https://github.com/JetBrains/kotlin-examples/blob/5e883a6d67afc8b8aeb8991af6a7b6183be2213f/gradle/js-tests/mocha/build.gradle
-        if (it.plugins.hasPlugin("kotlin-platform-js") || it.plugins.hasPlugin("kotlin2js")) {
-            dependencies {
-                compile "org.jetbrains.kotlin:kotlin-stdlib-js:$kotlinVersion"
-                testCompile "org.jetbrains.kotlin:kotlin-test-js:$kotlinVersion"
+        if (isKotlin) {
+            //println("----")
+            if (!isCommon) {
+                def expect = ":${projectNameWithoutSuffix}-common"
+                expectedBy project(expect)
+                if (!isNative) {
+                    testImplementation project(expect)
+                }
+                //println("EXP: ${project.name}: ${expect}")
             }
 
-            kotlin {
-                experimental { coroutines 'enable' }
+            for (String dep in libDependencies[projectNameWithoutSuffix]) {
+                String rdep = dep.replace("{SUFFIX}", suffix).replace("{JSUFFIX}", jsuffix)
+                def rdepm
+                if (dep.contains(":")) {
+                    rdepm = rdep
+                } else {
+                    rdepm = findProject(":${rdep}${suffix}")
+                }
+                if (rdepm != null) {
+                    //println("DEP: ${project.name}: ${rdepm}")
+                    if (isNative) {
+                        implementation rdepm
+                    } else {
+                        compile rdepm
+                    }
+                }
             }
+        }
 
-            [compileKotlin2Js, compileTestKotlin2Js]*.configure {
-                kotlinOptions.moduleKind = "umd"
-                kotlinOptions.sourceMap = true
-            }
-
-            task populateNodeModules(type: Copy, dependsOn: compileKotlin2Js) {
-                from compileKotlin2Js.destinationDir
-
-                configurations.compile.each {
-                    from zipTree(it.absolutePath).matching { include '*.js' }
+        sourceSets {
+            if (isKotlin) {
+                main.kotlin.srcDirs += "src"
+                test.kotlin.srcDirs += "test"
+                if (!isNative) {
+                    main.resources.srcDirs += "resources"
+                    test.resources.srcDirs += "testresources"
+                }
+                if (!isCommon && !isNative) {
+                    // @TODO: @BUG: Hack. No common resources are copied
+                    main.resources.srcDirs += ['../common/resources']
+                    test.resources.srcDirs += ['../common/testresources']
                 }
 
-                configurations.testCompile.each {
-                    from zipTree(it.absolutePath).matching { include '*.js' }
-                }
-
-                into "${buildDir}/node_modules"
-            }
-
-            task runMocha(type: Task, dependsOn: [compileTestKotlin2Js, populateNodeModules]) {
-                doLast {
-                    File fileOut = new File(compileTestKotlin2Js.outputFile)
-
-                    if (fileOut.exists()) {
-                        String[] cmd
-                        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                            cmd = ["cmd", "/c", "mocha.cmd" as String, fileOut]
-                        } else {
-                            cmd = ["/bin/bash", '-c', "mocha '${fileOut}'"]
-                        }
-                        def directory = new File("$buildDir/node_modules")
-
-                        ProcessBuilder pb = new ProcessBuilder(cmd as String[])
-                        pb.environment().putAll(System.getenv())
-                        pb.directory(directory)
-                        def p = pb.start()
-                        p.in.eachLine { println(it) }
-                        p.err.eachLine { System.err.println(it) }
-                        if (p.waitFor() != 0) {
-                            throw new GradleException('error occurred running "' + cmd.join(" ") + '" at "' + directory + '"')
+                if (isNative) {
+                    main {
+                        component {
+                            target nativeTargets
+                            if (libExecutables[projectNameWithoutSuffix]) {
+                                outputKinds = [EXECUTABLE]
+                            } else {
+                                outputKinds = [KLIBRARY]
+                            }
                         }
                     }
                 }
             }
+        }
 
-            // test.dependsOn runMocha // @TODO: Hangs!
+        if (isKotlin && !isNative) {
+            kotlin.experimental.coroutines 'enable'
         }
     }
-
 }
 
 apply plugin: 'idea'

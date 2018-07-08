@@ -8,9 +8,9 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.assembler.*
 import com.soywiz.kpspemu.cpu.dis.*
 import com.soywiz.kpspemu.mem.*
-import mytest.*
-import org.junit.*
+import org.junit.Test
 import java.io.*
+import kotlin.test.*
 
 
 class DynarekMethodBuilderTestJvm {

@@ -106,7 +106,7 @@ abstract class Memory protected constructor(dummy: Boolean) {
         this.sw(aadress, vwrite)
     }
 
-    open fun getFastMem(): com.soywiz.kmem.FastMemory? = null
+    open fun getFastMem(): KmlNativeBuffer? = null
     open fun getFastMemOffset(addr: Int): Int = 0
 
     abstract fun sb(address: Int, value: Int): Unit
@@ -166,10 +166,10 @@ abstract class Memory protected constructor(dummy: Boolean) {
 
     open fun copy(srcPos: Int, dstPos: Int, size: Int) = run { for (n in 0 until size) sb(dstPos + n, lb(srcPos + n)) }
     fun getPointerStream(address: Int, size: Int): SyncStream = openSync().sliceWithSize(address, size)
-    fun getPointerStream(address: Int): SyncStream = openSync().sliceWithStart(address.toLong())
+    fun getPointerStream(address: Int): SyncStream = openSync().sliceStart(address.toLong())
     fun readStringzOrNull(offset: Int): String? = if (offset != 0) readStringz(offset) else null
 
-    fun readStringz(offset: Int): String = openSync().sliceWithStart(offset.toLong()).readStringz()
+    fun readStringz(offset: Int): String = openSync().sliceStart(offset.toLong()).readStringz()
     open fun fill(value: Int, address: Int, size: Int) = run { for (n in 0 until size) sb(address + n, value) }
 
     fun reset() {
@@ -275,7 +275,7 @@ open class ListenerMemory(
     override fun lw(address: Int): Int = check(address) { parent.lw(normalized(address)) }
 }
 
-abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(true) {
+abstract class FastMemoryBacked(val fmem: KmlNativeBuffer) : Memory(true) {
     protected abstract fun index(address: Int): Int
 
     val i8 = fmem.i8
@@ -327,16 +327,16 @@ abstract class FastMemoryBacked(val fmem: com.soywiz.kmem.FastMemory) : Memory(t
         for (n in start until start + size) m[n] = vb
     }
 
-    override fun getFastMem(): com.soywiz.kmem.FastMemory? = fmem
+    override fun getFastMem(): KmlNativeBuffer? = fmem
     override fun getFastMemOffset(addr: Int): Int = index(addr)
 }
 
-class NormalMemory : FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(0x0a000000)) {
+class NormalMemory : FastMemoryBacked(KmlNativeBuffer.alloc(0x0a000000)) {
     override fun index(address: Int) = address and 0x0FFFFFFF
 }
 
 class SmallMemory :
-    FastMemoryBacked(com.soywiz.kmem.FastMemory.alloc(Memory.MAINMEM.size + Memory.VIDEOMEM.size + Memory.SCRATCHPAD.size)) {
+    FastMemoryBacked(KmlNativeBuffer.alloc(Memory.MAINMEM.size + Memory.VIDEOMEM.size + Memory.SCRATCHPAD.size)) {
     override fun index(address: Int): Int {
         val addr = address and 0x0FFFFFFF
         return when {

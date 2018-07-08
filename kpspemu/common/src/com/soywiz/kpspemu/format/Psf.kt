@@ -83,11 +83,11 @@ class Psf {
         val entries = (0 until header.numberOfPairs).map { EntryStruct.read(stream) }
         val entriesByName = LinkedHashMap<String, Any?>()
 
-        val keysStream = stream.sliceWithStart(header.keyTable.toLong())
-        val valuesStream = stream.sliceWithStart(header.valueTable.toLong())
+        val keysStream = stream.sliceStart(header.keyTable.toLong())
+        val valuesStream = stream.sliceStart(header.valueTable.toLong())
 
         for (entry in entries) {
-            val key = keysStream.sliceWithStart(entry.keyOffset.toLong()).readStringz(UTF8)
+            val key = keysStream.sliceStart(entry.keyOffset.toLong()).readStringz(UTF8)
             val valueStream = valuesStream.sliceWithSize(entry.valueOffset.toLong(), entry.valueSize.toLong())
             entry.key = key
 

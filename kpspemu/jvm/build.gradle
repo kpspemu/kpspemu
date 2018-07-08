@@ -1,6 +1,5 @@
+/*
 apply plugin: 'kotlin-platform-jvm'
-apply plugin: 'application'
-
 sourceSets {
     main.kotlin.srcDirs += "src"
     main.resources.srcDirs += "resources"
@@ -16,18 +15,14 @@ sourceSets {
 dependencies {
     expectedBy project(":kpspemu-common")
 
-    compile "com.soywiz:dynarek-jvm:$dynarekVersion"
-    compile "com.soywiz:klogger-jvm:$kloggerVersion"
-    if (klockVersion != '') compile "com.soywiz:klock-jvm:$klockVersion"
-    compile "com.soywiz:korag-jvm:$koragVersion"
-    compile "com.soywiz:korim-jvm:$korimVersion"
-    compile "com.soywiz:korau-jvm:$korauVersion"
-    compile "com.soywiz:korau-atrac3plus-jvm:$korauAtrac3plusVersion"
-    compile "com.soywiz:korio-jvm:$korioVersion"
-    compile "com.soywiz:korge-jvm:$korgeVersion"
-    compile "com.soywiz:korui-jvm:$koruiVersion"
-    compile "com.soywiz:krypto-jvm:$kryptoVersion"
+    compile "com.soywiz:dynarek-jvm:$korlibsVersion"
+    compile "com.soywiz:korau-atrac3plus-jvm:$korlibsVersion"
+    compile "com.soywiz:korge-jvm:$korlibsVersion"
+    compile "com.soywiz:krypto-jvm:$korlibsVersion"
 }
+*/
+
+apply plugin: 'application'
 
 mainClassName = 'com.soywiz.kpspemu.MainKt'
 

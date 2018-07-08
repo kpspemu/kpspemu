@@ -46,14 +46,14 @@ object Kirk {
     }
 
     fun kirk_CMD7(output: SyncStream, input: SyncStream) {
-        output.clone().writeBytes(CMD7(input.slice()))
+        output.clone().writeBytes(CMD7(input.sliceStart()))
     }
 
     fun kirk_CMD1(output: SyncStream, input: SyncStream) {
         //console.log(input.sliceWithLength(0, 128).readAllBytes());
-        val header = input.slice().read(AES128CMACHeader)
+        val header = input.sliceStart().read(AES128CMACHeader)
         if (header.Mode != KirkMode.Cmd1) throw invalidOp("Kirk mode != Cmd1")
-        val Keys = AES.decryptAes128Cbc(input.slice().readBytes(32), KirkKeys.kirk1_key)
+        val Keys = AES.decryptAes128Cbc(input.sliceStart().readBytes(32), KirkKeys.kirk1_key)
         val KeyAes = Keys.copyOfRange(0, 16)
         var KeyCmac = Keys.copyOfRange(16, 32)
         val PaddedDataSize = header.DataSize.nextAlignedTo(16)
@@ -71,9 +71,9 @@ object Kirk {
 
     fun kirk_CMD11(output: SyncStream, input: SyncStream): Unit {
         if (input.length == 0L) invalidOp
-        val headerDataSize = input.slice().readS32_le()
+        val headerDataSize = input.sliceStart().readS32_le()
         if (headerDataSize == 0) invalidOp
-        val data = input.sliceWithStart(4L).readBytes(headerDataSize)
+        val data = input.sliceStart(4L).readBytes(headerDataSize)
         val hash = SHA1.hash(data)
         output.writeBytes(hash)
     }

@@ -1,23 +1,22 @@
 rootProject.name = 'kpspemu-root'
 
+enableFeaturePreview('GRADLE_METADATA') // IMPORTANT OR IT WON'T WORK!
+
 include(
         'kpspemu-common',
-        'kpspemu',
+        'kpspemu-jvm',
         'kpspemu-js',
-        //'kpspemu-native',
-        'kpspemu-jvm-main',
+        'kpspemu-native',
         //'kpspemu-js-dce',
 )
 
 def register(String base) {
     findProject(":$base-common")?.projectDir = file("$base/common")
-    findProject(":$base")?.projectDir = file("$base/jvm")
+    findProject(":$base-jvm")?.projectDir = file("$base/jvm")
     findProject(":$base-js")?.projectDir = file("$base/js")
-
-    //findProject(":$base-native")?.projectDir = file("$base/native")
+    findProject(":$base-native")?.projectDir = file("$base/native")
 
     //findProject(":$base-js-dce")?.projectDir = file("$base/js-dce")
-    findProject(":$base-jvm-main")?.projectDir = file("$base/jvm-main")
 }
 
 register('kpspemu')

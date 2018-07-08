@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.format
 
 import com.soywiz.kpspemu.*
-import mytest.*
 import kotlin.test.*
 
 class PsfTest : BaseTest() {
