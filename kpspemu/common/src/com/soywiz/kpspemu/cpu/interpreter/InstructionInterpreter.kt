@@ -64,9 +64,9 @@ class CpuInterpreter(
     private fun checkTrace(sPC: Int, cpu: CpuState) {
         if (trace) doTrace(sPC, cpu)
         if (breakpoints.enabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
-        if (sPC in 0x08900DFC..0x08900E38) {
-            doTrace(sPC, cpu)
-        }
+        //if (sPC in 0x08900DFC..0x08900E38) {
+        //    doTrace(sPC, cpu)
+        //}
         //doTrace(sPC, cpu)
     }
 

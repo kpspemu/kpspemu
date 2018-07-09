@@ -477,26 +477,26 @@ fun AsyncStream.check(name: String): AsyncStream {
     val base = this
 
     return object : AsyncStreamBase() {
-        suspend override fun close() {
+        override suspend fun close() {
             base.close()
         }
 
-        suspend override fun getLength(): Long {
+        override suspend fun getLength(): Long {
             return base.getLength()
         }
 
-        suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
+        override suspend fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
             if (position >= getLength()) return 0
             base.position = position
             println("AsyncStream.check.read('$name':$position/${getLength()}): buffer(${buffer.size}), $offset, $len")
             return base.read(buffer, offset, len)
         }
 
-        suspend override fun setLength(value: Long) {
+        override suspend fun setLength(value: Long) {
             base.setLength(value)
         }
 
-        suspend override fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {
+        override suspend fun write(position: Long, buffer: ByteArray, offset: Int, len: Int) {
             base.position = position
             base.write(buffer, offset, len)
         }

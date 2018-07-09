@@ -10,8 +10,8 @@ import kotlin.math.*
 
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
     object AudioFormat {
-        val STEREO = 0x00
-        val MONO = 0x10
+        const val STEREO = 0x00
+        const val MONO = 0x10
     }
 
     class AudioChannel(val id: Int) {

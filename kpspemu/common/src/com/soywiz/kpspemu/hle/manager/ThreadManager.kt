@@ -473,21 +473,21 @@ data class PspEventFlag(override val id: Int) : ResourceItem {
 }
 
 object EventFlagWaitTypeSet {
-    val And = 0x00
-    val Or = 0x01
-    val ClearAll = 0x10
-    val Clear = 0x20
-    val MaskValidBits = Or or Clear or ClearAll
+    const val And = 0x00
+    const val Or = 0x01
+    const val ClearAll = 0x10
+    const val Clear = 0x20
+    const val MaskValidBits = Or or Clear or ClearAll
 }
 
 object ThreadStatus {
-    val RUNNING = 1
-    val READY = 2
-    val WAIT = 4
-    val SUSPEND = 8
-    val DORMANT = 16
-    val DEAD = 32
-    val WAITSUSPEND = WAIT or SUSPEND
+    const val RUNNING = 1
+    const val READY = 2
+    const val WAIT = 4
+    const val SUSPEND = 8
+    const val DORMANT = 16
+    const val DEAD = 32
+    const val WAITSUSPEND = WAIT or SUSPEND
 }
 
 class SceKernelThreadInfo(
@@ -536,23 +536,21 @@ class SceKernelThreadInfo(
 }
 
 object PspThreadAttributes {
-    val None = 0
-    val LowFF = 0x000000FF.toInt()
-    val Vfpu = 0x00004000.toInt() // Enable VFPU access for the thread.
-    val V0x2000 = 0x2000.toInt()
-    val V0x4000 = 0x4000.toInt()
-    val V0x400000 = 0x400000.toInt()
-    val V0x800000 = 0x800000.toInt()
-    val V0xf00000 = 0xf00000.toInt()
-    val V0x8000000 = 0x8000000.toInt()
-    val V0xf000000 = 0xf000000.toInt()
-    val User =
-        0x80000000.toInt() // Start the thread in user mode (done automatically if the thread creating it is in user mode).
-    val UsbWlan = 0xa0000000.toInt() // Thread is part of the USB/WLAN API.
-    val Vsh = 0xc0000000.toInt() // Thread is part of the VSH API.
+    const val None = 0
+    const val LowFF = 0x000000FF.toInt()
+    const val Vfpu = 0x00004000.toInt() // Enable VFPU access for the thread.
+    const val V0x2000 = 0x2000.toInt()
+    const val V0x4000 = 0x4000.toInt()
+    const val V0x400000 = 0x400000.toInt()
+    const val V0x800000 = 0x800000.toInt()
+    const val V0xf00000 = 0xf00000.toInt()
+    const val V0x8000000 = 0x8000000.toInt()
+    const val V0xf000000 = 0xf000000.toInt()
+    const val User = 0x80000000.toInt() // Start the thread in user mode (done automatically if the thread creating it is in user mode).
+    const val UsbWlan = 0xa0000000.toInt() // Thread is part of the USB/WLAN API.
+    const val Vsh = 0xc0000000.toInt() // Thread is part of the VSH API.
     //val ScratchRamEnable = 0x00008000, // Allow using scratchpad memory for a thread, NOT USABLE ON V1.0
-    val NoFillStack = 0x00100000.toInt() // Disables filling the stack with 0xFF on creation
-    val ClearStack = 0x00200000.toInt() // Clear the stack when the thread is deleted
-    val ValidMask =
-        (LowFF or Vfpu or User or UsbWlan or Vsh or /*ScratchRamEnable |*/ NoFillStack or ClearStack or V0x2000 or V0x4000 or V0x400000 or V0x800000 or V0xf00000 or V0x8000000 or V0xf000000).toInt()
+    const val NoFillStack = 0x00100000.toInt() // Disables filling the stack with 0xFF on creation
+    const val ClearStack = 0x00200000.toInt() // Clear the stack when the thread is deleted
+    const val ValidMask = (LowFF or Vfpu or User or UsbWlan or Vsh or /*ScratchRamEnable |*/ NoFillStack or ClearStack or V0x2000 or V0x4000 or V0x400000 or V0x800000 or V0xf00000 or V0x8000000 or V0xf000000).toInt()
 }

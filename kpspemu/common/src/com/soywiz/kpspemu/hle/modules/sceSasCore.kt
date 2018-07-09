@@ -478,10 +478,10 @@ class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010
     }
 
     object AdsrFlags {
-        val HasAttack = (1 shl 0)
-        val HasDecay = (1 shl 1)
-        val HasSustain = (1 shl 2)
-        val HasRelease = (1 shl 3)
+        const val HasAttack = (1 shl 0)
+        const val HasDecay = (1 shl 1)
+        const val HasSustain = (1 shl 2)
+        const val HasRelease = (1 shl 3)
     }
 
     fun getSimpleRate(n: Int): Int {

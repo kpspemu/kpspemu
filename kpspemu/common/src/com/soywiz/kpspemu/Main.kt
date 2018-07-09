@@ -216,7 +216,7 @@ class KpspemuMainScene(
         resetEmulator()
         emulator.registerNativeModules()
         emulator.loadExecutableAndStart(exeFile, object : LoadProcess() {
-            suspend override fun readIcon0(icon0: ByteArray) {
+            override suspend fun readIcon0(icon0: ByteArray) {
                 //icon0.writeToFile("c:/temp/icon0.png")
                 try {
                     setIcon0Bitmap(PNG.read(icon0, "file.png").toBMP32())
@@ -226,7 +226,7 @@ class KpspemuMainScene(
                 }
             }
 
-            suspend override fun readParamSfo(psf: Psf) {
+            override suspend fun readParamSfo(psf: Psf) {
                 logger.warn { "PARAM.SFO:" }
                 for ((key, value) in psf.entriesByName) {
                     logger.warn { "PSF: $key = $value" }

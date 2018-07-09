@@ -10,6 +10,7 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.std.*
 
 
 fun bool1(p: Int): Boolean = p != 0
@@ -525,6 +526,7 @@ class GpuFrameBufferState(val data: IntArray) {
  * - weights, texture, color, normal, position
  */
 class VertexType(v: Int = 0) {
+    @ThreadLocal
     companion object {
         val DUMMY = VertexType()
     }

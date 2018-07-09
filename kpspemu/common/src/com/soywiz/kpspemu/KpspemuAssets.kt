@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu
 
 object KpspemuAssets {
-    val LOGO =
+    const val LOGO =
         """<svg id="7fe010bd-4468-4253-af77-c0b7be09145b" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="462" height="462" viewBox="0 0 462 462">
   <defs>
     <linearGradient id="943f5ba0-08c6-4338-98b9-f347b4e8a88b" data-name="Degradado sin nombre 6" x1="16.79" y1="91.98" x2="231.92" y2="91.98" gradientTransform="translate(-10.42 21.95)" gradientUnits="userSpaceOnUse">

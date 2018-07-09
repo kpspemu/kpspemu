@@ -18,8 +18,7 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
         const val PSP_VPL_ATTR_SMALLEST = 0x0200
         const val PSP_VPL_ATTR_MASK_ORDER = 0x0300
         const val PSP_VPL_ATTR_HIGHMEM = 0x4000
-        const val PSP_VPL_ATTR_KNOWN =
-            PSP_VPL_ATTR_FIFO or PSP_VPL_ATTR_PRIORITY or PSP_VPL_ATTR_SMALLEST or PSP_VPL_ATTR_HIGHMEM
+        const val PSP_VPL_ATTR_KNOWN = PSP_VPL_ATTR_FIFO or PSP_VPL_ATTR_PRIORITY or PSP_VPL_ATTR_SMALLEST or PSP_VPL_ATTR_HIGHMEM
     }
 
     class PspVpl(override val id: Int) : ResourceItem {

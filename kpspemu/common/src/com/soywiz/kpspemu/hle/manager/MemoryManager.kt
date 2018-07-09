@@ -7,6 +7,7 @@ import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
+import com.soywiz.std.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 import kotlin.collections.MutableMap
@@ -81,6 +82,7 @@ data class MemoryPartition(
     val low_i: Int get() = low.toInt()
     val high_i: Int get() = high.toInt()
 
+    @ThreadLocal
     companion object {
         val ZERO = 0L
         val DUMMY = MemoryPartition("dummy", 0.0, 0.0, false, null)

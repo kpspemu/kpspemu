@@ -24,13 +24,13 @@ class pspDveManager(emulator: Emulator) :
     }
 
     object Cable {
-        val D_TERMINAL_CABLE = 0
-        val S_VIDEO_CABLE = 2
+        const val D_TERMINAL_CABLE = 0
+        const val S_VIDEO_CABLE = 2
     }
 
     object Mode {
-        val PROGRESIVE = 0x1D2
-        val INTERLACE = 0x1D1
+        const val PROGRESIVE = 0x1D2
+        const val INTERLACE = 0x1D1
     }
 
     //pspDveMgrSetVideoOut(2, 0x1D2, 720, 503, 1, 15, 0); // S-Video Cable / AV (Composite OUT) / Progressive (480p)
