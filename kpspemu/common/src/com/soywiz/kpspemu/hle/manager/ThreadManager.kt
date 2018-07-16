@@ -151,7 +151,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             }
             if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
             if (now - start >= 16.0) {
-                coroutineContext.sleep(0)
+                coroutineContext.delay(0)
                 break // Rest a bit
             }
         } while (currentThread != null)
@@ -410,7 +410,7 @@ class PspThread internal constructor(
         //if (totalMilliseconds < 1) {
         //	pendingAccumulatedMicrosecondsToWait += totalMilliseconds * 1000
         //} else {
-        coroutineContext.sleep(totalMilliseconds)
+        coroutineContext.delay(totalMilliseconds)
         //}
     }
 

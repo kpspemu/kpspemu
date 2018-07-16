@@ -12,9 +12,9 @@ PSP Emulator done in Kotlin Common Platform with Korge targeting JVM and JS for 
 ### Running from source-code:
 
 JVM: `./gradlew runApp`
-JS: `./gradlew compileKotlin2Js && http-server kspspemu/js/web`
+JS: `./gradlew compileKotlin2Js && http-server kpspemu/js/web`
 
-Or open `build.gradle` with intelliJ and open `kspspemu/common/src/com/soywiz/kpspemu/Main.kt` and fun `main` method
+Or open `build.gradle` with intelliJ and open `kpspemu/common/src/com/soywiz/kpspemu/Main.kt` and execute the fun `main` method
 
 ### Running tests:
 

@@ -22,7 +22,6 @@ import com.soywiz.korim.vector.*
 import com.soywiz.korinject.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.file.*
@@ -46,6 +45,8 @@ import com.soywiz.kpspemu.native.*
 import com.soywiz.kpspemu.ui.*
 import com.soywiz.kpspemu.util.*
 import com.soywiz.kpspemu.util.io.*
+import kotlinx.coroutines.experimental.*
+import kotlin.coroutines.experimental.*
 import kotlin.math.*
 import kotlin.reflect.*
 
@@ -54,8 +55,8 @@ fun main(args: Array<String>) = Main.main(args)
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        Korge(KpspemuModule, injector = AsyncInjector()
-            .mapSingleton(Emulator::class) { Emulator(getCoroutineContext()) }
+        val injector = AsyncInjector()
+            .mapSingleton(Emulator::class) { Emulator(coroutineContext) }
             .mapSingleton(PromptConfigurator::class) {
                 PromptConfigurator(
                     get(Browser::class),
@@ -73,13 +74,15 @@ object Main {
             .mapPrototype(TouchButtonsScene::class) { TouchButtonsScene(get(Emulator::class)) }
             .mapSingleton(Browser::class) { Browser(get(AsyncInjector::class)) }
 
-            // @TODO: Kotlin.JS unresolved bug!
-            //.mapSingleton { Emulator(getCoroutineContext()) }
-            //.mapSingleton { PromptConfigurator(get(), get()) }
-            //.mapPrototype { KpspemuMainScene(get(), get(), get()) }
-            //.mapPrototype { DebugScene(get(), get()) }
-            //.mapSingleton { Browser(get()) }
-        )
+        // @TODO: Kotlin.JS unresolved bug!
+        //.mapSingleton { Emulator(getCoroutineContext()) }
+        //.mapSingleton { PromptConfigurator(get(), get()) }
+        //.mapPrototype { KpspemuMainScene(get(), get(), get()) }
+        //.mapPrototype { DebugScene(get(), get()) }
+        //.mapSingleton { Browser(get()) }
+
+
+        Korge(Korge.Config(KpspemuModule, injector = injector))
     }
 }
 
@@ -96,10 +99,10 @@ object KpspemuModule : Module() {
 }
 
 abstract class SceneWithProcess() : Scene() {
-    private val processes = arrayListOf<Promise<Unit>>()
+    private val processes = arrayListOf<Deferred<Unit>>()
 
     fun registerSceneProcess(callback: suspend () -> Unit) {
-        processes += go { callback() }
+        processes += asyncImmediately(coroutineContext) { callback() }
     }
 
     override suspend fun sceneDestroy() {
@@ -291,14 +294,14 @@ class KpspemuMainScene(
     }
 
     private fun requestUserLoadFile() {
-        async {
+        launchImmediately(coroutineContext) {
             val file = browser.openFile()
-            async { hudClose() }
+            launchImmediately { hudClose() }
             createEmulatorWithExe(file)
         }
     }
 
-    suspend override fun sceneInit(sceneView: Container) {
+    override suspend fun sceneInit(sceneView: Container) {
         registerSceneProcess { cpuProcess() }
         registerSceneProcess { displayProcess() }
         //val func = function(DClass(CpuState::class), DVOID) {
@@ -347,7 +350,7 @@ class KpspemuMainScene(
             if (pressed) {
                 when (keyCode) {
                     PspEmuKeys.F7 -> {
-                        go(coroutineContext) {
+                        launchImmediately(coroutineContext) {
                             promptConfigurator.prompt()
                         }
                     }
@@ -355,7 +358,7 @@ class KpspemuMainScene(
                         emulator.globalTrace = !emulator.globalTrace
                     }
                     PspEmuKeys.F10 -> {
-                        go(coroutineContext) { hudToggle() }
+                        launchImmediately(coroutineContext) { hudToggle() }
                     }
                     PspEmuKeys.F11 -> {
                         // Dump threads
@@ -415,9 +418,9 @@ class KpspemuMainScene(
                 AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
                 AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.AUTO
                 else -> AGRenderer.RenderMode.AUTO
-            //AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
-            //AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
-            //AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
+                //AGRenderer.RenderMode.AUTO -> AGRenderer.RenderMode.NORMAL
+                //AGRenderer.RenderMode.NORMAL -> AGRenderer.RenderMode.DIRECT
+                //AGRenderer.RenderMode.DIRECT -> AGRenderer.RenderMode.AUTO
             }
 
             it.view.setText(
@@ -553,7 +556,7 @@ class KpspemuMainScene(
             drop = { files ->
                 dropContainer.visible = false
                 println("DROPFILES: $files")
-                spawn(coroutineContext) {
+                launchImmediately(coroutineContext) {
                     sleep(0.1.seconds)
                     createEmulatorWithExe(files.first())
                 }
@@ -737,7 +740,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
         logger.warn { " - Reading file (ISO/ZIP)" }
 
         container = when (format) {
-            PspFileFormat.ISO -> stream.openAsIso2()
+            PspFileFormat.ISO -> stream.openAsPspIso()
             PspFileFormat.ZIP -> stream.openAsZip()
             else -> TODO("Impossible!") // @TODO: Kotlin could detect this!
         }

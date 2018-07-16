@@ -13,6 +13,7 @@ import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import kotlinx.coroutines.experimental.*
 import kotlin.math.*
 
 @Suppress("UNUSED_PARAMETER")
@@ -276,7 +277,7 @@ class IoFileMgrForUser(emulator: Emulator) :
 
     class AsyncHandle(
         override val id: Int,
-        var promise: Promise<Unit>? = null,
+        var promise: Deferred<Unit>? = null,
         var result: Long = 0L,
         var done: Boolean = false
     ) : PoolItem {
@@ -287,7 +288,7 @@ class IoFileMgrForUser(emulator: Emulator) :
         }
     }
 
-    suspend fun async(
+    suspend fun asyncv(
         fileId: Int,
         name: String,
         doLater: (suspend () -> Unit)? = null,
@@ -298,7 +299,7 @@ class IoFileMgrForUser(emulator: Emulator) :
         logger.error { "  STARTED async $name ---> fid=${res.id}" }
         res.asyncDone = false
         res.doLater = doLater
-        res.asyncPromise = spawn {
+        res.asyncPromise = asyncImmediately(coroutineContext) {
             res.asyncResult = callback()
             logger.error { "  async $name completed with result ${res.asyncResult}" }
             res.asyncDone = true
@@ -311,7 +312,7 @@ class IoFileMgrForUser(emulator: Emulator) :
 
         val fid = fileDescriptors.alloc().id
 
-        return async(fid, "sceIoOpenAsync") {
+        return asyncv(fid, "sceIoOpenAsync") {
             val res = _sceIoOpen(thread, fid, filename, flags, mode)
             logger.error { "sceIoOpenAsync --> $res" }
             res.toLong()
@@ -320,7 +321,7 @@ class IoFileMgrForUser(emulator: Emulator) :
 
     suspend fun sceIoReadAsync(fileId: Int, outputPointer: Ptr, outputLength: Int): Int {
         logger.error { "sceIoReadAsync:$fileId,$outputPointer,$outputLength" }
-        async(fileId, "sceIoReadAsync") {
+        asyncv(fileId, "sceIoReadAsync") {
             val res = sceIoRead(fileId, outputPointer, outputLength)
             //println(outputPointer.readBytes(outputLength).toString(UTF8))
             logger.error { "::sceIoReadAsync --> $res" }
@@ -330,7 +331,7 @@ class IoFileMgrForUser(emulator: Emulator) :
     }
 
     suspend fun sceIoLseekAsync(fileId: Int, offset: Long, whence: Int): Int {
-        async(fileId, "sceIoLseekAsync") {
+        asyncv(fileId, "sceIoLseekAsync") {
             val res = sceIoLseek(fileId, offset, whence)
             //println(outputPointer.readBytes(outputLength).toString(UTF8))
             logger.error { "::sceIoReadAsync --> $res" }
@@ -341,7 +342,7 @@ class IoFileMgrForUser(emulator: Emulator) :
 
     suspend fun sceIoCloseAsync(fileId: Int): Int {
         logger.error { "sceIoCloseAsync:$fileId" }
-        async(fileId, "sceIoCloseAsync", doLater = {
+        asyncv(fileId, "sceIoCloseAsync", doLater = {
             sceIoClose(fileId)
         }) {
             0L
@@ -362,7 +363,7 @@ class IoFileMgrForUser(emulator: Emulator) :
             fd.asyncDone -> 0
             else -> 1
         }
-        fd.doLater?.let { doLater -> go(coroutineContext) { doLater() } } // For closing!
+        fd.doLater?.let { doLater -> launchImmediately(coroutineContext) { doLater() } } // For closing!
         logger.error { "   sceIoPollAsync:$fileId,$out -> ${fd.asyncResult} -> outv=$outv" }
         return outv
     }

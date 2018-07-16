@@ -1,8 +1,6 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
-    ext.korlibsVersion = "0.32.0"
-
     repositories {
         mavenLocal()
         jcenter()
@@ -149,6 +147,13 @@ allprojects {
 
         if (isKotlin && !isNative) {
             kotlin.experimental.coroutines 'enable'
+        }
+
+        if (isJs) {
+            [compileKotlin2Js, compileTestKotlin2Js]*.configure {
+                kotlinOptions.moduleKind = "umd"
+                kotlinOptions.sourceMap = true
+            }
         }
     }
 }

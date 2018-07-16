@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
@@ -10,6 +10,7 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
+import kotlin.coroutines.experimental.*
 import kotlin.test.*
 
 class IntegrationTests : BaseTest() {
@@ -130,7 +131,7 @@ class IntegrationTests : BaseTest() {
         mode: Mode = Mode.Interpreted,
         processor: (String) -> String = { it }
     ) {
-        val emulator = Emulator(getCoroutineContext())
+        val emulator = Emulator(coroutineContext)
         emulator.interpreted = (mode == Mode.Interpreted)
         emulator.display.exposeDisplay = false
         emulator.registerNativeModules()
@@ -161,7 +162,7 @@ class IntegrationTests : BaseTest() {
             while (emulator.running) {
                 //println("[2] : ${emulator.running}")
                 emulator.threadManager.step() // UPDATE THIS
-                getCoroutineContext().eventLoop.step(10)
+                delay(10.milliseconds)
                 //println("[3]")
                 if (TRACE) {
                     for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")

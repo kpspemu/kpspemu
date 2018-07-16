@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.util
 import com.soywiz.kds.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.lang.*
+import kotlinx.coroutines.experimental.*
 
 class Signal2<T>(val onRegister: () -> Unit = {}) { //: AsyncSequence<T> {
     inner class Node(val once: Boolean, val item: (T) -> Unit) : Closeable {
@@ -49,30 +50,38 @@ operator fun Signal2<Unit>.invoke() = invoke(Unit)
 
 suspend fun <T> Signal2<T>.waitOne(timeout: Int? = null): T = suspendCancellableCoroutine { c ->
     var close: Closeable? = null
-    close = once {
+    var close2: Job? = null
+    fun closeAll() {
         close?.close()
+        close2?.cancel()
+    }
+    close = once {
+        closeAll()
         c.resume(it)
     }
     if (timeout != null) {
-        c.context.eventLoop.setTimeout(timeout) {
-            close.close()
+        close2 = launchImmediately(c.context) {
+            delay(timeout)
+            closeAll()
             c.resumeWithException(TimeoutException())
         }
     }
-    c.onCancel {
-        close.close()
+    c.invokeOnCancellation {
+        closeAll()
     }
 }
 
-fun <T> Signal2<T>.waitOnePromise(): Promise<T> {
-    val deferred = Promise.Deferred<T>()
+fun <T> Signal2<T>.waitOnePromise(): Deferred<T> {
+    val deferred = CompletableDeferred<T>()
     var close: Closeable? = null
     close = once {
         close?.close()
-        deferred.resolve(it)
+        deferred.complete(it)
     }
-    deferred.onCancel {
-        close.close()
+    deferred.invokeOnCompletion {
+        if (deferred.isCancelled) {
+            close.close()
+        }
     }
-    return deferred.promise
+    return deferred
 }

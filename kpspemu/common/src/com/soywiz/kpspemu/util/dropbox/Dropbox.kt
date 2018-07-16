@@ -4,7 +4,6 @@ import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
@@ -13,6 +12,8 @@ import com.soywiz.korio.net.http.*
 import com.soywiz.korio.serialization.json.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.util.*
+import kotlinx.coroutines.experimental.*
+import kotlin.coroutines.experimental.*
 import kotlin.math.*
 
 // @TODO: Move to korio-ext-dropbox
@@ -271,16 +272,18 @@ class DropboxVfs(val dropbox: Dropbox) : Vfs() {
             }
 
             private suspend inline fun <T> addConsolidateTimer(callback: () -> T): T {
-                val coroutineContext = getCoroutineContext()
+                val coroutineContext = coroutineContext
                 consolidateTimer?.close()
                 try {
                     return callback()
                 } finally {
-                    consolidateTimer = coroutineContext.eventLoop.setTimeout(200) {
-                        coroutineContext.go {
-                            consolidateContent()
-                        }
+
+                    val task = asyncImmediately(coroutineContext) {
+                        delay(200)
+                        consolidateContent()
                     }
+
+                    consolidateTimer = Closeable { task.cancel() }
                 }
             }
 

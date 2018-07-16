@@ -1,13 +1,13 @@
 package com.soywiz.kpspemu.ui
 
 import com.soywiz.korge.service.*
-import com.soywiz.korio.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.native.*
+import kotlinx.coroutines.experimental.*
 
 class PromptConfigurator(
     private val browser: Browser,

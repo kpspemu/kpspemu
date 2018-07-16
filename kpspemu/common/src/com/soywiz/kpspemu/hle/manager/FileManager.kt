@@ -6,6 +6,7 @@ import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
+import kotlinx.coroutines.experimental.*
 
 class FileManager(val emulator: Emulator) {
     companion object {
@@ -52,7 +53,7 @@ class FileDescriptor(override val id: Int) : ResourceItem {
     lateinit var stream: AsyncStream
 
     var doLater: (suspend () -> Unit)? = null
-    var asyncPromise: Promise<Unit>? = null
+    var asyncPromise: Deferred<Unit>? = null
     var asyncResult: Long = 0L
     var asyncDone: Boolean = false
 }

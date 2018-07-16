@@ -20,8 +20,10 @@ class Emulator(
     val mem: Memory = Memory(),
     var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) : AsyncDependency {
-    //var interpreted = false
-    var interpreted = true
+    val INITIAL_INTERPRETED = false
+    //val INITIAL_INTERPRETED = true
+
+    var interpreted = INITIAL_INTERPRETED
 
     val onHomePress = Signal<Unit>()
     val onLoadPress = Signal<Unit>()

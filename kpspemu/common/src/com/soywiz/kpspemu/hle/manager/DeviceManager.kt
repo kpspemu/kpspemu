@@ -62,8 +62,8 @@ class DeviceManager(val emulator: Emulator) {
         mount("umd0:", dummy)
 
         println("Making directories...")
-        go(emulator.coroutineContext) {
-            emulator.coroutineContext.sleep(10)
+        launchImmediately(emulator.coroutineContext) {
+            emulator.coroutineContext.delay(10)
             base.apply { mkdirsSafe() }
             ms["PSP"].mkdirsSafe()
             ms["PSP/GAME"].mkdirsSafe()
@@ -75,7 +75,7 @@ class DeviceManager(val emulator: Emulator) {
 
     fun setStorage(storage: String) {
         println("Using storage: $storage")
-        emulator.coroutineContext.go {
+        launchImmediately(emulator.coroutineContext) {
             updatedStorage()
         }
     }

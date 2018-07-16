@@ -22,9 +22,8 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
 
         sceneView.scale = 480.0 / 1280.0
 
-        //val buttonsPos = IPoint2d(1100, 544 / 2.0)
-        val buttonsPos = IPoint2d(1100, 720 / 2.0)
-        val dpadPos = IPoint2d(170, 300)
+        val buttonsPos = Point(1100, 720 / 2.0)
+        val dpadPos = Point(170, 300)
         val pseparation = 0.15
         val bseparation = 0.2
         val pscale = 1.1
@@ -40,24 +39,24 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
         addButton("circle.png", PspCtrlButtons.circle, buttonsPos, -bseparation, 0.5, bscale)
         addButton("cross.png", PspCtrlButtons.cross, buttonsPos, 0.5, -bseparation, bscale)
 
-        addButton("trigger_l.png", PspCtrlButtons.leftTrigger, IPoint2d(160, 0), 0.5, 0.0)
-        addButton("trigger_r.png", PspCtrlButtons.rightTrigger, IPoint2d(1280 - 160, 0), 0.5, 0.0)
+        addButton("trigger_l.png", PspCtrlButtons.leftTrigger, Point(160, 0), 0.5, 0.0)
+        addButton("trigger_r.png", PspCtrlButtons.rightTrigger, Point(1280 - 160, 0), 0.5, 0.0)
 
-        addButton("start.png", PspCtrlButtons.start, IPoint2d(1280 - 160, 720), 0.5, 1.0)
-        addButton("select.png", PspCtrlButtons.select, IPoint2d(1280 - 380, 720), 0.5, 1.0)
+        addButton("start.png", PspCtrlButtons.start, Point(1280 - 160, 720), 0.5, 1.0)
+        addButton("select.png", PspCtrlButtons.select, Point(1280 - 380, 720), 0.5, 1.0)
 
-        addButton("home.png", PspCtrlButtons.home, IPoint2d(1280 / 2, 0), 1.1, 0.0).apply {
+        addButton("home.png", PspCtrlButtons.home, Point(1280 / 2, 0), 1.1, 0.0).apply {
             view.onClick {
                 emulator.onHomePress()
             }
         }
-        addButton("load.png", PspCtrlButtons.hold, IPoint2d(1280 / 2, 0), -0.1, 0.0).apply {
+        addButton("load.png", PspCtrlButtons.hold, Point(1280 / 2, 0), -0.1, 0.0).apply {
             view.onClick {
                 emulator.onLoadPress()
             }
         }
 
-        addThumb(IPoint2d(172.0, 600.0))
+        addThumb(Point(172.0, 600.0))
 
         sceneView.addComponent(object : Component(sceneView) {
             init {
@@ -98,7 +97,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
             updateTouch()
         }
         sceneView.addEventListener<ResizedEvent> {
-            println("resized:" + views.input.isTouchDevice)
+            //println("resized:" + views.input.isTouchDevice)
             updateTouch()
         }
     }
@@ -134,7 +133,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
     fun addButton(
         file: String,
         pspButton: PspCtrlButtons,
-        pos: IPoint2d,
+        pos: Point,
         anchorX: Double,
         anchorY: Double,
         scale: Double = 1.0
@@ -160,7 +159,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
     var thumbTouchId = thumbTouchIdNone
     lateinit var thumbContainer: Container
 
-    fun addThumb(pos: IPoint2d) {
+    fun addThumb(pos: Point) {
         thumbContainer = views.container().apply {
             sceneView += this
             this.x = pos.x
