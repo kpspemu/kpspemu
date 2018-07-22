@@ -7,8 +7,8 @@ import com.soywiz.korim.color.*
 
 fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = this.defaultFont): View {
     val button = container()
-    val colorOver = RGBA(0xA0, 0xA0, 0xA0, 0xFF)
-    val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
+    val colorOver = RGBAInt(0xA0, 0xA0, 0xA0, 0xFF)
+    val colorOut = RGBAInt(0x90, 0x90, 0x90, 0xFF)
 
     val bg = solidRect(width, height, colorOut)
     val txt = text(text, font = font, textSize = height.toDouble() - 2.0).apply {

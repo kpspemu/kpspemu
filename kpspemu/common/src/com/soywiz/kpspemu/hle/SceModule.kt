@@ -204,15 +204,15 @@ abstract class SceModule(
         }
     }
 
-    inline fun <T> registerFunctionSuspendT(
+    fun <T> registerFunctionSuspendT(
         name: String,
         uid: Long,
         since: Int = 150,
         syscall: Int = -1,
         cb: Boolean = false,
-        noinline function: suspend RegisterReader.(CpuState) -> T,
-        noinline resumeHandler: (CpuState, PspThread, T) -> Unit,
-        noinline convertErrorToT: (Int) -> T
+        function: suspend RegisterReader.(CpuState) -> T,
+        resumeHandler: (CpuState, PspThread, T) -> Unit,
+        convertErrorToT: (Int) -> T
     ) {
         val fullName = "${this.name}:$name"
         registerFunctionRR(name, uid, since, syscall) { rrr ->
@@ -259,9 +259,10 @@ abstract class SceModule(
         cb: Boolean = false,
         function: suspend RegisterReader.(CpuState) -> Int
     ) {
-        registerFunctionSuspendT<Int>(name, uid, since, syscall, cb, function, resumeHandler = { cpu, thread, value ->
-            cpu.r2 = value
-        }, convertErrorToT = { it })
+        registerFunctionSuspendT<Int>(name, uid, since, syscall, cb, function,
+            resumeHandler = { cpu, thread, value -> cpu.r2 = value },
+            convertErrorToT = { it }
+        )
     }
 
     fun registerFunctionSuspendLong(

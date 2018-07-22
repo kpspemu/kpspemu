@@ -59,7 +59,7 @@ class DebugScene(
     override suspend fun sceneInit(sceneView: Container) {
         sceneView.visible = false
 
-        sceneView += views.solidRect(480, 272, RGBA(0xFF, 0xFF, 0xFF, 0xAF))
+        sceneView += views.solidRect(480, 272, RGBAInt(0xFF, 0xFF, 0xFF, 0xAF))
 
         sceneView.onKeyDown {
             when (it.keyCode) {
@@ -157,8 +157,8 @@ class DebugScene(
         val regSet: (value: Int) -> Unit,
         val regGet: () -> Int
     ) : Container(views) {
-        val BG_OVER = RGBA(0, 0, 0xFF, 0xFF)
-        val BG_OUT = RGBA(0, 0, 0xFF, 0x7f)
+        val BG_OVER = RGBAInt(0, 0, 0xFF, 0xFF)
+        val BG_OUT = RGBAInt(0, 0, 0xFF, 0x7f)
         val onGprClick = AsyncSignal<GprView>()
 
         val text = views.text("", font = font).apply {
@@ -269,9 +269,9 @@ class DebugScene(
 
     class DissasemblerLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
         Container(views) {
-        val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
-        val BG_PC = RGBA(0, 0, 0xFF, 0x99)
-        val BG_BREAKPOINT = RGBA(0xFF, 0, 0, 0x99)
+        val BG_NORMAL = RGBAInt(0xFF, 0xFF, 0xFF, 0x99)
+        val BG_PC = RGBAInt(0, 0, 0xFF, 0x99)
+        val BG_BREAKPOINT = RGBAInt(0xFF, 0, 0, 0x99)
 
         var addr = 0
         val onLineClick = AsyncSignal<Unit>()
@@ -336,9 +336,9 @@ class DebugScene(
     }
 
     class ThreadView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
-        val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
-        val BG_PC = RGBA(0, 0, 0xFF, 0x99)
-        val BG_BREAKPOINT = RGBA(0xFF, 0, 0, 0x99)
+        val BG_NORMAL = RGBAInt(0xFF, 0xFF, 0xFF, 0x99)
+        val BG_PC = RGBAInt(0, 0, 0xFF, 0x99)
+        val BG_BREAKPOINT = RGBAInt(0xFF, 0, 0, 0x99)
 
         var lineId = 0
         var lineThread: PspThread? = null

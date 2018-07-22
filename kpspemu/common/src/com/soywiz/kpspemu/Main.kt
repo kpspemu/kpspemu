@@ -213,6 +213,9 @@ class KpspemuMainScene(
     }
 
     suspend fun createEmulatorWithExe(exeFile: VfsFile) {
+        //println(exeFile.open().slice(0 until 8).readAll().hex)
+        //println(exeFile.open().slice(8 until 16).readAll().hex)
+
         setIcon0Bitmap(Bitmap32(144, 80))
         titleText.text = ""
 
@@ -301,6 +304,60 @@ class KpspemuMainScene(
         }
     }
 
+    val keys = BooleanArray(256)
+
+    private fun updateKey(keyCode: Int, pressed: Boolean) {
+        //println("updateKey: $keyCode, $pressed")
+        keys[keyCode and 0xFF] = pressed
+        when (keyCode) {
+            PspEmuKeys.RETURN_JVM -> controller.updateButton(PspCtrlButtons.start, pressed)
+            PspEmuKeys.RETURN_JS -> controller.updateButton(PspCtrlButtons.start, pressed)
+            PspEmuKeys.SPACE -> controller.updateButton(PspCtrlButtons.select, pressed)
+            PspEmuKeys.W -> controller.updateButton(PspCtrlButtons.triangle, pressed)
+            PspEmuKeys.A -> controller.updateButton(PspCtrlButtons.square, pressed)
+            PspEmuKeys.S -> controller.updateButton(PspCtrlButtons.cross, pressed)
+            PspEmuKeys.D -> controller.updateButton(PspCtrlButtons.circle, pressed)
+            PspEmuKeys.Q -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed)
+            PspEmuKeys.E -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed)
+            PspEmuKeys.LEFT -> controller.updateButton(PspCtrlButtons.left, pressed)
+            PspEmuKeys.UP -> controller.updateButton(PspCtrlButtons.up, pressed)
+            PspEmuKeys.RIGHT -> controller.updateButton(PspCtrlButtons.right, pressed)
+            PspEmuKeys.DOWN -> controller.updateButton(PspCtrlButtons.down, pressed)
+            PspEmuKeys.I, PspEmuKeys.J, PspEmuKeys.K, PspEmuKeys.L -> Unit // analog
+            else -> {
+                logger.trace { "UnhandledKey($pressed): $keyCode" }
+            }
+        }
+
+        if (pressed) {
+            when (keyCode) {
+                PspEmuKeys.F7 -> {
+                    launchImmediately(coroutineContext) {
+                        promptConfigurator.prompt()
+                    }
+                }
+                PspEmuKeys.F9 -> {
+                    emulator.globalTrace = !emulator.globalTrace
+                }
+                PspEmuKeys.F10 -> {
+                    launchImmediately(coroutineContext) { hudToggle() }
+                }
+                PspEmuKeys.F11 -> {
+                    // Dump threads
+                    println("THREAD_DUMP:")
+                    for (thread in emulator.threadManager.threads) {
+                        println("Thread[${thread.id}](${thread.name}) : ${thread.status} : ${thread.waitObject}, running = ${thread.running}, waiting = ${thread.waiting}, priority=${thread.priority}, PC=${thread.state.PC.hex}, preemptionCount=${thread.preemptionCount}, totalExecuted=${thread.state.totalExecuted}")
+                    }
+                }
+            }
+        }
+
+        controller.updateAnalog(
+            x = when { keys[PspEmuKeys.J] -> -1f; keys[PspEmuKeys.L] -> +1f; else -> 0f; },
+            y = when { keys[PspEmuKeys.I] -> -1f; keys[PspEmuKeys.K] -> +1f; else -> 0f; }
+        )
+    }
+
     override suspend fun sceneInit(sceneView: Container) {
         registerSceneProcess { cpuProcess() }
         registerSceneProcess { displayProcess() }
@@ -322,59 +379,7 @@ class KpspemuMainScene(
         hud = views.container()
         //createEmulatorWithExe(exeFile)
 
-        val keys = BooleanArray(256)
 
-        fun updateKey(keyCode: Int, pressed: Boolean) {
-            //println("updateKey: $keyCode, $pressed")
-            keys[keyCode and 0xFF] = pressed
-            when (keyCode) {
-                PspEmuKeys.RETURN_JVM -> controller.updateButton(PspCtrlButtons.start, pressed)
-                PspEmuKeys.RETURN_JS -> controller.updateButton(PspCtrlButtons.start, pressed)
-                PspEmuKeys.SPACE -> controller.updateButton(PspCtrlButtons.select, pressed)
-                PspEmuKeys.W -> controller.updateButton(PspCtrlButtons.triangle, pressed)
-                PspEmuKeys.A -> controller.updateButton(PspCtrlButtons.square, pressed)
-                PspEmuKeys.S -> controller.updateButton(PspCtrlButtons.cross, pressed)
-                PspEmuKeys.D -> controller.updateButton(PspCtrlButtons.circle, pressed)
-                PspEmuKeys.Q -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed)
-                PspEmuKeys.E -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed)
-                PspEmuKeys.LEFT -> controller.updateButton(PspCtrlButtons.left, pressed)
-                PspEmuKeys.UP -> controller.updateButton(PspCtrlButtons.up, pressed)
-                PspEmuKeys.RIGHT -> controller.updateButton(PspCtrlButtons.right, pressed)
-                PspEmuKeys.DOWN -> controller.updateButton(PspCtrlButtons.down, pressed)
-                PspEmuKeys.I, PspEmuKeys.J, PspEmuKeys.K, PspEmuKeys.L -> Unit // analog
-                else -> {
-                    logger.trace { "UnhandledKey($pressed): $keyCode" }
-                }
-            }
-
-            if (pressed) {
-                when (keyCode) {
-                    PspEmuKeys.F7 -> {
-                        launchImmediately(coroutineContext) {
-                            promptConfigurator.prompt()
-                        }
-                    }
-                    PspEmuKeys.F9 -> {
-                        emulator.globalTrace = !emulator.globalTrace
-                    }
-                    PspEmuKeys.F10 -> {
-                        launchImmediately(coroutineContext) { hudToggle() }
-                    }
-                    PspEmuKeys.F11 -> {
-                        // Dump threads
-                        println("THREAD_DUMP:")
-                        for (thread in emulator.threadManager.threads) {
-                            println("Thread[${thread.id}](${thread.name}) : ${thread.status} : ${thread.waitObject}, running = ${thread.running}, waiting = ${thread.waiting}, priority=${thread.priority}, PC=${thread.state.PC.hex}, preemptionCount=${thread.preemptionCount}, totalExecuted=${thread.state.totalExecuted}")
-                        }
-                    }
-                }
-            }
-
-            controller.updateAnalog(
-                x = when { keys[PspEmuKeys.J] -> -1f; keys[PspEmuKeys.L] -> +1f; else -> 0f; },
-                y = when { keys[PspEmuKeys.I] -> -1f; keys[PspEmuKeys.K] -> +1f; else -> 0f; }
-            )
-        }
 
         //hud.alpha = 0.0
         //hud.mouseEnabled = false
@@ -477,7 +482,7 @@ class KpspemuMainScene(
         }
 
 
-        hud += views.solidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
+        hud += views.solidRect(96, 272, RGBAInt(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
         hud += infoText
         hud += loadButton
         hud += directButton
@@ -520,7 +525,7 @@ class KpspemuMainScene(
 
         val dropContainer = views.container().apply {
             visible = false
-            this += views.solidRect(1024, 1024, RGBA(0xA0, 0xA0, 0xA0, 0x7F))
+            this += views.solidRect(1024, 1024, RGBAInt(0xA0, 0xA0, 0xA0, 0x7F))
             this += views.text("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
                 //format = Html.Format(format, align = Html.Alignment.MIDDLE_CENTER)
                 format = Html.Format(format, align = Html.Alignment.LEFT)
@@ -726,8 +731,10 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
     suspend fun loadPbp() {
         val pbp = Pbp(stream)
         val icon0 = pbp.ICON0_PNG.readAll()
+        println("icon0.size:${icon0.size}")
         if (icon0.isNotEmpty()) loadProcess.readIcon0(icon0)
         val paramSfo = pbp.PARAM_SFO.readAll()
+        println("paramSfo.size:${paramSfo.size}:${pbp.PARAM_SFO.size()}")
         if (paramSfo.isNotEmpty()) {
             val psf = Psf(pbp.PARAM_SFO)
             gameName = psf.getString("DISC_ID") ?: "virtual"
@@ -784,12 +791,22 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
         if (afile == null) invalidOp("Can't find any suitable executable inside $format")
 
         for (icon0 in listOf(container["PSP_GAME/ICON0.PNG"])) {
-            if (icon0.exists()) loadProcess.readIcon0(icon0.readAll())
+            if (icon0.exists()) {
+                println("icon0.exists:${icon0.exists()}")
+                val icon0Bytes = icon0.readAll()
+                println("icon0Bytes:${icon0Bytes.size}")
+                loadProcess.readIcon0(icon0Bytes)
+            }
         }
 
         for (paramSfo in listOf(container["PSP_GAME/PARAM.SFO"])) {
             if (paramSfo.exists()) {
-                val psf = Psf(paramSfo.readAll())
+                println("container.listNames():" + container.listNames())
+                println("paramSfo.stat:${paramSfo.stat()}")
+                println("paramSfo.exists:${paramSfo.exists()}")
+                val psfBytes = paramSfo.readAll()
+                println("paramSfo:${psfBytes.size}")
+                val psf = Psf(psfBytes)
                 gameName = psf.getString("DISC_ID") ?: "virtual"
                 loadProcess.readParamSfo(psf)
             }
