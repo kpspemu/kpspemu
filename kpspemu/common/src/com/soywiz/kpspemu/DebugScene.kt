@@ -59,7 +59,7 @@ class DebugScene(
     override suspend fun sceneInit(sceneView: Container) {
         sceneView.visible = false
 
-        sceneView += views.solidRect(480, 272, RGBAInt(0xFF, 0xFF, 0xFF, 0xAF))
+        sceneView += SolidRect(480, 272, RGBAInt(0xFF, 0xFF, 0xFF, 0xAF))
 
         sceneView.onKeyDown {
             when (it.keyCode) {
@@ -79,7 +79,7 @@ class DebugScene(
         }
         font = getDebugBmpFontOnce()
 
-        sceneView += views.solidRect(480, 272, RGBA.packRGB_A(Colors.BLUE, 0x5F)).apply {
+        sceneView += SolidRect(480, 272, RGBA.packRGB_A(Colors.BLUE, 0x5F)).apply {
             mouseEnabled = false
         }
 
@@ -156,12 +156,12 @@ class DebugScene(
         val regName: String,
         val regSet: (value: Int) -> Unit,
         val regGet: () -> Int
-    ) : Container(views) {
+    ) : Container() {
         val BG_OVER = RGBAInt(0, 0, 0xFF, 0xFF)
         val BG_OUT = RGBAInt(0, 0, 0xFF, 0x7f)
         val onGprClick = AsyncSignal<GprView>()
 
-        val text = views.text("", font = font).apply {
+        val text = Text("", font = font).apply {
             this@GprView += this
             filtering = false
             x = 0.0
@@ -187,7 +187,7 @@ class DebugScene(
         }
     }
 
-    class GprListView(browser: Browser, views: Views, val font: BitmapFont) : Container(views) {
+    class GprListView(browser: Browser, views: Views, val font: BitmapFont) : Container() {
         var state = CpuState("GprListView", GlobalCpuState(DummyMemory))
         val regs = (0 until 32).map { regIndex ->
             GprView(views, font, "r$regIndex", { state.setGpr(regIndex, it) }, { state.getGpr(regIndex) }).apply {
@@ -226,8 +226,8 @@ class DebugScene(
     }
 
     class HexdumpLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
-        Container(views) {
-        val text = views.text("-", font = font).apply {
+        Container() {
+        val text = Text("-", font = font).apply {
             this@HexdumpLineView += this
             filtering = false
             x = 0.0
@@ -250,7 +250,7 @@ class DebugScene(
         }
     }
 
-    class HexdumpView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+    class HexdumpView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container() {
         val texts = (0 until 32).map { HexdumpLineView(emulator, views, it, font) }
 
         init {
@@ -268,7 +268,7 @@ class DebugScene(
     }
 
     class DissasemblerLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
-        Container(views) {
+        Container() {
         val BG_NORMAL = RGBAInt(0xFF, 0xFF, 0xFF, 0x99)
         val BG_PC = RGBAInt(0, 0, 0xFF, 0x99)
         val BG_BREAKPOINT = RGBAInt(0xFF, 0, 0, 0x99)
@@ -277,7 +277,7 @@ class DebugScene(
         val onLineClick = AsyncSignal<Unit>()
         var over = false
 
-        val text = views.text("-", font = font).apply {
+        val text = Text("-", font = font).apply {
             this@DissasemblerLineView += this
             filtering = false
             x = 0.0
@@ -314,7 +314,7 @@ class DebugScene(
         }
     }
 
-    class DissasemblerView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+    class DissasemblerView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container() {
         val texts = (0 until 32).map { DissasemblerLineView(emulator, views, it, font) }
 
         init {
@@ -335,7 +335,7 @@ class DebugScene(
         }
     }
 
-    class ThreadView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+    class ThreadView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container() {
         val BG_NORMAL = RGBAInt(0xFF, 0xFF, 0xFF, 0x99)
         val BG_PC = RGBAInt(0, 0, 0xFF, 0x99)
         val BG_BREAKPOINT = RGBAInt(0xFF, 0, 0, 0x99)
@@ -347,7 +347,7 @@ class DebugScene(
         val onLineClick = AsyncSignal<Unit>()
         var over = false
 
-        val text = Text(views).apply {
+        val text = Text().apply {
             autoSize = true
             format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
             filtering = false
@@ -367,7 +367,7 @@ class DebugScene(
         }
     }
 
-    class ThreadListView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container(views) {
+    class ThreadListView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container() {
         val viewPool = AutoArrayList {
             ThreadView(emulator, views, font).apply {
                 onLineClick {

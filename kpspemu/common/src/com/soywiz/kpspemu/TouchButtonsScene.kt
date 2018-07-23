@@ -58,12 +58,11 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
 
         addThumb(Point(172.0, 600.0))
 
-        sceneView.addComponent(object : Component(sceneView) {
-            init {
-                addEventListener<TouchEvent> { e ->
-                    updateEvent()
-                    //println("TOUCH: $e")
-                }
+        sceneView.addComponent(object : TouchComponent {
+            override val view: View = sceneView
+
+            override fun onTouchEvent(views: Views, e: TouchEvent) {
+                updateEvent()
             }
 
             fun View.testAnyTouch(): Boolean {
@@ -87,9 +86,6 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
                 }
             }
 
-            override fun update(dtMs: Int) {
-                super.update(dtMs)
-            }
         })
 
         updateTouch()
@@ -141,7 +137,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
         //onDown { this.alpha = alphaDown; controller.updateButton(button, true) }
         //onDownFromOutside { this.alpha = alphaDown; controller.updateButton(button, true) }
         //onUpAnywhere{ this.alpha = alphaUp; controller.updateButton(button, false) }
-        val button = Button(pspButton, views.image(atlas[file]).apply {
+        val button = Button(pspButton, Image(atlas[file]).apply {
             this.x = pos.x
             this.y = pos.y
             this.anchorX = anchorX
@@ -160,22 +156,20 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
     lateinit var thumbContainer: Container
 
     fun addThumb(pos: Point) {
-        thumbContainer = views.container().apply {
+        thumbContainer = Container().apply {
             sceneView += this
             this.x = pos.x
             this.y = pos.y
-            val bg = views.image(atlas["thumb_bg.png"]).apply {
+            val bg = image(atlas["thumb_bg.png"]).apply {
                 this.anchorX = 0.5
                 this.anchorY = 0.5
                 this.alpha = 0.2
             }
-            val thumb = views.image(atlas["thumb.png"]).apply {
+            val thumb = image(atlas["thumb.png"]).apply {
                 this.anchorX = 0.5
                 this.anchorY = 0.5
                 this.alpha = 0.2
             }
-            this += bg
-            this += thumb
             bg.apply {
                 onDragStart {
                     thumbTouchId = it.id

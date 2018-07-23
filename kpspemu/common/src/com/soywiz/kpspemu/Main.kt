@@ -194,22 +194,19 @@ class KpspemuMainScene(
         setIcon0Bitmap(Bitmap32(1, 1))
     }
 
-    var icon0Texture: Texture? = null
     val icon0Image: Image by lazy {
-        views.image(views.transparentTexture).apply {
+        Image(Bitmaps.transparent).apply {
             alpha = 0.5
         }
     }
     val titleText by lazy {
-        views.text("", font = hudFont).apply {
+        Text("", font = hudFont).apply {
             alpha = 0.5
         }
     }
 
     fun setIcon0Bitmap(bmp: Bitmap) {
-        icon0Image.tex = views.texture(bmp)
-        icon0Texture?.close()
-        icon0Texture = icon0Image.tex
+        icon0Image.bitmap = bmp.slice()
     }
 
     suspend fun createEmulatorWithExe(exeFile: VfsFile) {
@@ -288,7 +285,7 @@ class KpspemuMainScene(
 
     private suspend fun loadMainFont() {
         try {
-            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont(views)
+            hudFont = resourcesRoot["lucida_console32.fnt"].readBitmapFont()
             //hudFont = getDebugBmpFontOnce()
         } catch (e: Throwable) {
             //e.printStackTrace()
@@ -376,7 +373,7 @@ class KpspemuMainScene(
         loadMainFont()
         println("Loaded main font")
 
-        hud = views.container()
+        hud = Container()
         //createEmulatorWithExe(exeFile)
 
 
@@ -399,7 +396,7 @@ class KpspemuMainScene(
             return out.joinToString("\n")
         }
 
-        val infoText = views.text(getInfoText(), textSize = 8.0, font = hudFont).apply {
+        val infoText = Text(getInfoText(), textSize = 8.0, font = hudFont).apply {
             x = 4.0
             y = 4.0
         }
@@ -482,7 +479,7 @@ class KpspemuMainScene(
         }
 
 
-        hud += views.solidRect(96, 272, RGBAInt(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
+        hud += SolidRect(96, 272, RGBAInt(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
         hud += infoText
         hud += loadButton
         hud += directButton
@@ -501,7 +498,7 @@ class KpspemuMainScene(
             y = 0.0
         }
 
-        val displayView = object : View(views) {
+        val displayView = object : View() {
             override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 480, 272) }
             override fun render(ctx: RenderContext, m: Matrix2d) {
                 val startTime = Klock.currentTimeMillisDouble()
@@ -518,15 +515,15 @@ class KpspemuMainScene(
 
         sceneView += displayView
 
-        debugSceneContainer = views.sceneContainer().apply {
+        debugSceneContainer = SceneContainer(views).apply {
             changeTo<DebugScene>()
         }
         sceneView += debugSceneContainer
 
-        val dropContainer = views.container().apply {
+        val dropContainer = Container().apply {
             visible = false
-            this += views.solidRect(1024, 1024, RGBAInt(0xA0, 0xA0, 0xA0, 0x7F))
-            this += views.text("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
+            this += SolidRect(1024, 1024, RGBAInt(0xA0, 0xA0, 0xA0, 0x7F))
+            this += Text("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
                 //format = Html.Format(format, align = Html.Alignment.MIDDLE_CENTER)
                 format = Html.Format(format, align = Html.Alignment.LEFT)
                 x = 480.0 * 0.5
@@ -535,7 +532,7 @@ class KpspemuMainScene(
         }
         sceneView += dropContainer
 
-        sceneView += views.sceneContainer().apply { changeTo<TouchButtonsScene>() }
+        sceneView += SceneContainer(views).apply { changeTo<TouchButtonsScene>() }
         sceneView += hud
         hud.alpha = 0.0
         hud.mouseEnabled = false
