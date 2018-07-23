@@ -355,7 +355,8 @@ class KpspemuMainScene(
         )
     }
 
-    override suspend fun sceneInit(sceneView: Container) {
+    override suspend fun Container.sceneInit() {
+        val sceneView = this
         registerSceneProcess { cpuProcess() }
         registerSceneProcess { displayProcess() }
         //val func = function(DClass(CpuState::class), DVOID) {
@@ -545,7 +546,7 @@ class KpspemuMainScene(
         sceneView.onKeyDown { updateKey(it.keyCode, true) }
         sceneView.onKeyUp { updateKey(it.keyCode, false) }
 
-        this.cancellables += injector.getOrNull(Frame::class)?.onDropFiles(
+        cancellables += injector.getOrNull(Frame::class)?.onDropFiles(
             enter = {
                 dropContainer.visible = true
                 println("DROP ENTER")

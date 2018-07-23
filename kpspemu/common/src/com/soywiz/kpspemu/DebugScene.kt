@@ -56,7 +56,8 @@ class DebugScene(
         browser.alert("Expr: $exprStr\nResult: ${value.hex}")
     }
 
-    override suspend fun sceneInit(sceneView: Container) {
+    override suspend fun Container.sceneInit() {
+        val sceneView = this
         sceneView.visible = false
 
         sceneView += SolidRect(480, 272, RGBAInt(0xFF, 0xFF, 0xFF, 0xAF))

@@ -16,7 +16,8 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
     val controller get() = emulator.controller
     lateinit var atlas: Atlas2
 
-    override suspend fun sceneInit(sceneView: Container) {
+    override suspend fun Container.sceneInit() {
+        val sceneView = this
         //atlas = rootLocalVfs["buttons.json"].readAtlas2(views)
         atlas = resourcesVfs["buttons.json"].readAtlas2(views)
 
