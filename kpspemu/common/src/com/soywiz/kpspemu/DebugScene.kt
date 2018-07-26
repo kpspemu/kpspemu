@@ -60,7 +60,7 @@ class DebugScene(
         val sceneView = this
         sceneView.visible = false
 
-        sceneView += SolidRect(480, 272, RGBAInt(0xFF, 0xFF, 0xFF, 0xAF))
+        sceneView += SolidRect(480, 272, RGBA(0xFF, 0xFF, 0xFF, 0xAF))
 
         sceneView.onKeyDown {
             when (it.keyCode) {
@@ -80,7 +80,7 @@ class DebugScene(
         }
         font = getDebugBmpFontOnce()
 
-        sceneView += SolidRect(480, 272, RGBA.packRGB_A(Colors.BLUE, 0x5F)).apply {
+        sceneView += SolidRect(480, 272, Colors.BLUE.withA(0x5F)).apply {
             mouseEnabled = false
         }
 
@@ -158,15 +158,18 @@ class DebugScene(
         val regSet: (value: Int) -> Unit,
         val regGet: () -> Int
     ) : Container() {
-        val BG_OVER = RGBAInt(0, 0, 0xFF, 0xFF)
-        val BG_OUT = RGBAInt(0, 0, 0xFF, 0x7f)
+        val BG_OVER = RGBA(0, 0, 0xFF, 0xFF)
+        val BG_OUT = RGBA(0, 0, 0xFF, 0x7f)
         val onGprClick = AsyncSignal<GprView>()
 
-        val text = Text("", font = font).apply {
-            this@GprView += this
+        val black = Colors.BLACK
+        val text = text("", font = font).apply {
             filtering = false
             x = 0.0
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+            // Exception in thread "AWT-EventQueue-0" java.lang.ClassCastException: java.lang.Integer cannot be cast to com.soywiz.korim.color.RGBA
+            //	at com.soywiz.kpspemu.DebugScene$GprView.<init>(DebugScene.kt:169)
+            //	at com.soywiz.kpspemu.DebugScene$GprListView.<init>(DebugScene.kt:194)
+            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = black)
             autoSize = true
             bgcolor = BG_OUT
             onOver { bgcolor = BG_OVER }
@@ -228,13 +231,17 @@ class DebugScene(
 
     class HexdumpLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
         Container() {
-        val text = Text("-", font = font).apply {
-            this@HexdumpLineView += this
+        val black = Colors.BLACK
+        val text = text("-", font = font).apply {
             filtering = false
             x = 0.0
             y = (lineNumber * 8).toDouble()
             autoSize = true
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+            // Exception in thread "AWT-EventQueue-0" java.lang.ClassCastException: java.lang.Integer cannot be cast to com.soywiz.korim.color.RGBA
+            //	at com.soywiz.kpspemu.DebugScene$HexdumpLineView.<init>(DebugScene.kt:240)
+            //	at com.soywiz.kpspemu.DebugScene$HexdumpView.<init>(DebugScene.kt:258)
+            //format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = black)
         }
 
         fun update(addr: Int, mem: Memory, state: CpuState) {
@@ -270,21 +277,26 @@ class DebugScene(
 
     class DissasemblerLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
         Container() {
-        val BG_NORMAL = RGBAInt(0xFF, 0xFF, 0xFF, 0x99)
-        val BG_PC = RGBAInt(0, 0, 0xFF, 0x99)
-        val BG_BREAKPOINT = RGBAInt(0xFF, 0, 0, 0x99)
+        val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
+        val BG_PC = RGBA(0, 0, 0xFF, 0x99)
+        val BG_BREAKPOINT = RGBA(0xFF, 0, 0, 0x99)
 
         var addr = 0
         val onLineClick = AsyncSignal<Unit>()
         var over = false
 
-        val text = Text("-", font = font).apply {
+        val black = Colors.BLACK
+        val text = text("-", font = font).apply {
             this@DissasemblerLineView += this
             filtering = false
             x = 0.0
             y = (lineNumber * 8).toDouble()
             autoSize = true
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+            //Exception in thread "AWT-EventQueue-0" java.lang.ClassCastException: java.lang.Integer cannot be cast to com.soywiz.korim.color.RGBA
+            //	at com.soywiz.kpspemu.DebugScene$DissasemblerLineView.<init>(DebugScene.kt:290)
+            //	at com.soywiz.kpspemu.DebugScene$DissasemblerView.<init>(DebugScene.kt:322)
+            //format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = black)
             onOver { over = true }
             onOut { over = false }
             onClick {
@@ -301,7 +313,7 @@ class DebugScene(
                 else -> BG_NORMAL
             }
             if (over) {
-                text.bgcolor = RGBA.packRGB_A(RGBA.getRGB(text.bgcolor), 0xFF)
+                text.bgcolor = text.bgcolor.withA(0xFF)
             }
 
             val prefix = if (atPC) "*" else " "
@@ -337,9 +349,9 @@ class DebugScene(
     }
 
     class ThreadView(val emulator: Emulator, views: Views, val font: BitmapFont) : Container() {
-        val BG_NORMAL = RGBAInt(0xFF, 0xFF, 0xFF, 0x99)
-        val BG_PC = RGBAInt(0, 0, 0xFF, 0x99)
-        val BG_BREAKPOINT = RGBAInt(0xFF, 0, 0, 0x99)
+        val BG_NORMAL = RGBA(0xFF, 0xFF, 0xFF, 0x99)
+        val BG_PC = RGBA(0, 0, 0xFF, 0x99)
+        val BG_BREAKPOINT = RGBA(0xFF, 0, 0, 0x99)
 
         var lineId = 0
         var lineThread: PspThread? = null
@@ -363,7 +375,7 @@ class DebugScene(
         fun update() {
             text.bgcolor = if (selected) BG_BREAKPOINT else BG_NORMAL
             if (over) {
-                text.bgcolor = RGBA.packRGB_A(RGBA.getRGB(text.bgcolor), 0xFF)
+                text.bgcolor = text.bgcolor.withA(0xFF)
             }
         }
     }

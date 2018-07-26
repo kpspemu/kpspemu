@@ -12,8 +12,8 @@ import com.soywiz.korio.net.http.*
 import com.soywiz.korio.serialization.json.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.util.*
-import kotlinx.coroutines.experimental.*
-import kotlin.coroutines.experimental.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.*
 import kotlin.math.*
 
 // @TODO: Move to korio-ext-dropbox

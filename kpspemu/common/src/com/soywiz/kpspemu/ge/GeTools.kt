@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.kmem.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korim.color.*
 import com.soywiz.korio.error.*
 import com.soywiz.kpspemu.mem.*
 import kotlin.math.*
@@ -32,15 +33,15 @@ fun Bitmap32.setTo(
                     var m = 0
                     for (n in 0 until this.area / 2) {
                         val byte = colorData[n].toInt() and 0xFF
-                        this.data[m++] = colors[((byte ushr 0) and 0b1111)]
-                        this.data[m++] = colors[((byte ushr 4) and 0b1111)]
+                        this.data[m++] = RGBA(colors[((byte ushr 0) and 0b1111)])
+                        this.data[m++] = RGBA(colors[((byte ushr 4) and 0b1111)])
                     }
                 }
                 8 -> {
                     var m = 0
                     for (n in 0 until this.area) {
                         val byte = colorData[n]
-                        this.data[m++] = colors[((byte.toInt() ushr 0) and 0b11111111) % colors.size]
+                        this.data[m++] = RGBA(colors[((byte.toInt() ushr 0) and 0b11111111) % colors.size])
                     }
                 }
                 else -> {

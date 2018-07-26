@@ -7,7 +7,7 @@ import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.native.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 
 class PromptConfigurator(
     private val browser: Browser,

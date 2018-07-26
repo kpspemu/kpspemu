@@ -3,7 +3,8 @@ package com.soywiz.kpspemu.util
 import com.soywiz.kds.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.lang.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.*
 
 class Signal2<T>(val onRegister: () -> Unit = {}) { //: AsyncSequence<T> {
     inner class Node(val once: Boolean, val item: (T) -> Unit) : Closeable {

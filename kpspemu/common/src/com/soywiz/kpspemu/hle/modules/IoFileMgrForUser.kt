@@ -13,7 +13,7 @@ import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 import kotlin.math.*
 
 @Suppress("UNUSED_PARAMETER")

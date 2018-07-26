@@ -3,7 +3,8 @@ package com.soywiz.kpspemu.util
 import com.soywiz.klock.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.lang.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.*
 
 suspend fun <T> Signal<T>.waitOneTimeout(timeout: TimeSpan): T = suspendCancellableCoroutine { c ->
     var close: Closeable? = null

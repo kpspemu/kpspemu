@@ -12,7 +12,7 @@ import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
-import kotlin.coroutines.experimental.*
+import kotlin.coroutines.*
 
 class RegisterReader {
     var pos: Int = 4
@@ -225,20 +225,22 @@ abstract class SceModule(
             mfunction.startCoroutine(this, object : Continuation<T> {
                 override val context: CoroutineContext = coroutineContext
 
-                override fun resume(value: T) {
-                    resumeHandler(rcpu, thread, value)
-                    completed = true
-                    rthread.resume()
-                    loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
-                }
-
-                override fun resumeWithException(e: Throwable) {
-                    if (e is SceKernelException) {
-                        resume(convertErrorToT(e.errorCode))
+                override fun resumeWith(result: SuccessOrFailure<T>) {
+                    if (result.isSuccess) {
+                        val value = result.getOrThrow()
+                        resumeHandler(rcpu, thread, value)
+                        completed = true
+                        rthread.resume()
+                        loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
                     } else {
-                        println("ERROR at registerFunctionSuspendT.resumeWithException")
-                        e.printStackTrace()
-                        throw e
+                        val e = result.exceptionOrNull()!!
+                        if (e is SceKernelException) {
+                            resume(convertErrorToT(e.errorCode))
+                        } else {
+                            println("ERROR at registerFunctionSuspendT.resumeWithException")
+                            e.printStackTrace()
+                            throw e
+                        }
                     }
                 }
             })

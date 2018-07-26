@@ -45,8 +45,8 @@ import com.soywiz.kpspemu.native.*
 import com.soywiz.kpspemu.ui.*
 import com.soywiz.kpspemu.util.*
 import com.soywiz.kpspemu.util.io.*
-import kotlinx.coroutines.experimental.*
-import kotlin.coroutines.experimental.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.*
 import kotlin.math.*
 import kotlin.reflect.*
 
@@ -278,7 +278,7 @@ class KpspemuMainScene(
             accumulatedMs = toWait - toWaitInt
             controller.startFrame(timeManager.getTimeInMicrosecondsInt())
             emulator.interruptManager.dispatchVsync()
-            sceneView.sleep(toWaitInt)
+            sceneView.sleep(toWaitInt.milliseconds)
             controller.endFrame()
         }
     }
@@ -376,7 +376,6 @@ class KpspemuMainScene(
 
         hud = Container()
         //createEmulatorWithExe(exeFile)
-
 
 
         //hud.alpha = 0.0
@@ -480,7 +479,7 @@ class KpspemuMainScene(
         }
 
 
-        hud += SolidRect(96, 272, RGBAInt(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
+        hud += SolidRect(96, 272, RGBA(0, 0, 0, 0xCC)).apply { enabled = false; mouseEnabled = false }
         hud += infoText
         hud += loadButton
         hud += directButton
@@ -501,7 +500,8 @@ class KpspemuMainScene(
 
         val displayView = object : View() {
             override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 480, 272) }
-            override fun render(ctx: RenderContext, m: Matrix2d) {
+            override fun render(ctx: RenderContext) {
+                val m = renderMatrix
                 val startTime = Klock.currentTimeMillisDouble()
                 fpsCounter.tick(startTime)
                 //println("displayView.render.Thread: ${KorioNative.currentThreadId}")
@@ -523,7 +523,7 @@ class KpspemuMainScene(
 
         val dropContainer = Container().apply {
             visible = false
-            this += SolidRect(1024, 1024, RGBAInt(0xA0, 0xA0, 0xA0, 0x7F))
+            this += SolidRect(1024, 1024, RGBA(0xA0, 0xA0, 0xA0, 0x7F))
             this += Text("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
                 //format = Html.Format(format, align = Html.Alignment.MIDDLE_CENTER)
                 format = Html.Format(format, align = Html.Alignment.LEFT)

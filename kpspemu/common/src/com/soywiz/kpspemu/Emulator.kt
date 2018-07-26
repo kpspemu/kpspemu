@@ -12,7 +12,7 @@ import com.soywiz.kpspemu.display.*
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
-import kotlin.coroutines.experimental.*
+import kotlin.coroutines.*
 
 class Emulator(
     val coroutineContext: CoroutineContext,

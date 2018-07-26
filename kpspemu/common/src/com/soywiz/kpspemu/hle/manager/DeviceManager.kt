@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.manager
 
+import com.soywiz.klock.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
@@ -63,7 +64,7 @@ class DeviceManager(val emulator: Emulator) {
 
         println("Making directories...")
         launchImmediately(emulator.coroutineContext) {
-            emulator.coroutineContext.delay(10)
+            emulator.coroutineContext.delay(10.milliseconds)
             base.apply { mkdirsSafe() }
             ms["PSP"].mkdirsSafe()
             ms["PSP/GAME"].mkdirsSafe()

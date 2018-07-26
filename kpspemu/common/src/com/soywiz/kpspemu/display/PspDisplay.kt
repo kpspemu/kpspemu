@@ -46,7 +46,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
         when (pixelFormat) {
             PixelFormat.RGBA_8888 -> { // Optimized!
                 for (n in 0 until 272) {
-                    mem.read(address + n * 512 * 4, bmpData, bmp.width * n, bmp.width)
+                    mem.read(address + n * 512 * 4, bmpData.array, bmp.width * n, bmp.width)
                 }
             }
             else -> {
@@ -99,7 +99,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
         displayMode = 0
         displayWidth = 480
         displayHeight = 272
-        bmp.fill(0)
+        bmp.fill(Colors.TRANSPARENT_BLACK)
         temp.fill(0)
     }
 }

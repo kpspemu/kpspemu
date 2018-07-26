@@ -6,8 +6,8 @@ import com.soywiz.korge.view.*
 import com.soywiz.korim.color.*
 
 fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = Fonts.defaultFont): View {
-    val colorOver = RGBAInt(0xA0, 0xA0, 0xA0, 0xFF)
-    val colorOut = RGBAInt(0x90, 0x90, 0x90, 0xFF)
+    val colorOver = RGBA(0xA0, 0xA0, 0xA0, 0xFF)
+    val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
 
     return Container().apply {
         val bg = solidRect(width, height, colorOut)

@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.*
+import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.async.*
@@ -151,7 +152,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             }
             if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
             if (now - start >= 16.0) {
-                coroutineContext.delay(0)
+                coroutineContext.delayMs(0)
                 break // Rest a bit
             }
         } while (currentThread != null)
@@ -410,7 +411,7 @@ class PspThread internal constructor(
         //if (totalMilliseconds < 1) {
         //	pendingAccumulatedMicrosecondsToWait += totalMilliseconds * 1000
         //} else {
-        coroutineContext.delay(totalMilliseconds)
+        coroutineContext.delay(totalMilliseconds.milliseconds)
         //}
     }
 

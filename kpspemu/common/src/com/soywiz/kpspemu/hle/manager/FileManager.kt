@@ -6,7 +6,7 @@ import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 
 class FileManager(val emulator: Emulator) {
     companion object {

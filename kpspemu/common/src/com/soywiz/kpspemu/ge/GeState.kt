@@ -161,7 +161,7 @@ class ClutState(val data: IntArray) : ClutReader {
         else -> invalidOp("Invalid palette")
     }
 
-    override fun getColor(mem: Memory, n: Int): Int = pixelFormat.colorFormat!!.unpackToRGBA(getRawColor(mem, n))
+    override fun getColor(mem: Memory, n: Int): Int = pixelFormat.colorFormat!!.unpackToRGBA(getRawColor(mem, n)).rgba
 }
 
 class TextureState(val geState: GeState) {
@@ -669,13 +669,13 @@ class VertexReader {
         for (n in 0 until count) out[n] = readF32_le()
     }
 
-    fun SyncStream.readColorType(type: ColorEnum): Int {
+    fun SyncStream.readColorType(type: ColorEnum): RGBA {
         return when (type) {
-            ColorEnum.COLOR4444 -> RGBA_4444.packRGBA(readU16_le())
-            ColorEnum.COLOR5551 -> RGBA_5551.packRGBA(readU16_le())
-            ColorEnum.COLOR5650 -> RGB_565.packRGBA(readU16_le())
-            ColorEnum.COLOR8888 -> readS32_le()
-            ColorEnum.VOID -> 0
+            ColorEnum.COLOR4444 -> RGBA_4444.unpackToRGBA(readU16_le())
+            ColorEnum.COLOR5551 -> RGBA_5551.unpackToRGBA(readU16_le())
+            ColorEnum.COLOR5650 -> RGB_565.unpackToRGBA(readU16_le())
+            ColorEnum.COLOR8888 -> RGBA(readS32_le())
+            ColorEnum.VOID -> Colors.TRANSPARENT_BLACK
             else -> TODO()
         }
     }
@@ -709,7 +709,7 @@ class VertexReader {
 
         s.safeSkipToAlign(type.col.nbytes)
         //println("Col[0]: ${s.position} : align(${type.col.nbytes})")
-        out.color = s.readColorType(type.col)
+        out.color = s.readColorType(type.col).rgba
         //println("  Col[1]: ${s.position}")
 
         s.safeSkipToAlign(type.normal.nbytes)

@@ -106,7 +106,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
                 //mem.read(display.fixedAddress(), tempBmp.data)
                 for (n in 0 until 272) {
                     //mem.write(display.fixedAddress() + n * 512 * 4, tempBmp.data, tempBmp.width * (271 - n), tempBmp.width)
-                    mem.read(display.fixedAddress() + n * 512 * 4, tempBmp.data, tempBmp.width * n, tempBmp.width)
+                    mem.read(display.fixedAddress() + n * 512 * 4, tempBmp.data.array, tempBmp.width * n, tempBmp.width)
                 }
                 ag.renderToBitmapEx(tempBmp) {
                     ag.drawBmp(tempBmp)
@@ -115,7 +115,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
                 for (n in 0 until 272) {
                     mem.write(
                         display.fixedAddress() + n * 512 * 4,
-                        tempBmp.data,
+                        tempBmp.data.array,
                         tempBmp.width * (271 - n),
                         tempBmp.width
                     )
@@ -246,7 +246,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
             val mustClearStencil = clearFlags hasFlag ClearBufferSet.StencilBuffer
 
             ag.clear(
-                clearColor,
+                RGBA(clearColor),
                 clearDepth,
                 clearStencil,
                 clearColor = mustClearColor,

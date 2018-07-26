@@ -6,7 +6,7 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.util.*
-import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.*
 
 @Suppress("ClassName", "UNUSED_PARAMETER")
 class sceUmdUser(emulator: Emulator) : SceModule(emulator, "sceUmdUser", 0x40010011, "np9660.prx", "sceNp9660_driver") {
