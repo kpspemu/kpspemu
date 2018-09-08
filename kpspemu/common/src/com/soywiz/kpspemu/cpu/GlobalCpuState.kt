@@ -11,7 +11,7 @@ class GlobalCpuState(val mem: Memory) {
 
     @ThreadLocal
     companion object {
-        val dummy = GlobalCpuState(DummyMemory)
+        val dummy = GlobalCpuState(MemoryInfo.DUMMY)
     }
 
     fun reset() {

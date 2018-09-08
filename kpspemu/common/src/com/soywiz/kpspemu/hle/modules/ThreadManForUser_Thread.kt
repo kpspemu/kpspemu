@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.async.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
@@ -7,7 +8,6 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
-import com.soywiz.kpspemu.util.*
 
 class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     val logger get() = tmodule.logger

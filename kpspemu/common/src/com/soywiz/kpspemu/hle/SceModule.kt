@@ -12,27 +12,30 @@ import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.std.coroutine.*
 import kotlin.coroutines.*
 
 class RegisterReader {
     var pos: Int = 4
     lateinit var emulator: Emulator
     lateinit var cpu: CpuState
+    var regs: CpuRegisters = CpuRegisters()
 
     fun reset(cpu: CpuState) {
         this.cpu = cpu
+        this.regs = cpu.regs
         this.pos = 4
     }
 
     val thread: PspThread get() = cpu.thread
     val mem: Memory get() = cpu.mem
     val bool: Boolean get() = int != 0
-    val int: Int get() = this.cpu.getGpr(pos++)
+    val int: Int get() = regs.getGpr(pos++)
     val long: Long
         get() {
             pos = pos.nextAlignedTo(2) // Ensure register alignment
-            val low = this.cpu.getGpr(pos++)
-            val high = this.cpu.getGpr(pos++)
+            val low = regs.getGpr(pos++)
+            val high = regs.getGpr(pos++)
             return (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFF)
         }
     val ptr: Ptr get() = MemPtr(mem, int)
@@ -222,25 +225,23 @@ abstract class SceModule(
             loggerSuspend.trace { "Suspend $name (${threadManager.summary}) : ${rcpu.summary}" }
             val mfunction: suspend (RegisterReader) -> T = { function(it, rcpu) }
             var completed = false
-            mfunction.startCoroutine(this, object : Continuation<T> {
+            mfunction.startCoroutine(this, object : OldContinuationAdaptor<T>() {
                 override val context: CoroutineContext = coroutineContext
 
-                override fun resumeWith(result: SuccessOrFailure<T>) {
-                    if (result.isSuccess) {
-                        val value = result.getOrThrow()
-                        resumeHandler(rcpu, thread, value)
-                        completed = true
-                        rthread.resume()
-                        loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
+                override fun resume(value: T) {
+                    resumeHandler(rcpu, thread, value)
+                    completed = true
+                    rthread.resume()
+                    loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
+                }
+
+                override fun resumeWithException(exception: Throwable) {
+                    if (exception is SceKernelException) {
+                        resume(convertErrorToT(exception.errorCode))
                     } else {
-                        val e = result.exceptionOrNull()!!
-                        if (e is SceKernelException) {
-                            resume(convertErrorToT(e.errorCode))
-                        } else {
-                            println("ERROR at registerFunctionSuspendT.resumeWithException")
-                            e.printStackTrace()
-                            throw e
-                        }
+                        println("ERROR at registerFunctionSuspendT.resumeWithException")
+                        exception.printStackTrace()
+                        throw exception
                     }
                 }
             })

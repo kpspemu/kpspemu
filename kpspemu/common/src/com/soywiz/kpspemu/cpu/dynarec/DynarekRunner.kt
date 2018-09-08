@@ -17,7 +17,7 @@ class DynarekRunner(
 ) {
     val gcpu = cpu.globalCpuState
     val mcache = gcpu.mcache
-    val dispatcher = InstructionDispatcher(InstructionInterpreter(cpu))
+    //val dispatcher = InstructionDispatcher(InstructionInterpreter())
 
     val disasmPcs = IntSet()
     fun steps(count: Int, trace: Boolean = false): Int {

@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.kds.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
@@ -12,6 +13,7 @@ import com.soywiz.korio.crypto.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.ge.*
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
@@ -27,7 +29,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
     var taskCount by taskCountFlag
 
     fun reset() {
-        for ((_, tex) in texturesById) tex.texture.close()
+        for (tex in texturesById.values) tex?.texture?.close()
         for ((_, vtype) in programLayoutByVertexType) {
             //vtype.dele
             // close
@@ -157,7 +159,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
     val u_Col = Uniform("u_Col", VarType.Float4)
     val color = FloatArray(4)
 
-    private val uniforms = mapOf(
+    private val uniforms = AG.UniformValues(
         u_modelViewProjMatrix to batch.modelViewProjMatrix,
         u_tex to textureUnit,
         u_texMatrix to textureMatrix,

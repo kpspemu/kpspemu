@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.ge
 
+import com.soywiz.korio.async.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
 
@@ -7,7 +8,7 @@ class Ge(override val emulator: Emulator) : WithEmulator {
     val state = GeState()
     val queue = arrayListOf<GeList>()
     val lists = ResourceList("GeList") { GeList(this, it) }
-    val onCompleted = Signal2<Unit>()
+    val onCompleted = Signal<Unit>()
 
     fun listEnqueue(start: Int, stall: Int, callback: GeCallback, pspGeListArgs: Int): GeList {
         val list = lists.alloc().apply {

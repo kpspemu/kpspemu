@@ -10,6 +10,7 @@ import com.soywiz.korim.color.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
+import com.soywiz.korui.input.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.*
 import com.soywiz.kpspemu.hle.manager.*
@@ -63,17 +64,17 @@ class DebugScene(
         sceneView += SolidRect(480, 272, RGBA(0xFF, 0xFF, 0xFF, 0xAF))
 
         sceneView.onKeyDown {
-            when (it.keyCode) {
-                PspEmuKeys.F2 -> sceneView.visible = !sceneView.visible // F2
-                else -> if (sceneView.visible) when (it.keyCode) {
-                    PspEmuKeys.E -> askEval() // E
-                    PspEmuKeys.G -> askGoto() // G
-                    PspEmuKeys.UP -> moveUp() // UP
-                    PspEmuKeys.DOWN -> moveDown() // DOWN
-                    PspEmuKeys.PGUP -> moveUp(16) // PGUP
-                    PspEmuKeys.PGDOWN -> moveDown(16) // PGDOWN
-                    PspEmuKeys.T -> toggle() // T
-                    PspEmuKeys.F3 -> toggle() // F3
+            when (it.key) {
+                Key.F2 -> sceneView.visible = !sceneView.visible // F2
+                else -> if (sceneView.visible) when (it.key) {
+                    Key.E -> askEval() // E
+                    Key.G -> askGoto() // G
+                    Key.UP -> moveUp() // UP
+                    Key.DOWN -> moveDown() // DOWN
+                    Key.PAGE_UP -> moveUp(16) // PGUP
+                    Key.PAGE_DOWN -> moveDown(16) // PGDOWN
+                    Key.T -> toggle() // T
+                    Key.F3 -> toggle() // F3
                     else -> println("onKeyDown: ${it.keyCode}")
                 }
             }
@@ -192,9 +193,10 @@ class DebugScene(
     }
 
     class GprListView(browser: Browser, views: Views, val font: BitmapFont) : Container() {
-        var state = CpuState("GprListView", GlobalCpuState(DummyMemory))
+        var state = CpuState("GprListView", GlobalCpuState(MemoryInfo.DUMMY))
+        val rgs: CpuRegisters = state.getRgs()
         val regs = (0 until 32).map { regIndex ->
-            GprView(views, font, "r$regIndex", { state.setGpr(regIndex, it) }, { state.getGpr(regIndex) }).apply {
+            GprView(views, font, "r$regIndex", { setRegInt(regIndex, it) }, { getRegInt(regIndex) }).apply {
                 this@GprListView += this
                 y = (regIndex * 8).toDouble()
             }
@@ -205,6 +207,14 @@ class DebugScene(
         }
 
         val allRegs = regs + pc
+
+        fun setRegInt(regIndex: Int, it: Int) {
+            rgs.setGpr(regIndex, it)
+        }
+
+        fun getRegInt(regIndex: Int): Int {
+            return rgs.getGpr(regIndex)
+        }
 
         init {
             for (reg in allRegs) {
@@ -223,7 +233,7 @@ class DebugScene(
             //val thread = emulator.threadManager.threads.first()
             //thread.state.getGpr()
             for (n in 0 until 32) {
-                regs[n].value = state.getGpr(n)
+                regs[n].value = state.regs.getGpr(n)
             }
             pc.value = state.PC
         }

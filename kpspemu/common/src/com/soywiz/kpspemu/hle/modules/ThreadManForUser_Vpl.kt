@@ -34,11 +34,11 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
             info.numWaitThreads = waits.size
         }
 
-        suspend fun waitFree(size: Int, timeout: TimeSpan? = null) {
+        suspend fun waitFree(size: Int, timeout: TimeSpan? = null): Boolean {
             val wait = WaitHandle(size)
             waits += wait
             try {
-                wait.signal.waitOneOptTimeout(timeout)
+                return wait.signal.waitOneOpt(timeout) != null
             } finally {
                 waits -= wait
             }
@@ -95,10 +95,10 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
                 //println("OutOfMemory: ${e.message}")
                 if (!doTry && timeoutPtr.isNotNull && timeoutPtr.get() != 0) {
                     //println("WAIT! timeout=$timeoutPtr :: timeout=${timeoutPtr.get()}")
-                    try {
-                        vpl.waitFree(size, timeoutPtr.get().microseconds)
+                    val result = vpl.waitFree(size, timeoutPtr.get().microseconds)
+                    if (result) {
                         continue@retry
-                    } catch (e: TimeoutException) {
+                    } else {
                         timeoutPtr.set(0)
                         return SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT
                     }
@@ -142,34 +142,16 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
 
     fun registerSubmodule() = tmodule.apply {
         registerFunctionInt("sceKernelCreateVpl", 0x56C039B5, since = 150) {
-            sceKernelCreateVpl(
-                istr,
-                int,
-                int,
-                int,
-                ptr
-            )
+            sceKernelCreateVpl(istr, int, int, int, ptr)
         }
         registerFunctionSuspendInt("sceKernelAllocateVpl", 0xBED27435, since = 150) {
-            sceKernelAllocateVpl(
-                int,
-                int,
-                ptr32,
-                ptr32
-            )
+            sceKernelAllocateVpl(int, int, ptr32, ptr32)
         }
         registerFunctionSuspendInt("sceKernelTryAllocateVpl", 0xAF36D708, since = 150) {
-            sceKernelTryAllocateVpl(
-                int,
-                int,
-                ptr32
-            )
+            sceKernelTryAllocateVpl(int, int, ptr32)
         }
         registerFunctionInt("sceKernelReferVplStatus", 0x39810265, since = 150) {
-            sceKernelReferVplStatus(
-                int,
-                ptr(SceKernelVplInfo)
-            )
+            sceKernelReferVplStatus(int, ptr(SceKernelVplInfo))
         }
         registerFunctionInt("sceKernelDeleteVpl", 0x89B3D48C, since = 150) { sceKernelDeleteVpl(int) }
         registerFunctionInt("sceKernelFreeVpl", 0xB736E9FF, since = 150) { sceKernelFreeVpl(int, int) }

@@ -278,12 +278,13 @@ class DropboxVfs(val dropbox: Dropbox) : Vfs() {
                     return callback()
                 } finally {
 
+                    var taskRunning = true
                     val task = asyncImmediately(coroutineContext) {
                         delay(200)
-                        consolidateContent()
+                        if (taskRunning) consolidateContent()
                     }
 
-                    consolidateTimer = Closeable { task.cancel() }
+                    consolidateTimer = Closeable { taskRunning = false }
                 }
             }
 

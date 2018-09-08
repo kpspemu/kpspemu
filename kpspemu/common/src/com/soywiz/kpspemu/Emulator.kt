@@ -12,7 +12,23 @@ import com.soywiz.kpspemu.display.*
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
+import com.soywiz.std.*
 import kotlin.coroutines.*
+
+fun emulator(
+    coroutineContext: CoroutineContext,
+    syscalls: SyscallManager = SyscallManager(),
+    mem: Memory = Memory(),
+    gpuRenderer: GpuRenderer = DummyGpuRenderer(),
+    callback: (emulator: Emulator) -> Unit
+) {
+    val emulator = Emulator(coroutineContext, syscalls, mem, gpuRenderer)
+    try {
+        callback(emulator)
+    } finally {
+        emulator.close()
+    }
+}
 
 class Emulator(
     val coroutineContext: CoroutineContext,
@@ -20,8 +36,11 @@ class Emulator(
     val mem: Memory = Memory(),
     var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) : AsyncDependency {
-    val INITIAL_INTERPRETED = false
-    //val INITIAL_INTERPRETED = true
+    val INITIAL_INTERPRETED = when {
+        isNative -> true // Since dynarek is not yet implemented for Native, let's use interpreted that will be faster at this point
+        else -> true // we have to rework dynarek to get it working again with inline classes
+        //else -> false
+    }
 
     var interpreted = INITIAL_INTERPRETED
 
@@ -100,6 +119,10 @@ class Emulator(
         callbackManager.reset()
         controller.reset()
         fileManager.reset()
+    }
+
+    fun close() {
+        mem.close()
     }
 }
 

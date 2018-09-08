@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
+import com.soywiz.korio.async.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
@@ -18,13 +19,13 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
     var PC: Int = start
     var completed: Boolean = false
     val bb = GeBatchBuilder(ge)
-    var onCompleted = Signal2<Unit>()
+    var onCompleted = Signal<Unit>()
     var phase = ListSyncKind.QUEUED
 
     fun reset() {
         completed = false
         bb.reset()
-        onCompleted = Signal2<Unit>()
+        onCompleted = Signal<Unit>()
         phase = ListSyncKind.QUEUED
     }
 
@@ -37,8 +38,8 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
 
     fun run() {
         val mem = this.mem
-        PC = PC and Memory.MASK
-        stall = stall and Memory.MASK
+        PC = PC and MemoryInfo.MASK
+        stall = stall and MemoryInfo.MASK
         //println("GeList[$id].run: completed=$completed, PC=${PC.hexx}, stall=${stall.hexx}")
         while (!completed && !isStalled) {
             val cPC = PC
@@ -95,7 +96,7 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
                     callstack[callstackIndex++] = PC
                     callstack[callstackIndex++] = (state.baseOffset ushr 2)
                 }
-                PC = (state.baseAddress + p and 0b11.inv()) and Memory.MASK
+                PC = (state.baseAddress + p and 0b11.inv()) and MemoryInfo.MASK
             }
             Op.RET -> {
                 state.baseOffset = callstack[--callstackIndex] shl 2

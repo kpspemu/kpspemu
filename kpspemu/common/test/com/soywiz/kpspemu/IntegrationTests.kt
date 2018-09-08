@@ -10,7 +10,7 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
-import kotlin.coroutines.experimental.*
+import kotlin.coroutines.*
 import kotlin.test.*
 
 class IntegrationTests : BaseTest() {
@@ -131,64 +131,65 @@ class IntegrationTests : BaseTest() {
         mode: Mode = Mode.Interpreted,
         processor: (String) -> String = { it }
     ) {
-        val emulator = Emulator(coroutineContext)
-        emulator.interpreted = (mode == Mode.Interpreted)
-        emulator.display.exposeDisplay = false
-        emulator.registerNativeModules()
-        //val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
-        emulator.fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
-        emulator.fileManager.executableFile = "ms0:/PSP/GAME/virtual/EBOOT.PBP"
-        emulator.deviceManager.mount(
-            emulator.fileManager.currentDirectory,
-            MemoryVfsMix("EBOOT.PBP" to elf.clone().toAsync())
-        )
-        val info = emulator.loadElfAndSetRegisters(elf, listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP"))
+        emulator(coroutineContext) { emulator ->
+            emulator.interpreted = (mode == Mode.Interpreted)
+            emulator.display.exposeDisplay = false
+            emulator.registerNativeModules()
+            //val info = emulator.loadElfAndSetRegisters(elf, "ms0:/PSP/GAME/EBOOT.PBP")
+            emulator.fileManager.currentDirectory = "ms0:/PSP/GAME/virtual"
+            emulator.fileManager.executableFile = "ms0:/PSP/GAME/virtual/EBOOT.PBP"
+            emulator.deviceManager.mount(
+                emulator.fileManager.currentDirectory,
+                MemoryVfsMix("EBOOT.PBP" to elf.clone().toAsync())
+            )
+            val info = emulator.loadElfAndSetRegisters(elf, listOf("ms0:/PSP/GAME/virtual/EBOOT.PBP"))
 
-        if (TRACE1) {
-            Logger.defaultLevel = Logger.Level.TRACE
-        }
+            if (TRACE1) {
+                Logger.defaultLevel = Logger.Level.TRACE
+            }
 
-        if (TRACE) {
-            emulator.threadManager.trace("user_main", trace = true)
-            Logger.defaultLevel = Logger.Level.TRACE
-        } else {
-            Logger.setLevel("ElfPsp", Logger.Level.ERROR)
-        }
+            if (TRACE) {
+                emulator.threadManager.trace("user_main", trace = true)
+                Logger.defaultLevel = Logger.Level.TRACE
+            } else {
+                Logger.setLevel("ElfPsp", Logger.Level.ERROR)
+            }
 
-        var generatedError: Throwable? = null
+            var generatedError: Throwable? = null
 
-        try {
-            //println("[1]")
-            while (emulator.running) {
-                //println("[2] : ${emulator.running}")
-                emulator.threadManager.step() // UPDATE THIS
-                delay(10.milliseconds)
-                //println("[3]")
-                if (TRACE) {
-                    for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
+            try {
+                //println("[1]")
+                while (emulator.running) {
+                    //println("[2] : ${emulator.running}")
+                    emulator.threadManager.step() // UPDATE THIS
+                    delay(10.milliseconds)
+                    //println("[3]")
+                    if (TRACE) {
+                        for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
+                    }
                 }
+            } catch (e: Throwable) {
+                Console.error("Partial output generated:")
+                Console.error("'" + emulator.output.toString() + "'")
+                //throw e
+                e.printStackTrace()
+                generatedError = e
             }
-        } catch (e: Throwable) {
-            Console.error("Partial output generated:")
-            Console.error("'" + emulator.output.toString() + "'")
-            //throw e
-            e.printStackTrace()
-            generatedError = e
-        }
 
-        val ignoresRegex = ignores.map {
-            Regex(Regex.quote(it).replace("\\^", ".")) to it
-        }
-
-        fun String.normalize(): String {
-            var out = this.replace("\r\n", "\n").replace("\r", "\n").trimEnd()
-            for (rex in ignoresRegex) {
-                out = out.replace(rex.first, rex.second)
+            val ignoresRegex = ignores.map {
+                Regex(Regex.quote(it).replace("\\^", ".")) to it
             }
-            return out
+
+            fun String.normalize(): String {
+                var out = this.replace("\r\n", "\n").replace("\r", "\n").trimEnd()
+                for (rex in ignoresRegex) {
+                    out = out.replace(rex.first, rex.second)
+                }
+                return out
+            }
+            assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
+            //assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
+            generatedError?.let { throw it }
         }
-        assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
-        //assertEquals(expected.normalize(), processor(emulator.output.toString().normalize()))
-        generatedError?.let { throw it }
     }
 }

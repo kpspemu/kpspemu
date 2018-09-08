@@ -35,7 +35,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
     val activeThreads: Int get() = resourcesById.count { it.value.running }
     val totalThreads: Int get() = resourcesById.size
     val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
-    val onThreadChanged = Signal2<PspThread>()
+    val onThreadChanged = Signal<PspThread>()
     var currentThread: PspThread? = null
 
     override fun reset() {
@@ -117,10 +117,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 
     suspend fun waitThreadChange() {
         //println("[1]")
-        try {
-            onThreadChanged.waitOne(16)
-        } catch (e: TimeoutException) {
-        }
+        onThreadChanged.waitOne(16)
         //println("[2]")
         //coroutineContext.sleep(0)
     }
@@ -244,8 +241,8 @@ class PspThread internal constructor(
 ) : Resource(threadManager, id, name), WithEmulator {
     var preemptionCount: Int = 0
     val totalExecutedInstructions: Long get() = state.totalExecuted
-    val onEnd = Signal2<Unit>()
-    val onWakeUp = Signal2<Unit>()
+    val onEnd = Signal<Unit>()
+    val onWakeUp = Signal<Unit>()
     val logger = Logger("PspThread")
 
     enum class Phase {

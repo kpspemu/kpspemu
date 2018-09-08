@@ -4,7 +4,6 @@ import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*

@@ -45,6 +45,7 @@ import com.soywiz.kpspemu.native.*
 import com.soywiz.kpspemu.ui.*
 import com.soywiz.kpspemu.util.*
 import com.soywiz.kpspemu.util.io.*
+import com.soywiz.std.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.math.*
@@ -98,7 +99,7 @@ object KpspemuModule : Module() {
     //override val targetFps = PspDisplay.VERTICAL_SYNC_HZ // @TODO: Bad performance!
 }
 
-abstract class SceneWithProcess() : Scene() {
+abstract class SceneWithProcess : Scene() {
     private val processes = arrayListOf<Deferred<Unit>>()
 
     fun registerSceneProcess(callback: suspend () -> Unit) {
@@ -107,6 +108,7 @@ abstract class SceneWithProcess() : Scene() {
 
     override suspend fun sceneDestroy() {
         super.sceneDestroy()
+        //for (process in processes) process.cancel(DestroyException)
         for (process in processes) process.cancel()
     }
 }
@@ -259,8 +261,9 @@ class KpspemuMainScene(
                 } else {
                     if (!ended) {
                         ended = true
-                        println("COMPLETED")
+                        println("COMPLETED[1]")
                         display.crash()
+                        println("COMPLETED[2]")
                     }
                 }
                 emulator.threadManager.waitThreadChange()
@@ -301,45 +304,46 @@ class KpspemuMainScene(
         }
     }
 
-    val keys = BooleanArray(256)
+    val keys = LinkedHashMap<Key, Boolean>()
 
-    private fun updateKey(keyCode: Int, pressed: Boolean) {
+    fun keyPressed(key: Key): Boolean = keys.getOrElse(key) { false }
+
+    private fun updateKey(key: Key, pressed: Boolean) {
         //println("updateKey: $keyCode, $pressed")
-        keys[keyCode and 0xFF] = pressed
-        when (keyCode) {
-            PspEmuKeys.RETURN_JVM -> controller.updateButton(PspCtrlButtons.start, pressed)
-            PspEmuKeys.RETURN_JS -> controller.updateButton(PspCtrlButtons.start, pressed)
-            PspEmuKeys.SPACE -> controller.updateButton(PspCtrlButtons.select, pressed)
-            PspEmuKeys.W -> controller.updateButton(PspCtrlButtons.triangle, pressed)
-            PspEmuKeys.A -> controller.updateButton(PspCtrlButtons.square, pressed)
-            PspEmuKeys.S -> controller.updateButton(PspCtrlButtons.cross, pressed)
-            PspEmuKeys.D -> controller.updateButton(PspCtrlButtons.circle, pressed)
-            PspEmuKeys.Q -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed)
-            PspEmuKeys.E -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed)
-            PspEmuKeys.LEFT -> controller.updateButton(PspCtrlButtons.left, pressed)
-            PspEmuKeys.UP -> controller.updateButton(PspCtrlButtons.up, pressed)
-            PspEmuKeys.RIGHT -> controller.updateButton(PspCtrlButtons.right, pressed)
-            PspEmuKeys.DOWN -> controller.updateButton(PspCtrlButtons.down, pressed)
-            PspEmuKeys.I, PspEmuKeys.J, PspEmuKeys.K, PspEmuKeys.L -> Unit // analog
+        keys[key] = pressed
+        when (key) {
+            Key.ENTER -> controller.updateButton(PspCtrlButtons.start, pressed)
+            Key.SPACE -> controller.updateButton(PspCtrlButtons.select, pressed)
+            Key.W -> controller.updateButton(PspCtrlButtons.triangle, pressed)
+            Key.A -> controller.updateButton(PspCtrlButtons.square, pressed)
+            Key.S -> controller.updateButton(PspCtrlButtons.cross, pressed)
+            Key.D -> controller.updateButton(PspCtrlButtons.circle, pressed)
+            Key.Q -> controller.updateButton(PspCtrlButtons.leftTrigger, pressed)
+            Key.E -> controller.updateButton(PspCtrlButtons.rightTrigger, pressed)
+            Key.LEFT -> controller.updateButton(PspCtrlButtons.left, pressed)
+            Key.UP -> controller.updateButton(PspCtrlButtons.up, pressed)
+            Key.RIGHT -> controller.updateButton(PspCtrlButtons.right, pressed)
+            Key.DOWN -> controller.updateButton(PspCtrlButtons.down, pressed)
+            Key.I, Key.J, Key.K, Key.L -> Unit // analog
             else -> {
-                logger.trace { "UnhandledKey($pressed): $keyCode" }
+                logger.trace { "UnhandledKey($pressed): $key" }
             }
         }
 
         if (pressed) {
-            when (keyCode) {
-                PspEmuKeys.F7 -> {
+            when (key) {
+                Key.F7 -> {
                     launchImmediately(coroutineContext) {
                         promptConfigurator.prompt()
                     }
                 }
-                PspEmuKeys.F9 -> {
+                Key.F9 -> {
                     emulator.globalTrace = !emulator.globalTrace
                 }
-                PspEmuKeys.F10 -> {
+                Key.F10 -> {
                     launchImmediately(coroutineContext) { hudToggle() }
                 }
-                PspEmuKeys.F11 -> {
+                Key.F11 -> {
                     // Dump threads
                     println("THREAD_DUMP:")
                     for (thread in emulator.threadManager.threads) {
@@ -350,8 +354,8 @@ class KpspemuMainScene(
         }
 
         controller.updateAnalog(
-            x = when { keys[PspEmuKeys.J] -> -1f; keys[PspEmuKeys.L] -> +1f; else -> 0f; },
-            y = when { keys[PspEmuKeys.I] -> -1f; keys[PspEmuKeys.K] -> +1f; else -> 0f; }
+            x = when { keyPressed(Key.J) -> -1f; keyPressed(Key.L) -> +1f; else -> 0f; },
+            y = when { keyPressed(Key.I) -> -1f; keyPressed(Key.K) -> +1f; else -> 0f; }
         )
     }
 
@@ -367,7 +371,9 @@ class KpspemuMainScene(
         //val result = func(cpuState)
         //println("PC: ${cpuState.PC.hex}")
 
+        println("RESET EMULATOR[0]")
         resetEmulator()
+        println("RESET EMULATOR[1]")
         println("KPSPEMU: ${Kpspemu.VERSION}")
 
         println("Loading main font...")
@@ -383,7 +389,7 @@ class KpspemuMainScene(
 
         fun getInfoText(): String {
             val out = arrayListOf<String>()
-            out += "kpspemu"
+            out += "kpspemu-$kotlinPlatformKind"
             out += Kpspemu.VERSION
             out += ""
             out += "totalThreads=${emulator.threadManager.totalThreads}"
@@ -541,10 +547,16 @@ class KpspemuMainScene(
         //sceneView.onMove { hudOpen() }
         //sceneView.onOut { hudClose() }
         //sceneView.onClick { toggleHud() }
-        emulator.onHomePress { async { hudToggle() } }
+        emulator.onHomePress {
+            println("emulator.onHomePress")
+            asyncImmediately(coroutineContext) {
+                println("emulator.onHomePress.async")
+                hudToggle()
+            }
+        }
         //sceneView.onKeyTyped { println(it.keyCode) }
-        sceneView.onKeyDown { updateKey(it.keyCode, true) }
-        sceneView.onKeyUp { updateKey(it.keyCode, false) }
+        sceneView.onKeyDown { updateKey(it.key, true) }
+        sceneView.onKeyUp { updateKey(it.key, false) }
 
         cancellables += injector.getOrNull(Frame::class)?.onDropFiles(
             enter = {
@@ -605,6 +617,7 @@ class KpspemuMainScene(
     val hudQueue = AsyncThread()
 
     suspend fun hudToggle(open: Boolean = hud.alpha < 0.5) {
+        println("hudToggle: $open")
         if (open) {
             hudOpen()
         } else {

@@ -6,6 +6,7 @@ import com.soywiz.korim.color.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
     companion object {
@@ -23,7 +24,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
         const val VERTICAL_MS = VERTICAL_SECONDS * 1000.0 // 16.667
     }
 
-    val bmp = Bitmap32(480, 272)
+    val bmp = Bitmap32(480, 272, premult = false)
     var exposeDisplay = true
     var rawDisplay: Boolean = true
     var address: Int = 0x44000000

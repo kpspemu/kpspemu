@@ -21,37 +21,35 @@ class CpuInterpreter(
     val nameProvider: NameProvider,
     var trace: Boolean = false
 ) {
-    val dispatcher = InstructionDispatcher(InstructionInterpreter(cpu))
+    val interpreter = InstructionInterpreter()
+    val dispatcher = InstructionInterpreterDispatcher()
 
-    fun steps(count: Int, trace: Boolean = false): Int {
-        val mem = cpu.mem.getFastMem()
-        //val mem = null
-        return if (mem != null) {
-            stepsFastMem(mem, cpu.mem.getFastMemOffset(Memory.MAIN_OFFSET) - Memory.MAIN_OFFSET, count, trace)
-        } else {
-            stepsNormal(count, trace)
-        }
-    }
+    fun steps(count: Int, trace: Boolean = false): Int = stepsNormal(count, trace)
 
     fun stepsNormal(count: Int, trace: Boolean): Int {
-        val dispatcher = this.dispatcher
         val cpu = this.cpu
+        val regs = cpu.regs
         val mem = cpu.mem
         var sPC = 0
         var n = 0
+        val dispatcher = this.dispatcher
         //val fast = (mem as FastMemory).buffer
         val breakpointsEnabled = breakpoints.enabled
+        val interpreter = interpreter
         try {
+            val mustCheck = trace || breakpoints.enabled
             while (n < count) {
-                sPC = cpu._PC
-                checkTrace(sPC, cpu)
+                sPC = regs.PC
+                if (mustCheck) {
+                    checkTrace(sPC, cpu)
+                }
                 n++
                 //if (PC == 0) throw IllegalStateException("Trying to execute PC=0")
                 if (trace) tracePC()
+                //println("%08X".format(sPC))
                 val IR = mem.lw(sPC)
-                //val IR = fast.getAlignedInt32((PC ushr 2) and Memory.MASK)
-                cpu.IR = IR
-                dispatcher.dispatch(cpu, sPC, IR)
+                regs.IR = InstructionRegister(IR)
+                dispatcher.dispatch(interpreter, cpu, regs, mem, sPC, IR)
             }
         } catch (e: Throwable) {
             checkException(sPC, e)
@@ -64,32 +62,6 @@ class CpuInterpreter(
     private fun checkTrace(sPC: Int, cpu: CpuState) {
         if (trace) doTrace(sPC, cpu)
         if (breakpoints.enabled && breakpoints[sPC]) throw BreakpointException(cpu, sPC)
-        //if (sPC in 0x08900DFC..0x08900E38) {
-        //    doTrace(sPC, cpu)
-        //}
-        //doTrace(sPC, cpu)
-    }
-
-    fun stepsFastMem(mem: KmlNativeBuffer, memOffset: Int, count: Int, trace: Boolean): Int {
-        val i32 = mem.i32
-        val cpu = this.cpu
-        var n = 0
-        var sPC = 0
-        try {
-            while (n < count) {
-                sPC = cpu._PC and 0x0FFFFFFF
-                checkTrace(sPC, cpu)
-                n++
-                val IR = i32[(memOffset + sPC) ushr 2]
-                cpu.IR = IR
-                dispatcher.dispatch(cpu, sPC, IR)
-            }
-        } catch (e: Throwable) {
-            checkException(sPC, e)
-        } finally {
-            cpu.totalExecuted += n
-        }
-        return n
     }
 
     private fun doTrace(sPC: Int, state: CpuState) {
@@ -112,236 +84,170 @@ class CpuInterpreter(
 }
 
 
-@Suppress("FunctionName")
+@Suppress("FunctionName", "UNUSED_PARAMETER", "unused")
 // http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
-class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>() {
-    override fun unimplemented(s: CpuState, i: InstructionType): Unit =
+//class InstructionInterpreter {
+//class InstructionInterpreter : InstructionEvaluator<CpuState>() {
+class InstructionInterpreter : InstructionDecoder() {
+    val VDEST2 = IntArray2(4, 4)
+    val VSRC = IntArray(16)
+    val mc = MatrixContext()
+    val tempRegs = IntArray(16)
+    val tempRegs2 = IntArray2(4, 4)
+
+    inline fun unimplemented(s: CpuState, i: InstructionType): Unit =
         TODO("unimplemented: ${i.name} : " + i + " at ${"%08X".format(s._PC)}")
 
-    private inline operator fun Int.invoke(callback: Int.() -> Unit) {
-        callback()
-        s.advance_pc(4)
-    }
-
-    //inline val mem: Memory get() = s.mem
-    val mem = s.mem
-
-    val itemp = IntArray(2)
-
-    inline var Int.HI_LO: Long; get() = s.HI_LO; set(value) = run { s.HI_LO = value }
-    inline var Int.LO: Int; get() = s.LO; set(value) = run { s.LO = value }
-    inline var Int.HI: Int; get() = s.HI; set(value) = run { s.HI = value }
-    inline var Int.IC: Int; get() = s.IC; set(value) = run { s.IC = value }
-
-    inline var Int.RD: Int; get() = s.getGpr(this.rd); set(value) = run { s.setGpr(this.rd, value) }
-    inline var Int.RT: Int; get() = s.getGpr(this.rt); set(value) = run { s.setGpr(this.rt, value) }
-    inline var Int.RS: Int; get() = s.getGpr(this.rs); set(value) = run { s.setGpr(this.rs, value) }
-
-    inline var Int.FD: Float; get() = s.getFpr(this.fd); set(value) = run { s.setFpr(this.fd, value) }
-    inline var Int.FT: Float; get() = s.getFpr(this.ft); set(value) = run { s.setFpr(this.ft, value) }
-    inline var Int.FS: Float; get() = s.getFpr(this.fs); set(value) = run { s.setFpr(this.fs, value) }
-
-    inline var Int.FD_I: Int; get() = s.getFprI(this.fd); set(value) = run { s.setFprI(this.fd, value) }
-    inline var Int.FT_I: Int; get() = s.getFprI(this.ft); set(value) = run { s.setFprI(this.ft, value) }
-    inline var Int.FS_I: Int; get() = s.getFprI(this.fs); set(value) = run { s.setFprI(this.fs, value) }
-
-    inline val Int.S_IMM14: Int; get() = this.s_imm14
-    inline val Int.S_IMM16: Int; get() = this.s_imm16
-    inline val Int.U_IMM16: Int; get() = this.u_imm16
-    inline val Int.POS: Int get() = this.pos
-    inline val Int.SIZE_E: Int get() = this.size_e
-    inline val Int.SIZE_I: Int get() = this.size_i
-    inline val Int.RS_IMM16: Int; get() = RS + S_IMM16
-    inline val Int.RS_IMM14: Int; get() = RS + S_IMM14 * 4
-
     // ALU
-    override fun lui(i: Int, s: CpuState) = i { RT = (U_IMM16 shl 16) }
+    inline fun lui(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = (U_IMM16 shl 16) }
 
-    override fun movz(i: Int, s: CpuState) = i { RD = s.movz(RT, RD, RS) }
-    override fun movn(i: Int, s: CpuState) = i { RD = s.movn(RT, RD, RS) }
+    inline fun movz(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.movz(RT, RD, RS) }
+    inline fun movn(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.movn(RT, RD, RS) }
 
-    //override fun movz(i: Int, s: CpuState) = i { if (RT == 0) RD = RS }
-    //override fun movn(i: Int, s: CpuState) = i { if (RT != 0) RD = RS }
+    inline fun ext(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = s.ext(RS, POS, SIZE_E) }
+    inline fun ins(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = s.ins(RT, RS, POS, SIZE_I) }
 
-    override fun ext(i: Int, s: CpuState) = i { RT = s.ext(RS, POS, SIZE_E) }
-    override fun ins(i: Int, s: CpuState) = i { RT = s.ins(RT, RS, POS, SIZE_I) }
+    inline fun clz(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.clz(RS) }
+    inline fun clo(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.clo(RS) }
+    inline fun seb(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.seb(RT) }
+    inline fun seh(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.seh(RT) }
 
-    //override fun ext(i: Int, s: CpuState) = i { RT = RS.extract(POS, SIZE_E) }
-    //override fun ins(i: Int, s: CpuState) = i { RT = RT.insert(RS, POS, SIZE_I) }
+    inline fun wsbh(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.wsbh(RT) }
+    inline fun wsbw(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.wsbw(RT) }
 
-    override fun clz(i: Int, s: CpuState) = i { RD = s.clz(RS) }
-    override fun clo(i: Int, s: CpuState) = i { RD = s.clo(RS) }
-    override fun seb(i: Int, s: CpuState) = i { RD = s.seb(RT) }
-    override fun seh(i: Int, s: CpuState) = i { RD = s.seh(RT) }
+    inline fun max(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.max(RS, RT) }
+    inline fun min(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.min(RS, RT) }
 
-    override fun wsbh(i: Int, s: CpuState) = i { RD = s.wsbh(RT) }
-    override fun wsbw(i: Int, s: CpuState) = i { RD = s.wsbw(RT) }
+    inline fun add(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS + RT }
+    inline fun addu(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS + RT }
+    inline fun sub(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS - RT }
+    inline fun subu(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS - RT }
+    inline fun addi(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = RS + S_IMM16 }
+    inline fun addiu(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = RS + S_IMM16 }
 
-    override fun max(i: Int, s: CpuState) = i { RD = s.max(RS, RT) }
-    override fun min(i: Int, s: CpuState) = i { RD = s.min(RS, RT) }
+    inline fun div(s: CpuState, r: CpuRegisters, m: Memory) = r { s.div(RS, RT) }
+    inline fun divu(s: CpuState, r: CpuRegisters, m: Memory) = r { s.divu(RS, RT) }
+    inline fun mult(s: CpuState, r: CpuRegisters, m: Memory) = r { s.mult(RS, RT) }
+    inline fun multu(s: CpuState, r: CpuRegisters, m: Memory) = r { s.multu(RS, RT) }
+    inline fun madd(s: CpuState, r: CpuRegisters, m: Memory) = r { s.madd(RS, RT) }
+    inline fun maddu(s: CpuState, r: CpuRegisters, m: Memory) = r { s.maddu(RS, RT) }
+    inline fun msub(s: CpuState, r: CpuRegisters, m: Memory) = r { s.msub(RS, RT) }
+    inline fun msubu(s: CpuState, r: CpuRegisters, m: Memory) = r { s.msubu(RS, RT) }
 
-    override fun add(i: Int, s: CpuState) = i { RD = RS + RT }
-    override fun addu(i: Int, s: CpuState) = i { RD = RS + RT }
-    override fun sub(i: Int, s: CpuState) = i { RD = RS - RT }
-    override fun subu(i: Int, s: CpuState) = i { RD = RS - RT }
-    override fun addi(i: Int, s: CpuState) = i { RT = RS + S_IMM16 }
-    override fun addiu(i: Int, s: CpuState) = i { RT = RS + S_IMM16 }
+    inline fun mflo(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = LO }
+    inline fun mfhi(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = HI }
+    inline fun mfic(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = IC }
 
-
-    override fun div(i: Int, s: CpuState) = i { s.div(RS, RT) }
-    override fun divu(i: Int, s: CpuState) = i { s.divu(RS, RT) }
-    override fun mult(i: Int, s: CpuState) = i { s.mult(RS, RT) }
-    override fun multu(i: Int, s: CpuState) = i { s.multu(RS, RT) }
-    override fun madd(i: Int, s: CpuState) = i { s.madd(RS, RT) }
-    override fun maddu(i: Int, s: CpuState) = i { s.maddu(RS, RT) }
-    override fun msub(i: Int, s: CpuState) = i { s.msub(RS, RT) }
-    override fun msubu(i: Int, s: CpuState) = i { s.msubu(RS, RT) }
-
-    /*
-    override fun div(i: Int, s: CpuState) = i { LO = RS / RT; HI = RS % RT }
-    override fun divu(i: Int, s: CpuState) = i {
-        val d = RT
-        if (d != 0) {
-            LO = RS udiv d
-            HI = RS urem d
-        } else {
-            LO = 0
-            HI = 0
-        }
-    }
-
-   override fun mult(i: Int, s: CpuState) = i { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
-    override fun multu(i: Int, s: CpuState) = i { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
-    override fun madd(i: Int, s: CpuState) = i { HI_LO += RS.toLong() * RT.toLong() }
-    override fun maddu(i: Int, s: CpuState) = i { HI_LO += RS.unsigned * RT.unsigned }
-    override fun msub(i: Int, s: CpuState) = i { HI_LO -= RS.toLong() * RT.toLong() }
-    override fun msubu(i: Int, s: CpuState) = i { HI_LO -= RS.unsigned * RT.unsigned }
-    */
-
-
-    override fun mflo(i: Int, s: CpuState) = i { RD = LO }
-    override fun mfhi(i: Int, s: CpuState) = i { RD = HI }
-    override fun mfic(i: Int, s: CpuState) = i { RT = IC }
-
-    override fun mtlo(i: Int, s: CpuState) = i { LO = RS }
-    override fun mthi(i: Int, s: CpuState) = i { HI = RS }
-    override fun mtic(i: Int, s: CpuState) = i { IC = RT }
+    inline fun mtlo(s: CpuState, r: CpuRegisters, m: Memory) = r { LO = RS }
+    inline fun mthi(s: CpuState, r: CpuRegisters, m: Memory) = r { HI = RS }
+    inline fun mtic(s: CpuState, r: CpuRegisters, m: Memory) = r { IC = RT }
 
     // ALU: Bit
-    override fun or(i: Int, s: CpuState) = i { RD = RS or RT }
+    inline fun or(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS or RT }
+    inline fun xor(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS xor RT }
+    inline fun and(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = RS and RT }
+    inline fun nor(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.nor(RS, RT) }
 
-    override fun xor(i: Int, s: CpuState) = i { RD = RS xor RT }
-    override fun and(i: Int, s: CpuState) = i { RD = RS and RT }
-    //override fun nor(i: Int, s: CpuState) = i { RD = (RS or RT).inv() }
-    override fun nor(i: Int, s: CpuState) = i { RD = s.nor(RS, RT) }
+    inline fun ori(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = RS or U_IMM16 }
+    inline fun xori(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = RS xor U_IMM16 }
+    inline fun andi(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = RS and U_IMM16 }
 
-    override fun ori(i: Int, s: CpuState) = i { RT = RS or U_IMM16 }
-    override fun xori(i: Int, s: CpuState) = i { RT = RS xor U_IMM16 }
-    override fun andi(i: Int, s: CpuState) = i { RT = RS and U_IMM16 }
+    inline fun sll(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.sll(RT, POS) }
+    inline fun sra(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.sra(RT, POS) }
+    inline fun srl(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.srl(RT, POS) }
+    inline fun sllv(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.sll(RT, RS) }
+    inline fun srav(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.sra(RT, RS) }
+    inline fun srlv(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.srl(RT, RS) }
 
-    override fun sll(i: Int, s: CpuState) = i { RD = s.sll(RT, POS) }
-    override fun sra(i: Int, s: CpuState) = i { RD = s.sra(RT, POS) }
-    override fun srl(i: Int, s: CpuState) = i { RD = s.srl(RT, POS) }
-    override fun sllv(i: Int, s: CpuState) = i { RD = s.sll(RT, RS) }
-    override fun srav(i: Int, s: CpuState) = i { RD = s.sra(RT, RS) }
-    override fun srlv(i: Int, s: CpuState) = i { RD = s.srl(RT, RS) }
+    inline fun bitrev(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.bitrev32(RT) }
 
-    //override fun sll(i: Int, s: CpuState) = i { RD = RT shl POS }
-    //override fun sra(i: Int, s: CpuState) = i { RD = RT shr POS }
-    //override fun srl(i: Int, s: CpuState) = i { RD = RT ushr POS }
-    //override fun sllv(i: Int, s: CpuState) = i { RD = RT shl (RS and 0b11111) }
-    //override fun srav(i: Int, s: CpuState) = i { RD = RT shr (RS and 0b11111) }
-    //override fun srlv(i: Int, s: CpuState) = i { RD = RT ushr (RS and 0b11111) }
-
-    override fun bitrev(i: Int, s: CpuState) = i { RD = s.bitrev32(RT) }
-
-    override fun rotr(i: Int, s: CpuState) = i { RD = s.rotr(RT, POS) }
-    override fun rotrv(i: Int, s: CpuState) = i { RD = s.rotr(RT, RS) }
+    inline fun rotr(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.rotr(RT, POS) }
+    inline fun rotrv(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.rotr(RT, RS) }
 
     // Memory
-    override fun lb(i: Int, s: CpuState) = i { RT = s.lb(RS_IMM16) }
+    inline fun lb(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lb(RS_IMM16) }
 
-    override fun lbu(i: Int, s: CpuState) = i { RT = s.lbu(RS_IMM16) }
-    override fun lh(i: Int, s: CpuState) = i { RT = s.lh(RS_IMM16) }
-    override fun lhu(i: Int, s: CpuState) = i { RT = s.lhu(RS_IMM16) }
-    override fun lw(i: Int, s: CpuState) = i { RT = s.lw(RS_IMM16) }
-    override fun ll(i: Int, s: CpuState) = i { RT = s.lw(RS_IMM16) }
+    inline fun lbu(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lbu(RS_IMM16) }
+    inline fun lh(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lh(RS_IMM16) }
+    inline fun lhu(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lhu(RS_IMM16) }
+    inline fun lw(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lw(RS_IMM16) }
+    inline fun ll(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lw(RS_IMM16) }
 
-    override fun lwl(i: Int, s: CpuState) = i { RT = s.lwl(RS_IMM16, RT) }
-    override fun lwr(i: Int, s: CpuState) = i { RT = s.lwr(RS_IMM16, RT) }
+    inline fun lwl(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lwl(RS_IMM16, RT) }
+    inline fun lwr(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = m.lwr(RS_IMM16, RT) }
 
-    override fun swl(i: Int, s: CpuState) = i { s.swl(RS_IMM16, RT) }
-    override fun swr(i: Int, s: CpuState) = i { s.swr(RS_IMM16, RT) }
+    inline fun swl(s: CpuState, r: CpuRegisters, m: Memory) = r { m.swl(RS_IMM16, RT) }
+    inline fun swr(s: CpuState, r: CpuRegisters, m: Memory) = r { m.swr(RS_IMM16, RT) }
 
-    override fun sb(i: Int, s: CpuState) = i { s.sb(RS_IMM16, RT) }
-    override fun sh(i: Int, s: CpuState) = i { s.sh(RS_IMM16, RT) }
-    override fun sw(i: Int, s: CpuState) = i { s.sw(RS_IMM16, RT) }
-    override fun sc(i: Int, s: CpuState) = i { s.sw(RS_IMM16, RT); RT = 1 }
+    inline fun sb(s: CpuState, r: CpuRegisters, m: Memory) = r { m.sb(RS_IMM16, RT) }
+    inline fun sh(s: CpuState, r: CpuRegisters, m: Memory) = r { m.sh(RS_IMM16, RT) }
+    inline fun sw(s: CpuState, r: CpuRegisters, m: Memory) = r { m.sw(RS_IMM16, RT) }
+    inline fun sc(s: CpuState, r: CpuRegisters, m: Memory) = r { m.sw(RS_IMM16, RT); RT = 1 }
 
-    override fun lwc1(i: Int, s: CpuState) = i { FT_I = s.lw(RS_IMM16) }
-    override fun swc1(i: Int, s: CpuState) = i { s.sw(RS_IMM16, FT_I) }
+    inline fun lwc1(s: CpuState, r: CpuRegisters, m: Memory) = r { FT_I = m.lw(RS_IMM16) }
+    inline fun swc1(s: CpuState, r: CpuRegisters, m: Memory) = r { m.sw(RS_IMM16, FT_I) }
 
     // Special
-    override fun syscall(i: Int, s: CpuState) = s.preadvance { syscall(SYSCALL) }
+    inline fun syscall(s: CpuState, r: CpuRegisters, m: Memory) = r.preadvance { s.syscall(SYSCALL) }
 
-    override fun _break(i: Int, s: CpuState) = s.preadvance { throw CpuBreakException(SYSCALL) }
+    inline fun _break(s: CpuState, r: CpuRegisters, m: Memory) = r.preadvance { throw CpuBreakException(SYSCALL) }
 
     // Set less
-    //override fun slt(i: Int, s: CpuState) = s { RD = (RS < RT).toInt() }
-    //override fun sltu(i: Int, s: CpuState) = s { RD = (RS ult RT).toInt() }
+    //fun slt(s: CpuState, r: CpuRegisters, m: CpuMemory) = s { RD = (RS < RT).toInt() }
+    //fun sltu(s: CpuState, r: CpuRegisters, m: CpuMemory) = s { RD = (RS ult RT).toInt() }
 
-    //override fun slti(i: Int, s: CpuState) = s { RT = (RS < S_IMM16).toInt() }
-    //override fun sltiu(i: Int, s: CpuState) = s { RT = (RS ult S_IMM16).toInt() }
+    //fun slti(s: CpuState, r: CpuRegisters, m: CpuMemory) = s { RT = (RS < S_IMM16).toInt() }
+    //fun sltiu(s: CpuState, r: CpuRegisters, m: CpuMemory) = s { RT = (RS ult S_IMM16).toInt() }
 
-    override fun slt(i: Int, s: CpuState) = s { RD = s.slt(RS, RT) }
-    override fun sltu(i: Int, s: CpuState) = s { RD = s.sltu(RS, RT) }
-    override fun slti(i: Int, s: CpuState) = s { RT = s.slt(RS, S_IMM16) }
-    override fun sltiu(i: Int, s: CpuState) = s { RT = s.sltu(RS, S_IMM16) }
+    inline fun slt(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.slt(RS, RT) }
+    inline fun sltu(s: CpuState, r: CpuRegisters, m: Memory) = r { RD = s.sltu(RS, RT) }
+    inline fun slti(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = s.slt(RS, S_IMM16) }
+    inline fun sltiu(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = s.sltu(RS, S_IMM16) }
 
 
     // Branch
-    override fun beq(i: Int, s: CpuState) = s.branch { RS == RT }
+    inline fun beq(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RS == RT }
 
-    override fun bne(i: Int, s: CpuState) = s.branch { RS != RT }
-    override fun bltz(i: Int, s: CpuState) = s.branch { RS < 0 }
-    override fun blez(i: Int, s: CpuState) = s.branch { RS <= 0 }
-    override fun bgtz(i: Int, s: CpuState) = s.branch { RS > 0 }
-    override fun bgez(i: Int, s: CpuState) = s.branch { RS >= 0 }
-    override fun bgezal(i: Int, s: CpuState) = s.branch { RA = _nPC + 4; RS >= 0 }
-    override fun bltzal(i: Int, s: CpuState) = s.branch { RA = _nPC + 4; RS < 0 }
+    inline fun bne(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RS != RT }
+    inline fun bltz(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RS < 0 }
+    inline fun blez(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RS <= 0 }
+    inline fun bgtz(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RS > 0 }
+    inline fun bgez(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RS >= 0 }
+    inline fun bgezal(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RA = nPC + 4; RS >= 0 }
+    inline fun bltzal(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { RA = nPC + 4; RS < 0 }
 
-    override fun beql(i: Int, s: CpuState) = s.branchLikely { RS == RT }
-    override fun bnel(i: Int, s: CpuState) = s.branchLikely { RS != RT }
-    override fun bltzl(i: Int, s: CpuState) = s.branchLikely { RS < 0 }
-    override fun blezl(i: Int, s: CpuState) = s.branchLikely { RS <= 0 }
-    override fun bgtzl(i: Int, s: CpuState) = s.branchLikely { RS > 0 }
-    override fun bgezl(i: Int, s: CpuState) = s.branchLikely { RS >= 0 }
-    override fun bgezall(i: Int, s: CpuState) = s.branchLikely { RA = _nPC + 4; RS >= 0 }
-    override fun bltzall(i: Int, s: CpuState) = s.branchLikely { RA = _nPC + 4; RS < 0 }
+    inline fun beql(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RS == RT }
+    inline fun bnel(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RS != RT }
+    inline fun bltzl(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RS < 0 }
+    inline fun blezl(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RS <= 0 }
+    inline fun bgtzl(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RS > 0 }
+    inline fun bgezl(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RS >= 0 }
+    inline fun bgezall(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RA = nPC + 4; RS >= 0 }
+    inline fun bltzall(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { RA = nPC + 4; RS < 0 }
 
+    inline fun bc1f(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { !fcr31_cc }
+    inline fun bc1t(s: CpuState, r: CpuRegisters, m: Memory) = r.branch { fcr31_cc }
+    inline fun bc1fl(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { !fcr31_cc }
+    inline fun bc1tl(s: CpuState, r: CpuRegisters, m: Memory) = r.branchLikely { fcr31_cc }
 
-    override fun bc1f(i: Int, s: CpuState) = s.branch { !fcr31_cc }
-    override fun bc1t(i: Int, s: CpuState) = s.branch { fcr31_cc }
-    override fun bc1fl(i: Int, s: CpuState) = s.branchLikely { !fcr31_cc }
-    override fun bc1tl(i: Int, s: CpuState) = s.branchLikely { fcr31_cc }
+    //fun j(s: CpuState, r: CpuRegisters, m: CpuMemory) = r.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) } // @TODO: Kotlin.JS doesn't optimize 0xf0000000.toInt() and generates a long
+    inline fun j(s: CpuState, r: CpuRegisters, m: Memory) = r.none { PC = nPC; nPC = (PC and (-268435456)) or (JUMP_ADDRESS) }
 
-    //override fun j(i: Int, s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and 0xf0000000.toInt()) or (JUMP_ADDRESS) } // @TODO: Kotlin.JS doesn't optimize 0xf0000000.toInt() and generates a long
-    override fun j(i: Int, s: CpuState) = s.none { _PC = _nPC; _nPC = (_PC and (-268435456)) or (JUMP_ADDRESS) }
+    inline fun jr(s: CpuState, r: CpuRegisters, m: Memory) = r.none { PC = nPC; nPC = RS }
 
-    override fun jr(i: Int, s: CpuState) = s.none { _PC = _nPC; _nPC = RS }
-
-    override fun jal(i: Int, s: CpuState) = s.none {
-        j(i, s); RA = _PC + 4;
+    inline fun jal(s: CpuState, r: CpuRegisters, m: Memory) = r.none {
+        j(s, r, m)
+        RA = PC + 4
     } // $31 = PC + 8 (or nPC + 4); PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
 
-    override fun jalr(i: Int, s: CpuState) = s.none { jr(i, s); RD = _PC + 4; }
+    inline fun jalr(s: CpuState, r: CpuRegisters, m: Memory) = r.none { jr(s, r, m); RD = PC + 4; }
 
     // Float
-    override fun mfc1(i: Int, s: CpuState) = s { RT = FS_I }
+    inline fun mfc1(s: CpuState, r: CpuRegisters, m: Memory) = r { RT = FS_I }
 
-    override fun mtc1(i: Int, s: CpuState) = s { FS_I = RT }
-    override fun cvt_s_w(i: Int, s: CpuState) = s { FD = FS_I.toFloat() }
-    override fun cvt_w_s(i: Int, s: CpuState) = s {
+    inline fun mtc1(s: CpuState, r: CpuRegisters, m: Memory) = r { FS_I = RT }
+    inline fun cvt_s_w(s: CpuState, r: CpuRegisters, m: Memory) = r { FD = FS_I.toFloat() }
+    inline fun cvt_w_s(s: CpuState, r: CpuRegisters, m: Memory) = r {
 
         FD_I = when (this.fcr31_rm) {
             0 -> Math.rint(FS) // rint: round nearest
@@ -352,51 +258,51 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun trunc_w_s(i: Int, s: CpuState) = s { FD_I = Math.trunc(FS) }
-    override fun round_w_s(i: Int, s: CpuState) = s { FD_I = Math.round(FS) }
-    override fun ceil_w_s(i: Int, s: CpuState) = s { FD_I = Math.ceil(FS) }
-    override fun floor_w_s(i: Int, s: CpuState) = s { FD_I = Math.floor(FS) }
+    inline fun trunc_w_s(s: CpuState, r: CpuRegisters, m: Memory) = r { FD_I = Math.trunc(FS) }
+    inline fun round_w_s(s: CpuState, r: CpuRegisters, m: Memory) = r { FD_I = Math.round(FS) }
+    inline fun ceil_w_s(s: CpuState, r: CpuRegisters, m: Memory) = r { FD_I = Math.ceil(FS) }
+    inline fun floor_w_s(s: CpuState, r: CpuRegisters, m: Memory) = r { FD_I = Math.floor(FS) }
 
-    inline fun CpuState.checkNan(callback: CpuState.() -> Unit) = this.normal {
+    inline fun CpuRegisters.checkNan(callback: CpuRegisters.() -> Unit) = this.normal {
         callback()
         if (FD.isNaN()) fcr31 = fcr31 or 0x00010040
         if (FD.isInfinite()) fcr31 = fcr31 or 0x00005014
     }
 
-    override fun mov_s(i: Int, s: CpuState) = s.checkNan { FD = FS }
-    override fun add_s(i: Int, s: CpuState) = s.checkNan { FD = FS pspAdd FT }
-    override fun sub_s(i: Int, s: CpuState) = s.checkNan { FD = FS pspSub FT }
-    override fun mul_s(i: Int, s: CpuState) = s.checkNan { FD = FS * FT; if (fcr31_fs && FD.isAlmostZero()) FD = 0f }
-    override fun div_s(i: Int, s: CpuState) = s.checkNan { FD = FS / FT }
-    override fun neg_s(i: Int, s: CpuState) = s.checkNan { FD = -FS }
-    override fun abs_s(i: Int, s: CpuState) = s.checkNan { FD = kotlin.math.abs(FS) }
-    override fun sqrt_s(i: Int, s: CpuState) = s.checkNan { FD = kotlin.math.sqrt(FS) }
+    inline fun mov_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = FS }
+    inline fun add_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = FS pspAdd FT }
+    inline fun sub_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = FS pspSub FT }
+    inline fun mul_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = FS * FT; if (fcr31_fs && FD.isAlmostZero()) FD = 0f }
+    inline fun div_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = FS / FT }
+    inline fun neg_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = -FS }
+    inline fun abs_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = kotlin.math.abs(FS) }
+    inline fun sqrt_s(s: CpuState, r: CpuRegisters, m: Memory) = r.checkNan { FD = kotlin.math.sqrt(FS) }
 
-    private inline fun CpuState._cu(callback: CpuState.() -> Boolean) =
+    inline fun CpuRegisters._cu(callback: CpuRegisters.() -> Boolean) =
         this { fcr31_cc = if (FS.isNaN() || FT.isNaN()) true else callback() }
 
-    private inline fun CpuState._co(callback: CpuState.() -> Boolean) =
+    inline fun CpuRegisters._co(callback: CpuRegisters.() -> Boolean) =
         this { fcr31_cc = if (FS.isNaN() || FT.isNaN()) false else callback() }
 
-    override fun c_f_s(i: Int, s: CpuState) = s._co { false }
-    override fun c_un_s(i: Int, s: CpuState) = s._cu { false }
-    override fun c_eq_s(i: Int, s: CpuState) = s._co { FS == FT }
-    override fun c_ueq_s(i: Int, s: CpuState) = s._cu { FS == FT }
-    override fun c_olt_s(i: Int, s: CpuState) = s._co { FS < FT }
-    override fun c_ult_s(i: Int, s: CpuState) = s._cu { FS < FT }
-    override fun c_ole_s(i: Int, s: CpuState) = s._co { FS <= FT }
-    override fun c_ule_s(i: Int, s: CpuState) = s._cu { FS <= FT }
+    inline fun c_f_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { false }
+    inline fun c_un_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { false }
+    inline fun c_eq_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { FS == FT }
+    inline fun c_ueq_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { FS == FT }
+    inline fun c_olt_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { FS < FT }
+    inline fun c_ult_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { FS < FT }
+    inline fun c_ole_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { FS <= FT }
+    inline fun c_ule_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { FS <= FT }
 
-    override fun c_sf_s(i: Int, s: CpuState) = s._co { false }
-    override fun c_ngle_s(i: Int, s: CpuState) = s._cu { false }
-    override fun c_seq_s(i: Int, s: CpuState) = s._co { FS == FT }
-    override fun c_ngl_s(i: Int, s: CpuState) = s._cu { FS == FT }
-    override fun c_lt_s(i: Int, s: CpuState) = s._co { FS < FT }
-    override fun c_nge_s(i: Int, s: CpuState) = s._cu { FS < FT }
-    override fun c_le_s(i: Int, s: CpuState) = s._co { FS <= FT }
-    override fun c_ngt_s(i: Int, s: CpuState) = s._cu { FS <= FT }
+    inline fun c_sf_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { false }
+    inline fun c_ngle_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { false }
+    inline fun c_seq_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { FS == FT }
+    inline fun c_ngl_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { FS == FT }
+    inline fun c_lt_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { FS < FT }
+    inline fun c_nge_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { FS < FT }
+    inline fun c_le_s(s: CpuState, r: CpuRegisters, m: Memory) = r._co { FS <= FT }
+    inline fun c_ngt_s(s: CpuState, r: CpuRegisters, m: Memory) = r._cu { FS <= FT }
 
-    override fun cfc1(i: Int, s: CpuState) = s {
+    inline fun cfc1(s: CpuState, r: CpuRegisters, m: Memory) = r {
         when (IR.rd) {
             0 -> RT = fcr0
             25 -> RT = fcr25
@@ -408,107 +314,104 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun ctc1(i: Int, s: CpuState) = s {
+    inline fun ctc1(s: CpuState, r: CpuRegisters, m: Memory) = r {
         when (IR.rd) {
             31 -> updateFCR31(RT)
         }
     }
 
-    private val VDEST2 = IntArray2(4, 4)
-    private val VSRC = IntArray(16)
-
-    private fun _lv_x(s: CpuState, size: Int) = s {
+    inline fun _lv_x(s: CpuState, r: CpuRegisters, m: Memory, size: Int) = r {
         getVectorRegisters(VSRC, IR.vt5_1, size)
         val start = RS_IMM14
-        for (n in 0 until size) s.VFPRI[VSRC[n]] = mem.lw(start + n * 4)
+        for (n in 0 until size) s.VFPRI[VSRC[n]] = m.lw(start + n * 4)
     }
 
-    private fun _sv_x(s: CpuState, size: Int) = s {
+    inline fun _sv_x(s: CpuState, r: CpuRegisters, m: Memory, size: Int) = s {
         getVectorRegisters(VSRC, IR.vt5_1, size)
         val start = RS_IMM14
         for (n in 0 until size) mem.sw(start + n * 4, s.VFPRI[VSRC[n]])
     }
 
-    override fun lv_s(i: Int, s: CpuState) = _lv_x(s, 1)
-    override fun lv_q(i: Int, s: CpuState) = _lv_x(s, 4)
+    inline fun lv_s(s: CpuState, r: CpuRegisters, m: Memory) = _lv_x(s, r, m, 1)
+    inline fun lv_q(s: CpuState, r: CpuRegisters, m: Memory) = _lv_x(s, r, m, 4)
 
-    override fun sv_s(i: Int, s: CpuState) = _sv_x(s, 1)
-    override fun sv_q(i: Int, s: CpuState) = _sv_x(s, 4)
+    inline fun sv_s(s: CpuState, r: CpuRegisters, m: Memory) = _sv_x(s, r, m, 1)
+    inline fun sv_q(s: CpuState, r: CpuRegisters, m: Memory) = _sv_x(s, r, m, 4)
 
-    override fun lvl_q(i: Int, s: CpuState) = s {
+    inline fun lvl_q(s: CpuState, r: CpuRegisters, m: Memory) = s {
         getVectorRegisters(VSRC, IR.vt5_1, 4)
         mem.lvl_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
     }
 
-    override fun lvr_q(i: Int, s: CpuState) = s {
+    inline fun lvr_q(s: CpuState, r: CpuRegisters, m: Memory) = s {
         getVectorRegisters(VSRC, IR.vt5_1, 4)
         mem.lvr_q(RS_IMM14) { i, value -> s.setVfprI(VSRC[i], value) }
     }
 
-    override fun svl_q(i: Int, s: CpuState) = s {
+    inline fun svl_q(s: CpuState, r: CpuRegisters, m: Memory) = s {
         getVectorRegisters(VSRC, IR.vt5_1, 4)
         mem.svl_q(RS_IMM14) { getVfprI(VSRC[it]) }
     }
 
-    override fun svr_q(i: Int, s: CpuState) = s {
+    inline fun svr_q(s: CpuState, r: CpuRegisters, m: Memory) = s {
         getVectorRegisters(VSRC, IR.vt5_1, 4)
         mem.svr_q(RS_IMM14) { getVfprI(VSRC[it]) }
     }
 
-    private fun cc_8888_to_4444(i: Int): Int = 0 or
+    inline fun cc_8888_to_4444(i: Int): Int = 0 or
             (((i ushr 4) and 15) shl 0) or
             (((i ushr 12) and 15) shl 4) or
             (((i ushr 20) and 15) shl 8) or
             (((i ushr 28) and 15) shl 12)
 
-    private fun cc_8888_to_5551(i: Int): Int = 0 or
+    inline fun cc_8888_to_5551(i: Int): Int = 0 or
             (((i ushr 3) and 31) shl 0) or
             (((i ushr 11) and 31) shl 5) or
             (((i ushr 19) and 31) shl 10) or
             (((i ushr 31) and 1) shl 15)
 
-    private fun cc_8888_to_5650(i: Int): Int = 0 or
+    inline fun cc_8888_to_5650(i: Int): Int = 0 or
             (((i ushr 3) and 31) shl 0) or
             (((i ushr 10) and 63) shl 5) or
             (((i ushr 19) and 31) shl 11)
 
-    private fun CpuState._vtXXXX_q(func: (Int) -> Int) = this {
+    inline fun CpuState._vtXXXX_q(func: (Int) -> Int) = this {
         setVDI_VS(destSize = IR.one_two / 2) {
             func(vsi[it * 2 + 0]) or (func(vsi[it * 2 + 1]) shl 16)
         }
     }
 
-    override fun vt4444_q(i: Int, s: CpuState) = s._vtXXXX_q(this::cc_8888_to_4444)
-    override fun vt5551_q(i: Int, s: CpuState) = s._vtXXXX_q(this::cc_8888_to_5551)
-    override fun vt5650_q(i: Int, s: CpuState) = s._vtXXXX_q(this::cc_8888_to_5650)
+    inline fun vt4444_q(s: CpuState, r: CpuRegisters, m: Memory) = s._vtXXXX_q(this::cc_8888_to_4444)
+    inline fun vt5551_q(s: CpuState, r: CpuRegisters, m: Memory) = s._vtXXXX_q(this::cc_8888_to_5551)
+    inline fun vt5650_q(s: CpuState, r: CpuRegisters, m: Memory) = s._vtXXXX_q(this::cc_8888_to_5650)
 
-    private fun _vc2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
+    inline fun _vc2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
         setVDI_VS(destSize = 4, srcSize = 1) { func(it, vsi.x) }
     }
 
-    override fun vc2i(i: Int, s: CpuState) =
+    inline fun vc2i(s: CpuState, r: CpuRegisters, m: Memory) =
         _vc2i(s) { index, value -> (value shl ((3 - index) * 8)) and 0xFF000000.toInt() }
 
-    override fun vuc2i(i: Int, s: CpuState) =
+    inline fun vuc2i(s: CpuState, r: CpuRegisters, m: Memory) =
         _vc2i(s) { index, value -> ((((value ushr (index * 8)) and 0xFF) * 0x01010101) shr 1) and 0x80000000.toInt().inv() }
 
-    private fun _vs2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
+    inline fun _vs2i(s: CpuState, func: (index: Int, value: Int) -> Int) = s {
         setVDI_VS(destSize = IR.one_two * 2) { func(it % 2, vsi[it / 2]) }
     }
 
-    override fun vs2i(i: Int, s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 16 }
-    override fun vus2i(i: Int, s: CpuState) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 15 }
+    inline fun vs2i(s: CpuState, r: CpuRegisters, m: Memory) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 16 }
+    inline fun vus2i(s: CpuState, r: CpuRegisters, m: Memory) = _vs2i(s) { index, value -> value.extract(index * 16, 16) shl 15 }
 
-    private fun _vi2c(s: CpuState, gen: (value: Int) -> Int) = s {
+    inline fun _vi2c(s: CpuState, gen: (value: Int) -> Int) = s {
         setVDI_VS(destSize = 1, srcSize = 4) {
             RGBA.packFast(gen(vsi[0]), gen(vsi[1]), gen(vsi[2]), gen(vsi[3]))
         }
     }
 
-    override fun vi2c(i: Int, s: CpuState) = _vi2c(s) { it.extract8(24) }
-    override fun vi2uc(i: Int, s: CpuState) = _vi2c(s) { if (it < 0) 0 else it.extract8(23) }
+    inline fun vi2c(s: CpuState, r: CpuRegisters, m: Memory) = _vi2c(s) { it.extract8(24) }
+    inline fun vi2uc(s: CpuState, r: CpuRegisters, m: Memory) = _vi2c(s) { if (it < 0) 0 else it.extract8(23) }
 
-    private fun _vi2s(s: CpuState, gen: (value: Int) -> Int) = s {
+    inline fun _vi2s(s: CpuState, gen: (value: Int) -> Int) = s {
         setVDI_VS(destSize = IR.one_two / 2) {
             val l = gen(vsi[it * 2 + 0])
             val r = gen(vsi[it * 2 + 1])
@@ -516,22 +419,22 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vi2s(i: Int, s: CpuState) = _vi2s(s) { it ushr 16 }
-    override fun vi2us(i: Int, s: CpuState) = _vi2s(s) { if (it < 0) 0 else it shr 15 }
-    override fun vi2f(i: Int, s: CpuState) = s { setVD_VS { vsi[it] * 2f.pow(-IR.imm5) } }
+    inline fun vi2s(s: CpuState, r: CpuRegisters, m: Memory) = _vi2s(s) { it ushr 16 }
+    inline fun vi2us(s: CpuState, r: CpuRegisters, m: Memory) = _vi2s(s) { if (it < 0) 0 else it shr 15 }
+    inline fun vi2f(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS { vsi[it] * 2f.pow(-IR.imm5) } }
 
-    private fun _vf2ix(s: CpuState, func: (value: Float, imm5: Int) -> Int) = s {
+    inline fun _vf2ix(s: CpuState, func: (value: Float, imm5: Int) -> Int) = s {
         setVDI_VS { if (vs[it].isNaN()) 0x7FFFFFFF else func(vs[it], IR.imm5) }
     }
 
-    override fun vf2id(i: Int, s: CpuState) = _vf2ix(s) { value, imm5 -> floor(value * 2f.pow(imm5)).toInt() }
-    override fun vf2iu(i: Int, s: CpuState) = _vf2ix(s) { value, imm5 -> ceil(value * 2f.pow(imm5)).toInt() }
-    override fun vf2in(i: Int, s: CpuState) = _vf2ix(s) { value, imm5 -> Math.rint((value * 2f.pow(imm5))) }
-    override fun vf2iz(i: Int, s: CpuState) = _vf2ix(s) { value, imm5 ->
+    inline fun vf2id(s: CpuState, r: CpuRegisters, m: Memory) = _vf2ix(s) { value, imm5 -> floor(value * 2f.pow(imm5)).toInt() }
+    inline fun vf2iu(s: CpuState, r: CpuRegisters, m: Memory) = _vf2ix(s) { value, imm5 -> ceil(value * 2f.pow(imm5)).toInt() }
+    inline fun vf2in(s: CpuState, r: CpuRegisters, m: Memory) = _vf2ix(s) { value, imm5 -> Math.rint((value * 2f.pow(imm5))) }
+    inline fun vf2iz(s: CpuState, r: CpuRegisters, m: Memory) = _vf2ix(s) { value, imm5 ->
         val rs = value * 2f.pow(imm5); if (value >= 0) floor(rs).toInt() else ceil(rs).toInt()
     }
 
-    override fun vf2h(i: Int, s: CpuState) = s {
+    inline fun vf2h(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVDI_VS(destSize = IR.one_two / 2) {
             val l = HalfFloat.floatBitsToHalfFloatBits(vsi[it * 2 + 0])
             val r = HalfFloat.floatBitsToHalfFloatBits(vsi[it * 2 + 1])
@@ -539,33 +442,33 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vh2f(i: Int, s: CpuState) = s {
+    inline fun vh2f(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVDI_VS(destSize = IR.one_two * 2) {
             HalfFloat.halfFloatBitsToFloatBits(vsi[it / 2].extract((it % 2) * 16, 16))
         }
     }
 
-    override fun viim(i: Int, s: CpuState) = s { VT = S_IMM16.toFloat() }
-    override fun vfim(i: Int, s: CpuState) = s { VT_I = HalfFloat.halfFloatBitsToFloatBits(U_IMM16) }
+    inline fun viim(s: CpuState, r: CpuRegisters, m: Memory) = s { VT = S_IMM16.toFloat() }
+    inline fun vfim(s: CpuState, r: CpuRegisters, m: Memory) = s { VT_I = HalfFloat.halfFloatBitsToFloatBits(U_IMM16) }
 
-    override fun vcst(i: Int, s: CpuState) = s { VD = VfpuConstants[IR.imm5].value }
-    override fun mtv(i: Int, s: CpuState) = s { VD_I = RT }
-    override fun vpfxt(i: Int, s: CpuState) = s { vpfxt.setEnable(IR) }
-    override fun vpfxd(i: Int, s: CpuState) = s { vpfxd.setEnable(IR) }
-    override fun vpfxs(i: Int, s: CpuState) = s { vpfxs.setEnable(IR) }
-    override fun vavg(i: Int, s: CpuState) = s {
+    inline fun vcst(s: CpuState, r: CpuRegisters, m: Memory) = s { VD = VfpuConstants[IR.imm5].value }
+    inline fun mtv(s: CpuState, r: CpuRegisters, m: Memory) = s { VD_I = RT }
+    inline fun vpfxt(s: CpuState, r: CpuRegisters, m: Memory) = s { vpfxt.setEnable(IR) }
+    inline fun vpfxd(s: CpuState, r: CpuRegisters, m: Memory) = s { vpfxd.setEnable(IR) }
+    inline fun vpfxs(s: CpuState, r: CpuRegisters, m: Memory) = s { vpfxs.setEnable(IR) }
+    inline fun vavg(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(destSize = 1, prefixes = true) {
             ((0 until vsSize).sumByFloat { (vs[it] / vsSize) })
         }
     }
 
-    override fun vfad(i: Int, s: CpuState) = s {
+    inline fun vfad(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(destSize = 1, prefixes = true) {
             ((0 until vsSize).sumByFloat { vs[it] })
         }
     }
 
-    override fun vrot(i: Int, s: CpuState) = s {
+    inline fun vrot(s: CpuState, r: CpuRegisters, m: Memory) = s {
         val vectorSize = IR.one_two
         val imm5 = IR.imm5
         val cosIndex = imm5.extract(0, 2)
@@ -586,31 +489,29 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     }
 
     // Vector operations (zero operands)
-    override fun vzero(i: Int, s: CpuState) = s { setVD_(prefixes = true) { 0f } }
-
-    override fun vone(i: Int, s: CpuState) = s { setVD_(prefixes = true) { 1f } }
+    inline fun vzero(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_(prefixes = true) { 0f } }
+    inline fun vone(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_(prefixes = true) { 1f } }
 
     // Vector operations (one operand)
-    override fun vmov(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { vs[it] } }
-
-    override fun vabs(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { abs(vs[it]) } }
-    override fun vsqrt(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { sqrt(vs[it]) } }
-    override fun vneg(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { -vs[it] } }
-    override fun vsat0(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { vs[it].pspSat0 } }
-    override fun vsat1(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { vs[it].pspSat1 } }
-    override fun vrcp(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { 1f / vs[it] } }
-    override fun vrsq(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { 1f / sqrt(vs[it]) } }
-    override fun vsin(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { sinv1(vs[it]) } }
-    override fun vasin(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { asinv1(vs[it]) } }
-    override fun vnsin(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { -sinv1(vs[it]) } }
-    override fun vcos(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { cosv1(vs[it]) } }
-    override fun vexp2(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { 2f.pow(vs[it]) } }
-    override fun vrexp2(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { 1f / 2f.pow(vs[it]) } }
-    override fun vlog2(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { log2(vs[it]) } }
-    override fun vnrcp(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { -1f / vs[it] } }
-    override fun vsgn(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { vs[it].pspSign } }
-    override fun vocp(i: Int, s: CpuState) = s { setVD_VS(prefixes = true) { 1f - vs[it] } }
-    override fun vbfy1(i: Int, s: CpuState) = s {
+    inline fun vmov(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { vs[it] } }
+    inline fun vabs(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { abs(vs[it]) } }
+    inline fun vsqrt(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { sqrt(vs[it]) } }
+    inline fun vneg(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { -vs[it] } }
+    inline fun vsat0(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { vs[it].pspSat0 } }
+    inline fun vsat1(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { vs[it].pspSat1 } }
+    inline fun vrcp(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { 1f / vs[it] } }
+    inline fun vrsq(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { 1f / sqrt(vs[it]) } }
+    inline fun vsin(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { sinv1(vs[it]) } }
+    inline fun vasin(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { asinv1(vs[it]) } }
+    inline fun vnsin(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { -sinv1(vs[it]) } }
+    inline fun vcos(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { cosv1(vs[it]) } }
+    inline fun vexp2(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { 2f.pow(vs[it]) } }
+    inline fun vrexp2(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { 1f / 2f.pow(vs[it]) } }
+    inline fun vlog2(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { log2(vs[it]) } }
+    inline fun vnrcp(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { -1f / vs[it] } }
+    inline fun vsgn(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { vs[it].pspSign } }
+    inline fun vocp(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VS(prefixes = true) { 1f - vs[it] } }
+    inline fun vbfy1(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(prefixes = true) {
             when (it) {
                 0 -> vs.x + vs.y
@@ -622,7 +523,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vbfy2(i: Int, s: CpuState) = s {
+    inline fun vbfy2(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(prefixes = true) {
             when (it) {
                 0 -> vs.x + vs.z
@@ -634,7 +535,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vsrt1(i: Int, s: CpuState) = s {
+    inline fun vsrt1(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(prefixes = true) {
             when (it) {
                 0 -> min(vs.x, vs.y)
@@ -646,7 +547,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vsrt2(i: Int, s: CpuState) = s {
+    inline fun vsrt2(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(prefixes = true) {
             vs.run {
                 when (it) {
@@ -660,7 +561,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vsrt3(i: Int, s: CpuState) = s {
+    inline fun vsrt3(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(prefixes = true) {
             when (it) {
                 0 -> max(vs.x, vs.y)
@@ -672,7 +573,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vsrt4(i: Int, s: CpuState) = s {
+    inline fun vsrt4(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VS(prefixes = true) {
             when (it) {
                 0 -> max(vs.x, vs.w)
@@ -685,18 +586,17 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     }
 
     // Vector operations (two operands)
-    override fun vsge(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { if (vs[it] >= vt[it]) 1f else 0f } }
+    inline fun vsge(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { if (vs[it] >= vt[it]) 1f else 0f } }
+    inline fun vslt(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { if (vs[it] < vt[it]) 1f else 0f } }
+    inline fun vscmp(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { vs[it].compareTo(vt[it]).toFloat() } }
 
-    override fun vslt(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { if (vs[it] < vt[it]) 1f else 0f } }
-    override fun vscmp(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it].compareTo(vt[it]).toFloat() } }
-
-    override fun vadd(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] pspAdd vt[it] } }
-    override fun vsub(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] pspSub vt[it] } }
-    override fun vmul(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] * vt[it] } }
-    override fun vdiv(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { vs[it] / vt[it] } }
-    override fun vmin(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { min(vs[it], vt[it]) } }
-    override fun vmax(i: Int, s: CpuState) = s { setVD_VSVT(prefixes = true) { max(vs[it], vt[it]) } }
-    override fun vcrs_t(i: Int, s: CpuState) = s {
+    inline fun vadd(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { vs[it] pspAdd vt[it] } }
+    inline fun vsub(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { vs[it] pspSub vt[it] } }
+    inline fun vmul(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { vs[it] * vt[it] } }
+    inline fun vdiv(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { vs[it] / vt[it] } }
+    inline fun vmin(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { min(vs[it], vt[it]) } }
+    inline fun vmax(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(prefixes = true) { max(vs[it], vt[it]) } }
+    inline fun vcrs_t(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VSVT(prefixes = true) {
             when (it) {
                 0 -> vs.y * vt.z
@@ -707,7 +607,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vcrsp_t(i: Int, s: CpuState) = s {
+    inline fun vcrsp_t(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VSVT(prefixes = true) {
             when (it) {
                 0 -> +vs.y * vt.z - vs.z * vt.y
@@ -718,7 +618,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vqmul(i: Int, s: CpuState) = s {
+    inline fun vqmul(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VSVT(prefixes = true) {
             when (it) {
                 0 -> +vs.x * vt.w + vs.y * vt.z - vs.z * vt.y + vs.w * vt.x
@@ -730,28 +630,28 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vdot(i: Int, s: CpuState) = s {
+    inline fun vdot(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VSVT(destSize = 1, prefixes = true) {
             ((0 until vsSize).sumByFloat { (vs[it] * vt[it]) })
         }
     }
 
-    override fun vscl(i: Int, s: CpuState) = s { setVD_VSVT(targetSize = 1, prefixes = true) { vs[it] * vt.x } }
+    inline fun vscl(s: CpuState, r: CpuRegisters, m: Memory) = s { setVD_VSVT(targetSize = 1, prefixes = true) { vs[it] * vt.x } }
 
-    override fun vhdp(i: Int, s: CpuState) = s {
+    inline fun vhdp(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VSVT(destSize = 1, prefixes = true) {
             vs[vsSize - 1] = 1f
             (0 until vsSize).sumByFloat { (vs[it] * vt[it]) }
         }
     }
 
-    override fun vdet(i: Int, s: CpuState) = s {
+    inline fun vdet(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVD_VSVT(destSize = 1, prefixes = true) {
             vs.x * vt.y - vs.y * vt.x
         }
     }
 
-    override fun vcmp(i: Int, s: CpuState) = s {
+    inline fun vcmp(s: CpuState, r: CpuRegisters, m: Memory) = s {
         val size = IR.one_two
         var cc = 0
         _VSVT(prefixes = true) {
@@ -792,7 +692,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         //println("vcmp:$cc --> $VFPR_CC")
     }
 
-    private fun _vcmovtf(s: CpuState, truth: Boolean) = s {
+    inline fun _vcmovtf(s: CpuState, truth: Boolean) = s {
         val ccidx = IR.imm3
         //println("_vcmovtf($truth)[$ccidx]")
         setVD_VDVS(prefixes = true) {
@@ -806,10 +706,10 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vcmovf(i: Int, s: CpuState) = _vcmovtf(s, true)
-    override fun vcmovt(i: Int, s: CpuState) = _vcmovtf(s, false)
+    inline fun vcmovf(s: CpuState, r: CpuRegisters, m: Memory) = _vcmovtf(s, true)
+    inline fun vcmovt(s: CpuState, r: CpuRegisters, m: Memory) = _vcmovtf(s, false)
 
-    override fun vwbn(i: Int, s: CpuState) = s {
+    inline fun vwbn(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVDI_VS(destSize = 1) {
             val exp = IR.imm8
             val sigbit = vsi[it] and 0x80000000.toInt()
@@ -830,7 +730,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vsbn(i: Int, s: CpuState) = s {
+    inline fun vsbn(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setVDI_VSVT(targetSize = 1) {
             val exp = (127 + vti[0]) and 0xFF
             val prev = vsi[it] and 0x7F800000
@@ -845,21 +745,21 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     }
 
     // Matrix operations
-    override fun vmzero(i: Int, s: CpuState) = s { setMatrixVD { 0f } }
+    inline fun vmzero(s: CpuState, r: CpuRegisters, m: Memory) = s { setMatrixVD { 0f } }
 
-    override fun vmone(i: Int, s: CpuState) = s { setMatrixVD { 1f } }
-    override fun vmidt(i: Int, s: CpuState) = s { setMatrixVD { if (row == col) 1f else 0f } }
-    override fun vmmov(i: Int, s: CpuState) = s { setMatrixVD_VS { ms[col, row] } }
-    override fun vmmul(i: Int, s: CpuState) = s {
+    inline fun vmone(s: CpuState, r: CpuRegisters, m: Memory) = s { setMatrixVD { 1f } }
+    inline fun vmidt(s: CpuState, r: CpuRegisters, m: Memory) = s { setMatrixVD { if (row == col) 1f else 0f } }
+    inline fun vmmov(s: CpuState, r: CpuRegisters, m: Memory) = s { setMatrixVD_VS { ms[col, row] } }
+    inline fun vmmul(s: CpuState, r: CpuRegisters, m: Memory) = s {
         setMatrixVD_VSVT {
             (0 until side).map { ms[row, it] * mt[col, it] }.sum()
         }
     }
 
-    override fun mfvc(i: Int, s: CpuState) = s { RT = VFPRC[IR.imm7] }
-    override fun mtvc(i: Int, s: CpuState) = s { VFPRC[IR.imm7] = RT }
+    inline fun mfvc(s: CpuState, r: CpuRegisters, m: Memory) = s { RT = r.getVfprC(IR.imm7) }
+    inline fun mtvc(s: CpuState, r: CpuRegisters, m: Memory) = s { r.setVfprC(IR.imm7, RT) }
 
-    private fun _vtfm_x(s: CpuState, size: Int) = s {
+    inline fun _vtfm_x(s: CpuState, size: Int) = s {
         vfpuContext.run {
             getVectorRegisterValues(b_vt, IR.vt, size)
 
@@ -872,7 +772,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    private fun _vhtfm_x(s: CpuState, size: Int) = s {
+    inline fun _vhtfm_x(s: CpuState, size: Int) = s {
         vfpuContext.run {
             getVectorRegisterValues(b_vt, IR.vt, size - 1)
 
@@ -886,54 +786,54 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    override fun vtfm2(i: Int, s: CpuState) = _vtfm_x(s, 2)
-    override fun vtfm3(i: Int, s: CpuState) = _vtfm_x(s, 3)
-    override fun vtfm4(i: Int, s: CpuState) = _vtfm_x(s, 4)
+    inline fun vtfm2(s: CpuState, r: CpuRegisters, m: Memory) = _vtfm_x(s, 2)
+    inline fun vtfm3(s: CpuState, r: CpuRegisters, m: Memory) = _vtfm_x(s, 3)
+    inline fun vtfm4(s: CpuState, r: CpuRegisters, m: Memory) = _vtfm_x(s, 4)
 
-    override fun vhtfm2(i: Int, s: CpuState) = _vhtfm_x(s, 2)
-    override fun vhtfm3(i: Int, s: CpuState) = _vhtfm_x(s, 3)
-    override fun vhtfm4(i: Int, s: CpuState) = _vhtfm_x(s, 4)
+    inline fun vhtfm2(s: CpuState, r: CpuRegisters, m: Memory) = _vhtfm_x(s, 2)
+    inline fun vhtfm3(s: CpuState, r: CpuRegisters, m: Memory) = _vhtfm_x(s, 3)
+    inline fun vhtfm4(s: CpuState, r: CpuRegisters, m: Memory) = _vhtfm_x(s, 4)
 
-    override fun vmscl(i: Int, s: CpuState) = s {
+    inline fun vmscl(s: CpuState, r: CpuRegisters, m: Memory) = s {
         val scale = vfpuContext.sreadVt(s, size = 1)[0]
         setMatrixVD_VS { ms[col, row] * scale }
     }
 
-    override fun vidt(i: Int, s: CpuState) = unimplemented(s, Instructions.vidt)
-    override fun vnop(i: Int, s: CpuState) = unimplemented(s, Instructions.vnop)
-    override fun vsync(i: Int, s: CpuState) = unimplemented(s, Instructions.vsync)
-    override fun vflush(i: Int, s: CpuState) = unimplemented(s, Instructions.vflush)
-    override fun vrnds(i: Int, s: CpuState) = unimplemented(s, Instructions.vrnds)
-    override fun vrndi(i: Int, s: CpuState) = unimplemented(s, Instructions.vrndi)
-    override fun vrndf1(i: Int, s: CpuState) = unimplemented(s, Instructions.vrndf1)
-    override fun vrndf2(i: Int, s: CpuState) = unimplemented(s, Instructions.vrndf2)
-    override fun vmfvc(i: Int, s: CpuState) = unimplemented(s, Instructions.vmfvc)
-    override fun vmtvc(i: Int, s: CpuState) = unimplemented(s, Instructions.vmtvc)
-    override fun mfvme(i: Int, s: CpuState) = unimplemented(s, Instructions.mfvme)
-    override fun mtvme(i: Int, s: CpuState) = unimplemented(s, Instructions.mtvme)
-    override fun vlgb(i: Int, s: CpuState) = unimplemented(s, Instructions.vlgb)
-    override fun vsbz(i: Int, s: CpuState) = unimplemented(s, Instructions.vsbz)
-    override fun vsocp(i: Int, s: CpuState) = unimplemented(s, Instructions.vsocp)
-    override fun bvf(i: Int, s: CpuState) = unimplemented(s, Instructions.bvf)
-    override fun bvt(i: Int, s: CpuState) = unimplemented(s, Instructions.bvt)
-    override fun bvfl(i: Int, s: CpuState) = unimplemented(s, Instructions.bvfl)
-    override fun bvtl(i: Int, s: CpuState) = unimplemented(s, Instructions.bvtl)
+    inline fun vidt(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vidt)
+    inline fun vnop(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vnop)
+    inline fun vsync(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vsync)
+    inline fun vflush(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vflush)
+    inline fun vrnds(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vrnds)
+    inline fun vrndi(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vrndi)
+    inline fun vrndf1(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vrndf1)
+    inline fun vrndf2(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vrndf2)
+    inline fun vmfvc(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vmfvc)
+    inline fun vmtvc(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vmtvc)
+    inline fun mfvme(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mfvme)
+    inline fun mtvme(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mtvme)
+    inline fun vlgb(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vlgb)
+    inline fun vsbz(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vsbz)
+    inline fun vsocp(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.vsocp)
+    inline fun bvf(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.bvf)
+    inline fun bvt(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.bvt)
+    inline fun bvfl(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.bvfl)
+    inline fun bvtl(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.bvtl)
 
     // Vectorial utilities
 
-    fun CpuState.getMatrixRegsValues(out: FloatArray2, matrixReg: Int, N: Int): Int {
+    inline fun CpuState.getMatrixRegsValues(out: FloatArray2, matrixReg: Int, N: Int): Int {
         val side = getMatrixRegs(tempRegs2, matrixReg, N)
         for (j in 0 until side) for (i in 0 until side) out[j, i] = getVfpr(tempRegs2[j, i])
         return side
     }
 
-    fun CpuState.setMatrixRegsValues(inp: FloatArray2, matrixReg: Int, N: Int): Int {
+    inline fun CpuState.setMatrixRegsValues(inp: FloatArray2, matrixReg: Int, N: Int): Int {
         val side = getMatrixRegs(tempRegs2, matrixReg, N)
         for (j in 0 until side) for (i in 0 until side) setVfpr(tempRegs2[j, i], inp[j, i])
         return side
     }
 
-    fun getMatrixRegs(out: IntArray2, matrixReg: Int, N: Int): Int {
+    inline fun getMatrixRegs(out: IntArray2, matrixReg: Int, N: Int): Int {
         val side = N
         val mtx = (matrixReg ushr 2) and 7
         val col = matrixReg and 3
@@ -968,9 +868,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         fun setPos(c: Int, r: Int) = this.apply { col = c; row = r }
     }
 
-    private val mc = MatrixContext()
-
-    fun CpuState.setMatrixVD(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
+    inline fun CpuState.setMatrixVD(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
         mc.side = side
         for (col in 0 until side) for (row in 0 until side) {
             mc.md[col, row] = callback(mc.setPos(col, row))
@@ -978,7 +876,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         setMatrixRegsValues(mc.md, IR.vd, side)
     }
 
-    fun CpuState.setMatrixVD_VS(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
+    inline fun CpuState.setMatrixVD_VS(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
         getMatrixRegsValues(mc.ms, IR.vs, side)
 
         mc.side = side
@@ -988,7 +886,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         setMatrixRegsValues(mc.md, IR.vd, side)
     }
 
-    fun CpuState.setMatrixVD_VSVT(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
+    inline fun CpuState.setMatrixVD_VSVT(side: Int = IR.one_two, callback: MatrixContext.() -> Float) {
         getMatrixRegsValues(mc.ms, IR.vs, side)
         getMatrixRegsValues(mc.mt, IR.vt, side)
 
@@ -999,10 +897,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         setMatrixRegsValues(mc.md, IR.vd, side)
     }
 
-    private val tempRegs = IntArray(16)
-    private val tempRegs2 = IntArray2(4, 4)
-
-    fun getVectorRegisters(out: IntArray, vectorReg: Int, N: Int): Int {
+    inline fun getVectorRegisters(out: IntArray, vectorReg: Int, N: Int): Int {
         val mtx = vectorReg.extract(2, 3)
         val col = vectorReg.extract(0, 2)
         val row: Int
@@ -1027,12 +922,12 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         return N
     }
 
-    fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: Int) {
+    inline fun CpuState.getVectorRegisterValues(out: FloatIntBuffer, vectorReg: Int, N: Int) {
         getVectorRegisters(tempRegs, vectorReg, N)
         for (n in 0 until N) out.i[n] = getVfprI(tempRegs[n])
     }
 
-    fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: Int) {
+    inline fun CpuState.setVectorRegisterValues(inp: FloatIntBuffer, vectorReg: Int, N: Int) {
         getVectorRegisters(tempRegs, vectorReg, N)
         for (n in 0 until N) setVfprI(tempRegs[n], inp.i[n])
     }
@@ -1106,8 +1001,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
 
     val vfpuContext = VfpuContext()
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState.setVD_(
+    inline fun CpuState.setVD_(
         destSize: Int = IR.one_two,
         prefixes: Boolean = false,
         callback: VfpuContext.(i: Int) -> Float
@@ -1118,8 +1012,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState.setVDI_(
+    inline fun CpuState.setVDI_(
         destSize: Int = IR.one_two,
         prefixes: Boolean = false,
         callback: VfpuContext.(i: Int) -> Int
@@ -1144,8 +1037,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState.setVDI_VS(
+    inline fun CpuState.setVDI_VS(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         prefixes: Boolean = false,
@@ -1158,8 +1050,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState.setVD_VDVS(
+    inline fun CpuState.setVD_VDVS(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         prefixes: Boolean = false,
@@ -1173,8 +1064,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState.setVD_VSVT(
+    inline fun CpuState.setVD_VSVT(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         targetSize: Int = srcSize,
@@ -1191,8 +1081,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         }
     }
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState.setVDI_VSVT(
+    inline fun CpuState.setVDI_VSVT(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         targetSize: Int = srcSize,
@@ -1207,8 +1096,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
         consumePrefixes(prefixes)
     }
 
-    //inline // @TODO: kotlin-native bug: https://github.com/JetBrains/kotlin-native/issues/1777
-    fun CpuState._VSVT(
+    inline fun CpuState._VSVT(
         destSize: Int = IR.one_two,
         srcSize: Int = IR.one_two,
         targetSize: Int = srcSize,
@@ -1264,18 +1152,18 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
 
     // Not implemented instructions!
 
-    override fun cache(i: Int, s: CpuState) = unimplemented(s, Instructions.cache)
-    override fun sync(i: Int, s: CpuState) = unimplemented(s, Instructions.sync)
-    override fun dbreak(i: Int, s: CpuState) = unimplemented(s, Instructions.dbreak)
-    override fun halt(i: Int, s: CpuState) = unimplemented(s, Instructions.halt)
-    override fun dret(i: Int, s: CpuState) = unimplemented(s, Instructions.dret)
-    override fun eret(i: Int, s: CpuState) = unimplemented(s, Instructions.eret)
-    override fun mfdr(i: Int, s: CpuState) = unimplemented(s, Instructions.mfdr)
-    override fun mtdr(i: Int, s: CpuState) = unimplemented(s, Instructions.mtdr)
-    override fun cfc0(i: Int, s: CpuState) = unimplemented(s, Instructions.cfc0)
-    override fun ctc0(i: Int, s: CpuState) = unimplemented(s, Instructions.ctc0)
-    override fun mfc0(i: Int, s: CpuState) = unimplemented(s, Instructions.mfc0)
-    override fun mtc0(i: Int, s: CpuState) = unimplemented(s, Instructions.mtc0)
-    override fun mfv(i: Int, s: CpuState) = unimplemented(s, Instructions.mfv)
+    fun cache(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.cache)
+    fun sync(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.sync)
+    fun dbreak(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.dbreak)
+    fun halt(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.halt)
+    fun dret(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.dret)
+    fun eret(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.eret)
+    fun mfdr(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mfdr)
+    fun mtdr(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mtdr)
+    fun cfc0(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.cfc0)
+    fun ctc0(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.ctc0)
+    fun mfc0(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mfc0)
+    fun mtc0(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mtc0)
+    fun mfv(s: CpuState, r: CpuRegisters, m: Memory) = unimplemented(s, Instructions.mfv)
 }
 

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.dynarek.*
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
+import com.soywiz.kmem.unsafe.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
@@ -21,9 +22,9 @@ data class CpuBreakException(val id: Int) : EmulatorControlFlowException() {
         val THREAD_EXIT_KILL = 10002
         val INTERRUPT_RETURN = 10003
 
-        val THREAD_WAIT_RA = Memory.MAIN_OFFSET + 0
-        val THREAD_EXIT_KIL_RA = Memory.MAIN_OFFSET + 4
-        val INTERRUPT_RETURN_RA = Memory.MAIN_OFFSET + 8
+        val THREAD_WAIT_RA = MemoryInfo.MAIN_OFFSET + 0
+        val THREAD_EXIT_KIL_RA = MemoryInfo.MAIN_OFFSET + 4
+        val INTERRUPT_RETURN_RA = MemoryInfo.MAIN_OFFSET + 8
 
         fun initialize(mem: Memory) {
             mem.sw(THREAD_WAIT_RA, 0b000000_00000000000000000000_001101 or (CpuBreakException.THREAD_WAIT shl 6))
@@ -56,12 +57,56 @@ var CpuState.A3: Int; set(value) = run { r7 = value }; get() = r7
 
 data class RegInfo(val index: Int, val name: String, val mnemonic: String, val desc: String)
 
+var CpuState.IR: Int get() = regs.IR.data; set(value) = run { regs.IR = InstructionRegister(value) }
+var CpuState._PC: Int get() = regs.PC; set(value) = run { regs.PC = value }
+var CpuState._nPC: Int get() = regs.nPC; set(value) = run { regs.nPC = value }
+var CpuState.LO: Int get() = regs.LO; set(value) = run { regs.LO = value }
+var CpuState.HI: Int get() = regs.HI; set(value) = run { regs.HI = value }
+var CpuState.IC: Int get() = regs.IC; set(value) = run { regs.IC = value }
+
+@JsName("getFpr") fun CpuState.getGpr(index: Int): Int = regs.getGpr(index)
+@JsName("setFpr") fun CpuState.setGpr(index: Int, v: Int): Unit = regs.setGpr(index, v)
+
+@JsName("getFpr") fun CpuState.getFpr(index: Int): Float = regs.getFpr(index)
+@JsName("setFpr") fun CpuState.setFpr(index: Int, v: Float): Unit = regs.setFpr(index, v)
+
+@JsName("getFprI") fun CpuState.getFprI(index: Int): Int = regs.getFprI(index)
+@JsName("setFprI") fun CpuState.setFprI(index: Int, v: Int): Unit = setFprI(index, v)
+
+@JsName("getVfpr") fun CpuState.getVfpr(index: Int): Float = regs.getVfpr(index)
+@JsName("setVfpr") fun CpuState.setVfpr(index: Int, value: Float) = regs.setVfpr(index, value)
+
+@JsName("setVfprI") fun CpuState.setVfprI(index: Int, value: Int) = run { _VFPR_I[index] = value }
+@JsName("getVfprI") fun CpuState.getVfprI(index: Int): Int = _VFPR_I[index]
+
+fun CpuState.updateFCR31(value: Int) {
+    regs.fcr31 = value and 0x0183FFFF
+}
+
+var CpuState.fcr31_rm: Int set(value) = run { regs.fcr31 = regs.fcr31.insert(value, 0, 2) }; get() = regs.fcr31.extract(0, 2)
+var CpuState.fcr31_2_21: Int set(value) = run { regs.fcr31 = regs.fcr31.insert(value, 2, 21) }; get() = regs.fcr31.extract(2, 21)
+var CpuState.fcr31_cc: Boolean set(value) = run { regs.fcr31 = regs.fcr31.insert(value, 23) }; get() = regs.fcr31.extract(23)
+var CpuState.fcr31_fs: Boolean set(value) = run { regs.fcr31 = regs.fcr31.insert(value, 24) }; get() = regs.fcr31.extract(24)
+var CpuState.fcr31_25_7: Int set(value) = run { regs.fcr31 = regs.fcr31.insert(value, 25, 7) }; get() = regs.fcr31.extract(25, 7)
+
+var CpuState.fcr0: Int get() = regs.fcr0; set(value) = run { regs.fcr0 = value }
+var CpuState.fcr25: Int get() = regs.fcr25; set(value) = run { regs.fcr25 = value }
+var CpuState.fcr26: Int get() = regs.fcr26; set(value) = run { regs.fcr26 = value }
+var CpuState.fcr27: Int get() = regs.fcr27; set(value) = run { regs.fcr27 = value }
+var CpuState.fcr28: Int get() = regs.fcr28; set(value) = run { regs.fcr28 = value }
+var CpuState.fcr31: Int get() = regs.fcr31; set(value) = run { regs.fcr31 = value }
+
+@Suppress("NOTHING_TO_INLINE")
 class CpuState(
     val name: String,
     val globalCpuState: GlobalCpuState,
     val syscalls: Syscalls = TraceSyscallHandler()
 ) : Extra by Extra.Mixin() {
     val mem: Memory = globalCpuState.mem
+    val regs = CpuRegisters()
+
+    fun getRgs(): CpuRegisters = CpuRegisters(regs.data)
+
 
     @ThreadLocal
     companion object {
@@ -135,213 +180,55 @@ class CpuState(
         for (n in 0 until 128) this[n] = Float.NaN
     }
     val _VFPR_I = _VFPRMem.asInt32Buffer()
-    val VFPRC = intArrayOf(
-        0,
-        0,
-        0,
-        0xFF,
-        0,
-        0,
-        0,
-        0,
-        0x3F800000,
-        0x3F800000,
-        0x3F800000,
-        0x3F800000,
-        0x3F800000,
-        0x3F800000,
-        0x3F800000,
-        0x3F800000
-    )
-    var VFPR_CC: Int get() = VFPRC[CpuState.VFPU_CTRL.CC]; set(value) = run { VFPRC[CpuState.VFPU_CTRL.CC] = value }
+
+    var VFPR_CC: Int get() = regs.getVfprC(CpuState.VFPU_CTRL.CC); set(value) = run { regs.setVfprC(CpuState.VFPU_CTRL.CC, value) }
     fun VFPR_CC(index: Int) = VFPR_CC.extract(index)
 
-    var fcr0: Int = 0x00003351
-    var fcr25: Int = 0
-    var fcr26: Int = 0
-    var fcr27: Int = 0
-    var fcr28: Int = 0
-    var fcr31: Int = 0x00000e00
+    val VFPR = VFPRF_Class()
+    val VFPRI = VFPRI_Class()
 
-    var vpfxs = VfpuSourceTargetPrefix(VFPRC, CpuState.VFPU_CTRL.SPREFIX)
-    var vpfxt = VfpuSourceTargetPrefix(VFPRC, CpuState.VFPU_CTRL.TPREFIX)
-    var vpfxd = VfpuDestinationPrefix(VFPRC, CpuState.VFPU_CTRL.DPREFIX)
+    var vpfxs = VfpuSourceTargetPrefix(regs, CpuState.VFPU_CTRL.SPREFIX)
+    var vpfxt = VfpuSourceTargetPrefix(regs, CpuState.VFPU_CTRL.TPREFIX)
+    var vpfxd = VfpuDestinationPrefix(regs, CpuState.VFPU_CTRL.DPREFIX)
 
-    fun updateFCR31(value: Int) {
-        fcr31 = value and 0x0183FFFF
-    }
+    var r0:  Int; set(value) = run { regs.r0 = value }; get() = regs.r0
+    var r1:  Int; set(value) = run { regs.r1  = value }; get() = regs.r1
+    var r2:  Int; set(value) = run { regs.r2  = value }; get() = regs.r2
+    var r3:  Int; set(value) = run { regs.r3  = value }; get() = regs.r3
+    var r4:  Int; set(value) = run { regs.r4  = value }; get() = regs.r4
+    var r5:  Int; set(value) = run { regs.r5  = value }; get() = regs.r5
+    var r6:  Int; set(value) = run { regs.r6  = value }; get() = regs.r6
+    var r7:  Int; set(value) = run { regs.r7  = value }; get() = regs.r7
+    var r8:  Int; set(value) = run { regs.r8  = value }; get() = regs.r8
+    var r9:  Int; set(value) = run { regs.r9  = value }; get() = regs.r9
+    var r10: Int; set(value) = run { regs.r10 = value }; get() = regs.r10
+    var r11: Int; set(value) = run { regs.r11 = value }; get() = regs.r11
+    var r12: Int; set(value) = run { regs.r12 = value }; get() = regs.r12
+    var r13: Int; set(value) = run { regs.r13 = value }; get() = regs.r13
+    var r14: Int; set(value) = run { regs.r14 = value }; get() = regs.r14
+    var r15: Int; set(value) = run { regs.r15 = value }; get() = regs.r15
+    var r16: Int; set(value) = run { regs.r16 = value }; get() = regs.r16
+    var r17: Int; set(value) = run { regs.r17 = value }; get() = regs.r17
+    var r18: Int; set(value) = run { regs.r18 = value }; get() = regs.r18
+    var r19: Int; set(value) = run { regs.r19 = value }; get() = regs.r19
+    var r20: Int; set(value) = run { regs.r20 = value }; get() = regs.r20
+    var r21: Int; set(value) = run { regs.r21 = value }; get() = regs.r21
+    var r22: Int; set(value) = run { regs.r22 = value }; get() = regs.r22
+    var r23: Int; set(value) = run { regs.r23 = value }; get() = regs.r23
+    var r24: Int; set(value) = run { regs.r24 = value }; get() = regs.r24
+    var r25: Int; set(value) = run { regs.r25 = value }; get() = regs.r25
+    var r26: Int; set(value) = run { regs.r26 = value }; get() = regs.r26
+    var r27: Int; set(value) = run { regs.r27 = value }; get() = regs.r27
+    var r28: Int; set(value) = run { regs.r28 = value }; get() = regs.r28
+    var r29: Int; set(value) = run { regs.r29 = value }; get() = regs.r29
+    var r30: Int; set(value) = run { regs.r30 = value }; get() = regs.r30
+    var r31: Int; set(value) = run { regs.r31 = value }; get() = regs.r31
 
-    var fcr31_rm: Int set(value) = run { fcr31 = fcr31.insert(value, 0, 2) }; get() = fcr31.extract(0, 2)
-    var fcr31_2_21: Int set(value) = run { fcr31 = fcr31.insert(value, 2, 21) }; get() = fcr31.extract(2, 21)
-    var fcr31_cc: Boolean set(value) = run { fcr31 = fcr31.insert(value, 23) }; get() = fcr31.extract(23)
-    var fcr31_fs: Boolean set(value) = run { fcr31 = fcr31.insert(value, 24) }; get() = fcr31.extract(24)
-    var fcr31_25_7: Int set(value) = run { fcr31 = fcr31.insert(value, 25, 7) }; get() = fcr31.extract(25, 7)
-
-    // @TODO: Fast version for dynarek
-
-    //@JvmField
-    //@JsName("r0")
-    //var r0: Int = 0
-    //@JvmField
-    //@JsName("r1")
-    //var r1: Int = 0
-    //@JvmField
-    //@JsName("r2")
-    //var r2: Int = 0
-    //@JvmField
-    //@JsName("r3")
-    //var r3: Int = 0
-    //@JvmField
-    //@JsName("r4")
-    //var r4: Int = 0
-    //@JvmField
-    //@JsName("r5")
-    //var r5: Int = 0
-    //@JvmField
-    //@JsName("r6")
-    //var r6: Int = 0
-    //@JvmField
-    //@JsName("r7")
-    //var r7: Int = 0
-    //@JvmField
-    //@JsName("r8")
-    //var r8: Int = 0
-    //@JvmField
-    //@JsName("r9")
-    //var r9: Int = 0
-    //@JvmField
-    //@JsName("r10")
-    //var r10: Int = 0
-    //@JvmField
-    //@JsName("r11")
-    //var r11: Int = 0
-    //@JvmField
-    //@JsName("r12")
-    //var r12: Int = 0
-    //@JvmField
-    //@JsName("r13")
-    //var r13: Int = 0
-    //@JvmField
-    //@JsName("r14")
-    //var r14: Int = 0
-    //@JvmField
-    //@JsName("r15")
-    //var r15: Int = 0
-    //@JvmField
-    //@JsName("r16")
-    //var r16: Int = 0
-    //@JvmField
-    //@JsName("r17")
-    //var r17: Int = 0
-    //@JvmField
-    //@JsName("r18")
-    //var r18: Int = 0
-    //@JvmField
-    //@JsName("r19")
-    //var r19: Int = 0
-    //@JvmField
-    //@JsName("r20")
-    //var r20: Int = 0
-    //@JvmField
-    //@JsName("r21")
-    //var r21: Int = 0
-    //@JvmField
-    //@JsName("r22")
-    //var r22: Int = 0
-    //@JvmField
-    //@JsName("r23")
-    //var r23: Int = 0
-    //@JvmField
-    //@JsName("r24")
-    //var r24: Int = 0
-    //@JvmField
-    //@JsName("r25")
-    //var r25: Int = 0
-    //@JvmField
-    //@JsName("r26")
-    //var r26: Int = 0
-    //@JvmField
-    //@JsName("r27")
-    //var r27: Int = 0
-    //@JvmField
-    //@JsName("r28")
-    //var r28: Int = 0
-    //@JvmField
-    //@JsName("r29")
-    //var r29: Int = 0
-    //@JvmField
-    //@JsName("r30")
-    //var r30: Int = 0
-    //@JvmField
-    //@JsName("r31")
-    //var r31: Int = 0
-//
-    ////val gprProps = (0 until 32).map { getGprProp(it) }.toTypedArray()
-//
-    //@JsName("getGpr") fun getGpr(index: Int): Int {
-    //    //return gprProps[index].get()
-    //    return when (index) {
-    //        0 -> 0;1 -> r1;2 -> r2;3 -> r3;4 -> r4;5 -> r5;6 -> r6;7 -> r7;
-    //        8 -> r8;9 -> r9;10 -> r10;11 -> r11;12 -> r12;13 -> r13;14 -> r14;15 -> r15;
-    //        16 -> r16;17 -> r17;18 -> r18;19 -> r19;20 -> r20;21 -> r21;22 -> r22;23 -> r23;
-    //        24 -> r24;25 -> r25;26 -> r26;27 -> r27;28 -> r28;29 -> r29;30 -> r30;31 -> r31;
-    //        else -> 0
-    //    }
-    //}
-//
-    //@JsName("setGpr") fun setGpr(index: Int, v: Int): Unit {
-    //    //if (index != 0) gprProps[index].set(v)
-    //    when (index) {
-    //        0 -> Unit;1 -> r1 = v;2 -> r2 = v;3 -> r3 = v;4 -> r4 = v;5 -> r5 = v;6 -> r6 = v;7 -> r7 = v;
-    //        8 -> r8 = v;9 -> r9 = v;10 -> r10 = v;11 -> r11 = v;12 -> r12 = v;13 -> r13 = v;14 -> r14 = v;15 -> r15 = v;
-    //        16 -> r16 = v;17 -> r17 = v;18 -> r18 = v;19 -> r19 = v;20 -> r20 = v;21 -> r21 = v;22 -> r22 =
-    //            v;23 -> r23 = v;
-    //        24 -> r24 = v;25 -> r25 = v;26 -> r26 = v;27 -> r27 = v;28 -> r28 = v;29 -> r29 = v;30 -> r30 =
-    //            v;31 -> r31 = v;
-    //        else -> Unit
-    //    }
-    //}
-
-    // @TODO: Fast version for interpreted
-
-    var _R = IntArray(32)
-    var r0: Int; set(value) = Unit; get() = 0
-    var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]
-    var r2: Int; set(value) = run { _R[2] = value }; get() = _R[2]
-    var r3: Int; set(value) = run { _R[3] = value }; get() = _R[3]
-    var r4: Int; set(value) = run { _R[4] = value }; get() = _R[4]
-    var r5: Int; set(value) = run { _R[5] = value }; get() = _R[5]
-    var r6: Int; set(value) = run { _R[6] = value }; get() = _R[6]
-    var r7: Int; set(value) = run { _R[7] = value }; get() = _R[7]
-    var r8: Int; set(value) = run { _R[8] = value }; get() = _R[8]
-    var r9: Int; set(value) = run { _R[9] = value }; get() = _R[9]
-    var r10: Int; set(value) = run { _R[10] = value }; get() = _R[10]
-    var r11: Int; set(value) = run { _R[11] = value }; get() = _R[11]
-    var r12: Int; set(value) = run { _R[12] = value }; get() = _R[12]
-    var r13: Int; set(value) = run { _R[13] = value }; get() = _R[13]
-    var r14: Int; set(value) = run { _R[14] = value }; get() = _R[14]
-    var r15: Int; set(value) = run { _R[15] = value }; get() = _R[15]
-    var r16: Int; set(value) = run { _R[16] = value }; get() = _R[16]
-    var r17: Int; set(value) = run { _R[17] = value }; get() = _R[17]
-    var r18: Int; set(value) = run { _R[18] = value }; get() = _R[18]
-    var r19: Int; set(value) = run { _R[19] = value }; get() = _R[19]
-    var r20: Int; set(value) = run { _R[20] = value }; get() = _R[20]
-    var r21: Int; set(value) = run { _R[21] = value }; get() = _R[21]
-    var r22: Int; set(value) = run { _R[22] = value }; get() = _R[22]
-    var r23: Int; set(value) = run { _R[23] = value }; get() = _R[23]
-    var r24: Int; set(value) = run { _R[24] = value }; get() = _R[24]
-    var r25: Int; set(value) = run { _R[25] = value }; get() = _R[25]
-    var r26: Int; set(value) = run { _R[26] = value }; get() = _R[26]
-    var r27: Int; set(value) = run { _R[27] = value }; get() = _R[27]
-    var r28: Int; set(value) = run { _R[28] = value }; get() = _R[28]
-    var r29: Int; set(value) = run { _R[29] = value }; get() = _R[29]
-    var r30: Int; set(value) = run { _R[30] = value }; get() = _R[30]
-    var r31: Int; set(value) = run { _R[31] = value }; get() = _R[31]
-    fun getGpr(index: Int): Int = _R[index]
-    fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index] = v }
+    //@JsName("getGpr") fun getGpr(index: Int): Int = this.regs.getGpr(index)
+    @JsName("setGpr") fun setGpr(index: Int, v: Int) = regs.setGpr(index, v)
 
     fun writeRegisters(addr: Int, start: Int = 0, count: Int = 32 - start) {
-        for (n in 0 until count) mem.sw(addr + n * 4, getGpr(start + n))
+        for (n in 0 until count) mem.sw(addr + n * 4, regs.getGpr(start + n))
     }
 
     fun readRegisters(addr: Int, start: Int = 0, count: Int = 32 - start) {
@@ -351,23 +238,9 @@ class CpuState(
     //val FPR = FloatArray(32) { 0f }
     //val FPR_I = FprI(this)
 
-    @JvmField
-    var IR: Int = 0
-    @JvmField
-    var _PC: Int = 0
-    @JvmField
-    var _nPC: Int = 0
-    @JvmField
-    var LO: Int = 0
-    @JvmField
-    var HI: Int = 0
-    @JvmField
-    var IC: Int = 0
-
     fun getPCRef() = ::sPC
 
     var sPC get() = PC; set(value) = run { setPC(value) }
-
     val PC: Int get() = _PC
 
     var HI_LO: Long
@@ -383,12 +256,9 @@ class CpuState(
         _nPC = pc + 4
     }
 
-    inline fun jump(pc: Int) {
-        _PC = pc
-        _nPC = pc + 4
-    }
+    fun jump(pc: Int) = setPC(pc)
 
-    inline fun advance_pc(offset: Int) {
+    fun advance_pc(offset: Int) {
         _PC = _nPC
         _nPC += offset
     }
@@ -396,20 +266,6 @@ class CpuState(
     //fun getGpr(index: Int): Int = _R[index and 0x1F]
     //fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index and 0x1F] = v }
 
-    @JsName("getFpr") fun getFpr(index: Int): Float = _F[index]
-    @JsName("setFpr") fun setFpr(index: Int, v: Float): Unit = run { _F[index] = v }
-
-    @JsName("getFprI") fun getFprI(index: Int): Int = _FI[index]
-    @JsName("setFprI") fun setFprI(index: Int, v: Int): Unit = run { _FI[index] = v }
-
-    @JsName("setVfpr") fun setVfpr(index: Int, value: Float) = run { _VFPR[index] = value }
-    @JsName("getVfpr") fun getVfpr(index: Int): Float = _VFPR[index]
-
-    val VFPR = VFPRF_Class()
-    val VFPRI = VFPRI_Class()
-
-    @JsName("setVfprI") fun setVfprI(index: Int, value: Int) = run { _VFPR_I[index] = value }
-    @JsName("getVfprI") fun getVfprI(index: Int): Int = _VFPR_I[index]
 
     @JsName("syscall")
     fun syscall(syscall: Int): Unit = syscalls.syscall(this, syscall)
@@ -447,7 +303,7 @@ class CpuState(
         dst.fcr27 = src.fcr27
         dst.fcr28 = src.fcr28
         dst.fcr31 = src.fcr31
-        for (n in 0 until 32) dst.setGpr(n, src.getGpr(n))
+        for (n in 0 until 32) dst.setGpr(n, src.regs.getGpr(n))
         for (n in 0 until 32) dst.setFpr(n, src.getFpr(n))
         for (n in 0 until 128) dst.setVfpr(n, src.getVfpr(n))
     }
@@ -457,7 +313,7 @@ class CpuState(
         get() = "REGS($name:$id)[" + (0 until 32).map {
             "r%d=0x%08X".format(
                 it,
-                getGpr(it)
+                regs.getGpr(it)
             )
         }.joinToString(", ") + "][PC = ${PC.hex}]"
 
@@ -505,37 +361,36 @@ class CpuState(
         const val NS = 15
     }
 
-    @JsName("xor") fun xor(RS: Int, RT: Int): Int = (RS xor RT)
-    @JsName("or") fun or(RS: Int, RT: Int): Int = (RS or RT)
-    @JsName("and") fun and(RS: Int, RT: Int): Int = (RS and RT)
-    @JsName("nor") fun nor(RS: Int, RT: Int): Int = (RS or RT).inv()
+    @JsName("xor") inline fun xor(RS: Int, RT: Int): Int = (RS xor RT)
+    @JsName("or") inline fun or(RS: Int, RT: Int): Int = (RS or RT)
+    @JsName("and") inline fun and(RS: Int, RT: Int): Int = (RS and RT)
+    @JsName("nor") inline fun nor(RS: Int, RT: Int): Int = (RS or RT).inv()
 
-    @JsName("bitrev32") fun bitrev32(a: Int): Int = BitUtils.bitrev32(a)
-    @JsName("rotr") fun rotr(a: Int, b: Int): Int = BitUtils.rotr(a, b)
-    @JsName("sll") fun sll(RT: Int, RS: Int): Int = RT shl (RS and 0b11111)
-    @JsName("sra") fun sra(RT: Int, RS: Int): Int = RT shr (RS and 0b11111)
-    @JsName("srl") fun srl(RT: Int, RS: Int): Int = RT ushr (RS and 0b11111)
+    @JsName("bitrev32") inline fun bitrev32(a: Int): Int = BitUtils.bitrev32(a)
+    @JsName("rotr") inline fun rotr(a: Int, b: Int): Int = BitUtils.rotr(a, b)
+    @JsName("sll") inline fun sll(RT: Int, RS: Int): Int = RT shl (RS and 0b11111)
+    @JsName("sra") inline fun sra(RT: Int, RS: Int): Int = RT shr (RS and 0b11111)
+    @JsName("srl") inline fun srl(RT: Int, RS: Int): Int = RT ushr (RS and 0b11111)
 
 
     ///IF(RT == 0.lit) { RD = RS }
-    @JsName("movz") fun movz(RT: Int, RD: Int, RS: Int) = if (RT == 0) RS else RD
+    @JsName("movz") inline fun movz(RT: Int, RD: Int, RS: Int) = if (RT == 0) RS else RD
+    @JsName("movn") inline fun movn(RT: Int, RD: Int, RS: Int) = if (RT != 0) RS else RD
 
-    @JsName("movn") fun movn(RT: Int, RD: Int, RS: Int) = if (RT != 0) RS else RD
-
-    @JsName("ext") fun ext(RS: Int, POS: Int, SIZE_E: Int) = RS.extract(POS, SIZE_E)
-    @JsName("ins") fun ins(RT: Int, RS: Int, POS: Int, SIZE_I: Int) = RT.insert(RS, POS, SIZE_I)
-    @JsName("clz") fun clz(v: Int) = BitUtils.clz(v)
-    @JsName("clo") fun clo(v: Int) = BitUtils.clo(v)
-    @JsName("seb") fun seb(v: Int) = BitUtils.seb(v)
-    @JsName("seh") fun seh(v: Int) = BitUtils.seh(v)
-    @JsName("wsbh") fun wsbh(v: Int) = BitUtils.wsbh(v)
-    @JsName("wsbw") fun wsbw(v: Int) = BitUtils.wsbw(v)
-    @JsName("add") fun add(a: Int, b: Int): Int = a + b
-    @JsName("sub") fun sub(a: Int, b: Int): Int = a - b
-    @JsName("max") fun max(a: Int, b: Int) = kotlin.math.max(a, b)
-    @JsName("min") fun min(a: Int, b: Int) = kotlin.math.min(a, b)
-    @JsName("div") fun div(RS: Int, RT: Int) = run { LO = RS / RT; HI = RS % RT }
-    @JsName("divu") fun divu(RS: Int, RT: Int) {
+    @JsName("ext") inline fun ext(RS: Int, POS: Int, SIZE_E: Int) = RS.extract(POS, SIZE_E)
+    @JsName("ins") inline fun ins(RT: Int, RS: Int, POS: Int, SIZE_I: Int) = RT.insert(RS, POS, SIZE_I)
+    @JsName("clz") inline fun clz(v: Int) = BitUtils.clz(v)
+    @JsName("clo") inline fun clo(v: Int) = BitUtils.clo(v)
+    @JsName("seb") inline fun seb(v: Int) = BitUtils.seb(v)
+    @JsName("seh") inline fun seh(v: Int) = BitUtils.seh(v)
+    @JsName("wsbh") inline fun wsbh(v: Int) = BitUtils.wsbh(v)
+    @JsName("wsbw") inline fun wsbw(v: Int) = BitUtils.wsbw(v)
+    @JsName("add") inline fun add(a: Int, b: Int): Int = a + b
+    @JsName("sub") inline fun sub(a: Int, b: Int): Int = a - b
+    @JsName("max") inline fun max(a: Int, b: Int) = kotlin.math.max(a, b)
+    @JsName("min") inline fun min(a: Int, b: Int) = kotlin.math.min(a, b)
+    @JsName("div") inline fun div(RS: Int, RT: Int) = run { LO = RS / RT; HI = RS % RT }
+    @JsName("divu") inline fun divu(RS: Int, RT: Int) {
         val d = RT
         if (d != 0) {
             LO = RS udiv d
@@ -546,53 +401,54 @@ class CpuState(
         }
     }
 
-    private val itemp = IntArray(2)
-    @JsName("mult") fun mult(RS: Int, RT: Int) =
+    @PublishedApi
+    internal val itemp = IntArray(2)
+    @JsName("mult") inline fun mult(RS: Int, RT: Int) =
         run { imul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
 
-    @JsName("multu") fun multu(RS: Int, RT: Int) =
+    @JsName("multu") inline fun multu(RS: Int, RT: Int) =
         run { umul32_64(RS, RT, itemp); this.LO = itemp[0]; this.HI = itemp[1] }
 
-    @JsName("madd") fun madd(RS: Int, RT: Int) = run { HI_LO += RS.toLong() * RT.toLong() }
-    @JsName("maddu") fun maddu(RS: Int, RT: Int) = run { HI_LO += RS.unsigned * RT.unsigned }
-    @JsName("msub") fun msub(RS: Int, RT: Int) = run { HI_LO -= RS.toLong() * RT.toLong() }
-    @JsName("msubu") fun msubu(RS: Int, RT: Int) = run { HI_LO -= RS.unsigned * RT.unsigned }
-    @JsName("lb") fun lb(addr: Int) = mem.lb(addr)
-    @JsName("lbu") fun lbu(addr: Int) = mem.lbu(addr)
-    @JsName("lh") fun lh(addr: Int) = mem.lh(addr)
-    @JsName("lhu") fun lhu(addr: Int) = mem.lhu(addr)
-    @JsName("lw") fun lw(addr: Int) = mem.lw(addr)
-    @JsName("lwl") fun lwl(addr: Int, value: Int) = mem.lwl(addr, value)
-    @JsName("lwr") fun lwr(addr: Int, value: Int) = mem.lwr(addr, value)
-    @JsName("swl") fun swl(addr: Int, value: Int) = mem.swl(addr, value)
-    @JsName("swr") fun swr(addr: Int, value: Int) = mem.swr(addr, value)
-    @JsName("sb") fun sb(addr: Int, value: Int) = mem.sb(addr, value)
-    @JsName("sh") fun sh(addr: Int, value: Int) = mem.sh(addr, value)
-    @JsName("sw") fun sw(addr: Int, value: Int) = mem.sw(addr, value)
+    @JsName("madd") inline fun madd(RS: Int, RT: Int) = run { HI_LO += RS.toLong() * RT.toLong() }
+    @JsName("maddu") inline fun maddu(RS: Int, RT: Int) = run { HI_LO += RS.unsigned * RT.unsigned }
+    @JsName("msub") inline fun msub(RS: Int, RT: Int) = run { HI_LO -= RS.toLong() * RT.toLong() }
+    @JsName("msubu") inline fun msubu(RS: Int, RT: Int) = run { HI_LO -= RS.unsigned * RT.unsigned }
+    @JsName("lb") inline fun lb(addr: Int) = mem.lb(addr)
+    @JsName("lbu") inline fun lbu(addr: Int) = mem.lbu(addr)
+    @JsName("lh") inline fun lh(addr: Int) = mem.lh(addr)
+    @JsName("lhu") inline fun lhu(addr: Int) = mem.lhu(addr)
+    @JsName("lw") inline fun lw(addr: Int): Int = mem.lw(addr)
+    @JsName("lwl") inline fun lwl(addr: Int, value: Int) = mem.lwl(addr, value)
+    @JsName("lwr") inline fun lwr(addr: Int, value: Int) = mem.lwr(addr, value)
+    @JsName("swl") inline fun swl(addr: Int, value: Int) = mem.swl(addr, value)
+    @JsName("swr") inline fun swr(addr: Int, value: Int) = mem.swr(addr, value)
+    @JsName("sb") inline fun sb(addr: Int, value: Int) = mem.sb(addr, value)
+    @JsName("sh") inline fun sh(addr: Int, value: Int) = mem.sh(addr, value)
+    @JsName("sw") inline fun sw(addr: Int, value: Int) = mem.sw(addr, value)
 
-    @JsName("slt") fun slt(RS: Int, RT: Int): Int = (RS < RT).toInt()
-    @JsName("sltu") fun sltu(RS: Int, RT: Int): Int = (RS ult RT).toInt()
+    @JsName("slt") inline fun slt(RS: Int, RT: Int): Int = (RS < RT).toInt()
+    @JsName("sltu") inline fun sltu(RS: Int, RT: Int): Int = (RS ult RT).toInt()
 
-    @JsName("_checkFNan") fun _checkFNan(FD: Float) {
+    @JsName("_checkFNan") inline fun _checkFNan(FD: Float) {
         if (FD.isNaN()) fcr31 = fcr31 or 0x00010040
         if (FD.isInfinite()) fcr31 = fcr31 or 0x00005014
     }
 
-    @JsName("fmov") fun fmov(RS: Float): Float = RS
-    @JsName("fadd") fun fadd(RS: Float, RT: Float): Float = RS pspAdd RT
-    @JsName("fsub") fun fsub(RS: Float, RT: Float): Float = RS pspSub RT
-    @JsName("fmul") fun fmul(RS: Float, RT: Float): Float {
+    @JsName("fmov") inline fun fmov(RS: Float): Float = RS
+    @JsName("fadd") inline fun fadd(RS: Float, RT: Float): Float = RS pspAdd RT
+    @JsName("fsub") inline fun fsub(RS: Float, RT: Float): Float = RS pspSub RT
+    @JsName("fmul") inline fun fmul(RS: Float, RT: Float): Float {
         val res = RS * RT
         return if (fcr31_fs && res.isAlmostZero()) 0f else res
     }
 
-    @JsName("fdiv") fun fdiv(RS: Float, RT: Float): Float = RS / RT
-    @JsName("fneg") fun fneg(v: Float): Float = -v
-    @JsName("fabs") fun fabs(v: Float): Float = kotlin.math.abs(v)
-    @JsName("fsqrt") fun fsqrt(v: Float): Float = kotlin.math.sqrt(v)
+    @JsName("fdiv") inline fun fdiv(RS: Float, RT: Float): Float = RS / RT
+    @JsName("fneg") inline fun fneg(v: Float): Float = -v
+    @JsName("fabs") inline fun fabs(v: Float): Float = kotlin.math.abs(v)
+    @JsName("fsqrt")inline  fun fsqrt(v: Float): Float = kotlin.math.sqrt(v)
 
-    @JsName("cvt_s_w") fun cvt_s_w(v: Int): Float = v.toFloat()
-    @JsName("cvt_w_s") fun cvt_w_s(FS: Float): Int {
+    @JsName("cvt_s_w") inline fun cvt_s_w(v: Int): Float = v.toFloat()
+    @JsName("cvt_w_s") inline fun cvt_w_s(FS: Float): Int {
         return when (fcr31_rm) {
             0 -> Math.rint(FS) // rint: round nearest
             1 -> Math.cast(FS) // round to zero
@@ -602,7 +458,7 @@ class CpuState(
         }
     }
 
-    @JsName("cfc1") fun cfc1(IR_rd: Int, RT: Int): Int {
+    @JsName("cfc1") inline fun cfc1(IR_rd: Int, RT: Int): Int {
         return when (IR_rd) {
             0 -> fcr0
             25 -> fcr25
@@ -614,41 +470,41 @@ class CpuState(
         }
     }
 
-    @JsName("ctc1") fun ctc1(IR_rd: Int, RT: Int) {
+    @JsName("ctc1") inline fun ctc1(IR_rd: Int, RT: Int) {
         when (IR_rd) {
             31 -> updateFCR31(RT)
         }
     }
 
 
-    @JsName("trunc_w_s") fun trunc_w_s(v: Float): Int = Math.trunc(v)
-    @JsName("round_w_s") fun round_w_s(v: Float): Int = Math.round(v)
-    @JsName("ceil_w_s") fun ceil_w_s(v: Float): Int = Math.ceil(v)
-    @JsName("floor_w_s") fun floor_w_s(v: Float): Int = Math.floor(v)
+    @JsName("trunc_w_s") inline fun trunc_w_s(v: Float): Int = Math.trunc(v)
+    @JsName("round_w_s") inline fun round_w_s(v: Float): Int = Math.round(v)
+    @JsName("ceil_w_s")  inline fun ceil_w_s(v: Float): Int = Math.ceil(v)
+    @JsName("floor_w_s") inline fun floor_w_s(v: Float): Int = Math.floor(v)
 
-    private inline fun _cu(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
+    inline fun _cu(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
         if (FS.isNaN() || FT.isNaN()) true else callback()
 
-    private inline fun _co(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
+    inline fun _co(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
         if (FS.isNaN() || FT.isNaN()) false else callback()
 
-    @JsName("c_f_s") fun c_f_s(FS: Float, FT: Float) = _co(FS, FT) { false }
-    @JsName("c_un_s") fun c_un_s(FS: Float, FT: Float) = _cu(FS, FT) { false }
-    @JsName("c_eq_s") fun c_eq_s(FS: Float, FT: Float) = _co(FS, FT) { FS == FT }
-    @JsName("c_ueq_s") fun c_ueq_s(FS: Float, FT: Float) = _cu(FS, FT) { FS == FT }
-    @JsName("c_olt_s") fun c_olt_s(FS: Float, FT: Float) = _co(FS, FT) { FS < FT }
-    @JsName("c_ult_s") fun c_ult_s(FS: Float, FT: Float) = _cu(FS, FT) { FS < FT }
-    @JsName("c_ole_s") fun c_ole_s(FS: Float, FT: Float) = _co(FS, FT) { FS <= FT }
-    @JsName("c_ule_s") fun c_ule_s(FS: Float, FT: Float) = _cu(FS, FT) { FS <= FT }
+    @JsName("c_f_s")   inline fun c_f_s(FS: Float, FT: Float) = _co(FS, FT) { false }
+    @JsName("c_un_s")  inline fun c_un_s(FS: Float, FT: Float) = _cu(FS, FT) { false }
+    @JsName("c_eq_s")  inline fun c_eq_s(FS: Float, FT: Float) = _co(FS, FT) { FS == FT }
+    @JsName("c_ueq_s") inline fun c_ueq_s(FS: Float, FT: Float) = _cu(FS, FT) { FS == FT }
+    @JsName("c_olt_s") inline fun c_olt_s(FS: Float, FT: Float) = _co(FS, FT) { FS < FT }
+    @JsName("c_ult_s") inline fun c_ult_s(FS: Float, FT: Float) = _cu(FS, FT) { FS < FT }
+    @JsName("c_ole_s") inline fun c_ole_s(FS: Float, FT: Float) = _co(FS, FT) { FS <= FT }
+    @JsName("c_ule_s") inline fun c_ule_s(FS: Float, FT: Float) = _cu(FS, FT) { FS <= FT }
 
-    @JsName("f_get_fcr31_cc") fun f_get_fcr31_cc() = fcr31_cc
-    @JsName("f_get_fcr31_cc_not") fun f_get_fcr31_cc_not() = !fcr31_cc
+    @JsName("f_get_fcr31_cc") inline fun f_get_fcr31_cc() = fcr31_cc
+    @JsName("f_get_fcr31_cc_not") inline fun f_get_fcr31_cc_not() = !fcr31_cc
 
     //fun syscall(id: Int) = mem.sw(addr, value)
 }
 
-open class VfpuPrefix(val defaultValue: Int, val array: IntArray, val arrayIndex: Int) {
-    var info get() = array[arrayIndex]; set(value) = run { array[arrayIndex] = value }
+abstract class VfpuPrefix(val defaultValue: Int) {
+    abstract var info: Int
     var enabled = false
 
     fun setEnable(v: Int) {
@@ -661,7 +517,8 @@ open class VfpuPrefix(val defaultValue: Int, val array: IntArray, val arrayIndex
     }
 }
 
-class VfpuSourceTargetPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt(), array, arrayIndex) {
+class VfpuSourceTargetPrefix(val regs: CpuRegisters, val arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt()) {
+    override var info: Int get() = regs.getVfprC(arrayIndex); set(value) = regs.setVfprC(arrayIndex, value)
     private val temp = Float32BufferAlloc(16)
 
     fun applyAndConsume(inout: Float32Buffer, size: Int = inout.size) {
@@ -696,7 +553,8 @@ class VfpuSourceTargetPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC
     }
 }
 
-class VfpuDestinationPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt(), array, arrayIndex) {
+class VfpuDestinationPrefix(val regs: CpuRegisters, val arrayIndex: Int) : VfpuPrefix(0xDC0000E4.toInt()) {
+    override var info: Int get() = regs.getVfprC(arrayIndex); set(value) = regs.setVfprC(arrayIndex, value)
     private fun mask(n: Int) = ((info ushr (8 + n * 1)) and 1) != 0
     fun saturation(n: Int) = (info ushr (0 + n * 2)) and 3
 

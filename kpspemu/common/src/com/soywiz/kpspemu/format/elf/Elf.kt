@@ -123,7 +123,7 @@ class Elf private constructor(val stream: SyncStream) {
     }
 
     val isPrx: Boolean get() = (this.header.type and ElfType.Prx.id) != 0
-    val needsRelocation: Boolean get() = this.isPrx || (this.header.entryPoint < Memory.MAIN_OFFSET)
+    val needsRelocation: Boolean get() = this.isPrx || (this.header.entryPoint < MemoryInfo.MAIN_OFFSET)
 }
 
 typealias ElfLoader = Elf
