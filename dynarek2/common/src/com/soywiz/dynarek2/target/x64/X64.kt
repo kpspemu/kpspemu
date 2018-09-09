@@ -13,6 +13,7 @@ import com.soywiz.dynarek2.*
 /////////////////////////
 
 class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boolean) : X64Builder() {
+	// @TODO: Does windows has a different ABI for x64?
 	//val args = arrayOf(X64Reg64.RCX, X64Reg64.RDX, X64Reg64.R8, X64Reg64.R9)
 	val args = arrayOf(Reg64.RDI, Reg64.RSI, Reg64.RDX, Reg64.RCX)
 
@@ -99,11 +100,11 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 		else -> TODO("$this")
 	}
 
-	companion object {
-		val SHL_NAME = D2FuncName("shl")
-		val SHR_NAME = D2FuncName("shr")
-		val USHR_NAME = D2FuncName("ushr")
-	}
+	//companion object {
+	//	val SHL_NAME = D2FuncName("shl")
+	//	val SHR_NAME = D2FuncName("shr")
+	//	val USHR_NAME = D2FuncName("ushr")
+	//}
 
 	fun D2Expr<*>.generate(target: Reg64): Unit {
 		when (this) {
@@ -112,17 +113,14 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 			is D2Expr.IBinOp -> {
 				when (this.op) {
 					D2BinOp.SHL, D2BinOp.SHR, D2BinOp.USHR -> {
-						pushPopIfRequired(args[0], target) {
-							pushPopIfRequired(args[1], target) {
-								l.generate(args[0])
-								r.generate(args[1])
-								callAbsolute(context.getFunc(when (this.op) {
-									D2BinOp.SHL -> SHL_NAME
-									D2BinOp.SHR -> SHR_NAME
-									D2BinOp.USHR -> USHR_NAME
-									else -> TODO()
-								}))
-								mov(target, Reg64.RAX)
+						pushPop(Reg64.RCX) {
+							l.generate(target)
+							r.generate(Reg64.RCX)
+							when (this.op) {
+								D2BinOp.SHL -> shl(target.to32(), Reg8.CL)
+								D2BinOp.SHR -> shr(target.to32(), Reg8.CL)
+								D2BinOp.USHR -> ushr(target.to32(), Reg8.CL)
+								else -> TODO()
 							}
 						}
 					}
@@ -148,6 +146,9 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 								}
 								D2BinOp.DIV -> TODO("$this")
 								D2BinOp.REM -> TODO("$this")
+								D2BinOp.SHL -> {
+									shl(target.to32(), temp.to32())
+								}
 								D2BinOp.SHR -> shr(target.to32(), temp.to32())
 								D2BinOp.USHR -> ushr(target.to32(), temp.to32())
 								D2BinOp.AND -> and(target.to32(), temp.to32())
@@ -242,7 +243,19 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 	inline fun pushPopIfRequired(reg: Reg64, target: Reg64, callback: () -> Unit) {
 		val used = if (reg != target) usedRegs[reg.index] else false
 		if (used) push(reg)
-		callback()
-		if (used) pop(reg)
+		try {
+			callback()
+		} finally {
+			if (used) pop(reg)
+		}
+	}
+
+	inline fun pushPop(reg: Reg64, callback: () -> Unit) {
+		push(reg)
+		try {
+			callback()
+		} finally {
+			pop(reg)
+		}
 	}
 }

@@ -38,11 +38,11 @@ fun fileWriteBytes(name: String, data: ByteArray) {
 }
 
 actual fun D2Context.registerDefaultFunctions() {
-    registerFunc(Dynarek2X64Gen.SHL_NAME, staticCFunction(::_jit_shl).uncheckedCast<Long>())
-    registerFunc(Dynarek2X64Gen.SHR_NAME, staticCFunction(::_jit_shr).uncheckedCast<Long>())
-    registerFunc(Dynarek2X64Gen.USHR_NAME, staticCFunction(::_jit_ushr).uncheckedCast<Long>())
+    //registerFunc(Dynarek2X64Gen.SHL_NAME, staticCFunction(::_jit_shl).uncheckedCast<Long>())
+    //registerFunc(Dynarek2X64Gen.SHR_NAME, staticCFunction(::_jit_shr).uncheckedCast<Long>())
+    //registerFunc(Dynarek2X64Gen.USHR_NAME, staticCFunction(::_jit_ushr).uncheckedCast<Long>())
 }
 
-fun _jit_shl(a: Int, b: Int): Int = a shl b
-fun _jit_shr(a: Int, b: Int): Int = a shr b
-fun _jit_ushr(a: Int, b: Int): Int = a ushr b
+//fun _jit_shl(a: Int, b: Int): Int = a shl b
+//fun _jit_shr(a: Int, b: Int): Int = a shr b
+//fun _jit_ushr(a: Int, b: Int): Int = a ushr b

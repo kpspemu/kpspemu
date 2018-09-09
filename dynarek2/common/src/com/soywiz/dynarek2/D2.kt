@@ -35,6 +35,7 @@ sealed class D2Stm {
 }
 
 enum class D2BinOp {
+    INVALID,
     ADD, SUB, MUL, DIV, REM,
     OR, AND, XOR,
     SHL, SHR, USHR,
@@ -131,7 +132,6 @@ open class D2Builder {
     infix fun D2ExprI.LE(other: D2ExprI) = COMPOP(this, D2CompOp.LE, other)
     infix fun D2ExprI.GT(other: D2ExprI) = COMPOP(this, D2CompOp.GT, other)
     infix fun D2ExprI.GE(other: D2ExprI) = COMPOP(this, D2CompOp.GE, other)
-
 
     operator fun D2ExprI.unaryMinus() = UNOP(this, D2UnOp.NEG)
 

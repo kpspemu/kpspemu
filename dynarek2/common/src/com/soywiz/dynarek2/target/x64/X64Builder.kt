@@ -41,6 +41,20 @@ open class X64Builder : BaseBuilder() {
     fun shr(dst: Reg32, src: Reg32): Unit = TODO()
     fun ushr(dst: Reg32, src: Reg32): Unit = TODO()
 
+    fun shl(dst: Reg32, shift: Reg8): Unit {
+        if (shift != Reg8.CL) error("Unsupported")
+        bytes(0xD3, 0xE0 or dst.olindex)
+    }
+
+    fun shr(dst: Reg32, shift: Reg8): Unit {
+        if (shift != Reg8.CL) error("Unsupported")
+        bytes(0xD3, 0xF8 or dst.olindex)
+    }
+
+    fun ushr(dst: Reg32, shift: Reg8): Unit {
+        if (shift != Reg8.CL) error("Unsupported")
+        bytes(0xD3, 0xE8 or dst.olindex)
+    }
 
     fun mul(src: Reg32): Unit {
         if (src.extended) bytes(0x41)
@@ -192,6 +206,15 @@ open class BaseBuilder {
 		int((v ushr 0).toInt())
 		int((v ushr 32).toInt())
 	}
+}
+
+inline class Reg8(val index: Int) {
+    companion object {
+        val AL = Reg8(0)
+        val CL = Reg8(1)
+        val DL = Reg8(2)
+        val BL = Reg8(3)
+    }
 }
 
 inline class Reg32(val index: Int) {
