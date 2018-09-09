@@ -3,26 +3,33 @@ package com.soywiz.dynarek2
 import kotlin.test.*
 
 open class D2IntegrationTest {
-    open fun testSimple(expected: Int, iregs: IntArray = intArrayOf(), gen: D2Builder.() -> Unit) {
+    val allDebug = true
+    //val allDebug = false
+
+    open fun testSimple(expected: Int, iregs: IntArray = intArrayOf(), name: String? = null, debug: Boolean? = null, gen: D2Builder.() -> Unit) {
         NewD2Memory(512 * 4) { mem ->
             for (n in iregs.indices) mem.set32(n, iregs[n])
-            val result = D2Func { gen() }.generate().func(mem, null, null, null)
+            val result = D2Func { gen() }.generate(name, debug ?: allDebug).func(mem, null, null, null)
             assertEquals(expected, result)
         }
     }
 
     @Test
     fun testSimple() {
-        testSimple(3) { RETURN(1.lit + 2.lit) }
-        testSimple(7) { RETURN(1.lit + (2.lit * 3.lit)) }
+        testSimple(1 + 2, name = "simple0") { RETURN(1.lit + 2.lit) }
+        testSimple(1 + (2 * 3), name = "simple1") { RETURN(1.lit + (2.lit * 3.lit)) }
+        testSimple((4 * 5) + (2 * 3), name = "simple2") { RETURN((4.lit * 5.lit) + (2.lit * 3.lit)) }
+        testSimple(((4 * 5) * 7) + (2 * 3), name = "simple3") { RETURN(((4.lit * 5.lit) * 7.lit) + (2.lit * 3.lit)) }
+        testSimple((4 * 5) + ((2 * 3) * 7), name = "simple4") { RETURN(((4.lit * 5.lit) + ((2.lit * 3.lit) * 7.lit))) }
+        testSimple(((4 * 5) + (2 * 3)) * 7, name = "simple5") { RETURN(((4.lit * 5.lit) + (2.lit * 3.lit)) * 7.lit) }
     }
 
     @Test
     fun testRegs() {
         val p0 = 0
         val p1 = 1
-        testSimple(8, iregs = intArrayOf(8)) { RETURN(REGS32(p0)) }
-        testSimple(8, iregs = intArrayOf(3, 5)) { RETURN(REGS32(p0) + REGS32(p1)) }
+        testSimple(8, iregs = intArrayOf(8), name = "regs0", debug = true) { RETURN(REGS32(p0)) }
+        testSimple(8, iregs = intArrayOf(3, 5), name = "regs1", debug = true) { RETURN(REGS32(p0) + REGS32(p1)) }
     }
 
     @Test

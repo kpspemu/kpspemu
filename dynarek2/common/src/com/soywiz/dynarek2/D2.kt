@@ -34,15 +34,15 @@ sealed class D2Stm {
     class Print(val expr: D2ExprI) : D2Stm()
 }
 
-enum class D2Binop {
+enum class D2BinOp {
     ADD, SUB, MUL, DIV, REM
 }
 
-enum class D2Compop {
+enum class D2CompOp {
     EQ, NE, LT, LE, GT, GE
 }
 
-enum class D2Unop {
+enum class D2UnOp {
     NEG, INV
 }
 
@@ -62,13 +62,13 @@ sealed class D2Expr<T>(val type: D2TYPE<T>) {
     class ILit(val lit: Int) : I()
     class FLit(val lit: Float) : F()
 
-    class IBinop(val l: D2ExprI, val op: D2Binop, val r: D2ExprI) : I()
-    class FBinop(val l: D2ExprF, val op: D2Binop, val r: D2ExprF) : F()
+    class IBinOp(val l: D2ExprI, val op: D2BinOp, val r: D2ExprI) : I()
+    class FBinOp(val l: D2ExprF, val op: D2BinOp, val r: D2ExprF) : F()
 
-    class IComop(val l: D2ExprI, val op: D2Compop, val r: D2ExprI) : I()
+    class IComOp(val l: D2ExprI, val op: D2CompOp, val r: D2ExprI) : I()
 
-    class IUnop(val l: D2ExprI, val op: D2Unop) : I()
-    class FUnop(val l: D2ExprF, val op: D2Unop) : F()
+    class IUnop(val l: D2ExprI, val op: D2UnOp) : I()
+    class FUnop(val l: D2ExprF, val op: D2UnOp) : F()
 
     class InvokeI(vararg args: D2Expr<*>) : I()
     class InvokeF(vararg args: D2Expr<*>) : F()
@@ -103,26 +103,26 @@ open class D2Builder {
 
     // Expressions
 
-    fun COMPOP(l: D2ExprI, op: D2Compop, r: D2ExprI) = D2Expr.IComop(l, op, r)
+    fun COMPOP(l: D2ExprI, op: D2CompOp, r: D2ExprI) = D2Expr.IComOp(l, op, r)
 
-    fun BINOP(l: D2ExprI, op: D2Binop, r: D2ExprI) = D2Expr.IBinop(l, op, r)
-    fun BINOP(l: D2ExprF, op: D2Binop, r: D2ExprF) = D2Expr.FBinop(l, op, r)
+    fun BINOP(l: D2ExprI, op: D2BinOp, r: D2ExprI) = D2Expr.IBinOp(l, op, r)
+    fun BINOP(l: D2ExprF, op: D2BinOp, r: D2ExprF) = D2Expr.FBinOp(l, op, r)
 
-    fun UNOP(l: D2ExprI, op: D2Unop) = D2Expr.IUnop(l, op)
+    fun UNOP(l: D2ExprI, op: D2UnOp) = D2Expr.IUnop(l, op)
 
-    operator fun D2ExprI.plus(other: D2ExprI) = BINOP(this, D2Binop.ADD, other)
-    operator fun D2ExprI.minus(other: D2ExprI) = BINOP(this, D2Binop.SUB, other)
-    operator fun D2ExprI.times(other: D2ExprI) = BINOP(this, D2Binop.MUL, other)
-    operator fun D2ExprI.div(other: D2ExprI) = BINOP(this, D2Binop.DIV, other)
+    operator fun D2ExprI.plus(other: D2ExprI) = BINOP(this, D2BinOp.ADD, other)
+    operator fun D2ExprI.minus(other: D2ExprI) = BINOP(this, D2BinOp.SUB, other)
+    operator fun D2ExprI.times(other: D2ExprI) = BINOP(this, D2BinOp.MUL, other)
+    operator fun D2ExprI.div(other: D2ExprI) = BINOP(this, D2BinOp.DIV, other)
 
-    infix fun D2ExprI.EQ(other: D2ExprI) = COMPOP(this, D2Compop.EQ, other)
-    infix fun D2ExprI.NE(other: D2ExprI) = COMPOP(this, D2Compop.NE, other)
-    infix fun D2ExprI.LT(other: D2ExprI) = COMPOP(this, D2Compop.LT, other)
-    infix fun D2ExprI.LE(other: D2ExprI) = COMPOP(this, D2Compop.LE, other)
-    infix fun D2ExprI.GT(other: D2ExprI) = COMPOP(this, D2Compop.GT, other)
-    infix fun D2ExprI.GE(other: D2ExprI) = COMPOP(this, D2Compop.GE, other)
+    infix fun D2ExprI.EQ(other: D2ExprI) = COMPOP(this, D2CompOp.EQ, other)
+    infix fun D2ExprI.NE(other: D2ExprI) = COMPOP(this, D2CompOp.NE, other)
+    infix fun D2ExprI.LT(other: D2ExprI) = COMPOP(this, D2CompOp.LT, other)
+    infix fun D2ExprI.LE(other: D2ExprI) = COMPOP(this, D2CompOp.LE, other)
+    infix fun D2ExprI.GT(other: D2ExprI) = COMPOP(this, D2CompOp.GT, other)
+    infix fun D2ExprI.GE(other: D2ExprI) = COMPOP(this, D2CompOp.GE, other)
 
-    operator fun D2ExprI.unaryMinus() = UNOP(this, D2Unop.NEG)
+    operator fun D2ExprI.unaryMinus() = UNOP(this, D2UnOp.NEG)
 
     val Int.lit get() = D2Expr.ILit(this)
     val Float.lit get() = D2Expr.FLit(this)

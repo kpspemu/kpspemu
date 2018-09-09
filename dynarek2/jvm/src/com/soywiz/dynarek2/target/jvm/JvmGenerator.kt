@@ -8,7 +8,7 @@ class JvmGenerator {
     val objectRef = java.lang.Object::class.asmRef
     val d2MemoryRef = D2Memory::class.asmRef
 
-    fun generate(func: D2Func): D2Result {
+    fun generate(func: D2Func, name: String?, debug: Boolean): D2Result {
         val cw = ClassWriter(0)
         val className = "Dynarek2Generated"
 
@@ -158,27 +158,27 @@ class JvmGenerator {
 
     fun MethodVisitor.generate(e: D2Expr<*>): Unit = when (e) {
         is D2Expr.ILit -> pushInt(e.lit)
-        is D2Expr.IBinop -> {
+        is D2Expr.IBinOp -> {
             generate(e.l)
             generate(e.r)
             when (e.op) {
-                D2Binop.ADD -> visitInsn(Opcodes.IADD)
-                D2Binop.SUB -> visitInsn(Opcodes.ISUB)
-                D2Binop.MUL -> visitInsn(Opcodes.IMUL)
-                D2Binop.DIV -> visitInsn(Opcodes.IDIV)
-                D2Binop.REM -> visitInsn(Opcodes.IREM)
+                D2BinOp.ADD -> visitInsn(Opcodes.IADD)
+                D2BinOp.SUB -> visitInsn(Opcodes.ISUB)
+                D2BinOp.MUL -> visitInsn(Opcodes.IMUL)
+                D2BinOp.DIV -> visitInsn(Opcodes.IDIV)
+                D2BinOp.REM -> visitInsn(Opcodes.IREM)
             }
         }
-        is D2Expr.IComop -> {
+        is D2Expr.IComOp -> {
             generate(e.l)
             generate(e.r)
             val opcode = when (e.op) {
-                D2Compop.EQ -> Opcodes.IF_ICMPEQ
-                D2Compop.NE -> Opcodes.IF_ICMPNE
-                D2Compop.LT -> Opcodes.IF_ICMPLT
-                D2Compop.LE -> Opcodes.IF_ICMPLE
-                D2Compop.GT -> Opcodes.IF_ICMPGT
-                D2Compop.GE -> Opcodes.IF_ICMPGE
+                D2CompOp.EQ -> Opcodes.IF_ICMPEQ
+                D2CompOp.NE -> Opcodes.IF_ICMPNE
+                D2CompOp.LT -> Opcodes.IF_ICMPLT
+                D2CompOp.LE -> Opcodes.IF_ICMPLE
+                D2CompOp.GT -> Opcodes.IF_ICMPGT
+                D2CompOp.GE -> Opcodes.IF_ICMPGE
                 else -> error("Invalid")
             }
             val label1 = Label()
@@ -193,8 +193,8 @@ class JvmGenerator {
         is D2Expr.IUnop -> {
             generate(e.l)
             when (e.op) {
-                D2Unop.NEG -> visitInsn(Opcodes.INEG)
-                D2Unop.INV -> TODO()
+                D2UnOp.NEG -> visitInsn(Opcodes.INEG)
+                D2UnOp.INV -> TODO()
             }
         }
         is D2Expr.Ref -> {

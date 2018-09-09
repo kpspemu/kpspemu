@@ -5,6 +5,11 @@ open class X64Builder : BaseX64Builder() {
 		bytes(0xc3)
 	}
 
+	fun readMem(dst: X64Reg32, base: X64Reg64, offset: Int) {
+		bytes(0x8b, 0x80 or (dst.index shl 3) or (base.index shl 0))
+		int(offset)
+	}
+
 	fun movEaxEbpOffset(offset: Int) {
 		bytes(0x8b, 0x85)
 		int(offset)
@@ -22,19 +27,21 @@ open class X64Builder : BaseX64Builder() {
 
 	fun add(dst: X64Reg32, src: X64Reg32) = bytes(0x01, _C0(dst, src))
 	fun sub(dst: X64Reg32, src: X64Reg32) = bytes(0x29, _C0(dst, src))
-	fun mul(src: X64Reg32) = bytes(0xf7, 0xe0 or (src.index shl 0))
+
+    fun mul(src: X64Reg32): Unit {
+        if (src.extended) bytes(0x41)
+        bytes(0xf7, 0xe0 or (src.lindex shl 0))
+    }
+
+	fun mul(src: X64Reg64) = bytes(0x48).also { mul(X64Reg32(src.index)) }
+	fun add(dst: X64Reg64, src: X64Reg64) = bytes(0x48).also { add(X64Reg32(dst.index), X64Reg32(src.index)) }
 
 	fun mov(dst: X64Reg64, src: X64Reg64) {
 		if (dst.index >= 8) TODO("Upper registers not implemented")
 		bytes(0x48, 0x89, _C0(dst, src))
 	}
 
-	fun mov(dst: X64Reg32, value: Int) {
-		when (dst) {
-			X64Reg32.EAX -> movEax(value)
-			else -> TODO("mov dst, value")
-		}
-	}
+	fun mov(dst: X64Reg32, value: Int) = bytes(0xb8 + dst.index).also { int(value) }
 
 	fun push(r: X64Reg64) {
 		if (r.index < 8) {
@@ -58,15 +65,8 @@ open class X64Builder : BaseX64Builder() {
 		}
 	}
 
-	fun movEax(value: Int) {
-		bytes(0xb8)
-		int(value)
-	}
-
-	fun movEdi(value: Int) {
-		bytes(0xbf)
-		int(value)
-	}
+	fun movEax(value: Int) = mov(X64Reg32.EAX, value)
+	fun movEdi(value: Int) = mov(X64Reg32.EDI, value)
 
 	fun movRax(value: Long) {
 		bytes(0x48, 0xb0)
@@ -112,18 +112,29 @@ open class BaseX64Builder {
 
 inline class X64Reg32(val index: Int) {
 	companion object {
-		val EAX = X64Reg32(0b000)
-		val ECX = X64Reg32(0b001)
-		val EDX = X64Reg32(0b010)
-		val EBX = X64Reg32(0b011)
-		val ESP = X64Reg32(0b100)
-		val EBP = X64Reg32(0b101)
-		val ESI = X64Reg32(0b110)
-		val EDI = X64Reg32(0b111)
+		val EAX = X64Reg32(0)
+		val ECX = X64Reg32(1)
+		val EDX = X64Reg32(2)
+		val EBX = X64Reg32(3)
+		val ESP = X64Reg32(4)
+		val EBP = X64Reg32(5)
+		val ESI = X64Reg32(6)
+		val EDI = X64Reg32(7)
+
+        val R8D = X64Reg32(8)
+        val R9D = X64Reg32(9)
+        val R10D = X64Reg32(10)
+        val R11D = X64Reg32(11)
+        val R12D = X64Reg32(12)
+        val R13D = X64Reg32(13)
+        val R14D = X64Reg32(14)
+        val R15D = X64Reg32(15)
 
 		val REGS = arrayOf(EAX, ECX, EDX, EBX)
 	}
 
+    val extended get() = index >= 8
+    val lindex get() = index and 0x7
 	fun to64() = X64Reg64(index)
 }
 
@@ -146,9 +157,10 @@ inline class X64Reg64(val index: Int) {
 		val R13 = X64Reg64(0b1_101)
 		val R14 = X64Reg64(0b1_110)
 		val R15 = X64Reg64(0b1_111)
-	}
+    }
 
-	fun to32() = X64Reg32(index)
+    val extended get() = index >= 8
+    fun to32() = X64Reg32(index)
 }
 
 /*
@@ -204,4 +216,135 @@ XMM3, YMM3	Volatile	Fourth FP argument; fourth vector-type argument when __vecto
 XMM4, YMM4	Volatile	Must be preserved as needed by caller; fifth vector-type argument when __vectorcall is used
 XMM5, YMM5	Volatile	Must be preserved as needed by caller; sixth vector-type argument when __vectorcall is used
 XMM6:XMM15, YMM6:YMM15	Nonvolatile (XMM), Volatile (upper half of YMM)	Must be preserved as needed by callee. YMM registers must be preserved as needed by caller.
+ */
+
+/*
+64-bit register	Lower 32 bits	Lower 16 bits	Lower 8 bits
+rax
+
+eax
+
+ax
+
+al
+
+rbx
+
+ebx
+
+bx
+
+bl
+
+rcx
+
+ecx
+
+cx
+
+cl
+
+rdx
+
+edx
+
+dx
+
+dl
+
+rsi
+
+esi
+
+si
+
+sil
+
+rdi
+
+edi
+
+di
+
+dil
+
+rbp
+
+ebp
+
+bp
+
+bpl
+
+rsp
+
+esp
+
+sp
+
+spl
+
+r8
+
+r8d
+
+r8w
+
+r8b
+
+r9
+
+r9d
+
+r9w
+
+r9b
+
+r10
+
+r10d
+
+r10w
+
+r10b
+
+r11
+
+r11d
+
+r11w
+
+r11b
+
+r12
+
+r12d
+
+r12w
+
+r12b
+
+r13
+
+r13d
+
+r13w
+
+r13b
+
+r14
+
+r14d
+
+r14w
+
+r14b
+
+r15
+
+r15d
+
+r15w
+
+r15b
  */
