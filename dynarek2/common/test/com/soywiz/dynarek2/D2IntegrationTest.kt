@@ -34,8 +34,8 @@ open class D2IntegrationTest {
 
     @Test
     fun testCond() {
-        testSimple(FALSE, iregs = intArrayOf(0)) { RETURN(REGS32(0) GT 0.lit) }
-        testSimple(TRUE, iregs = intArrayOf(1)) { RETURN(REGS32(0) GT 0.lit) }
+        testSimple(FALSE, name = "cond0", iregs = intArrayOf(0)) { RETURN(REGS32(0) GT 0.lit) }
+        testSimple(TRUE, name = "cond1", iregs = intArrayOf(1)) { RETURN(REGS32(0) GT 0.lit) }
     }
 
     @Test
@@ -57,10 +57,10 @@ open class D2IntegrationTest {
             }
         }
 
-        testSimple(10, iregs = intArrayOf(TRUE)) { myif() }
-        testSimple(20, iregs = intArrayOf(FALSE)) { myif() }
-        testSimple(10, iregs = intArrayOf(TRUE)) { myifElse() }
-        testSimple(20, iregs = intArrayOf(FALSE)) { myifElse() }
+        testSimple(10, iregs = intArrayOf(TRUE), name = "if0") { myif() }
+        testSimple(20, iregs = intArrayOf(FALSE), name = "if1") { myif() }
+        testSimple(10, iregs = intArrayOf(TRUE), name = "if2") { myifElse() }
+        testSimple(20, iregs = intArrayOf(FALSE), name = "if3") { myifElse() }
     }
 
     @Test
@@ -68,7 +68,7 @@ open class D2IntegrationTest {
         val counterIndex = 0
         val outIndex = 1
 
-        testSimple(277, iregs = intArrayOf(100, 77)) {
+        testSimple(277, iregs = intArrayOf(100, 77), name = "while0") {
             val counter = REGS32(counterIndex)
             val out = REGS32(outIndex)
 

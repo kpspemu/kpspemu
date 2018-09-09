@@ -1,11 +1,16 @@
 package com.soywiz.dynarek2.target.x64
 
-open class X64Builder : BaseX64Builder() {
+open class X64Builder : BaseBuilder() {
 	fun retn() {
 		bytes(0xc3)
 	}
 
-	fun readMem(dst: X64Reg32, base: X64Reg64, offset: Int) {
+    fun writeMem(src: X64Reg32, base: X64Reg64, offset: Int) {
+        bytes(0x89, 0x80 or (src.index shl 3) or (base.index shl 0))
+        int(offset)
+    }
+
+    fun readMem(dst: X64Reg32, base: X64Reg64, offset: Int) {
 		bytes(0x8b, 0x80 or (dst.index shl 3) or (base.index shl 0))
 		int(offset)
 	}
@@ -65,6 +70,36 @@ open class X64Builder : BaseX64Builder() {
 		}
 	}
 
+    fun cmp(l: X64Reg32, r: X64Reg32) {
+        if (l.extended) TODO()
+        bytes(0x39, 0xC0 or (l.lindex shl 3) or (r.lindex shl 3))
+    }
+
+    fun cmp(l: X64Reg32, r: Int) {
+        if (l == X64Reg32.EAX) {
+            bytes(0x3D)
+            int(r)
+        } else {
+            TODO()
+        }
+    }
+
+    //fun jc(label: Label) = bytes(0x0F, 0x82).also { patch32(label) }
+
+    fun je(label: Label) = bytes(0x0F, 0x84).also { patch32(label) }
+    fun jne(label: Label) = bytes(0x0F, 0x85).also { patch32(label) }
+
+    fun jl(label: Label) = bytes(0x0F, 0x8C).also { patch32(label) }
+    fun jge(label: Label) = bytes(0x0F, 0x8D).also { patch32(label) }
+    fun jle(label: Label) = bytes(0x0F, 0x8E).also { patch32(label) }
+    fun jg(label: Label) = bytes(0x0F, 0x8F).also { patch32(label) }
+
+    fun jmp(label: Label) = bytes(0xe9).also { patch32(label) }
+
+    fun patch32(label: Label) = patch(label, 4)
+
+    fun nop() = bytes(0x90)
+
 	fun movEax(value: Int) = mov(X64Reg32.EAX, value)
 	fun movEdi(value: Int) = mov(X64Reg32.EDI, value)
 
@@ -78,11 +113,45 @@ open class X64Builder : BaseX64Builder() {
 	}
 }
 
-open class BaseX64Builder {
-	var pos = 0
-	var data = ByteArray(1024)
+open class BaseBuilder {
+	private var pos = 0
+	private var data = ByteArray(1024)
 
-	fun getBytes() = data.copyOf(pos)
+	fun getBytes(): ByteArray {
+        patch()
+        return data.copyOf(pos)
+    }
+
+    private fun patch() {
+        val oldpos = pos
+        try {
+            for (patch in patches) {
+                val label = patch.label
+                val relative = (label.offset - patch.offset) - patch.incr
+                pos = patch.offset
+                int(relative)
+            }
+        } finally {
+            pos = oldpos
+        }
+    }
+
+    private val patches = arrayListOf<Patch>()
+
+    fun patch(label: Label, incr: Int = 4, size: Int = incr) {
+        patches += Patch(label, pos, incr)
+        for (n in 0 until size) bytes(0)
+    }
+
+    fun place(label: Label) {
+        label.offset = pos
+    }
+
+    class Patch(val label: Label, val offset: Int, val incr: Int)
+
+    class Label {
+        var offset: Int = -1
+    }
 
 	fun bytes(v: Int) {
 		if (pos >= data.size) {

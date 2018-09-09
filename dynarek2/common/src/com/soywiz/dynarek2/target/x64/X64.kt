@@ -59,7 +59,42 @@ class Dynarek2X64Gen : X64Builder() {
 			doReturn()
 		}
 		is D2Stm.Write -> {
-			popRAX()
+			val target = X64Reg64.RAX
+			val baseReg = args[ref.memSlot.index]
+			value.generate(target)
+			if (ref.offset is D2Expr.ILit) {
+				writeMem(target.to32(), baseReg, ref.offset.lit * 4)
+			} else {
+				TODO()
+			}
+		}
+		is D2Stm.If -> {
+			if (sfalse == null) {
+				// IF
+				val endLabel = Label()
+				generateJumpFalse(cond, endLabel)
+				strue.generate()
+				place(endLabel)
+			} else {
+				// IF+ELSE
+				val elseLabel = Label()
+				val endLabel = Label()
+				generateJumpFalse(cond, elseLabel)
+				strue.generate()
+				generateJumpAlways(endLabel)
+				place(elseLabel)
+				sfalse?.generate()
+				place(endLabel)
+			}
+		}
+		is D2Stm.While -> {
+			val startLabel = Label()
+			val endLabel = Label()
+			place(startLabel)
+			generateJumpFalse(cond, endLabel)
+			body.generate()
+			generateJumpAlways(startLabel)
+			place(endLabel)
 		}
 		else -> TODO("$this")
 	}
@@ -93,6 +128,34 @@ class Dynarek2X64Gen : X64Builder() {
 					}
 				}
 			}
+			is D2Expr.IComOp -> {
+				val temp = tryGetTempReg(except = target)
+
+				l.generate(target)
+				pushPopIfRequired(temp, target) {
+					requestPreserve(target) {
+						r.generate(temp)
+					}
+					cmp(target.to32(), temp.to32())
+					val label1 = Label()
+					val label2 = Label()
+
+					when (this.op) {
+						D2CompOp.EQ -> je(label1)
+						D2CompOp.NE -> jne(label1)
+						D2CompOp.LT -> jl(label1)
+						D2CompOp.LE -> jle(label1)
+						D2CompOp.GT -> jg(label1)
+						D2CompOp.GE -> jge(label1)
+					}
+
+					mov(target.to32(), 0)
+					jmp(label2)
+					place(label1)
+					mov(target.to32(), 1)
+					place(label2)
+				}
+			}
 			is D2Expr.Ref-> {
 				if (size != D2Size.INT) TODO("$size")
 				val baseReg = args[memSlot.index]
@@ -114,6 +177,16 @@ class Dynarek2X64Gen : X64Builder() {
 			else -> TODO("$this")
 		}
 	}
+
+	fun generateJump(e: D2Expr<*>, label: Label, isTrue: Boolean): Unit {
+		e.generate(X64Reg64.RAX)
+		cmp(X64Reg32.EAX, 0)
+		if (isTrue) jne(label) else je(label)
+	}
+
+	fun generateJumpFalse(e: D2Expr<*>, label: Label): Unit = generateJump(e, label, false)
+	fun generateJumpTrue(e: D2Expr<*>, label: Label): Unit = generateJump(e, label, true)
+	fun generateJumpAlways(label: Label): Unit = jmp(label)
 
 	val usedRegs = BooleanArray(32)
 
