@@ -1,5 +1,7 @@
 package com.soywiz.dynarek2
 
+import kotlin.reflect.*
+
 interface D2KFuncInt {
     operator fun invoke(regs: D2Memory?, mem: D2Memory?, temps: D2Memory?, external: Any?): Int
 }
@@ -73,7 +75,7 @@ sealed class D2Expr<T>(val type: D2TYPE<T>) {
     class IUnop(val l: D2ExprI, val op: D2UnOp) : I()
     class FUnop(val l: D2ExprF, val op: D2UnOp) : F()
 
-    class InvokeI(vararg args: D2Expr<*>) : I()
+    class InvokeI(val clazz: KClass<*>, val func: KFunction<*>, vararg val args: D2Expr<*>) : I()
     class InvokeF(vararg args: D2Expr<*>) : F()
 
     class Ref(val memSlot: D2MemSlot, val size: D2Size, val offset: D2ExprI) : I()
@@ -134,6 +136,7 @@ open class D2Builder {
     infix fun D2ExprI.GE(other: D2ExprI) = COMPOP(this, D2CompOp.GE, other)
 
     operator fun D2ExprI.unaryMinus() = UNOP(this, D2UnOp.NEG)
+    inline operator fun KFunction<*>.invoke(vararg args: D2ExprI): D2ExprI = D2Expr.InvokeI(Unit::class, this, *args)
 
     val Int.lit get() = D2Expr.ILit(this)
     val Float.lit get() = D2Expr.FLit(this)

@@ -156,70 +156,83 @@ class JvmGenerator {
     fun MethodVisitor.generateJumpTrue(e: D2Expr<*>, label: Label): Unit = generateJump(e, label, true)
     fun MethodVisitor.generateJumpAlways(label: Label): Unit = visitJumpInsn(Opcodes.GOTO, label)
 
-    fun MethodVisitor.generate(e: D2Expr<*>): Unit = when (e) {
-        is D2Expr.ILit -> pushInt(e.lit)
-        is D2Expr.IBinOp -> {
-            generate(e.l)
-            generate(e.r)
-            when (e.op) {
-                D2BinOp.ADD -> visitInsn(Opcodes.IADD)
-                D2BinOp.SUB -> visitInsn(Opcodes.ISUB)
-                D2BinOp.MUL -> visitInsn(Opcodes.IMUL)
-                D2BinOp.DIV -> visitInsn(Opcodes.IDIV)
-                D2BinOp.REM -> visitInsn(Opcodes.IREM)
-                D2BinOp.SHL -> visitInsn(Opcodes.ISHL)
-                D2BinOp.SHR -> visitInsn(Opcodes.ISHR)
-                D2BinOp.USHR -> visitInsn(Opcodes.IUSHR)
-                D2BinOp.OR -> visitInsn(Opcodes.IOR)
-                D2BinOp.AND -> visitInsn(Opcodes.IAND)
-                D2BinOp.XOR -> visitInsn(Opcodes.IXOR)
+    fun MethodVisitor.generate(e: D2Expr<*>): Unit {
+        when (e) {
+            is D2Expr.ILit -> pushInt(e.lit)
+            is D2Expr.IBinOp -> {
+                generate(e.l)
+                generate(e.r)
+                when (e.op) {
+                    D2BinOp.ADD -> visitInsn(Opcodes.IADD)
+                    D2BinOp.SUB -> visitInsn(Opcodes.ISUB)
+                    D2BinOp.MUL -> visitInsn(Opcodes.IMUL)
+                    D2BinOp.DIV -> visitInsn(Opcodes.IDIV)
+                    D2BinOp.REM -> visitInsn(Opcodes.IREM)
+                    D2BinOp.SHL -> visitInsn(Opcodes.ISHL)
+                    D2BinOp.SHR -> visitInsn(Opcodes.ISHR)
+                    D2BinOp.USHR -> visitInsn(Opcodes.IUSHR)
+                    D2BinOp.OR -> visitInsn(Opcodes.IOR)
+                    D2BinOp.AND -> visitInsn(Opcodes.IAND)
+                    D2BinOp.XOR -> visitInsn(Opcodes.IXOR)
+                    else -> TODO()
+                }
             }
-        }
-        is D2Expr.IComOp -> {
-            generate(e.l)
-            generate(e.r)
-            val opcode = when (e.op) {
-                D2CompOp.EQ -> Opcodes.IF_ICMPEQ
-                D2CompOp.NE -> Opcodes.IF_ICMPNE
-                D2CompOp.LT -> Opcodes.IF_ICMPLT
-                D2CompOp.LE -> Opcodes.IF_ICMPLE
-                D2CompOp.GT -> Opcodes.IF_ICMPGT
-                D2CompOp.GE -> Opcodes.IF_ICMPGE
-                else -> error("Invalid")
+            is D2Expr.IComOp -> {
+                generate(e.l)
+                generate(e.r)
+                val opcode = when (e.op) {
+                    D2CompOp.EQ -> Opcodes.IF_ICMPEQ
+                    D2CompOp.NE -> Opcodes.IF_ICMPNE
+                    D2CompOp.LT -> Opcodes.IF_ICMPLT
+                    D2CompOp.LE -> Opcodes.IF_ICMPLE
+                    D2CompOp.GT -> Opcodes.IF_ICMPGT
+                    D2CompOp.GE -> Opcodes.IF_ICMPGE
+                    else -> error("Invalid")
+                }
+                val label1 = Label()
+                val label2 = Label()
+                visitJumpInsn(opcode, label1)
+                pushBool(false)
+                visitJumpInsn(Opcodes.GOTO, label2)
+                visitLabel(label1)
+                pushBool(true)
+                visitLabel(label2)
             }
-            val label1 = Label()
-            val label2 = Label()
-            visitJumpInsn(opcode, label1)
-            pushBool(false)
-            visitJumpInsn(Opcodes.GOTO, label2)
-            visitLabel(label1)
-            pushBool(true)
-            visitLabel(label2)
-        }
-        is D2Expr.IUnop -> {
-            generate(e.l)
-            when (e.op) {
-                D2UnOp.NEG -> visitInsn(Opcodes.INEG)
-                D2UnOp.INV -> TODO()
+            is D2Expr.IUnop -> {
+                generate(e.l)
+                when (e.op) {
+                    D2UnOp.NEG -> visitInsn(Opcodes.INEG)
+                    D2UnOp.INV -> TODO()
+                }
             }
-        }
-        is D2Expr.Ref -> {
-            visitIntInsn(Opcodes.ALOAD, e.memSlot.index + 1) // 0 is used for THIS
-            generate(e.offset)
-            val methodName = when (e.size) {
-                D2Size.BYTE -> JvmMemTools::get8.name
-                D2Size.SHORT -> JvmMemTools::get16.name
-                D2Size.INT -> JvmMemTools::get32.name
+            is D2Expr.Ref -> {
+                visitIntInsn(Opcodes.ALOAD, e.memSlot.index + 1) // 0 is used for THIS
+                generate(e.offset)
+                val methodName = when (e.size) {
+                    D2Size.BYTE -> JvmMemTools::get8.name
+                    D2Size.SHORT -> JvmMemTools::get16.name
+                    D2Size.INT -> JvmMemTools::get32.name
+                }
+                visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    JvmMemTools::class.internalName,
+                    methodName,
+                    "(${d2MemoryRef}I)I",
+                    false
+                )
             }
-            visitMethodInsn(
-                Opcodes.INVOKESTATIC,
-                JvmMemTools::class.internalName,
-                methodName,
-                "(${d2MemoryRef}I)I",
-                false
-            )
+            is D2Expr.InvokeI -> {
+                val name = e.func.name
+                //for (m in e.func.javaClass.methods) println(m)
+                val owner = e.func.javaClass.methods.first { it.name == "getOwner" }.apply { isAccessible = true }.invoke(e.func) as kotlin.jvm.internal.PackageReference
+                val fullSignature = e.func.javaClass.methods.first { it.name == "getSignature" }.apply { isAccessible = true }.invoke(e.func) as String
+                val signature = "(" + fullSignature.substringAfter('(')
+                for (arg in e.args) generate(arg)
+                visitMethodInsn(Opcodes.INVOKESTATIC, owner.jClass.internalName, name, signature, false)
+            }
+            else -> TODO("$e")
         }
-        else -> TODO("$e")
+        return
     }
 
     fun <T> createDynamicClass(parent: ClassLoader, clazzName: String, b: ByteArray): Class<T> =

@@ -98,6 +98,12 @@ open class D2IntegrationTest {
         }
     }
 
+    @Test
+    fun testCall() {
+        testSimple(3, name = "call0") { RETURN(::isqrt.invoke(9.lit)) }
+        testSimple(1, name = "call1") { RETURN(::isub.invoke(3.lit, 2.lit)) }
+    }
+
     private val TRUE = 1
     private val FALSE = 0
 }

@@ -14,8 +14,8 @@ import com.soywiz.dynarek2.*
 
 class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boolean) : X64Builder() {
 	// @TODO: Does windows has a different ABI for x64?
-	//val args = arrayOf(X64Reg64.RCX, X64Reg64.RDX, X64Reg64.R8, X64Reg64.R9)
-	val args = arrayOf(Reg64.RDI, Reg64.RSI, Reg64.RDX, Reg64.RCX)
+	//val ABI_ARGS = arrayOf(X64Reg64.RCX, X64Reg64.RDX, X64Reg64.R8, X64Reg64.R9)
+	val ABI_ARGS = arrayOf(Reg64.RDI, Reg64.RSI, Reg64.RDX, Reg64.RCX)
 
 	private fun prefix() {
 		push(Reg64.RBP)
@@ -61,7 +61,7 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 		}
 		is D2Stm.Write -> {
 			val target = Reg64.RAX
-			val baseReg = args[ref.memSlot.index]
+			val baseReg = ABI_ARGS[ref.memSlot.index]
 			value.generate(target)
 			if (ref.offset is D2Expr.ILit) {
 				writeMem(target.to32(), baseReg, ref.offset.lit * 4)
@@ -189,7 +189,7 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 			}
 			is D2Expr.Ref-> {
 				if (size != D2Size.INT) TODO("$size")
-				val baseReg = args[memSlot.index]
+				val baseReg = ABI_ARGS[memSlot.index]
 				if (offset is D2Expr.ILit) {
 					readMem(target.to32(), baseReg, offset.lit * 4)
 				} else {
@@ -203,6 +203,15 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 							readMem(target.to32(), Reg64.RAX, 0)
 						}
 					}
+				}
+			}
+			is D2Expr.InvokeI -> {
+				for ((index, arg) in args.withIndex()) {
+					arg.generate(ABI_ARGS[index])
+				}
+				pushPopIfRequired(Reg64.RAX, target) {
+					callAbsolute(context.getFunc(func))
+					mov(target, Reg64.RAX)
 				}
 			}
 			else -> TODO("$this")

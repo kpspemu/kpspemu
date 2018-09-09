@@ -157,7 +157,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
     val u_Col = Uniform("u_Col", VarType.Float4)
     val color = FloatArray(4)
 
-    private val uniforms = mapOf(
+    private val uniforms = AG.UniformValues(
         u_modelViewProjMatrix to batch.modelViewProjMatrix,
         u_tex to textureUnit,
         u_texMatrix to textureMatrix,

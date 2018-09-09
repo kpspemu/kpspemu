@@ -34,3 +34,10 @@ inline fun NewD2Memory(size: Int, callback: (D2Memory) -> Unit) {
 		mem.free()
 	}
 }
+
+inline class D2MemoryInt(val mem: D2Memory)
+inline operator fun D2MemoryInt.get(index: Int) = mem.get32(index)
+inline operator fun D2MemoryInt.set(index: Int, value: Int) = mem.set32(index, value)
+
+inline fun D2MemoryInt.getFloat(index: Int) = mem.getF32(index)
+inline fun D2MemoryInt.setFloat(index: Int, value: Float) = mem.setF32(index, value)

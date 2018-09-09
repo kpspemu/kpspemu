@@ -304,41 +304,79 @@ class CpuState(
 
     // @TODO: Fast version for interpreted
 
-    var _R = IntArray(32)
-    var r0: Int; set(value) = Unit; get() = 0
-    var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]
-    var r2: Int; set(value) = run { _R[2] = value }; get() = _R[2]
-    var r3: Int; set(value) = run { _R[3] = value }; get() = _R[3]
-    var r4: Int; set(value) = run { _R[4] = value }; get() = _R[4]
-    var r5: Int; set(value) = run { _R[5] = value }; get() = _R[5]
-    var r6: Int; set(value) = run { _R[6] = value }; get() = _R[6]
-    var r7: Int; set(value) = run { _R[7] = value }; get() = _R[7]
-    var r8: Int; set(value) = run { _R[8] = value }; get() = _R[8]
-    var r9: Int; set(value) = run { _R[9] = value }; get() = _R[9]
-    var r10: Int; set(value) = run { _R[10] = value }; get() = _R[10]
-    var r11: Int; set(value) = run { _R[11] = value }; get() = _R[11]
-    var r12: Int; set(value) = run { _R[12] = value }; get() = _R[12]
-    var r13: Int; set(value) = run { _R[13] = value }; get() = _R[13]
-    var r14: Int; set(value) = run { _R[14] = value }; get() = _R[14]
-    var r15: Int; set(value) = run { _R[15] = value }; get() = _R[15]
-    var r16: Int; set(value) = run { _R[16] = value }; get() = _R[16]
-    var r17: Int; set(value) = run { _R[17] = value }; get() = _R[17]
-    var r18: Int; set(value) = run { _R[18] = value }; get() = _R[18]
-    var r19: Int; set(value) = run { _R[19] = value }; get() = _R[19]
-    var r20: Int; set(value) = run { _R[20] = value }; get() = _R[20]
-    var r21: Int; set(value) = run { _R[21] = value }; get() = _R[21]
-    var r22: Int; set(value) = run { _R[22] = value }; get() = _R[22]
-    var r23: Int; set(value) = run { _R[23] = value }; get() = _R[23]
-    var r24: Int; set(value) = run { _R[24] = value }; get() = _R[24]
-    var r25: Int; set(value) = run { _R[25] = value }; get() = _R[25]
-    var r26: Int; set(value) = run { _R[26] = value }; get() = _R[26]
-    var r27: Int; set(value) = run { _R[27] = value }; get() = _R[27]
-    var r28: Int; set(value) = run { _R[28] = value }; get() = _R[28]
-    var r29: Int; set(value) = run { _R[29] = value }; get() = _R[29]
-    var r30: Int; set(value) = run { _R[30] = value }; get() = _R[30]
-    var r31: Int; set(value) = run { _R[31] = value }; get() = _R[31]
-    fun getGpr(index: Int): Int = _R[index]
-    fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index] = v }
+    //private var _R = IntArray(32)
+    //var r0: Int; set(value) = Unit; get() = 0
+    //var r1: Int; set(value) = run { _R[1] = value }; get() = _R[1]
+    //var r2: Int; set(value) = run { _R[2] = value }; get() = _R[2]
+    //var r3: Int; set(value) = run { _R[3] = value }; get() = _R[3]
+    //var r4: Int; set(value) = run { _R[4] = value }; get() = _R[4]
+    //var r5: Int; set(value) = run { _R[5] = value }; get() = _R[5]
+    //var r6: Int; set(value) = run { _R[6] = value }; get() = _R[6]
+    //var r7: Int; set(value) = run { _R[7] = value }; get() = _R[7]
+    //var r8: Int; set(value) = run { _R[8] = value }; get() = _R[8]
+    //var r9: Int; set(value) = run { _R[9] = value }; get() = _R[9]
+    //var r10: Int; set(value) = run { _R[10] = value }; get() = _R[10]
+    //var r11: Int; set(value) = run { _R[11] = value }; get() = _R[11]
+    //var r12: Int; set(value) = run { _R[12] = value }; get() = _R[12]
+    //var r13: Int; set(value) = run { _R[13] = value }; get() = _R[13]
+    //var r14: Int; set(value) = run { _R[14] = value }; get() = _R[14]
+    //var r15: Int; set(value) = run { _R[15] = value }; get() = _R[15]
+    //var r16: Int; set(value) = run { _R[16] = value }; get() = _R[16]
+    //var r17: Int; set(value) = run { _R[17] = value }; get() = _R[17]
+    //var r18: Int; set(value) = run { _R[18] = value }; get() = _R[18]
+    //var r19: Int; set(value) = run { _R[19] = value }; get() = _R[19]
+    //var r20: Int; set(value) = run { _R[20] = value }; get() = _R[20]
+    //var r21: Int; set(value) = run { _R[21] = value }; get() = _R[21]
+    //var r22: Int; set(value) = run { _R[22] = value }; get() = _R[22]
+    //var r23: Int; set(value) = run { _R[23] = value }; get() = _R[23]
+    //var r24: Int; set(value) = run { _R[24] = value }; get() = _R[24]
+    //var r25: Int; set(value) = run { _R[25] = value }; get() = _R[25]
+    //var r26: Int; set(value) = run { _R[26] = value }; get() = _R[26]
+    //var r27: Int; set(value) = run { _R[27] = value }; get() = _R[27]
+    //var r28: Int; set(value) = run { _R[28] = value }; get() = _R[28]
+    //var r29: Int; set(value) = run { _R[29] = value }; get() = _R[29]
+    //var r30: Int; set(value) = run { _R[30] = value }; get() = _R[30]
+    //var r31: Int; set(value) = run { _R[31] = value }; get() = _R[31]
+    //fun getGpr(index: Int): Int = _R[index]
+    //fun setGpr(index: Int, v: Int): Unit = run { if (index != 0) _R[index] = v }
+
+    // @TODO: Dynarek2
+
+    val registers = CpuRegisters()
+    var r0:  Int; set(value) = run { registers.r0 = value }; get() = registers.r0
+    var r1:  Int; set(value) = run { registers.r1 = value }; get() = registers.r1
+    var r2:  Int; set(value) = run { registers.r2 =  value }; get() = registers.r2
+    var r3:  Int; set(value) = run { registers.r3 =  value }; get() = registers.r3
+    var r4:  Int; set(value) = run { registers.r4 =  value }; get() = registers.r4
+    var r5:  Int; set(value) = run { registers.r5 =  value }; get() = registers.r5
+    var r6:  Int; set(value) = run { registers.r6 =  value }; get() = registers.r6
+    var r7:  Int; set(value) = run { registers.r7 =  value }; get() = registers.r7
+    var r8:  Int; set(value) = run { registers.r8 =  value }; get() = registers.r8
+    var r9:  Int; set(value) = run { registers.r9 =  value }; get() = registers.r9
+    var r10: Int; set(value) = run { registers.r10 = value }; get() = registers.r10
+    var r11: Int; set(value) = run { registers.r11 = value }; get() = registers.r11
+    var r12: Int; set(value) = run { registers.r12 = value }; get() = registers.r12
+    var r13: Int; set(value) = run { registers.r13 = value }; get() = registers.r13
+    var r14: Int; set(value) = run { registers.r14 = value }; get() = registers.r14
+    var r15: Int; set(value) = run { registers.r15 = value }; get() = registers.r15
+    var r16: Int; set(value) = run { registers.r16 = value }; get() = registers.r16
+    var r17: Int; set(value) = run { registers.r17 = value }; get() = registers.r17
+    var r18: Int; set(value) = run { registers.r18 = value }; get() = registers.r18
+    var r19: Int; set(value) = run { registers.r19 = value }; get() = registers.r19
+    var r20: Int; set(value) = run { registers.r20 = value }; get() = registers.r20
+    var r21: Int; set(value) = run { registers.r21 = value }; get() = registers.r21
+    var r22: Int; set(value) = run { registers.r22 = value }; get() = registers.r22
+    var r23: Int; set(value) = run { registers.r23 = value }; get() = registers.r23
+    var r24: Int; set(value) = run { registers.r24 = value }; get() = registers.r24
+    var r25: Int; set(value) = run { registers.r25 = value }; get() = registers.r25
+    var r26: Int; set(value) = run { registers.r26 = value }; get() = registers.r26
+    var r27: Int; set(value) = run { registers.r27 = value }; get() = registers.r27
+    var r28: Int; set(value) = run { registers.r28 = value }; get() = registers.r28
+    var r29: Int; set(value) = run { registers.r29 = value }; get() = registers.r29
+    var r30: Int; set(value) = run { registers.r30 = value }; get() = registers.r30
+    var r31: Int; set(value) = run { registers.r31 = value }; get() = registers.r31
+    fun getGpr(index: Int): Int = registers.getGpr(index)
+    fun setGpr(index: Int, v: Int): Unit = registers.setGpr(index, v)
 
     fun writeRegisters(addr: Int, start: Int = 0, count: Int = 32 - start) {
         for (n in 0 until count) mem.sw(addr + n * 4, getGpr(start + n))
@@ -351,18 +389,12 @@ class CpuState(
     //val FPR = FloatArray(32) { 0f }
     //val FPR_I = FprI(this)
 
-    @JvmField
-    var IR: Int = 0
-    @JvmField
-    var _PC: Int = 0
-    @JvmField
-    var _nPC: Int = 0
-    @JvmField
-    var LO: Int = 0
-    @JvmField
-    var HI: Int = 0
-    @JvmField
-    var IC: Int = 0
+    var IR: Int; set(value) = run { registers.IR = InstructionRegister(value) }; get() = registers.IR.data
+    var _PC: Int; set(value) = run { registers.PC = value }; get() = registers.PC
+    var _nPC: Int; set(value) = run { registers.nPC = value }; get() = registers.nPC
+    var LO: Int; set(value) = run { registers.LO = value }; get() = registers.LO
+    var HI: Int; set(value) = run { registers.HI = value }; get() = registers.HI
+    var IC: Int; set(value) = run { registers.IC = value }; get() = registers.IC
 
     fun getPCRef() = ::sPC
 

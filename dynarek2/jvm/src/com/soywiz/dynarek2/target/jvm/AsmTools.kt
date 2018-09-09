@@ -2,6 +2,7 @@ package com.soywiz.dynarek2.target.jvm
 
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.*
+import java.lang.reflect.*
 
 fun MethodVisitor.visitPop() = visitInsn(POP)
 fun MethodVisitor.visitIReturn() = visitInsn(IRETURN)
@@ -23,5 +24,27 @@ fun MethodVisitor.pushInt(value: Int) {
             }
         }
     }
-
 }
+
+val Method.signature: String
+    get() {
+        val args = this.parameterTypes.map { it.internalName2 }.joinToString("")
+        val ret = this.returnType.internalName2
+        return "($args)$ret"
+    }
+
+val Class<*>.internalName: String get() = this.name.replace('.', '/')
+val Class<*>.internalName2: String
+    get() = when {
+        isPrimitive -> {
+            when (this) {
+                java.lang.Void.TYPE -> "V"
+                java.lang.Integer.TYPE -> "I"
+                java.lang.Float.TYPE -> "F"
+                java.lang.Boolean.TYPE -> "Z"
+                else -> TODO("Unknown primitive $this")
+            }
+        }
+        isArray -> "[" + this.componentType.internalName2
+        else -> "L${this.internalName};"
+    }

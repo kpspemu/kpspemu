@@ -3,6 +3,7 @@ package com.soywiz.dynarek2
 import kotlinx.cinterop.*
 import platform.posix.*
 import com.soywiz.dynarek2.target.x64.*
+import kotlin.reflect.*
 
 actual fun D2Func.generate(context: D2Context, name: String?, debug: Boolean): D2Result {
     val funcBytes = Dynarek2X64Gen(context, name, debug).generate(this)
@@ -37,7 +38,13 @@ fun fileWriteBytes(name: String, data: ByteArray) {
     }
 }
 
+fun D2Context.registerFunc(name: KFunction<*>, address: CPointer<*>) {
+    registerFunc(name, address.uncheckedCast<Long>())
+}
+
 actual fun D2Context.registerDefaultFunctions() {
+    registerFunc(::isqrt, staticCFunction(::isqrt))
+    registerFunc(::isub, staticCFunction(::isub))
     //registerFunc(Dynarek2X64Gen.SHL_NAME, staticCFunction(::_jit_shl).uncheckedCast<Long>())
     //registerFunc(Dynarek2X64Gen.SHR_NAME, staticCFunction(::_jit_shr).uncheckedCast<Long>())
     //registerFunc(Dynarek2X64Gen.USHR_NAME, staticCFunction(::_jit_ushr).uncheckedCast<Long>())
