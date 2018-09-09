@@ -5,9 +5,16 @@ import org.khronos.webgl.*
 actual class D2Memory(val buffer: ArrayBuffer) : D2MemoryFreeable {
     override val mem = this
 
+    @JsName("s8")
     val s8 = Int8Array(buffer)
+
+    @JsName("s16")
     val s16 = Int16Array(buffer)
+
+    @JsName("s32")
     val s32 = Int32Array(buffer)
+
+    @JsName("f32")
     val f32 = Float32Array(buffer)
 
     override fun free() {

@@ -36,15 +36,15 @@ sealed class D2Stm {
     class Print(val expr: D2ExprI) : D2Stm()
 }
 
-enum class D2BinOp {
-    INVALID,
-    ADD, SUB, MUL, DIV, REM,
-    OR, AND, XOR,
-    SHL, SHR, USHR,
+enum class D2BinOp(val symbol: String) {
+    INVALID(""),
+    ADD("+"), SUB("-"), MUL("*"), DIV("/"), REM("%"),
+    OR("|"), AND("&"), XOR("^"),
+    SHL("<<"), SHR(">>"), USHR(">>>"),
 }
 
-enum class D2CompOp {
-    EQ, NE, LT, LE, GT, GE
+enum class D2CompOp(val symbol: String) {
+    EQ("=="), NE("!="), LT("<"), LE("<="), GT(">"), GE(">=")
 }
 
 enum class D2UnOp {
