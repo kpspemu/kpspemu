@@ -35,7 +35,9 @@ sealed class D2Stm {
 }
 
 enum class D2BinOp {
-    ADD, SUB, MUL, DIV, REM
+    ADD, SUB, MUL, DIV, REM,
+    OR, AND, XOR,
+    SHL, SHR, USHR,
 }
 
 enum class D2CompOp {
@@ -115,12 +117,21 @@ open class D2Builder {
     operator fun D2ExprI.times(other: D2ExprI) = BINOP(this, D2BinOp.MUL, other)
     operator fun D2ExprI.div(other: D2ExprI) = BINOP(this, D2BinOp.DIV, other)
 
+    infix fun D2ExprI.SHL(other: D2ExprI) = BINOP(this, D2BinOp.SHL, other)
+    infix fun D2ExprI.SHR(other: D2ExprI) = BINOP(this, D2BinOp.SHR, other)
+    infix fun D2ExprI.USHR(other: D2ExprI) = BINOP(this, D2BinOp.USHR, other)
+
+    infix fun D2ExprI.AND(other: D2ExprI) = BINOP(this, D2BinOp.AND, other)
+    infix fun D2ExprI.OR(other: D2ExprI) = BINOP(this, D2BinOp.OR, other)
+    infix fun D2ExprI.XOR(other: D2ExprI) = BINOP(this, D2BinOp.XOR, other)
+
     infix fun D2ExprI.EQ(other: D2ExprI) = COMPOP(this, D2CompOp.EQ, other)
     infix fun D2ExprI.NE(other: D2ExprI) = COMPOP(this, D2CompOp.NE, other)
     infix fun D2ExprI.LT(other: D2ExprI) = COMPOP(this, D2CompOp.LT, other)
     infix fun D2ExprI.LE(other: D2ExprI) = COMPOP(this, D2CompOp.LE, other)
     infix fun D2ExprI.GT(other: D2ExprI) = COMPOP(this, D2CompOp.GT, other)
     infix fun D2ExprI.GE(other: D2ExprI) = COMPOP(this, D2CompOp.GE, other)
+
 
     operator fun D2ExprI.unaryMinus() = UNOP(this, D2UnOp.NEG)
 

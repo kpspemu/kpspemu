@@ -1,16 +1,17 @@
 package com.soywiz.dynarek2.target.x64
 
+// http://ref.x86asm.net/coder64.html
 open class X64Builder : BaseBuilder() {
 	fun retn() {
 		bytes(0xc3)
 	}
 
-    fun writeMem(src: X64Reg32, base: X64Reg64, offset: Int) {
+    fun writeMem(src: Reg32, base: Reg64, offset: Int) {
         bytes(0x89, 0x80 or (src.index shl 3) or (base.index shl 0))
         int(offset)
     }
 
-    fun readMem(dst: X64Reg32, base: X64Reg64, offset: Int) {
+    fun readMem(dst: Reg32, base: Reg64, offset: Int) {
 		bytes(0x8b, 0x80 or (dst.index shl 3) or (base.index shl 0))
 		int(offset)
 	}
@@ -20,35 +21,43 @@ open class X64Builder : BaseBuilder() {
 		int(offset)
 	}
 
-	fun xchg(a: X64Reg64, b: X64Reg64) {
+	fun xchg(a: Reg64, b: Reg64) {
 		if (a == b) error("no effect")
 		if (a.index > b.index) return xchg(b, a)
-		if (a != X64Reg64.RAX) error("Only allow RAX to exchange")
+		if (a != Reg64.RAX) error("Only allow RAX to exchange")
 		bytes(0x48, 0x90 or (b.index shl 0))
 	}
 
-	private fun _C0(dst: X64Reg32, src: X64Reg32) = 0b11_000_000 or (src.index shl 3) or (dst.index shl 0)
-	private fun _C0(dst: X64Reg64, src: X64Reg64) = _C0(dst.to32(), src.to32())
+	private fun _C0(dst: Reg32, src: Reg32) = 0b11_000_000 or (src.index shl 3) or (dst.index shl 0)
+	private fun _C0(dst: Reg64, src: Reg64) = _C0(dst.to32(), src.to32())
 
-	fun add(dst: X64Reg32, src: X64Reg32) = bytes(0x01, _C0(dst, src))
-	fun sub(dst: X64Reg32, src: X64Reg32) = bytes(0x29, _C0(dst, src))
+	fun add(dst: Reg32, src: Reg32) = bytes(0x01, _C0(dst, src))
+    fun or(dst: Reg32, src: Reg32) = bytes(0x09, _C0(dst, src))
+    fun and(dst: Reg32, src: Reg32): Unit = bytes(0x21, _C0(dst, src))
+    fun xor(dst: Reg32, src: Reg32): Unit = bytes(0x31, _C0(dst, src))
+	fun sub(dst: Reg32, src: Reg32) = bytes(0x29, _C0(dst, src))
 
-    fun mul(src: X64Reg32): Unit {
+    fun shl(dst: Reg32, src: Reg32): Unit = TODO()
+    fun shr(dst: Reg32, src: Reg32): Unit = TODO()
+    fun ushr(dst: Reg32, src: Reg32): Unit = TODO()
+
+
+    fun mul(src: Reg32): Unit {
         if (src.extended) bytes(0x41)
         bytes(0xf7, 0xe0 or (src.lindex shl 0))
     }
 
-	fun mul(src: X64Reg64) = bytes(0x48).also { mul(X64Reg32(src.index)) }
-	fun add(dst: X64Reg64, src: X64Reg64) = bytes(0x48).also { add(X64Reg32(dst.index), X64Reg32(src.index)) }
+	fun mul(src: Reg64) = bytes(0x48).also { mul(Reg32(src.index)) }
+	fun add(dst: Reg64, src: Reg64) = bytes(0x48).also { add(Reg32(dst.index), Reg32(src.index)) }
 
-	fun mov(dst: X64Reg64, src: X64Reg64) {
+	fun mov(dst: Reg64, src: Reg64) {
 		if (dst.index >= 8) TODO("Upper registers not implemented")
 		bytes(0x48, 0x89, _C0(dst, src))
 	}
 
-	fun mov(dst: X64Reg32, value: Int) = bytes(0xb8 + dst.index).also { int(value) }
+	fun mov(dst: Reg32, value: Int) = bytes(0xb8 + dst.index).also { int(value) }
 
-	fun push(r: X64Reg64) {
+	fun push(r: Reg64) {
 		if (r.index < 8) {
 			bytes(0x50 + r.index)
 		} else {
@@ -56,13 +65,13 @@ open class X64Builder : BaseBuilder() {
 		}
 	}
 
-	fun pushRAX() = push(X64Reg64.RAX)
-	fun pushRBX() = push(X64Reg64.RBX)
+	fun pushRAX() = push(Reg64.RAX)
+	fun pushRBX() = push(Reg64.RBX)
 
-	fun popRAX() = pop(X64Reg64.RAX)
-	fun popRBX() = pop(X64Reg64.RBX)
+	fun popRAX() = pop(Reg64.RAX)
+	fun popRBX() = pop(Reg64.RBX)
 
-	fun pop(r: X64Reg64) {
+	fun pop(r: Reg64) {
 		if (r.index < 8) {
 			bytes(0x58 + r.index)
 		} else {
@@ -70,13 +79,13 @@ open class X64Builder : BaseBuilder() {
 		}
 	}
 
-    fun cmp(l: X64Reg32, r: X64Reg32) {
+    fun cmp(l: Reg32, r: Reg32) {
         if (l.extended) TODO()
         bytes(0x39, 0xC0 or (l.lindex shl 3) or (r.lindex shl 3))
     }
 
-    fun cmp(l: X64Reg32, r: Int) {
-        if (l == X64Reg32.EAX) {
+    fun cmp(l: Reg32, r: Int) {
+        if (l == Reg32.EAX) {
             bytes(0x3D)
             int(r)
         } else {
@@ -94,17 +103,23 @@ open class X64Builder : BaseBuilder() {
     fun jle(label: Label) = bytes(0x0F, 0x8E).also { patch32(label) }
     fun jg(label: Label) = bytes(0x0F, 0x8F).also { patch32(label) }
 
+    fun call(reg: Reg64) = bytes(0xFF, 0xD0 + reg.olindex)
+    fun callAbsolute(value: Long) {
+        mov(Reg64.RAX, value)
+        call(Reg64.RAX)
+    }
+    fun call(label: Label) = bytes(0xe8).also { patch32(label) }
     fun jmp(label: Label) = bytes(0xe9).also { patch32(label) }
 
     fun patch32(label: Label) = patch(label, 4)
 
     fun nop() = bytes(0x90)
 
-	fun movEax(value: Int) = mov(X64Reg32.EAX, value)
-	fun movEdi(value: Int) = mov(X64Reg32.EDI, value)
+	fun movEax(value: Int) = mov(Reg32.EAX, value)
+	fun movEdi(value: Int) = mov(Reg32.EDI, value)
 
-	fun movRax(value: Long) {
-		bytes(0x48, 0xb0)
+	fun mov(reg: Reg64, value: Long) {
+		bytes(0x48, 0xb8 or reg.olindex)
 		long(value)
 	}
 
@@ -179,57 +194,60 @@ open class BaseBuilder {
 	}
 }
 
-inline class X64Reg32(val index: Int) {
+inline class Reg32(val index: Int) {
 	companion object {
-		val EAX = X64Reg32(0)
-		val ECX = X64Reg32(1)
-		val EDX = X64Reg32(2)
-		val EBX = X64Reg32(3)
-		val ESP = X64Reg32(4)
-		val EBP = X64Reg32(5)
-		val ESI = X64Reg32(6)
-		val EDI = X64Reg32(7)
+		val EAX = Reg32(0)
+		val ECX = Reg32(1)
+		val EDX = Reg32(2)
+		val EBX = Reg32(3)
+		val ESP = Reg32(4)
+		val EBP = Reg32(5)
+		val ESI = Reg32(6)
+		val EDI = Reg32(7)
 
-        val R8D = X64Reg32(8)
-        val R9D = X64Reg32(9)
-        val R10D = X64Reg32(10)
-        val R11D = X64Reg32(11)
-        val R12D = X64Reg32(12)
-        val R13D = X64Reg32(13)
-        val R14D = X64Reg32(14)
-        val R15D = X64Reg32(15)
+        val R8D = Reg32(8)
+        val R9D = Reg32(9)
+        val R10D = Reg32(10)
+        val R11D = Reg32(11)
+        val R12D = Reg32(12)
+        val R13D = Reg32(13)
+        val R14D = Reg32(14)
+        val R15D = Reg32(15)
 
 		val REGS = arrayOf(EAX, ECX, EDX, EBX)
 	}
 
     val extended get() = index >= 8
     val lindex get() = index and 0x7
-	fun to64() = X64Reg64(index)
+    val olindex get() = if (extended) error("Unsupported extended") else lindex
+	fun to64() = Reg64(index)
 }
 
-inline class X64Reg64(val index: Int) {
+inline class Reg64(val index: Int) {
 	companion object {
-		val RAX = X64Reg64(0b0_000)
-		val RCX = X64Reg64(0b0_001)
-		val RDX = X64Reg64(0b0_010)
-		val RBX = X64Reg64(0b0_011)
-		val RSP = X64Reg64(0b0_100)
-		val RBP = X64Reg64(0b0_101)
-		val RSI = X64Reg64(0b0_110)
-		val RDI = X64Reg64(0b0_111)
+		val RAX = Reg64(0b0_000)
+		val RCX = Reg64(0b0_001)
+		val RDX = Reg64(0b0_010)
+		val RBX = Reg64(0b0_011)
+		val RSP = Reg64(0b0_100)
+		val RBP = Reg64(0b0_101)
+		val RSI = Reg64(0b0_110)
+		val RDI = Reg64(0b0_111)
 
-		val R8 = X64Reg64(0b1_000)
-		val R9 = X64Reg64(0b1_001)
-		val R10 = X64Reg64(0b1_010)
-		val R11 = X64Reg64(0b1_011)
-		val R12 = X64Reg64(0b1_100)
-		val R13 = X64Reg64(0b1_101)
-		val R14 = X64Reg64(0b1_110)
-		val R15 = X64Reg64(0b1_111)
+		val R8 = Reg64(0b1_000)
+		val R9 = Reg64(0b1_001)
+		val R10 = Reg64(0b1_010)
+		val R11 = Reg64(0b1_011)
+		val R12 = Reg64(0b1_100)
+		val R13 = Reg64(0b1_101)
+		val R14 = Reg64(0b1_110)
+		val R15 = Reg64(0b1_111)
     }
 
     val extended get() = index >= 8
-    fun to32() = X64Reg32(index)
+    val lindex get() = index and 0x7
+    val olindex get() = if (extended) error("Unsupported extended") else lindex
+    fun to32() = Reg32(index)
 }
 
 /*

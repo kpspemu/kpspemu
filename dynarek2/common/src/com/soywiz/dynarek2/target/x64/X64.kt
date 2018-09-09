@@ -12,17 +12,17 @@ import com.soywiz.dynarek2.*
 // R9: external
 /////////////////////////
 
-class Dynarek2X64Gen : X64Builder() {
+class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boolean) : X64Builder() {
 	//val args = arrayOf(X64Reg64.RCX, X64Reg64.RDX, X64Reg64.R8, X64Reg64.R9)
-	val args = arrayOf(X64Reg64.RDI, X64Reg64.RSI, X64Reg64.RDX, X64Reg64.RCX)
+	val args = arrayOf(Reg64.RDI, Reg64.RSI, Reg64.RDX, Reg64.RCX)
 
 	private fun prefix() {
-		push(X64Reg64.RBP)
-		mov(X64Reg64.RBP, X64Reg64.RSP)
+		push(Reg64.RBP)
+		mov(Reg64.RBP, Reg64.RSP)
 
-		push(X64Reg64.RBX)
-		push(X64Reg64.RSI)
-		push(X64Reg64.RDI)
+		push(Reg64.RBX)
+		push(Reg64.RSI)
+		push(Reg64.RDI)
 
 		// NonVolatile
 		//usedRegs[X64Reg64.RBX.index] = true
@@ -35,11 +35,11 @@ class Dynarek2X64Gen : X64Builder() {
 	}
 
 	private fun doReturn() {
-		pop(X64Reg64.RDI)
-		pop(X64Reg64.RSI)
-		pop(X64Reg64.RBX)
+		pop(Reg64.RDI)
+		pop(Reg64.RSI)
+		pop(Reg64.RBX)
 
-		pop(X64Reg64.RBP)
+		pop(Reg64.RBP)
 		retn()
 	}
 
@@ -55,11 +55,11 @@ class Dynarek2X64Gen : X64Builder() {
 			for (child in children) child.generate()
 		}
 		is D2Stm.Return -> {
-			expr.generate(X64Reg64.RAX)
+			expr.generate(Reg64.RAX)
 			doReturn()
 		}
 		is D2Stm.Write -> {
-			val target = X64Reg64.RAX
+			val target = Reg64.RAX
 			val baseReg = args[ref.memSlot.index]
 			value.generate(target)
 			if (ref.offset is D2Expr.ILit) {
@@ -99,32 +99,62 @@ class Dynarek2X64Gen : X64Builder() {
 		else -> TODO("$this")
 	}
 
-	fun D2Expr<*>.generate(target: X64Reg64): Unit {
+	companion object {
+		val SHL_NAME = D2FuncName("shl")
+		val SHR_NAME = D2FuncName("shr")
+		val USHR_NAME = D2FuncName("ushr")
+	}
+
+	fun D2Expr<*>.generate(target: Reg64): Unit {
 		when (this) {
 			is D2Expr.ILit -> mov(target.to32(), this.lit)
 			is D2Expr.FLit -> TODO("$this")
 			is D2Expr.IBinOp -> {
-				val temp = tryGetTempReg(except = target)
-
-				l.generate(target)
-				pushPopIfRequired(temp, target) {
-					requestPreserve(target) {
-						r.generate(temp)
-					}
-					when (this.op) {
-						D2BinOp.ADD -> add(target.to32(), temp.to32())
-						D2BinOp.SUB -> sub(target.to32(), temp.to32())
-						D2BinOp.MUL -> {
-							pushPopIfRequired(X64Reg64.RAX, target) {
-								pushPopIfRequired(X64Reg64.RDX, target) {
-									if (target != X64Reg64.RAX) mov(X64Reg64.RAX, target)
-									mul(temp.to32())
-									if (target != X64Reg64.RAX) mov(target, X64Reg64.RAX)
-								}
+				when (this.op) {
+					D2BinOp.SHL, D2BinOp.SHR, D2BinOp.USHR -> {
+						pushPopIfRequired(args[0], target) {
+							pushPopIfRequired(args[1], target) {
+								l.generate(args[0])
+								r.generate(args[1])
+								callAbsolute(context.getFunc(when (this.op) {
+									D2BinOp.SHL -> SHL_NAME
+									D2BinOp.SHR -> SHR_NAME
+									D2BinOp.USHR -> USHR_NAME
+									else -> TODO()
+								}))
+								mov(target, Reg64.RAX)
 							}
 						}
-						D2BinOp.DIV -> TODO("$this")
-						D2BinOp.REM -> TODO("$this")
+					}
+					else -> {
+						val temp = tryGetTempReg(except = target)
+
+						l.generate(target)
+						pushPopIfRequired(temp, target) {
+							requestPreserve(target) {
+								r.generate(temp)
+							}
+							when (this.op) {
+								D2BinOp.ADD -> add(target.to32(), temp.to32())
+								D2BinOp.SUB -> sub(target.to32(), temp.to32())
+								D2BinOp.MUL -> {
+									pushPopIfRequired(Reg64.RAX, target) {
+										pushPopIfRequired(Reg64.RDX, target) {
+											if (target != Reg64.RAX) mov(Reg64.RAX, target)
+											mul(temp.to32())
+											if (target != Reg64.RAX) mov(target, Reg64.RAX)
+										}
+									}
+								}
+								D2BinOp.DIV -> TODO("$this")
+								D2BinOp.REM -> TODO("$this")
+								D2BinOp.SHR -> shr(target.to32(), temp.to32())
+								D2BinOp.USHR -> ushr(target.to32(), temp.to32())
+								D2BinOp.AND -> and(target.to32(), temp.to32())
+								D2BinOp.OR -> or(target.to32(), temp.to32())
+								D2BinOp.XOR -> xor(target.to32(), temp.to32())
+							}
+						}
 					}
 				}
 			}
@@ -162,14 +192,14 @@ class Dynarek2X64Gen : X64Builder() {
 				if (offset is D2Expr.ILit) {
 					readMem(target.to32(), baseReg, offset.lit * 4)
 				} else {
-					pushPopIfRequired(X64Reg64.RAX, target) {
-						pushPopIfRequired(X64Reg64.RBX, target) {
+					pushPopIfRequired(Reg64.RAX, target) {
+						pushPopIfRequired(Reg64.RBX, target) {
 							offset.generate(target)
 							popRBX()
 							movEax(4)
-							mul(X64Reg32.EBX)
-							add(X64Reg64.RAX, baseReg)
-							readMem(target.to32(), X64Reg64.RAX, 0)
+							mul(Reg32.EBX)
+							add(Reg64.RAX, baseReg)
+							readMem(target.to32(), Reg64.RAX, 0)
 						}
 					}
 				}
@@ -179,8 +209,8 @@ class Dynarek2X64Gen : X64Builder() {
 	}
 
 	fun generateJump(e: D2Expr<*>, label: Label, isTrue: Boolean): Unit {
-		e.generate(X64Reg64.RAX)
-		cmp(X64Reg32.EAX, 0)
+		e.generate(Reg64.RAX)
+		cmp(Reg32.EAX, 0)
 		if (isTrue) jne(label) else je(label)
 	}
 
@@ -190,16 +220,16 @@ class Dynarek2X64Gen : X64Builder() {
 
 	val usedRegs = BooleanArray(32)
 
-	private val tempRegs = arrayOf(X64Reg64.RBX, X64Reg64.RSI, X64Reg64.RDI) // @TODO: Must fix high operations with regs
+	private val tempRegs = arrayOf(Reg64.RBX, Reg64.RSI, Reg64.RDI) // @TODO: Must fix high operations with regs
 	//private val tempRegs = arrayOf(X64Reg64.RBX, X64Reg64.RAX)
 
-	fun tryGetTempReg(except: X64Reg64): X64Reg64 {
+	fun tryGetTempReg(except: Reg64): Reg64 {
 		for (r in tempRegs) if (r != except && !usedRegs[r.index]) return r
 		for (r in tempRegs) if (r != except) return r
-		return X64Reg64.RBX
+		return Reg64.RBX
 	}
 
-	inline fun requestPreserve(reg: X64Reg64, callback: () -> Unit) {
+	inline fun requestPreserve(reg: Reg64, callback: () -> Unit) {
 		val old = usedRegs[reg.index]
 		usedRegs[reg.index] = true
 		try {
@@ -209,7 +239,7 @@ class Dynarek2X64Gen : X64Builder() {
 		}
 	}
 
-	inline fun pushPopIfRequired(reg: X64Reg64, target: X64Reg64, callback: () -> Unit) {
+	inline fun pushPopIfRequired(reg: Reg64, target: Reg64, callback: () -> Unit) {
 		val used = if (reg != target) usedRegs[reg.index] else false
 		if (used) push(reg)
 		callback()

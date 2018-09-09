@@ -8,7 +8,7 @@ class JvmGenerator {
     val objectRef = java.lang.Object::class.asmRef
     val d2MemoryRef = D2Memory::class.asmRef
 
-    fun generate(func: D2Func, name: String?, debug: Boolean): D2Result {
+    fun generate(func: D2Func, context: D2Context, name: String?, debug: Boolean): D2Result {
         val cw = ClassWriter(0)
         val className = "Dynarek2Generated"
 
@@ -167,6 +167,12 @@ class JvmGenerator {
                 D2BinOp.MUL -> visitInsn(Opcodes.IMUL)
                 D2BinOp.DIV -> visitInsn(Opcodes.IDIV)
                 D2BinOp.REM -> visitInsn(Opcodes.IREM)
+                D2BinOp.SHL -> visitInsn(Opcodes.ISHL)
+                D2BinOp.SHR -> visitInsn(Opcodes.ISHR)
+                D2BinOp.USHR -> visitInsn(Opcodes.IUSHR)
+                D2BinOp.OR -> visitInsn(Opcodes.IOR)
+                D2BinOp.AND -> visitInsn(Opcodes.IAND)
+                D2BinOp.XOR -> visitInsn(Opcodes.IXOR)
             }
         }
         is D2Expr.IComOp -> {
