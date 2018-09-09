@@ -1,0 +1,27 @@
+package com.soywiz.dynarek2.target.jvm
+
+import org.objectweb.asm.*
+import org.objectweb.asm.Opcodes.*
+
+fun MethodVisitor.visitPop() = visitInsn(POP)
+fun MethodVisitor.visitIReturn() = visitInsn(IRETURN)
+fun MethodVisitor.pushBool(value: Boolean) = pushInt(if (value) 1 else 0)
+fun MethodVisitor.pushInt(value: Int) {
+    when (value) {
+        -1 -> visitInsn(ICONST_M1)
+        0 -> visitInsn(ICONST_0)
+        1 -> visitInsn(ICONST_1)
+        2 -> visitInsn(ICONST_2)
+        3 -> visitInsn(ICONST_3)
+        4 -> visitInsn(ICONST_4)
+        5 -> visitInsn(ICONST_5)
+        else -> {
+            when (value) {
+                in -0x80..0x7f -> visitIntInsn(BIPUSH, value)
+                in -0x8000..0x7fff -> visitIntInsn(SIPUSH, value)
+                else -> visitLdcInsn(value)
+            }
+        }
+    }
+
+}
