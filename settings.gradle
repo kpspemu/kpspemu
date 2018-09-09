@@ -6,15 +6,16 @@ def nativeEnabled(rootProject) {
     return System.getenv("CI") != "true"
 }
 
-include 'kpspemu-common'
-include 'kpspemu-jvm'
-include 'kpspemu-js'
-if (nativeEnabled(rootProject)) {
-    include 'kpspemu-native'
-}
 //include 'kpspemu-js-dce'
 
 def register(String base) {
+    include "$base-common"
+    include "$base-jvm"
+    include "$base-js"
+    if (nativeEnabled(rootProject)) {
+        include "$base-native"
+    }
+
     findProject(":$base-common")?.projectDir = file("$base/common")
     findProject(":$base-jvm")?.projectDir = file("$base/jvm")
     findProject(":$base-js")?.projectDir = file("$base/js")
@@ -26,3 +27,4 @@ def register(String base) {
 }
 
 register('kpspemu')
+register('dynarek2')
