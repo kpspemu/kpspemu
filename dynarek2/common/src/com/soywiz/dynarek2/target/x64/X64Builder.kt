@@ -74,7 +74,7 @@ open class X64Builder : BaseBuilder() {
 	fun add(dst: Reg64, src: Reg64) = bytes(0x48).also { add(Reg32(dst.index), Reg32(src.index)) }
 
 	fun mov(dst: Reg64, src: Reg64) {
-        if (src == src) return
+        if (dst == src) return
 		if (dst.index >= 8) TODO("Upper registers not implemented")
 		bytes(0x48, 0x89, _C0(dst, src))
 	}

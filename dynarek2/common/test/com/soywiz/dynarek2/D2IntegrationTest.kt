@@ -10,8 +10,8 @@ open class D2IntegrationTest {
     open fun testSimple(expected: Int, iregs: IntArray = intArrayOf(), name: String? = null, debug: Boolean? = null, gen: D2Builder.() -> Unit) {
         NewD2Memory(512 * 4) { mem ->
             for (n in iregs.indices) mem.set32(n, iregs[n])
-            val result = D2Func { gen() }.generate(context, name, debug ?: allDebug).func(mem, null, null, null)
-            assertEquals(expected, result)
+            val actual = D2Func { gen() }.generate(context, name, debug ?: allDebug).func(mem, null, null, null)
+            assertEquals(expected, actual, "Expected <$expected>, actual <$actual> (for function '$name')")
         }
     }
 
@@ -100,8 +100,15 @@ open class D2IntegrationTest {
 
     @Test
     fun testCall() {
-        testSimple(3, name = "call0") { RETURN(::isqrt.invoke(9.lit)) }
+        testSimple(3, name = "call0") {
+            PRINTI(::isqrt.invoke(9.lit))
+            RETURN(::isqrt.invoke(9.lit))
+        }
         testSimple(1, name = "call1") { RETURN(::isub.invoke(3.lit, 2.lit)) }
+
+        // isub:
+        // 55 48 89 E5 48 83 EC 10  89 7D F8 89 75 FC E8 8D
+        // 00 0F 00 48 83 C4 10 5D  C3
     }
 
     private val TRUE = 1

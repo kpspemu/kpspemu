@@ -41,10 +41,21 @@ fun fileWriteBytes(name: String, data: ByteArray) {
 fun D2Context.registerFunc(name: KFunction<*>, address: CPointer<*>) {
     registerFunc(name, address.uncheckedCast<Long>())
 }
+fun CPointer<ByteVar>.readBytes(count: Int): ByteArray {
+    val out = ByteArray(count)
+    for (n in 0 until count) out[n] = this[n]
+    return out
+}
 
 actual fun D2Context.registerDefaultFunctions() {
+    registerFunc(::iprint, staticCFunction(::iprint))
     registerFunc(::isqrt, staticCFunction(::isqrt))
     registerFunc(::isub, staticCFunction(::isub))
+
+    //val isubptr = staticCFunction(::isub).reinterpret<ByteVar>()
+    //for (n in 0 until 32) {
+    //    println((isubptr[n].toInt() and 0xFF).toString(16))
+    //}
     //registerFunc(Dynarek2X64Gen.SHL_NAME, staticCFunction(::_jit_shl).uncheckedCast<Long>())
     //registerFunc(Dynarek2X64Gen.SHR_NAME, staticCFunction(::_jit_shr).uncheckedCast<Long>())
     //registerFunc(Dynarek2X64Gen.USHR_NAME, staticCFunction(::_jit_ushr).uncheckedCast<Long>())

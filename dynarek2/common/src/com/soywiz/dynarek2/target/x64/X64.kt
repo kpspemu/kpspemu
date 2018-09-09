@@ -69,6 +69,9 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 				TODO()
 			}
 		}
+        is D2Stm.Expr -> {
+            expr.generate(Reg64.RAX)
+        }
 		is D2Stm.If -> {
 			if (sfalse == null) {
 				// IF
@@ -108,7 +111,10 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 
 	fun D2Expr<*>.generate(target: Reg64): Unit {
 		when (this) {
-			is D2Expr.ILit -> mov(target.to32(), this.lit)
+			is D2Expr.ILit -> {
+                mov(target.to32(), this.lit)
+                //mov(target, this.lit.toLong())
+            }
 			is D2Expr.FLit -> TODO("$this")
 			is D2Expr.IBinOp -> {
 				when (this.op) {
@@ -180,6 +186,7 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 						D2CompOp.GE -> jge(label1)
 					}
 
+                    // @TODO: Use SET-XX instead of jumps: http://faydoc.tripod.com/cpu/setnl.htm
 					mov(target.to32(), 0)
 					jmp(label2)
 					place(label1)

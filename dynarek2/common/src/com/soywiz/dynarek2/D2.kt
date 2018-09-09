@@ -104,7 +104,7 @@ open class D2Builder {
 
     fun WHILE(cond: D2ExprI, body: D2Builder.() -> Unit): D2Stm.While = D2Stm.While(cond, D2Builder(body)).also { this.stms += it }
     fun SET(ref: D2Expr.Ref, value: D2ExprI) = run { stms += D2Stm.Write(ref, value) }
-    fun PRINTI(ref: D2ExprI) = run { stms += D2Stm.Print(ref) }
+    fun PRINTI(ref: D2ExprI) = STM(::iprint.invoke(ref))
 
     // Expressions
 
