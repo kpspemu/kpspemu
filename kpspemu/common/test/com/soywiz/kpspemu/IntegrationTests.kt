@@ -10,7 +10,7 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
-import kotlin.coroutines.experimental.*
+import kotlin.coroutines.*
 import kotlin.test.*
 
 class IntegrationTests : BaseTest() {

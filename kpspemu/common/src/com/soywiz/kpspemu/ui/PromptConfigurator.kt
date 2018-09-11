@@ -56,7 +56,7 @@ class PromptConfigurator(
 
     private suspend fun memdump() {
         val outFile = applicationVfs["memdump.bin"]
-        outFile.writeBytes(emulator.mem.readBytes(Memory.MAINMEM.start, Memory.MAINMEM.size))
+        outFile.writeBytes(emulator.mem.readBytes(MemoryInfo.MAINMEM.start, MemoryInfo.MAINMEM.size))
         KpspemuMainScene.logger.warn { "Writted memory to $outFile" }
         browser.alert("Writted memory to $outFile")
     }

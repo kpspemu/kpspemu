@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.cpu.dynarec
 
-import com.soywiz.dynarek.*
+import com.soywiz.dynarek2.*
+import com.soywiz.dynarek2.target.*
 import com.soywiz.kpspemu.cpu.*
 
 class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
@@ -8,39 +9,61 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     // ALU
     override fun lui(i: Int, s: InstructionInfo) = s { RT = ((IR.u_imm16 shl 16).lit) }
 
-    override fun movz(i: Int, s: InstructionInfo) = s { RD = CpuState::movz.invoke(p0, RT, RD, RS) }
-    override fun movn(i: Int, s: InstructionInfo) = s { RD = CpuState::movn.invoke(p0, RT, RD, RS) }
+    override fun movz(i: Int, s: InstructionInfo) = s {
+        //RD = ::dyna_movz.invoke(RT, RD, RS)
+        IF (RT EQ 0.lit) { RD = RS }
+    }
+    override fun movn(i: Int, s: InstructionInfo) = s {
+        //RD = ::dyna_movn.invoke(RT, RD, RS)
+        IF (RT NE 0.lit) { RD = RS }
+    }
 
-    override fun ext(i: Int, s: InstructionInfo) = s { RT = CpuState::ext.invoke(p0, RS, POS, SIZE_E) }
-    override fun ins(i: Int, s: InstructionInfo) = s { RT = CpuState::ins.invoke(p0, RT, RS, POS, SIZE_I) }
+    override fun ext(i: Int, s: InstructionInfo) = s { RT = ::dyna_ext.invoke(RS, POS, SIZE_E) }
+    override fun ins(i: Int, s: InstructionInfo) = s { RT = ::dyna_ins.invoke(RT, RS, POS, SIZE_I) }
 
-    override fun clz(i: Int, s: InstructionInfo) = s { RD = CpuState::clz.invoke(p0, RS) }
-    override fun clo(i: Int, s: InstructionInfo) = s { RD = CpuState::clo.invoke(p0, RS) }
-    override fun seb(i: Int, s: InstructionInfo) = s { RD = CpuState::seb.invoke(p0, RT) }
-    override fun seh(i: Int, s: InstructionInfo) = s { RD = CpuState::seh.invoke(p0, RT) }
+    override fun clz(i: Int, s: InstructionInfo) = s { RD = ::dyna_clz.invoke(RS) }
+    override fun clo(i: Int, s: InstructionInfo) = s { RD = ::dyna_clo.invoke(RS) }
+    override fun seb(i: Int, s: InstructionInfo) = s { RD = ::dyna_seb.invoke(RT) }
+    override fun seh(i: Int, s: InstructionInfo) = s { RD = ::dyna_seh.invoke(RT) }
 
-    override fun wsbh(i: Int, s: InstructionInfo) = s { RD = CpuState::wsbh.invoke(p0, RT) }
-    override fun wsbw(i: Int, s: InstructionInfo) = s { RD = CpuState::wsbw.invoke(p0, RT) }
+    override fun wsbh(i: Int, s: InstructionInfo) = s { RD = ::dyna_wsbh.invoke(RT) }
+    override fun wsbw(i: Int, s: InstructionInfo) = s { RD = ::dyna_wsbw.invoke(RT) }
 
-    override fun max(i: Int, s: InstructionInfo) = s { RD = CpuState::max.invoke(p0, RS, RT) }
-    override fun min(i: Int, s: InstructionInfo) = s { RD = CpuState::min.invoke(p0, RS, RT) }
+    override fun max(i: Int, s: InstructionInfo) = s { RD = ::dyna_max.invoke(RS, RT) }
+    override fun min(i: Int, s: InstructionInfo) = s { RD = ::dyna_min.invoke(RS, RT) }
 
-    override fun add(i: Int, s: InstructionInfo) = s { RD = CpuState::add.invoke(p0, RS, RT) }
-    override fun addu(i: Int, s: InstructionInfo) = s { RD = CpuState::add.invoke(p0, RS, RT) }
-    override fun sub(i: Int, s: InstructionInfo) = s { RD = CpuState::sub.invoke(p0, RS, RT) }
-    override fun subu(i: Int, s: InstructionInfo) = s { RD = CpuState::sub.invoke(p0, RS, RT) }
-    override fun addi(i: Int, s: InstructionInfo) = s { RT = CpuState::add.invoke(p0, RS, S_IMM16) }
-    override fun addiu(i: Int, s: InstructionInfo) = s { RT = CpuState::add.invoke(p0, RS, S_IMM16) }
+    override fun add(i: Int, s: InstructionInfo) = s { RD = RS + RT }
+    override fun addu(i: Int, s: InstructionInfo) = s { RD = RS + RT }
+    override fun sub(i: Int, s: InstructionInfo) = s { RD = RS - RT }
+    override fun subu(i: Int, s: InstructionInfo) = s { RD = RS - RT }
+    override fun addi(i: Int, s: InstructionInfo) = s { RT = RS + S_IMM16 }
+    override fun addiu(i: Int, s: InstructionInfo) = s { RT = RS + S_IMM16 }
 
-    override fun div(i: Int, s: InstructionInfo) = s { STM(CpuState::div.invoke(p0, RS, RT)) }
-    override fun divu(i: Int, s: InstructionInfo) = s { STM(CpuState::divu.invoke(p0, RS, RT)) }
+    override fun div(i: Int, s: InstructionInfo) = s {
+        LO = RS / RT
+        HI = RS % RT
+    }
 
-    override fun mult(i: Int, s: InstructionInfo) = s { STM(CpuState::mult.invoke(p0, RS, RT)) }
-    override fun multu(i: Int, s: InstructionInfo) = s { STM(CpuState::multu.invoke(p0, RS, RT)) }
-    override fun madd(i: Int, s: InstructionInfo) = s { STM(CpuState::madd.invoke(p0, RS, RT)) }
-    override fun maddu(i: Int, s: InstructionInfo) = s { STM(CpuState::maddu.invoke(p0, RS, RT)) }
-    override fun msub(i: Int, s: InstructionInfo) = s { STM(CpuState::msub.invoke(p0, RS, RT)) }
-    override fun msubu(i: Int, s: InstructionInfo) = s { STM(CpuState::msubu.invoke(p0, RS, RT)) }
+    override fun divu(i: Int, s: InstructionInfo) = s {
+        LO = ::dyna_divu_LO.invoke(RS, RT)
+        HI = ::dyna_divu_HI.invoke(RS, RT)
+    }
+
+    override fun mult(i: Int, s: InstructionInfo) = s {
+        //HI_LO = ::dyna_mult.invoke(RS, RT)
+        LO = ::dyna_mult_LO.invoke(RS, RT)
+        HI = ::dyna_mult_HI.invoke(RS, RT)
+    }
+
+    override fun multu(i: Int, s: InstructionInfo) = s {
+        LO = ::dyna_multu_LO.invoke(RS, RT)
+        HI = ::dyna_multu_HI.invoke(RS, RT)
+    }
+
+    override fun madd(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_madd.invoke(RS, RT) }
+    override fun maddu(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_maddu.invoke(RS, RT) }
+    override fun msub(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_msub.invoke(RS, RT) }
+    override fun msubu(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_msubu.invoke(RS, RT) }
 
     override fun mflo(i: Int, s: InstructionInfo) = s { RD = LO }
     override fun mfhi(i: Int, s: InstructionInfo) = s { RD = HI }
@@ -51,85 +74,106 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun mtic(i: Int, s: InstructionInfo) = s { IC = RT }
 
     // ALU: Bit
-    override fun or(i: Int, s: InstructionInfo) = s { RD = CpuState::or.invoke(p0, RS, RT) }
+    override fun or(i: Int, s: InstructionInfo) = s { RD = RS OR RT }
 
-    override fun xor(i: Int, s: InstructionInfo) = s { RD = CpuState::xor.invoke(p0, RS, RT) }
-    override fun and(i: Int, s: InstructionInfo) = s { RD = CpuState::and.invoke(p0, RS, RT) }
-    override fun nor(i: Int, s: InstructionInfo) = s { RD = CpuState::nor.invoke(p0, RS, RT) }
-    override fun ori(i: Int, s: InstructionInfo) = s { RT = CpuState::or.invoke(p0, RS, U_IMM16) }
-    override fun xori(i: Int, s: InstructionInfo) = s { RT = CpuState::xor.invoke(p0, RS, U_IMM16) }
-    override fun andi(i: Int, s: InstructionInfo) = s { RT = CpuState::and.invoke(p0, RS, U_IMM16) }
+    override fun xor(i: Int, s: InstructionInfo) = s { RD = RS XOR RT }
+    override fun and(i: Int, s: InstructionInfo) = s { RD = RS AND RT }
+    override fun nor(i: Int, s: InstructionInfo) = s { RD = INV(RS OR RT) }
+    override fun ori(i: Int, s: InstructionInfo) = s { RT = RS OR U_IMM16 }
+    override fun xori(i: Int, s: InstructionInfo) = s { RT = RS XOR U_IMM16 }
+    override fun andi(i: Int, s: InstructionInfo) = s { RT = RS AND U_IMM16 }
 
-    override fun sll(i: Int, s: InstructionInfo) = s { RD = CpuState::sll.invoke(p0, RT, POS) }
-    override fun sra(i: Int, s: InstructionInfo) = s { RD = CpuState::sra.invoke(p0, RT, POS) }
-    override fun srl(i: Int, s: InstructionInfo) = s { RD = CpuState::srl.invoke(p0, RT, POS) }
-    override fun sllv(i: Int, s: InstructionInfo) = s { RD = CpuState::sll.invoke(p0, RT, RS) }
-    override fun srav(i: Int, s: InstructionInfo) = s { RD = CpuState::sra.invoke(p0, RT, RS) }
-    override fun srlv(i: Int, s: InstructionInfo) = s { RD = CpuState::srl.invoke(p0, RT, RS) }
-    override fun bitrev(i: Int, s: InstructionInfo) = s { RD = CpuState::bitrev32.invoke(p0, RT) }
-    override fun rotr(i: Int, s: InstructionInfo) = s { RD = CpuState::rotr.invoke(p0, RT, POS) }
-    override fun rotrv(i: Int, s: InstructionInfo) = s { RD = CpuState::rotr.invoke(p0, RT, RS) }
+    override fun sll(i: Int, s: InstructionInfo) = s { RD = ::dyna_sll.invoke(RT, POS) }
+    override fun sra(i: Int, s: InstructionInfo) = s { RD = ::dyna_sra.invoke(RT, POS) }
+    override fun srl(i: Int, s: InstructionInfo) = s { RD = ::dyna_srl.invoke(RT, POS) }
+    override fun sllv(i: Int, s: InstructionInfo) = s { RD = ::dyna_sll.invoke(RT, RS) }
+    override fun srav(i: Int, s: InstructionInfo) = s { RD = ::dyna_sra.invoke(RT, RS) }
+    override fun srlv(i: Int, s: InstructionInfo) = s { RD = ::dyna_srl.invoke(RT, RS) }
+    override fun bitrev(i: Int, s: InstructionInfo) = s { RD = ::dyna_bitrev32.invoke(RT) }
+    override fun rotr(i: Int, s: InstructionInfo) = s { RD = ::dyna_rotr.invoke(RT, POS) }
+    override fun rotrv(i: Int, s: InstructionInfo) = s { RD = ::dyna_rotr.invoke(RT, RS) }
+
+    fun D2Builder.raddress(address: D2ExprI, shift: Int): D2ExprI {
+        val raddr = address AND 0x0FFFFFFF.lit
+        return if (shift != 0) (raddr USHR shift.lit) else raddr
+    }
+
+    fun D2Builder.MEM8(address: D2ExprI) = D2Expr.RefI(D2MemSlot.MEM, D2Size.BYTE, raddress(address, 0))
+    fun D2Builder.U_MEM8(address: D2ExprI) = MEM8(address) AND 0xFF.lit
+
+    fun D2Builder.MEM16(address: D2ExprI) = D2Expr.RefI(D2MemSlot.MEM, D2Size.SHORT, raddress(address, 1))
+    fun D2Builder.U_MEM16(address: D2ExprI) = MEM16(address) AND 0xFFFF.lit
+
+    fun D2Builder.MEM32(address: D2ExprI) = D2Expr.RefI(D2MemSlot.MEM, D2Size.INT, raddress(address, 2))
 
     // Memory
-    override fun lb(i: Int, s: InstructionInfo) = s { RT = CpuState::lb.invoke(p0, RS_IMM16) }
+    override fun lb(i: Int, s: InstructionInfo) = s { RT = MEM8(RS_IMM16) }
 
-    override fun lbu(i: Int, s: InstructionInfo) = s { RT = CpuState::lbu.invoke(p0, RS_IMM16) }
-    override fun lh(i: Int, s: InstructionInfo) = s { RT = CpuState::lh.invoke(p0, RS_IMM16) }
-    override fun lhu(i: Int, s: InstructionInfo) = s { RT = CpuState::lhu.invoke(p0, RS_IMM16) }
-    override fun lw(i: Int, s: InstructionInfo) = s { RT = CpuState::lw.invoke(p0, RS_IMM16) }
-    override fun ll(i: Int, s: InstructionInfo) = s { RT = CpuState::lw.invoke(p0, RS_IMM16) }
+    override fun lbu(i: Int, s: InstructionInfo) = s { RT = U_MEM8(RS_IMM16) }
+    override fun lh(i: Int, s: InstructionInfo) = s { RT = MEM16(RS_IMM16) }
+    override fun lhu(i: Int, s: InstructionInfo) = s { RT = U_MEM16(RS_IMM16) }
+    override fun lw(i: Int, s: InstructionInfo) = s { RT = MEM32(RS_IMM16) }
+    override fun ll(i: Int, s: InstructionInfo) = s { RT = MEM32(RS_IMM16) }
 
-    override fun lwl(i: Int, s: InstructionInfo) = s { RT = CpuState::lwl.invoke(p0, RS_IMM16, RT) }
-    override fun lwr(i: Int, s: InstructionInfo) = s { RT = CpuState::lwr.invoke(p0, RS_IMM16, RT) }
+    //override fun lwl(i: Int, s: InstructionInfo) = s { RT = CpuState::lwl.invoke(p0, RS_IMM16, RT) }
+    //override fun lwr(i: Int, s: InstructionInfo) = s { RT = CpuState::lwr.invoke(p0, RS_IMM16, RT) }
+    //
+    //override fun swl(i: Int, s: InstructionInfo) = s { STM(CpuState::swl.invoke(p0, RS_IMM16, RT)) }
+    //override fun swr(i: Int, s: InstructionInfo) = s { STM(CpuState::swr.invoke(p0, RS_IMM16, RT)) }
 
-    override fun swl(i: Int, s: InstructionInfo) = s { STM(CpuState::swl.invoke(p0, RS_IMM16, RT)) }
-    override fun swr(i: Int, s: InstructionInfo) = s { STM(CpuState::swr.invoke(p0, RS_IMM16, RT)) }
+    override fun sb(i: Int, s: InstructionInfo) = s { SET(MEM8(RS_IMM16), RT) }
+    override fun sh(i: Int, s: InstructionInfo) = s { SET(MEM16(RS_IMM16), RT) }
+    override fun sw(i: Int, s: InstructionInfo) = s { SET(MEM32(RS_IMM16), RT) }
+    override fun sc(i: Int, s: InstructionInfo) = s { SET(MEM32(RS_IMM16), RT); RT = 1.lit }
 
-    override fun sb(i: Int, s: InstructionInfo) = s { STM(CpuState::sb.invoke(p0, RS_IMM16, RT)) }
-    override fun sh(i: Int, s: InstructionInfo) = s { STM(CpuState::sh.invoke(p0, RS_IMM16, RT)) }
-    override fun sw(i: Int, s: InstructionInfo) = s { STM(CpuState::sw.invoke(p0, RS_IMM16, RT)) }
-    override fun sc(i: Int, s: InstructionInfo) = s { STM(CpuState::sw.invoke(p0, RS_IMM16, RT)); RT = 1.lit }
-
-    override fun lwc1(i: Int, s: InstructionInfo) = s { FT_I = CpuState::lw.invoke(p0, RS_IMM16) }
-    override fun swc1(i: Int, s: InstructionInfo) = s { STM(CpuState::sw.invoke(p0, RS_IMM16, FT_I)) }
+    override fun lwc1(i: Int, s: InstructionInfo) = s { FT_I = MEM32(RS_IMM16) }
+    override fun swc1(i: Int, s: InstructionInfo) = s { SET(MEM32(RS_IMM16), FT_I) }
 
     // Special
     override fun syscall(i: Int, s: InstructionInfo) =
-        s.preadvanceAndFlow { STM(CpuState::syscall.invoke(p0, SYSCALL)) }
+        s.preadvanceAndFlow {
+            TEMP0 = ::dyna_syscall.invoke(EXTERNAL, SYSCALL)
+            IF(TEMP0 NE 0.lit) {
+                RETURN(TEMP0)
+            }
+        }
 
-    override fun _break(i: Int, s: InstructionInfo) = s.preadvanceAndFlow { STM(CpuState::_break.invoke(p0, SYSCALL)) }
+    override fun _break(i: Int, s: InstructionInfo) = s.preadvanceAndFlow {
+        //STM(::dyna_break.invoke(SYSCALL))
+        RETURN(SYSCALL)
+    }
 
     // Set less
-    override fun slt(i: Int, s: InstructionInfo) = s { RD = CpuState::slt.invoke(p0, RS, RT) }
+    override fun slt(i: Int, s: InstructionInfo) = s { RD = ::dyna_slt.invoke(RS, RT) }
 
-    override fun sltu(i: Int, s: InstructionInfo) = s { RD = CpuState::sltu.invoke(p0, RS, RT) }
-    override fun slti(i: Int, s: InstructionInfo) = s { RT = CpuState::slt.invoke(p0, RS, S_IMM16) }
-    override fun sltiu(i: Int, s: InstructionInfo) = s { RT = CpuState::sltu.invoke(p0, RS, S_IMM16) }
+    override fun sltu(i: Int, s: InstructionInfo) = s { RD = ::dyna_sltu.invoke(RS, RT) }
+    override fun slti(i: Int, s: InstructionInfo) = s { RT = ::dyna_slt.invoke(RS, S_IMM16) }
+    override fun sltiu(i: Int, s: InstructionInfo) = s { RT = ::dyna_sltu.invoke(RS, S_IMM16) }
 
     // Branch
-    override fun beq(i: Int, s: InstructionInfo) = s.branch { RS eq RT }
+    override fun beq(i: Int, s: InstructionInfo) = s.branch { RS EQ RT }
 
-    override fun bne(i: Int, s: InstructionInfo) = s.branch { RS ne RT }
-    override fun bltz(i: Int, s: InstructionInfo) = s.branch { RS lt 0.lit }
-    override fun blez(i: Int, s: InstructionInfo) = s.branch { RS le 0.lit }
-    override fun bgtz(i: Int, s: InstructionInfo) = s.branch { RS gt 0.lit }
-    override fun bgez(i: Int, s: InstructionInfo) = s.branch { RS ge 0.lit }
+    override fun bne(i: Int, s: InstructionInfo) = s.branch { RS NE RT }
+    override fun bltz(i: Int, s: InstructionInfo) = s.branch { RS LT 0.lit }
+    override fun blez(i: Int, s: InstructionInfo) = s.branch { RS LE 0.lit }
+    override fun bgtz(i: Int, s: InstructionInfo) = s.branch { RS GT 0.lit }
+    override fun bgez(i: Int, s: InstructionInfo) = s.branch { RS GE 0.lit }
     //override fun bgezal(i: Int, s: InstructionInfo) = s.branch { RA = _nPC + 4; RS ge 0.lit }
     //override fun bltzal(i: Int, s: InstructionInfo) = s.branch { RA = _nPC + 4; RS lt 0.lit }
 
-    override fun beql(i: Int, s: InstructionInfo) = s.branchLikely { RS eq RT }
-    override fun bnel(i: Int, s: InstructionInfo) = s.branchLikely { RS ne RT }
-    override fun bltzl(i: Int, s: InstructionInfo) = s.branchLikely { RS lt 0.lit }
-    override fun blezl(i: Int, s: InstructionInfo) = s.branchLikely { RS le 0.lit }
-    override fun bgtzl(i: Int, s: InstructionInfo) = s.branchLikely { RS gt 0.lit }
-    override fun bgezl(i: Int, s: InstructionInfo) = s.branchLikely { RS ge 0.lit }
+    override fun beql(i: Int, s: InstructionInfo) = s.branchLikely { RS EQ RT }
+    override fun bnel(i: Int, s: InstructionInfo) = s.branchLikely { RS NE RT }
+    override fun bltzl(i: Int, s: InstructionInfo) = s.branchLikely { RS LT 0.lit }
+    override fun blezl(i: Int, s: InstructionInfo) = s.branchLikely { RS LE 0.lit }
+    override fun bgtzl(i: Int, s: InstructionInfo) = s.branchLikely { RS GT 0.lit }
+    override fun bgezl(i: Int, s: InstructionInfo) = s.branchLikely { RS GE 0.lit }
     //override fun bgezall(i: Int, s: InstructionInfo) = s.branchLikely { RA = _nPC + 4; RS ge 0.lit }
     //override fun bltzall(i: Int, s: InstructionInfo) = s.branchLikely { RA = _nPC + 4; RS lt 0.lit }
 
-    override fun bc1f(i: Int, s: InstructionInfo) = s.branch { CpuState::f_get_fcr31_cc_not.invoke(p0) }
-    override fun bc1t(i: Int, s: InstructionInfo) = s.branch { CpuState::f_get_fcr31_cc.invoke(p0) }
-    override fun bc1fl(i: Int, s: InstructionInfo) = s.branchLikely { CpuState::f_get_fcr31_cc_not.invoke(p0) }
-    override fun bc1tl(i: Int, s: InstructionInfo) = s.branchLikely { CpuState::f_get_fcr31_cc.invoke(p0) }
+    //override fun bc1f(i: Int, s: InstructionInfo) = s.branch { CpuState::f_get_fcr31_cc_not.invoke(p0) }
+    //override fun bc1t(i: Int, s: InstructionInfo) = s.branch { CpuState::f_get_fcr31_cc.invoke(p0) }
+    //override fun bc1fl(i: Int, s: InstructionInfo) = s.branchLikely { CpuState::f_get_fcr31_cc_not.invoke(p0) }
+    //override fun bc1tl(i: Int, s: InstructionInfo) = s.branchLikely { CpuState::f_get_fcr31_cc.invoke(p0) }
 
     //override fun bc1f(i: Int, s: InstructionInfo) = s.branch { fcr31_cc.not() }
     //override fun bc1t(i: Int, s: InstructionInfo) = s.branch { fcr31_cc }
@@ -142,66 +186,64 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun jalr(i: Int, s: InstructionInfo) = s.jump({ RD = (ii.PC + 8).lit }) { RS }
 
     // Float
-    override fun cfc1(i: Int, s: InstructionInfo) = s { RT = CpuState::cfc1.invoke(p0, IR.rd.lit, RT) }
-
-    override fun ctc1(i: Int, s: InstructionInfo) = s { STM(CpuState::ctc1.invoke(p0, IR.rd.lit, RT)) }
+    //override fun cfc1(i: Int, s: InstructionInfo) = s { RT = CpuState::cfc1.invoke(p0, IR.rd.lit, RT) }
+    //override fun ctc1(i: Int, s: InstructionInfo) = s { STM(CpuState::ctc1.invoke(p0, IR.rd.lit, RT)) }
 
     override fun mfc1(i: Int, s: InstructionInfo) = s { RT = FS_I }
     override fun mtc1(i: Int, s: InstructionInfo) = s { FS_I = RT }
 
-    override fun cvt_s_w(i: Int, s: InstructionInfo) = s { FD = CpuState::cvt_s_w.invoke(p0, FS_I) }
-    override fun cvt_w_s(i: Int, s: InstructionInfo) = s { FD_I = CpuState::cvt_w_s.invoke(p0, FS) }
+    override fun cvt_s_w(i: Int, s: InstructionInfo) = s { FD = ::dyna_cvt_s_w.invoke(FS_I) }
+    override fun cvt_w_s(i: Int, s: InstructionInfo) = s { FD_I = ::dyna_cvt_w_s.invoke(EXTERNAL, FS) }
 
-    override fun trunc_w_s(i: Int, s: InstructionInfo) = s { FD_I = CpuState::trunc_w_s.invoke(p0, FS) }
-    override fun round_w_s(i: Int, s: InstructionInfo) = s { FD_I = CpuState::round_w_s.invoke(p0, FS) }
-    override fun ceil_w_s(i: Int, s: InstructionInfo) = s { FD_I = CpuState::ceil_w_s.invoke(p0, FS) }
-    override fun floor_w_s(i: Int, s: InstructionInfo) = s { FD_I = CpuState::floor_w_s.invoke(p0, FS) }
+    override fun trunc_w_s(i: Int, s: InstructionInfo) = s { FD_I = ::dyna_trunc_w_s.invoke(FS) }
+    override fun round_w_s(i: Int, s: InstructionInfo) = s { FD_I = ::dyna_round_w_s.invoke(FS) }
+    override fun ceil_w_s(i: Int, s: InstructionInfo) = s { FD_I = ::dyna_ceil_w_s.invoke(FS) }
+    override fun floor_w_s(i: Int, s: InstructionInfo) = s { FD_I = ::dyna_floor_w_s.invoke(FS) }
 
-    override fun mov_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fmov.invoke(p0, FS) }
-    override fun add_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fadd.invoke(p0, FS, FT) }
-    override fun sub_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fsub.invoke(p0, FS, FT) }
-    override fun mul_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fmul.invoke(p0, FS, FT) }
-    override fun div_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fdiv.invoke(p0, FS, FT) }
-    override fun neg_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fneg.invoke(p0, FS) }
-    override fun abs_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fabs.invoke(p0, FS) }
-    override fun sqrt_s(i: Int, s: InstructionInfo) = s.checkNan { FD = CpuState::fsqrt.invoke(p0, FS) }
+    override fun mov_s(i: Int, s: InstructionInfo) = s.checkNan { FD = FS }
+    override fun add_s(i: Int, s: InstructionInfo) = s.checkNan { FD = FS + FT }
+    override fun sub_s(i: Int, s: InstructionInfo) = s.checkNan { FD = FS - FT }
+    override fun mul_s(i: Int, s: InstructionInfo) = s.checkNan { FD = ::dyna_fmul.invoke(EXTERNAL, FS, FT) }
+    override fun div_s(i: Int, s: InstructionInfo) = s.checkNan { FD = FS / FT }
+    override fun neg_s(i: Int, s: InstructionInfo) = s.checkNan { FD = ::dyna_fneg.invoke(FS) }
+    override fun abs_s(i: Int, s: InstructionInfo) = s.checkNan { FD = ::dyna_fabs.invoke(FS) }
+    override fun sqrt_s(i: Int, s: InstructionInfo) = s.checkNan { FD = ::dyna_fsqrt.invoke(FS) }
 
-    override fun c_f_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_f_s.invoke(p0, FS, FT) }
-    override fun c_un_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_un_s.invoke(p0, FS, FT) }
-    override fun c_eq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_eq_s.invoke(p0, FS, FT) }
-    override fun c_ueq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ueq_s.invoke(p0, FS, FT) }
-    override fun c_olt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_olt_s.invoke(p0, FS, FT) }
-    override fun c_ult_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ult_s.invoke(p0, FS, FT) }
-    override fun c_ole_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ole_s.invoke(p0, FS, FT) }
-    override fun c_ule_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ule_s.invoke(p0, FS, FT) }
+    override fun c_f_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_f_s.invoke(FS, FT) }
+    override fun c_un_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_un_s.invoke(FS, FT) }
+    override fun c_eq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_eq_s.invoke(FS, FT) }
+    override fun c_ueq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ueq_s.invoke(FS, FT) }
+    override fun c_olt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_olt_s.invoke(FS, FT) }
+    override fun c_ult_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ult_s.invoke(FS, FT) }
+    override fun c_ole_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ole_s.invoke(FS, FT) }
+    override fun c_ule_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ule_s.invoke(FS, FT) }
 
-    override fun c_sf_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_f_s.invoke(p0, FS, FT) }
-    override fun c_ngle_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_un_s.invoke(p0, FS, FT) }
-    override fun c_seq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_eq_s.invoke(p0, FS, FT) }
-    override fun c_ngl_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ueq_s.invoke(p0, FS, FT) }
-    override fun c_lt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_olt_s.invoke(p0, FS, FT) }
-    override fun c_nge_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ult_s.invoke(p0, FS, FT) }
-    override fun c_le_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ole_s.invoke(p0, FS, FT) }
-    override fun c_ngt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = CpuState::c_ule_s.invoke(p0, FS, FT) }
+    override fun c_sf_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_f_s.invoke(FS, FT) }
+    override fun c_ngle_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_un_s.invoke(FS, FT) }
+    override fun c_seq_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_eq_s.invoke(FS, FT) }
+    override fun c_ngl_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ueq_s.invoke(FS, FT) }
+    override fun c_lt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_olt_s.invoke(FS, FT) }
+    override fun c_nge_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ult_s.invoke(FS, FT) }
+    override fun c_le_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ole_s.invoke(FS, FT) }
+    override fun c_ngt_s(i: Int, s: InstructionInfo) = s { fcr31_cc = ::dyna_c_ule_s.invoke(FS, FT) }
 }
 
 data class InstructionInfo(var PC: Int, var IR: Int)
 
-typealias CpuStateStmBuilder = StmBuilder<Unit, CpuState, Unit>
-typealias CpuStateFunction = DFunction1<Unit, CpuState>
-
 open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
-    var sstms = StmBuilder(Unit::class, CpuState::class, Unit::class)
+    //var sstms = StmBuilder(Unit::class, CpuState::class, Unit::class)
+    var sstms = D2Builder()
     val dispatcher = InstructionDispatcher(this)
 
-    fun generateFunction() = DFunction1(DVOID, DClass(CpuState::class), sstms.build())
+    //fun generateFunction(): DFunction1 = DFunction1(DVOID, DClass(CpuState::class), sstms.build())
+    fun generateFunction(): D2Func = D2Func(sstms.build())
 
     @PublishedApi
     internal val ii = InstructionInfo(0, 0)
     val IR get() = ii.IR
     //val PC get() = ii.PC
 
-    inline fun CpuStateStmBuilder.useTemp(callback: CpuStateStmBuilder.() -> Unit): CpuStateStmBuilder {
+    inline fun D2Builder.useTemp(callback: D2Builder.() -> Unit): D2Builder {
         val old = this@BaseDynarecMethodBuilder.sstms
         this@BaseDynarecMethodBuilder.sstms = this
         try {
@@ -222,7 +264,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
         if (delayed != null) {
             val oldStms = sstms
             try {
-                sstms = StmBuilder(Unit::class, CpuState::class, Unit::class)
+                sstms = D2Builder()
                 dispatcher.dispatch(ii, pc, i)
                 val newStms = sstms
                 sstms = oldStms
@@ -235,15 +277,15 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
                             useTemp {
                                 PC = delayed.jumpTo
                             }
-                            RET()
+                            RET_VOID()
                         } ELSE {
                             useTemp {
-                                PC = (ii.PC + 4).lit
+                                incrementPC()
                             }
                             if (!delayed.likely) {
                                 STM(newStms.build())
                             }
-                            RET()
+                            RET_VOID()
                         }
                     } else {
                         if (reachedFlow) {
@@ -252,7 +294,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
                                 delayed.after?.let { STM(it) }
                             }
                             STM(newStms.build())
-                            RET()
+                            RET_VOID()
                         } else {
                             useTemp {
                                 delayed.after?.let { STM(it) }
@@ -261,7 +303,7 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
                             useTemp {
                                 PC = delayed.jumpTo
                             }
-                            RET()
+                            RET_VOID()
                         }
                     }
                 }
@@ -275,115 +317,74 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
         }
     }
 
-    fun CpuStateStmBuilder.getRegister(n: Int): DExpr<Int> {
-        return when (n) {
-            0 -> 0.lit
-            else -> p0[CpuState.getGprProp(n)]
-        }
-    }
+    fun reg(index: Int): D2Expr.Ref<Int> = sstms { REGS32(index) }
+    fun setReg(index: Int, value: D2ExprI) = sstms { SET(reg(index), value) }
 
-    fun CpuStateStmBuilder.setRegister(n: Int, value: DExpr<Int>) {
-        if (n != 0) SET(p0[CpuState.getGprProp(n)], value)
-    }
+    fun reg64(index: Int): D2Expr.Ref<Long> = sstms { REGS64(index) }
+    fun setReg64(index: Int, value: D2ExprL) = sstms { SET(reg64(index), value) }
 
-    fun CpuStateStmBuilder.setRegisterFI(n: Int, value: DExpr<Int>) {
-        STM(CpuState::setFprI.invoke(p0, n.lit, value))
-    }
+    fun gpr(index: Int): D2Expr.Ref<Int> = reg(RegOff.GPR(index))
+    fun setGpr(index: Int, value: D2ExprI) = sstms { SET(gpr(index), value) }
 
-    fun CpuStateStmBuilder.getRegisterFI(n: Int): DExpr<Int> {
-        return CpuState::getFprI.invoke(p0, n.lit)
-    }
+    fun fprI(index: Int): D2Expr.Ref<Int> = reg(RegOff.FPR(index))
+    fun setFprI(index: Int, value: D2ExprI) = sstms { SET(fprI(index), value) }
 
-    fun CpuStateStmBuilder.setRegisterF(n: Int, value: DExpr<Float>) {
-        STM(CpuState::setFpr.invoke(p0, n.lit, value))
-    }
-
-    fun CpuStateStmBuilder.getRegisterF(n: Int): DExpr<Float> {
-        return CpuState::getFpr.invoke(p0, n.lit)
-    }
+    fun fpr(index: Int): D2Expr.Ref<Float> = sstms { REGF32(RegOff.FPR(index)) }
+    fun setFpr(index: Int, value: D2ExprF) = sstms { SET(fpr(index), value) }
 
     ///////////////////////////////////
-    var RD: DExpr<Int>
-        set(value) = sstms.run { setRegister(IR.rd, value) }
-        get() = sstms.run { getRegister(IR.rd) }
 
-    var RS: DExpr<Int>
-        set(value) = sstms.run { setRegister(IR.rs, value) }
-        get() = sstms.run { getRegister(IR.rs) }
+    var TEMP0: D2ExprI; set(value) = setReg(RegOff.TEMP0, value); get() = reg(RegOff.TEMP0)
 
-    var RT: DExpr<Int>
-        set(value) = sstms.run { setRegister(IR.rt, value) }
-        get() = sstms.run { getRegister(IR.rt) }
+    var RD: D2ExprI; set(value) = setGpr(IR.rd, value); get() = gpr(IR.rd)
+    var RS: D2ExprI; set(value) = setGpr(IR.rs, value); get() = gpr(IR.rs)
+    var RT: D2ExprI; set(value) = setGpr(IR.rt, value); get() = gpr(IR.rt)
 
-    ///////////////////////////////////
-    var FS_I: DExpr<Int>
-        set(value) = sstms.run { setRegisterFI(IR.fs, value) }
-        get() = sstms.run { getRegisterFI(IR.fs) }
+    var FS_I: D2ExprI; set(value) = setFprI(IR.fs, value); get() = fprI(IR.fs)
+    var FD_I: D2ExprI; set(value) = setFprI(IR.fd, value); get() = fprI(IR.fd)
+    var FT_I: D2ExprI; set(value) = setFprI(IR.ft, value); get() = fprI(IR.ft)
 
-    var FD_I: DExpr<Int>
-        set(value) = sstms.run { setRegisterFI(IR.fd, value) }
-        get() = sstms.run { getRegisterFI(IR.fd) }
+    var FS: D2ExprF; set(value) = setFpr(IR.fs, value); get() = fpr(IR.fs)
+    var FD: D2ExprF; set(value) = setFpr(IR.fd, value); get() = fpr(IR.fd)
+    var FT: D2ExprF; set(value) = setFpr(IR.ft, value); get() = fpr(IR.ft)
 
-    var FT_I: DExpr<Int>
-        set(value) = sstms.run { setRegisterFI(IR.ft, value) }
-        get() = sstms.run { getRegisterFI(IR.ft) }
+    var fcr31: D2ExprI; set(value) = setReg(RegOff.FCR_CC(31), value); get() = reg(RegOff.FCR_CC(31))
 
-    ///////////////////////////////////
-    var FS: DExpr<Float>
-        set(value) = sstms.run { setRegisterF(IR.fs, value) }
-        get() = sstms.run { getRegisterF(IR.fs) }
-
-    var FD: DExpr<Float>
-        set(value) = sstms.run { setRegisterF(IR.fd, value) }
-        get() = sstms.run { getRegisterF(IR.fd) }
-
-    var FT: DExpr<Float>
-        set(value) = sstms.run { setRegisterF(IR.ft, value) }
-        get() = sstms.run { getRegisterF(IR.ft) }
-
-    var fcr31_cc: DExpr<Boolean>
-        set(value) = sstms.run { p0[CpuState::fcr31_cc] = value }
-        get() = sstms.run { p0[CpuState::fcr31_cc] }
+    var fcr31_cc: D2ExprB
+        set(value) = sstms { fcr31 = fcr31.INSERT(23, 1, value) }
+        get() = sstms { fcr31.EXTRACT(23, 1) }
 
 
     ///////////////////////////////////
-    var LO: DExpr<Int>
-        set(value) = sstms.run { SET(p0[CpuState::LO], value) }
-        get() = sstms.run { p0[CpuState::LO] }
+    var LO: D2ExprI set(value) = setReg(RegOff.LO, value); get() = reg(RegOff.LO)
+    var HI: D2ExprI set(value) = setReg(RegOff.HI, value); get() = reg(RegOff.HI)
+    var IC: D2ExprI set(value) = setReg(RegOff.IC, value); get() = reg(RegOff.IC)
 
-    var HI: DExpr<Int>
-        set(value) = sstms.run { SET(p0[CpuState::HI], value) }
-        get() = sstms.run { p0[CpuState::HI] }
+    var HI_LO: D2ExprL set(value) = setReg64(RegOff.HI_LO, value); get() = reg64(RegOff.HI_LO)
 
-    ///////////////////////////////////
-    var IC: DExpr<Int>
-        set(value) = sstms.run { SET(p0[CpuState::IC], value) }
-        get() = sstms.run { p0[CpuState::IC] }
+    var _PC: D2ExprI set(value) = setReg(RegOff.PC, value); get() = reg(RegOff.PC)
+    var _nPC: D2ExprI set(value) = setReg(RegOff.nPC, value); get() = reg(RegOff.nPC)
 
-    var PC: DExpr<Int>
-        set(value) = sstms.run {
-            STM(CpuState::setPC.invoke(p0, value))
-        }
-        get() = sstms.run { p0[CpuState::_PC] }
+    var PC: D2ExprI
+        set(value) = sstms { _PC = value; _nPC = value + 4.lit }
+        get() = sstms { _PC }
 
-    var RA: DExpr<Int>
-        set(value) = sstms.run { SET(p0[CpuState::r31], value) }
-        get() = sstms.run { p0[CpuState::r31] }
+    var RA: D2ExprI set(value) = setReg(RegOff.RA, value); get() = reg(RegOff.RA)
 
-    val POS: DExpr<Int> get() = sstms.run { IR.pos.lit }
-    val SIZE_E: DExpr<Int> get() = sstms.run { IR.size_e.lit }
-    val SIZE_I: DExpr<Int> get() = sstms.run { IR.size_i.lit }
-    val S_IMM16: DExpr<Int> get() = sstms.run { IR.s_imm16.lit }
-    val U_IMM16: DExpr<Int> get() = sstms.run { IR.u_imm16.lit }
-    val SYSCALL: DExpr<Int> get() = sstms.run { IR.syscall.lit }
-    val JUMP_ADDRESS: DExpr<Int> get() = sstms.run { IR.jump_address.lit }
+    val POS get() = sstms { IR.pos.lit }
+    val SIZE_E get() = sstms { IR.size_e.lit }
+    val SIZE_I get() = sstms { IR.size_i.lit }
+    val S_IMM16 get() = sstms { IR.s_imm16.lit }
+    val U_IMM16 get() = sstms { IR.u_imm16.lit }
+    val SYSCALL get() = sstms { IR.syscall.lit }
+    val JUMP_ADDRESS get() = sstms { IR.jump_address.lit }
 
-    val RS_IMM16 get() = sstms.run { RS + S_IMM16 }
+    val RS_IMM16 get() = sstms { RS + S_IMM16 }
     val real_jump_address get() = (ii.PC and (-268435456)) or IR.jump_address
 
 
-    val S_IMM16_V: Int get() = sstms.run { IR.s_imm16 }
-    val U_IMM16_V: Int get() = sstms.run { IR.u_imm16 }
+    val S_IMM16_V: Int get() = sstms { IR.s_imm16 }
+    val U_IMM16_V: Int get() = sstms { IR.u_imm16 }
 
     //fun set_pc(value: Int) {
     //    sstms.run {
@@ -392,39 +393,46 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
     //    }
     //}
 
-    inline operator fun InstructionInfo.invoke(callback: CpuStateStmBuilder.(InstructionInfo) -> Unit): Unit {
+    inline operator fun InstructionInfo.invoke(callback: D2Builder.(InstructionInfo) -> Unit): Unit {
         callback(sstms, this)
     }
 
-    inline fun InstructionInfo.checkNan(callback: CpuStateStmBuilder.(InstructionInfo) -> Unit): Unit {
+    inline fun InstructionInfo.checkNan(callback: D2Builder.(InstructionInfo) -> Unit): Unit {
         callback(sstms, this)
         sstms.run {
-            STM(CpuState::_checkFNan.invoke(p0, FD))
+            STM(::dyna_checkFNan.invoke(EXTERNAL, FD))
         }
     }
 
-    inline fun InstructionInfo.preadvanceAndFlow(callback: CpuStateStmBuilder.(InstructionInfo) -> Unit): Unit {
+    inline fun InstructionInfo.preadvanceAndFlow(callback: D2Builder.(InstructionInfo) -> Unit): Unit {
         if (delayed == null) {
-            this@BaseDynarecMethodBuilder.PC = sstms.run { (ii.PC + 4).lit }
+            incrementPC()
         }
         callback(sstms, this)
         reachedFlow = true
     }
 
-    data class Delayed(val cond: DExpr<Boolean>?, val jumpTo: DExpr<Int>, val after: DStm?, val likely: Boolean)
+    fun incrementPC() = sstms {
+        //PC = (ii.PC + 4).lit
+        //this.PC = sstms { (ii.PC + 4).lit }
+        _PC = (ii.PC + 4).lit
+        _nPC = (ii.PC + 8).lit
+    }
+
+    data class Delayed(val cond: D2ExprB?, val jumpTo: D2ExprI, val after: D2Stm?, val likely: Boolean)
 
     @PublishedApi
     internal var delayed: Delayed? = null
 
-    inline fun InstructionInfo.branch(callback: CpuStateStmBuilder.(InstructionInfo) -> DExpr<Boolean>): Unit =
+    inline fun InstructionInfo.branch(callback: D2Builder.(InstructionInfo) -> D2ExprI): Unit =
         _branch(likely = false, callback = callback)
 
-    inline fun InstructionInfo.branchLikely(callback: CpuStateStmBuilder.(InstructionInfo) -> DExpr<Boolean>): Unit =
+    inline fun InstructionInfo.branchLikely(callback: D2Builder.(InstructionInfo) -> D2ExprI): Unit =
         _branch(likely = true, callback = callback)
 
     inline fun InstructionInfo._branch(
         likely: Boolean = false,
-        callback: CpuStateStmBuilder.(InstructionInfo) -> DExpr<Boolean>
+        callback: D2Builder.(InstructionInfo) -> D2ExprI
     ): Unit {
         sstms.run {
             delayed = Delayed(callback(this, this@_branch), (ii.PC + IR.s_imm16 * 4 + 4).lit, null, likely = likely)
@@ -432,18 +440,35 @@ open class BaseDynarecMethodBuilder : InstructionEvaluator<InstructionInfo>() {
     }
 
     inline fun InstructionInfo.jump(
-        noinline exec: (CpuStateStmBuilder.() -> Unit)? = null,
-        callback: CpuStateStmBuilder.(InstructionInfo) -> DExpr<Int>
+        noinline exec: (D2Builder.() -> Unit)? = null,
+        callback: D2Builder.(InstructionInfo) -> D2ExprI
     ): Unit {
         sstms.run {
             val extraStm = if (exec != null) {
-                StmBuilder(Unit::class, CpuState::class, Unit::class).useTemp {
+                D2Builder().useTemp {
                     exec()
                 }.build()
             } else {
                 null
             }
             delayed = Delayed(null, callback(this, this@jump), extraStm, likely = false)
+        }
+    }
+}
+
+fun D2Func.generateCpuStateFunction(ctx: D2Context, name: String? = null, debug: Boolean = false): (CpuState) -> Unit {
+    return generate(ctx ,name, debug).generateCpuStateFunction()
+}
+
+fun D2Result.generateCpuStateFunction(): (CpuState) -> Unit {
+    val rfunc = this.func
+    return { cpu ->
+        //println("Executing function... ${this.name}")
+        //cpu.dump()
+        val result = rfunc(cpu.registers.data.mem, cpu.mem, null, cpu)
+        //println(" --> result=$result")
+        if (result != 0) {
+            throw CpuBreakExceptionCached(result)
         }
     }
 }

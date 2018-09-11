@@ -14,12 +14,30 @@ actual class D2Memory(val buffer: ArrayBuffer) : D2MemoryFreeable {
     @JsName("s32")
     val s32 = Int32Array(buffer)
 
+    @JsName("s64")
+    val s64 = Int64ArrayImpl(buffer)
+
     @JsName("f32")
     val f32 = Float32Array(buffer)
 
     override fun free() {
     }
+}
 
+class Int64ArrayImpl(val buffer: ArrayBuffer) {
+    @JsName("s32")
+    val s32 = Int32Array(buffer)
+
+    operator fun get(index: Int): Long {
+        val low = s32[index * 2 + 0]
+        val high = s32[index * 2 + 1]
+        return (high.toLong() shl 32) or low.toLong()
+    }
+
+    operator fun set(index: Int, value: Long) {
+        s32[index * 2 + 0] = (value shr 0).toInt()
+        s32[index * 2 + 1] = (value shr 32).toInt()
+    }
 }
 
 actual fun D2Memory.get8(index: Int): Int = s8[index].toInt()

@@ -5,7 +5,7 @@ import com.soywiz.kpspemu.mem.*
 import kotlin.test.*
 
 class CpuStateTest : BaseTest() {
-    val s = CpuState("test", GlobalCpuState(DummyMemory))
+    val s = CpuState("test", GlobalCpuState(MemoryInfo.DUMMY))
 
     @Test
     fun gpr0IsAlways0() {

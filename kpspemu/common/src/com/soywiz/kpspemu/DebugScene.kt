@@ -192,7 +192,7 @@ class DebugScene(
     }
 
     class GprListView(browser: Browser, views: Views, val font: BitmapFont) : Container() {
-        var state = CpuState("GprListView", GlobalCpuState(DummyMemory))
+        var state = CpuState("GprListView", GlobalCpuState(MemoryInfo.DUMMY))
         val regs = (0 until 32).map { regIndex ->
             GprView(views, font, "r$regIndex", { state.setGpr(regIndex, it) }, { state.getGpr(regIndex) }).apply {
                 this@GprListView += this

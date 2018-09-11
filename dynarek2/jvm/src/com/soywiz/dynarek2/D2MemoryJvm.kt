@@ -23,4 +23,15 @@ actual fun D2Memory.set16(index: Int, value: Int) { s16.put(index, value.toShort
 actual fun D2Memory.set32(index: Int, value: Int) { s32.put(index, value) }
 actual fun D2Memory.setF32(index: Int, value: Float) { f32.put(index, value) }
 
+fun D2Memory.get64(index: Int): Long {
+    val low = get32(index * 2 + 0)
+    val high = get32(index * 2 + 1)
+    return (high.toLong() shl 32) or low.toLong()
+}
+
+fun D2Memory.set64(index: Int, value: Long) {
+    set32(index * 2 + 0, (value shr 0).toInt())
+    set32(index * 2 + 1, (value shr 32).toInt())
+}
+
 actual fun NewD2Memory(size: Int): D2MemoryFreeable = D2Memory(ByteBuffer.allocateDirect(size).order(ByteOrder.LITTLE_ENDIAN))

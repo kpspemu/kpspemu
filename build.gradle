@@ -17,14 +17,15 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlinNativeVersion"
     }
 
-    ext.nativeTargets = ['macbook', 'linux']
+    ext.nativeTargets = ["macos_x64", "linux_x64", "mingw_x64"]
     ext.libDependencies = [
             "dynarek2": [
-                    "com.soywiz:korio{SUFFIX}:$korlibsVersion",
+                    //"com.soywiz:fastinvoke:0.0.1",
+                    //"com.soywiz:korio{SUFFIX}:$korlibsVersion",
             ],
             "kpspemu": [
                     "dynarek2",
-                    "com.soywiz:dynarek{SUFFIX}:$korlibsVersion",
+                    //"com.soywiz:dynarek{SUFFIX}:$korlibsVersion",
                     "com.soywiz:korge{SUFFIX}:$korlibsVersion",
                     "com.soywiz:korau-atrac3plus{SUFFIX}:$korlibsVersion",
                     "com.soywiz:krypto{SUFFIX}:$korlibsVersion",
@@ -160,7 +161,7 @@ allprojects {
         }
 
         if (isKotlin && !isNative) {
-            kotlin.experimental.coroutines 'enable'
+            //kotlin.experimental.coroutines 'enable'
         }
 
         if (isJs) {

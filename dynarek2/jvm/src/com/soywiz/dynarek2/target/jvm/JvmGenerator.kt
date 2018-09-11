@@ -2,11 +2,20 @@ package com.soywiz.dynarek2.target.jvm
 
 import com.soywiz.dynarek2.*
 import org.objectweb.asm.*
+import org.objectweb.asm.Type
+import java.lang.reflect.*
 import kotlin.reflect.*
 
 class JvmGenerator {
     val objectRef = java.lang.Object::class.asmRef
     val d2MemoryRef = D2Memory::class.asmRef
+    //val classLoader = this::class.javaClass.classLoader
+
+    // 0: this
+    // 1: regs
+    // 2: mem
+    // 3: temp
+    // 4: external
 
     fun generate(func: D2Func, context: D2Context, name: String?, debug: Boolean): D2Result {
         val cw = ClassWriter(0)
@@ -67,7 +76,7 @@ class JvmGenerator {
                 )
             val instance = gclazz.declaredConstructors.first().newInstance() as D2KFuncInt
 
-            return D2Result(classBytes, instance::invoke, { })
+            return D2Result(name, debug, classBytes, instance::invoke, free = { })
         } catch (e: VerifyError) {
             throw D2InvalidCodeGen("JvmGenerator", classBytes, e)
         }
@@ -83,21 +92,26 @@ class JvmGenerator {
             generate(s.expr)
             visitIReturn()
         }
-        is D2Stm.Write -> {
+        is D2Stm.Set<*> -> {
             val ref = s.ref
-            visitIntInsn(Opcodes.ALOAD, ref.memSlot.index + 1) // 0 is used for THIS
+            visitIntInsn(Opcodes.ALOAD, ref.memSlot.jArgIndex)
             generate(ref.offset)
             generate(s.value)
             val methodName = when (ref.size) {
                 D2Size.BYTE -> JvmMemTools::set8.name
                 D2Size.SHORT -> JvmMemTools::set16.name
                 D2Size.INT -> JvmMemTools::set32.name
+                D2Size.FLOAT -> JvmMemTools::setF32.name
+                D2Size.LONG -> JvmMemTools::set64.name
             }
+            val primType = ref.size.jPrimType
+            val signature = "(${d2MemoryRef}I$primType)V"
+            //println("signature:$signature")
             visitMethodInsn(
                 Opcodes.INVOKESTATIC,
                 JvmMemTools::class.internalName,
                 methodName,
-                "(${d2MemoryRef}II)V",
+                signature,
                 false
             )
 
@@ -134,17 +148,13 @@ class JvmGenerator {
             generateJumpAlways(startLabel)
             visitLabel(endLabel)
         }
-        is D2Stm.Print -> {
-            generate(s.expr)
-            visitMethodInsn(
-                Opcodes.INVOKESTATIC,
-                JvmMemTools::class.internalName,
-                JvmMemTools::printi.name,
-                "(I)V",
-                false
-            )
-        }
         else -> TODO("$s")
+    }
+
+    val D2Size.jPrimType get() = when (this) {
+        D2Size.BYTE, D2Size.SHORT, D2Size.INT -> 'I'
+        D2Size.FLOAT -> 'F'
+        D2Size.LONG -> 'J'
     }
 
     fun MethodVisitor.generateJump(e: D2Expr<*>, label: Label, isTrue: Boolean): Unit {
@@ -156,25 +166,39 @@ class JvmGenerator {
     fun MethodVisitor.generateJumpTrue(e: D2Expr<*>, label: Label): Unit = generateJump(e, label, true)
     fun MethodVisitor.generateJumpAlways(label: Label): Unit = visitJumpInsn(Opcodes.GOTO, label)
 
+    val D2MemSlot.jArgIndex get() = this.index + 1 // 0 is used for THIS
+
     fun MethodVisitor.generate(e: D2Expr<*>): Unit {
         when (e) {
             is D2Expr.ILit -> pushInt(e.lit)
+            is D2Expr.FLit -> pushFloat(e.lit)
+            is D2Expr.LLit -> pushLong(e.lit)
             is D2Expr.IBinOp -> {
                 generate(e.l)
                 generate(e.r)
                 when (e.op) {
-                    D2BinOp.ADD -> visitInsn(Opcodes.IADD)
-                    D2BinOp.SUB -> visitInsn(Opcodes.ISUB)
-                    D2BinOp.MUL -> visitInsn(Opcodes.IMUL)
-                    D2BinOp.DIV -> visitInsn(Opcodes.IDIV)
-                    D2BinOp.REM -> visitInsn(Opcodes.IREM)
-                    D2BinOp.SHL -> visitInsn(Opcodes.ISHL)
-                    D2BinOp.SHR -> visitInsn(Opcodes.ISHR)
-                    D2BinOp.USHR -> visitInsn(Opcodes.IUSHR)
-                    D2BinOp.OR -> visitInsn(Opcodes.IOR)
-                    D2BinOp.AND -> visitInsn(Opcodes.IAND)
-                    D2BinOp.XOR -> visitInsn(Opcodes.IXOR)
-                    else -> TODO()
+                    D2IBinOp.ADD -> visitInsn(Opcodes.IADD)
+                    D2IBinOp.SUB -> visitInsn(Opcodes.ISUB)
+                    D2IBinOp.MUL -> visitInsn(Opcodes.IMUL)
+                    D2IBinOp.DIV -> visitInsn(Opcodes.IDIV)
+                    D2IBinOp.REM -> visitInsn(Opcodes.IREM)
+                    D2IBinOp.SHL -> visitInsn(Opcodes.ISHL)
+                    D2IBinOp.SHR -> visitInsn(Opcodes.ISHR)
+                    D2IBinOp.USHR -> visitInsn(Opcodes.IUSHR)
+                    D2IBinOp.OR -> visitInsn(Opcodes.IOR)
+                    D2IBinOp.AND -> visitInsn(Opcodes.IAND)
+                    D2IBinOp.XOR -> visitInsn(Opcodes.IXOR)
+                }
+            }
+            is D2Expr.FBinOp -> {
+                generate(e.l)
+                generate(e.r)
+                when (e.op) {
+                    D2FBinOp.ADD -> visitInsn(Opcodes.FADD)
+                    D2FBinOp.SUB -> visitInsn(Opcodes.FSUB)
+                    D2FBinOp.MUL -> visitInsn(Opcodes.FMUL)
+                    D2FBinOp.DIV -> visitInsn(Opcodes.FDIV)
+                    //D2FBinOp.REM -> visitInsn(Opcodes.FREM)
                 }
             }
             is D2Expr.IComOp -> {
@@ -187,7 +211,6 @@ class JvmGenerator {
                     D2CompOp.LE -> Opcodes.IF_ICMPLE
                     D2CompOp.GT -> Opcodes.IF_ICMPGT
                     D2CompOp.GE -> Opcodes.IF_ICMPGE
-                    else -> error("Invalid")
                 }
                 val label1 = Label()
                 val label2 = Label()
@@ -206,29 +229,45 @@ class JvmGenerator {
                 }
             }
             is D2Expr.Ref -> {
-                visitIntInsn(Opcodes.ALOAD, e.memSlot.index + 1) // 0 is used for THIS
+                visitIntInsn(Opcodes.ALOAD, e.memSlot.jArgIndex)
                 generate(e.offset)
                 val methodName = when (e.size) {
                     D2Size.BYTE -> JvmMemTools::get8.name
                     D2Size.SHORT -> JvmMemTools::get16.name
                     D2Size.INT -> JvmMemTools::get32.name
+                    D2Size.LONG -> JvmMemTools::get64.name
+                    D2Size.FLOAT -> JvmMemTools::getF32.name
                 }
+                val retType = e.size.jPrimType
                 visitMethodInsn(
                     Opcodes.INVOKESTATIC,
                     JvmMemTools::class.internalName,
                     methodName,
-                    "(${d2MemoryRef}I)I",
+                    "(${d2MemoryRef}I)$retType",
                     false
                 )
             }
-            is D2Expr.InvokeI -> {
-                val name = e.func.name
-                //for (m in e.func.javaClass.methods) println(m)
-                val owner = e.func.javaClass.methods.first { it.name == "getOwner" }.apply { isAccessible = true }.invoke(e.func) as kotlin.jvm.internal.PackageReference
-                val fullSignature = e.func.javaClass.methods.first { it.name == "getSignature" }.apply { isAccessible = true }.invoke(e.func) as String
-                val signature = "(" + fullSignature.substringAfter('(')
-                for (arg in e.args) generate(arg)
-                visitMethodInsn(Opcodes.INVOKESTATIC, owner.jClass.internalName, name, signature, false)
+            is D2Expr.Invoke<*> -> {
+                val func = e.func
+                val name = func.name
+                val owner = func.owner
+                val smethod = func.method
+
+                if (smethod.parameterCount != e.args.size) error("Arity mismatch generating method call")
+
+                val signature = "(" + smethod.signature.substringAfter('(')
+                for ((index, arg) in e.args.withIndex()) {
+                    generate(arg)
+                    val param = smethod.parameterTypes[index]
+                    if (!param.isPrimitive) {
+                        //println("PARAM: $param")
+                        visitTypeInsn(Opcodes.CHECKCAST, param.internalName)
+                    }
+                }
+                visitMethodInsn(Opcodes.INVOKESTATIC, owner.internalName, name, signature, false)
+            }
+            is D2Expr.External -> {
+                visitVarInsn(Opcodes.ALOAD, 4)
             }
             else -> TODO("$e")
         }
@@ -243,6 +282,10 @@ class JvmGenerator {
     }
 }
 
+val KFunction<*>.owner: Class<*> get() = (javaClass.methods.first { it.name == "getOwner" }.apply { isAccessible = true }.invoke(this) as kotlin.jvm.internal.PackageReference).jClass
+val KFunction<*>.fullSignature: String get() = javaClass.methods.first { it.name == "getSignature" }.apply { isAccessible = true }.invoke(this) as String
+val KFunction<*>.method: Method get() = owner.methods.firstOrNull { it.name == name } ?: error("Can't find method $name")
+
 object JvmMemTools {
     @JvmStatic
     fun get8(m: D2Memory, index: Int): Int = m.get8(index)
@@ -254,6 +297,9 @@ object JvmMemTools {
     fun get32(m: D2Memory, index: Int): Int = m.get32(index)
 
     @JvmStatic
+    fun get64(m: D2Memory, index: Int): Long = m.get64(index)
+
+    @JvmStatic
     fun set8(m: D2Memory, index: Int, value: Int) = m.set8(index, value)
 
     @JvmStatic
@@ -261,6 +307,15 @@ object JvmMemTools {
 
     @JvmStatic
     fun set32(m: D2Memory, index: Int, value: Int) = m.set32(index, value)
+
+    @JvmStatic
+    fun set64(m: D2Memory, index: Int, value: Long) = m.set64(index, value)
+
+    @JvmStatic
+    fun getF32(m: D2Memory, index: Int): Float = Float.fromBits(m.get32(index))
+
+    @JvmStatic
+    fun setF32(m: D2Memory, index: Int, value: Float) = m.set32(index, value.toRawBits())
 
     @JvmStatic
     fun printi(i: Int): Unit = println(i)

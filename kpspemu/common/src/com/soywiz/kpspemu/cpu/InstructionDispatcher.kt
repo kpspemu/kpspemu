@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korio.lang.*
+import com.soywiz.kpspemu.mem.*
 
 @Suppress("RemoveRedundantCallsOfConversionMethods", "LiftReturnOrAssignment", "RedundantUnitReturnType")
 class InstructionDispatcher<T>(val e: InstructionEvaluator<T>) {

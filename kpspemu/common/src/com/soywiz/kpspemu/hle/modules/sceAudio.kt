@@ -6,6 +6,7 @@ import com.soywiz.korau.sound.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.mem.*
 import kotlin.math.*
 
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {

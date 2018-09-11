@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.async.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
@@ -19,7 +20,7 @@ class ThreadManForUser_Sema(val tmodule: ThreadManForUser) : SceSubmodule<Thread
         var count: Int = 0
         var maxCount: Int = 0
         var active: Boolean = false
-        val signal = Signal2<Unit>()
+        val signal = Signal<Unit>()
     }
 
     class SemaphoreManager(emulator: Emulator) : Manager<PspSemaphore>("SemaphoreManager", emulator)

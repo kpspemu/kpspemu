@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.hle.modules
 
+import com.soywiz.korio.async.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*

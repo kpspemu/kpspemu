@@ -5,7 +5,7 @@ import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.embedded.*
 import com.soywiz.kpspemu.format.elf.*
-import kotlin.coroutines.experimental.*
+import kotlin.coroutines.*
 import kotlin.test.*
 
 class ElfTest : BaseTest() {

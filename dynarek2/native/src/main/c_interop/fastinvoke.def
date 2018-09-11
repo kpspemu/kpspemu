@@ -1,0 +1,13 @@
+---
+
+typedef int (*fast_dyna_function)(void *regs, void *mem, void *temps, void *external);
+
+static int invokeDynarekFast(
+    long long int address,
+    long long int regs,
+    long long int mem,
+    long long int temps,
+    long long int external
+) {
+    return ((fast_dyna_function)(void *)address)((void *)regs, (void *)mem, (void *)temps, (void *)external);
+}

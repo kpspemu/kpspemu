@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.kmem.*
 import com.soywiz.kpspemu.*
+import com.soywiz.kpspemu.mem.*
 import kotlin.math.*
 
 class GeBatchBuilder(val ge: Ge) {

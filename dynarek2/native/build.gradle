@@ -1,0 +1,14 @@
+//println("NATIVE BUILD")
+
+sourceSets.main {
+    if (org.apache.tools.ant.taskdefs.condition.Os.isFamily(org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS)) {
+        kotlin.srcDirs += "src_win32"
+    } else {
+        kotlin.srcDirs += "src_posix"
+    }
+    dependencies {
+        cinterop('fastinvoke') {
+            //extraOpts '-nodefaultlibs'
+        }
+    }
+}

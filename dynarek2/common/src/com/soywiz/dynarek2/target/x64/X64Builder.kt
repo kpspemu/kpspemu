@@ -2,21 +2,38 @@ package com.soywiz.dynarek2.target.x64
 
 // http://ref.x86asm.net/coder64.html
 open class X64Builder : BaseBuilder() {
-	fun retn() {
-		bytes(0xc3)
-	}
+	fun retn() = bytes(0xc3)
 
-    fun writeMem(src: Reg32, base: Reg64, offset: Int) {
-        bytes(0x89, 0x80 or (src.index shl 3) or (base.index shl 0))
-        int(offset)
+    // MMX
+    fun addss(dst: RegXmm, src: RegXmm) = bytes(0xF3, 0x0F, 0x58, 0xC0 or (dst.olindex shl 3) or (src.olindex shl 0))
+    fun mulss(dst: RegXmm, src: RegXmm) = bytes(0xF3, 0x0F, 0x59, 0xC0 or (dst.olindex shl 3) or (src.olindex shl 0))
+    fun subss(dst: RegXmm, src: RegXmm) = bytes(0xF3, 0x0F, 0x5C, 0xC0 or (dst.olindex shl 3) or (src.olindex shl 0))
+    fun divss(dst: RegXmm, src: RegXmm) = bytes(0xF3, 0x0F, 0x5E, 0xC0 or (dst.olindex shl 3) or (src.olindex shl 0))
+    fun readMem(reg: RegXmm, base: Reg64, offset: Int) =
+        //bytes(0x67, 0xF3, 0x0F, 0x10, 0x80 or (reg.olindex shl 3) or ((base.olindex) shl 0)).also { int(offset) }
+        bytes(0xF3, 0x0F, 0x10, 0x80 or (reg.olindex shl 3) or ((base.olindex) shl 0)).also { int(offset) }
+    fun writeMem(reg: RegXmm, base: Reg64, offset: Int) =
+        //bytes(0x67, 0xF3, 0x0F, 0x11, 0x80 or (reg.olindex shl 3) or ((base.olindex) shl 0)).also { int(offset) }
+        bytes(0xF3, 0x0F, 0x11, 0x80 or (reg.olindex shl 3) or ((base.olindex) shl 0)).also { int(offset) }
+
+    // MEM
+
+    fun writeMem(reg: Reg8, base: Reg64, offset: Int) = bytes(0x88, 0x80 or (reg.olindex shl 3) or (base.olindex shl 0)).also { int(offset) }
+    fun writeMem(reg: Reg16, base: Reg64, offset: Int) = bytes(0x66, 0x89, 0x80 or (reg.olindex shl 3) or (base.olindex shl 0)).also { int(offset) }
+    fun writeMem(reg: Reg32, base: Reg64, offset: Int) = bytes(0x89, 0x80 or (reg.olindex shl 3) or (base.olindex shl 0)).also { int(offset) }
+
+    fun readMem(reg: Reg8, base: Reg64, offset: Int) = bytes(0x8A, 0x80 or (reg.olindex shl 3) or (base.olindex shl 0)).also { int(offset) }
+    fun readMem(reg: Reg16, base: Reg64, offset: Int) = bytes(0x66, 0x8B, 0x80 or (reg.olindex shl 3) or (base.olindex shl 0)).also { int(offset) }
+    fun readMem(reg: Reg32, base: Reg64, offset: Int) = bytes(0x8B, 0x80 or (reg.olindex shl 3) or (base.olindex shl 0)).also { int(offset) }
+
+    fun writeMem(reg: Reg64, base: Reg64, offset: Int) {
+        bytes(if (reg.extended) 0x4C else 0x48, 0x89, 0x80 or (reg.lindex shl 3) or (base.lindex shl 0)).also { int(offset) }
+    }
+    fun readMem(reg: Reg64, base: Reg64, offset: Int) {
+        bytes(if (reg.extended) 0x4C else 0x48, 0x8B, 0x80 or (reg.lindex shl 3) or (base.lindex shl 0)).also { int(offset) }
     }
 
-    fun readMem(dst: Reg32, base: Reg64, offset: Int) {
-		bytes(0x8b, 0x80 or (dst.index shl 3) or (base.index shl 0))
-		int(offset)
-	}
-
-	fun movEaxEbpOffset(offset: Int) {
+    fun movEaxEbpOffset(offset: Int) {
 		bytes(0x8b, 0x85)
 		int(offset)
 	}
@@ -46,6 +63,26 @@ open class X64Builder : BaseBuilder() {
     fun xor(dst: Reg32, src: Reg32): Unit = bytes(0x31, _C0(dst, src))
 	fun sub(dst: Reg32, src: Reg32) = bytes(0x29, _C0(dst, src))
 
+    val Int.fitsByte: Boolean get() = this.toByte().toInt() == this.toInt()
+
+    fun sub(dst: Reg64, size: Int) {
+        if (size.fitsByte) {
+            bytes(0x48, 0x83, 0xE8 or (dst.olindex))
+            bytes(size)
+        } else {
+            bytes(0x48, 0x81, 0xE8 or (dst.olindex))
+            int(size)
+        }
+    }
+
+    fun add(dst: Reg64, size: Int) {
+        if (size.fitsByte) {
+            bytes(0x48, 0x83, 0xC0 or (dst.olindex), size)
+        } else {
+            error("Doesn't fit byte")
+        }
+    }
+
     fun shl(dst: Reg32, src: Reg32): Unit = TODO()
     fun shr(dst: Reg32, src: Reg32): Unit = TODO()
     fun ushr(dst: Reg32, src: Reg32): Unit = TODO()
@@ -65,13 +102,27 @@ open class X64Builder : BaseBuilder() {
         bytes(0xD3, 0xE8 or dst.olindex)
     }
 
-    fun mul(src: Reg32): Unit {
+    fun _mul(src: Reg32, signed: Boolean): Unit {
         if (src.extended) bytes(0x41)
-        bytes(0xf7, 0xe0 or (src.lindex shl 0))
+        val sor = if (signed) 0x8 else 0
+        bytes(0xf7, 0xe0 or sor or (src.lindex shl 0))
     }
 
-	fun mul(src: Reg64) = bytes(0x48).also { mul(Reg32(src.index)) }
+    fun _div(src: Reg32, signed: Boolean): Unit {
+        if (src.extended) bytes(0x49)
+        val sor = if (signed) 0x8 else 0
+        bytes(0xf7, 0xf0 or sor or (src.lindex shl 0))
+    }
+
+    fun mul(src: Reg32): Unit = _mul(src, signed = false)
+    fun div(src: Reg32): Unit = _div(src, signed = false)
+    fun imul(src: Reg32): Unit = _mul(src, signed = true)
+    fun idiv(src: Reg32): Unit = _div(src, signed = true)
+
+    fun mul(src: Reg64) = bytes(0x48).also { mul(Reg32(src.index)) }
 	fun add(dst: Reg64, src: Reg64) = bytes(0x48).also { add(Reg32(dst.index), Reg32(src.index)) }
+
+
 
 	fun mov(dst: Reg64, src: Reg64) {
         if (dst == src) return
@@ -103,10 +154,8 @@ open class X64Builder : BaseBuilder() {
 		}
 	}
 
-    fun cmp(l: Reg32, r: Reg32) {
-        if (l.extended) TODO()
-        bytes(0x39, 0xC0 or (l.lindex shl 3) or (r.lindex shl 3))
-    }
+    fun cmp(l: Reg32, r: Reg32) = bytes(0x39, 0xC0 or (l.olindex shl 0) or (r.olindex shl 3))
+    fun cmp(l: Reg64, r: Reg64) = bytes(0x48).also { cmp(l.to32(), r.to32()) }
 
     fun cmp(l: Reg32, r: Int) {
         if (l == Reg32.EAX) {
@@ -202,6 +251,7 @@ open class BaseBuilder {
 	fun bytes(a: Int, b: Int) = run { bytes(a); bytes(b) }
 	fun bytes(a: Int, b: Int, c: Int) = run { bytes(a); bytes(b); bytes(c) }
 	fun bytes(a: Int, b: Int, c: Int, d: Int) = run { bytes(a); bytes(b); bytes(c); bytes(d) }
+    fun bytes(a: Int, b: Int, c: Int, d: Int, e: Int) = run { bytes(a); bytes(b); bytes(c); bytes(d); bytes(e) }
 
 	fun short(v: Int) {
 		bytes((v ushr 0) and 0xFF, (v ushr 8) and 0xFF)
@@ -225,6 +275,30 @@ inline class Reg8(val index: Int) {
         val DL = Reg8(2)
         val BL = Reg8(3)
     }
+
+    val extended get() = index >= 8
+    val lindex get() = index and 0x7
+    val olindex get() = if (extended) error("Unsupported extended") else lindex
+}
+
+inline class Reg16(val index: Int) {
+    companion object {
+        val AX = Reg16(0)
+        val CX = Reg16(1)
+        val DX = Reg16(2)
+        val BX = Reg16(3)
+        val SP = Reg16(4)
+        val BP = Reg16(5)
+        val SI = Reg16(6)
+        val DI = Reg16(7)
+    }
+
+    val extended get() = index >= 8
+    val lindex get() = index and 0x7
+    val olindex get() = if (extended) error("Unsupported extended") else lindex
+
+    fun to32() = Reg32(index)
+    fun to64() = Reg64(index)
 }
 
 inline class Reg32(val index: Int) {
@@ -253,6 +327,7 @@ inline class Reg32(val index: Int) {
     val extended get() = index >= 8
     val lindex get() = index and 0x7
     val olindex get() = if (extended) error("Unsupported extended") else lindex
+    fun to16() = Reg16(index)
 	fun to64() = Reg64(index)
 }
 
@@ -267,6 +342,7 @@ inline class Reg64(val index: Int) {
 		val RSI = Reg64(0b0_110)
 		val RDI = Reg64(0b0_111)
 
+        // Extended
 		val R8 = Reg64(0b1_000)
 		val R9 = Reg64(0b1_001)
 		val R10 = Reg64(0b1_010)
@@ -278,8 +354,37 @@ inline class Reg64(val index: Int) {
     }
 
     val extended get() = index >= 8
+    val lindex get() = index and 0b111
+    val olindex get() = if (extended) error("Unsupported extended") else lindex
+    fun to16() = Reg16(index)
+    fun to32() = Reg32(index)
+}
+
+
+inline class RegXmm(val index: Int) {
+    companion object {
+        val XMM0  = RegXmm(0)
+        val XMM1  = RegXmm(1)
+        val XMM2  = RegXmm(2)
+        val XMM3  = RegXmm(3)
+        val XMM4  = RegXmm(4)
+        val XMM5  = RegXmm(5)
+        val XMM6  = RegXmm(6)
+        val XMM7  = RegXmm(7)
+        val XMM8  = RegXmm(8)
+        val XMM9  = RegXmm(9)
+        val XMM10 = RegXmm(10)
+        val XMM11 = RegXmm(11)
+        val XMM12 = RegXmm(12)
+        val XMM13 = RegXmm(13)
+        val XMM14 = RegXmm(14)
+        val XMM15 = RegXmm(15)
+    }
+
+    val extended get() = index >= 8
     val lindex get() = index and 0x7
     val olindex get() = if (extended) error("Unsupported extended") else lindex
+    fun to16() = Reg16(index)
     fun to32() = Reg32(index)
 }
 
@@ -336,135 +441,4 @@ XMM3, YMM3	Volatile	Fourth FP argument; fourth vector-type argument when __vecto
 XMM4, YMM4	Volatile	Must be preserved as needed by caller; fifth vector-type argument when __vectorcall is used
 XMM5, YMM5	Volatile	Must be preserved as needed by caller; sixth vector-type argument when __vectorcall is used
 XMM6:XMM15, YMM6:YMM15	Nonvolatile (XMM), Volatile (upper half of YMM)	Must be preserved as needed by callee. YMM registers must be preserved as needed by caller.
- */
-
-/*
-64-bit register	Lower 32 bits	Lower 16 bits	Lower 8 bits
-rax
-
-eax
-
-ax
-
-al
-
-rbx
-
-ebx
-
-bx
-
-bl
-
-rcx
-
-ecx
-
-cx
-
-cl
-
-rdx
-
-edx
-
-dx
-
-dl
-
-rsi
-
-esi
-
-si
-
-sil
-
-rdi
-
-edi
-
-di
-
-dil
-
-rbp
-
-ebp
-
-bp
-
-bpl
-
-rsp
-
-esp
-
-sp
-
-spl
-
-r8
-
-r8d
-
-r8w
-
-r8b
-
-r9
-
-r9d
-
-r9w
-
-r9b
-
-r10
-
-r10d
-
-r10w
-
-r10b
-
-r11
-
-r11d
-
-r11w
-
-r11b
-
-r12
-
-r12d
-
-r12w
-
-r12b
-
-r13
-
-r13d
-
-r13w
-
-r13b
-
-r14
-
-r14d
-
-r14w
-
-r14b
-
-r15
-
-r15d
-
-r15w
-
-r15b
  */

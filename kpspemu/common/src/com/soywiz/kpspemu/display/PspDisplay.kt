@@ -6,6 +6,7 @@ import com.soywiz.korim.color.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.mem.*
 
 class PspDisplay(override val emulator: Emulator) : WithEmulator {
     companion object {

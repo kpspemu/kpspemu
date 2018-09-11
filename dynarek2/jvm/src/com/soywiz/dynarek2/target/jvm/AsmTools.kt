@@ -25,6 +25,14 @@ fun MethodVisitor.pushInt(value: Int) {
         }
     }
 }
+fun MethodVisitor.pushFloat(value: Float) {
+    //visitInsn(FCONST_1)
+    visitLdcInsn(value)
+}
+
+fun MethodVisitor.pushLong(value: Long) {
+    visitLdcInsn(value)
+}
 
 val Method.signature: String
     get() {

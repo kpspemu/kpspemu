@@ -1,19 +1,6 @@
 //package com.soywiz.kpspemu.native
 
-import com.soywiz.klock.*
-import com.soywiz.klogger.*
-import com.soywiz.korio.*
-import com.soywiz.korio.async.*
-import com.soywiz.korio.coroutine.*
-import com.soywiz.korio.crypto.*
-import com.soywiz.korio.file.*
-import com.soywiz.korio.file.std.*
-import com.soywiz.korio.lang.*
-import com.soywiz.korio.stream.*
-import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
-import com.soywiz.kpspemu.format.elf.*
-import com.soywiz.kpspemu.hle.*
 
 fun main(args: Array<String>) = Main.main(args)
 

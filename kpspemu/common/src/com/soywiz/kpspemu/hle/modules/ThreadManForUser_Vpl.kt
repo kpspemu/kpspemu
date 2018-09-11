@@ -38,7 +38,7 @@ class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadM
             val wait = WaitHandle(size)
             waits += wait
             try {
-                wait.signal.waitOneOptTimeout(timeout)
+                wait.signal.waitOneOpt(timeout)
             } finally {
                 waits -= wait
             }

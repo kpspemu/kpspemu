@@ -27,7 +27,7 @@ class CpuInterpreter(
         val mem = cpu.mem.getFastMem()
         //val mem = null
         return if (mem != null) {
-            stepsFastMem(mem, cpu.mem.getFastMemOffset(Memory.MAIN_OFFSET) - Memory.MAIN_OFFSET, count, trace)
+            stepsFastMem(mem, cpu.mem.getFastMemOffset(MemoryInfo.MAIN_OFFSET) - MemoryInfo.MAIN_OFFSET, count, trace)
         } else {
             stepsNormal(count, trace)
         }
@@ -157,28 +157,28 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     // ALU
     override fun lui(i: Int, s: CpuState) = i { RT = (U_IMM16 shl 16) }
 
-    override fun movz(i: Int, s: CpuState) = i { RD = s.movz(RT, RD, RS) }
-    override fun movn(i: Int, s: CpuState) = i { RD = s.movn(RT, RD, RS) }
+    override fun movz(i: Int, s: CpuState) = i { RD = dyna_movz(RT, RD, RS) }
+    override fun movn(i: Int, s: CpuState) = i { RD = dyna_movn(RT, RD, RS) }
 
     //override fun movz(i: Int, s: CpuState) = i { if (RT == 0) RD = RS }
     //override fun movn(i: Int, s: CpuState) = i { if (RT != 0) RD = RS }
 
-    override fun ext(i: Int, s: CpuState) = i { RT = s.ext(RS, POS, SIZE_E) }
-    override fun ins(i: Int, s: CpuState) = i { RT = s.ins(RT, RS, POS, SIZE_I) }
+    override fun ext(i: Int, s: CpuState) = i { RT = dyna_ext(RS, POS, SIZE_E) }
+    override fun ins(i: Int, s: CpuState) = i { RT = dyna_ins(RT, RS, POS, SIZE_I) }
 
     //override fun ext(i: Int, s: CpuState) = i { RT = RS.extract(POS, SIZE_E) }
     //override fun ins(i: Int, s: CpuState) = i { RT = RT.insert(RS, POS, SIZE_I) }
 
-    override fun clz(i: Int, s: CpuState) = i { RD = s.clz(RS) }
-    override fun clo(i: Int, s: CpuState) = i { RD = s.clo(RS) }
-    override fun seb(i: Int, s: CpuState) = i { RD = s.seb(RT) }
-    override fun seh(i: Int, s: CpuState) = i { RD = s.seh(RT) }
+    override fun clz(i: Int, s: CpuState) = i { RD = dyna_clz(RS) }
+    override fun clo(i: Int, s: CpuState) = i { RD = dyna_clo(RS) }
+    override fun seb(i: Int, s: CpuState) = i { RD = dyna_seb(RT) }
+    override fun seh(i: Int, s: CpuState) = i { RD = dyna_seh(RT) }
 
-    override fun wsbh(i: Int, s: CpuState) = i { RD = s.wsbh(RT) }
-    override fun wsbw(i: Int, s: CpuState) = i { RD = s.wsbw(RT) }
+    override fun wsbh(i: Int, s: CpuState) = i { RD = dyna_wsbh(RT) }
+    override fun wsbw(i: Int, s: CpuState) = i { RD = dyna_wsbw(RT) }
 
-    override fun max(i: Int, s: CpuState) = i { RD = s.max(RS, RT) }
-    override fun min(i: Int, s: CpuState) = i { RD = s.min(RS, RT) }
+    override fun max(i: Int, s: CpuState) = i { RD = dyna_max(RS, RT) }
+    override fun min(i: Int, s: CpuState) = i { RD = dyna_min(RS, RT) }
 
     override fun add(i: Int, s: CpuState) = i { RD = RS + RT }
     override fun addu(i: Int, s: CpuState) = i { RD = RS + RT }
@@ -232,19 +232,18 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
 
     override fun xor(i: Int, s: CpuState) = i { RD = RS xor RT }
     override fun and(i: Int, s: CpuState) = i { RD = RS and RT }
-    //override fun nor(i: Int, s: CpuState) = i { RD = (RS or RT).inv() }
-    override fun nor(i: Int, s: CpuState) = i { RD = s.nor(RS, RT) }
+    override fun nor(i: Int, s: CpuState) = i { RD = (RS or RT).inv() }
 
     override fun ori(i: Int, s: CpuState) = i { RT = RS or U_IMM16 }
     override fun xori(i: Int, s: CpuState) = i { RT = RS xor U_IMM16 }
     override fun andi(i: Int, s: CpuState) = i { RT = RS and U_IMM16 }
 
-    override fun sll(i: Int, s: CpuState) = i { RD = s.sll(RT, POS) }
-    override fun sra(i: Int, s: CpuState) = i { RD = s.sra(RT, POS) }
-    override fun srl(i: Int, s: CpuState) = i { RD = s.srl(RT, POS) }
-    override fun sllv(i: Int, s: CpuState) = i { RD = s.sll(RT, RS) }
-    override fun srav(i: Int, s: CpuState) = i { RD = s.sra(RT, RS) }
-    override fun srlv(i: Int, s: CpuState) = i { RD = s.srl(RT, RS) }
+    override fun sll(i: Int, s: CpuState) = i { RD = dyna_sll(RT, POS) }
+    override fun sra(i: Int, s: CpuState) = i { RD = dyna_sra(RT, POS) }
+    override fun srl(i: Int, s: CpuState) = i { RD = dyna_srl(RT, POS) }
+    override fun sllv(i: Int, s: CpuState) = i { RD = dyna_sll(RT, RS) }
+    override fun srav(i: Int, s: CpuState) = i { RD = dyna_sra(RT, RS) }
+    override fun srlv(i: Int, s: CpuState) = i { RD = dyna_srl(RT, RS) }
 
     //override fun sll(i: Int, s: CpuState) = i { RD = RT shl POS }
     //override fun sra(i: Int, s: CpuState) = i { RD = RT shr POS }
@@ -253,10 +252,10 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     //override fun srav(i: Int, s: CpuState) = i { RD = RT shr (RS and 0b11111) }
     //override fun srlv(i: Int, s: CpuState) = i { RD = RT ushr (RS and 0b11111) }
 
-    override fun bitrev(i: Int, s: CpuState) = i { RD = s.bitrev32(RT) }
+    override fun bitrev(i: Int, s: CpuState) = i { RD = BitUtils.bitrev32(RT) }
 
-    override fun rotr(i: Int, s: CpuState) = i { RD = s.rotr(RT, POS) }
-    override fun rotrv(i: Int, s: CpuState) = i { RD = s.rotr(RT, RS) }
+    override fun rotr(i: Int, s: CpuState) = i { RD = BitUtils.rotr(RT, POS) }
+    override fun rotrv(i: Int, s: CpuState) = i { RD = BitUtils.rotr(RT, RS) }
 
     // Memory
     override fun lb(i: Int, s: CpuState) = i { RT = s.lb(RS_IMM16) }
@@ -284,7 +283,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
     // Special
     override fun syscall(i: Int, s: CpuState) = s.preadvance { syscall(SYSCALL) }
 
-    override fun _break(i: Int, s: CpuState) = s.preadvance { throw CpuBreakException(SYSCALL) }
+    override fun _break(i: Int, s: CpuState) = s.preadvance { throw CpuBreakExceptionCached(SYSCALL) }
 
     // Set less
     //override fun slt(i: Int, s: CpuState) = s { RD = (RS < RT).toInt() }

@@ -4,44 +4,148 @@ import com.soywiz.dynarek2.*
 
 // typealias D2KFunc = (regs: D2Memory?, mem: D2Memory?, temps: D2Memory?, external: Any?) -> Int
 // RAX: <result>
-// RBX: <temp>
-/////////////////////////
-// RCX: regs
-// RDX: mem
-// R8: temps
-// R9: external
 /////////////////////////
 
-class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boolean) : X64Builder() {
-	// @TODO: Does windows has a different ABI for x64?
-	//val ABI_ARGS = arrayOf(X64Reg64.RCX, X64Reg64.RDX, X64Reg64.R8, X64Reg64.R9)
-	val ABI_ARGS = arrayOf(Reg64.RDI, Reg64.RSI, Reg64.RDX, Reg64.RCX)
+class X64ABI(
+	val windows: Boolean,
+	val args: Array<Reg64>,
+	val xmmArgs: Array<RegXmm>,
+	val preserved: Array<Reg64>,
+	val xmmPreserved: Array<RegXmm>
+) {
+	companion object {
+		// Microsoft x64 ABI (Windows)
+		// https://en.wikipedia.org/wiki/X86_calling_conventions#Microsoft_x64_calling_convention
+		val Microsoft = X64ABI(
+			windows = true,
+			args = arrayOf(Reg64.RCX, Reg64.RDX, Reg64.R8, Reg64.R9),
+			xmmArgs = arrayOf(RegXmm.XMM0, RegXmm.XMM1, RegXmm.XMM2, RegXmm.XMM3),
+			preserved = arrayOf(Reg64.RBX, Reg64.RBP, Reg64.RDI, Reg64.RSI, Reg64.RSP),
+			xmmPreserved = arrayOf(RegXmm.XMM6, RegXmm.XMM7)
+		)
+
+		// System V AMD64 ABI (Solaris, Linux, FreeBSD, macOS)
+		// https://en.wikipedia.org/wiki/X86_calling_conventions#System_V_AMD64_ABI
+		val SystemV = X64ABI(
+			windows = false,
+			args = arrayOf(Reg64.RDI, Reg64.RSI, Reg64.RDX, Reg64.RCX),
+			xmmArgs = arrayOf(RegXmm.XMM0, RegXmm.XMM1, RegXmm.XMM2, RegXmm.XMM3),
+			preserved = arrayOf(Reg64.RBP, Reg64.RBX),
+			xmmPreserved = arrayOf()
+		)
+	}
+}
+
+
+class Dynarek2X64Gen(
+	val context: D2Context,
+	val name: String?,
+	val debug: Boolean,
+	val abi: X64ABI = if (isNativeWindows) X64ABI.Microsoft else X64ABI.SystemV
+) : X64Builder() {
+	val REGS_IDX = 0
+	val MEM_IDX = 1
+	val TEMPS_IDX = 2
+	val EXT_IDX = 3
+
+	val ABI_ARGS get() = abi.args
+	val PRESERVED_ARGS get() = abi.preserved
+
+	val REGS_ARG = ABI_ARGS[0]
+	val MEM_ARG = ABI_ARGS[1]
+	val TEMP_ARG = ABI_ARGS[2]
+	val EXT_ARG = ABI_ARGS[3]
+
+	var allocatedFrame = 0
+
+	var frameStackPos = 0
+
+	fun pushRegisterInFrame(reg: Reg64): Int {
+		writeMem(reg, Reg64.RBP, -8 - (frameStackPos * 8))
+		frameStackPos++
+		if (frameStackPos >= allocatedFrame) error("FRAME TOO BIG")
+		return frameStackPos - 1
+	}
+
+	fun pushRegisterInFrame(reg: RegXmm): Int {
+		writeMem(reg, Reg64.RBP, -8 - (frameStackPos * 8))
+		frameStackPos++
+		if (frameStackPos >= allocatedFrame) error("FRAME TOO BIG")
+		return frameStackPos - 1
+	}
+
+	fun popRegisterInFrame(reg: Reg64) {
+		frameStackPos--
+		readMem(reg, Reg64.RBP, -8 - (frameStackPos * 8))
+	}
+
+	fun popRegisterInFrame(reg: RegXmm) {
+		frameStackPos--
+		readMem(reg, Reg64.RBP, -8 - (frameStackPos * 8))
+	}
+
+	fun getFrameItem(reg: Reg64, index: Int) {
+		readMem(reg, Reg64.RBP, -8 - (index * 8))
+	}
+
+	fun getFrameItem(reg: RegXmm, index: Int) {
+		readMem(reg, Reg64.RBP, -8 - (index * 8))
+	}
+
+	fun setFrameItem(reg: Reg64, index: Int) {
+		writeMem(reg, Reg64.RBP, -8 - (index * 8))
+	}
+
+	fun setFrameItem(reg: RegXmm, index: Int) {
+		writeMem(reg, Reg64.RBP, -8 - (index * 8))
+	}
+
+	fun restoreArgs() {
+		for ((index, reg) in ABI_ARGS.withIndex()) getFrameItem(reg, index)
+	}
+
+	fun restoreArg(reg: Reg64, index: Int) {
+		getFrameItem(reg, index)
+	}
+
+	// @TODO: Support different ABIs
+	private var rbxIndex = -1
+	private var rsiIndex = -1
+	private var rdiIndex = -1
 
 	private fun prefix() {
 		push(Reg64.RBP)
 		mov(Reg64.RBP, Reg64.RSP)
+		sub(Reg64.RSP, 512)
+		allocatedFrame = 512
 
-		push(Reg64.RBX)
-		push(Reg64.RSI)
-		push(Reg64.RDI)
+		for (reg in ABI_ARGS) pushRegisterInFrame(reg)
 
-		// NonVolatile
-		//usedRegs[X64Reg64.RBX.index] = true
-		//usedRegs[X64Reg64.RSI.index] = true
-		//usedRegs[X64Reg64.RDI.index] = true
-		//usedRegs[X64Reg64.R12.index] = true
-		//usedRegs[X64Reg64.R13.index] = true
-		//usedRegs[X64Reg64.R14.index] = true
-		//usedRegs[X64Reg64.R15.index] = true
+		// This should support both supported ABIs
+		rbxIndex = pushRegisterInFrame(Reg64.RBX)
+		if (abi.windows) {
+			rsiIndex = pushRegisterInFrame(Reg64.RSI)
+			rdiIndex = pushRegisterInFrame(Reg64.RDI)
+		}
 	}
 
 	private fun doReturn() {
-		pop(Reg64.RDI)
-		pop(Reg64.RSI)
-		pop(Reg64.RBX)
+		// This should support both supported ABIs
+		restoreArg(Reg64.RBX, rbxIndex)
+		if (abi.windows) {
+			restoreArg(Reg64.RSI, rsiIndex)
+			restoreArg(Reg64.RDI, rdiIndex)
+		}
 
+		mov(Reg64.RSP, Reg64.RBP)
 		pop(Reg64.RBP)
 		retn()
+	}
+
+	fun generateDummy(): ByteArray {
+		mov(Reg32.EAX, 123456)
+		retn()
+		return getBytes()
 	}
 
 	fun generate(func: D2Func): ByteArray {
@@ -51,56 +155,85 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 		return getBytes()
 	}
 
-	fun D2Stm.generate(): Unit = when (this) {
-		is D2Stm.Stms -> {
-			for (child in children) child.generate()
-		}
-		is D2Stm.Return -> {
-			expr.generate(Reg64.RAX)
-			doReturn()
-		}
-		is D2Stm.Write -> {
-			val target = Reg64.RAX
-			val baseReg = ABI_ARGS[ref.memSlot.index]
-			value.generate(target)
-			if (ref.offset is D2Expr.ILit) {
-				writeMem(target.to32(), baseReg, ref.offset.lit * 4)
-			} else {
-				TODO()
+	fun D2Expr.Ref<*>.loadAddress(): Int {
+		offset.generate()
+		popRegisterInFrame(Reg64.RDX)
+		movEax(size.bytes)
+		mul(Reg32.EDX)
+		restoreArg(Reg64.RDX, memSlot.index)
+		add(Reg64.RAX, Reg64.RDX)
+		return pushRegisterInFrame(Reg64.RAX)
+	}
+
+	fun D2Stm.generate(): Unit {
+		subframe {
+			when (this) {
+				is D2Stm.Stms -> {
+					for (child in children) child.generate()
+				}
+				is D2Stm.BExpr -> {
+					subframe {
+						expr.generate()
+						popRegisterInFrame(Reg64.RAX)
+						if (this is D2Stm.Return) {
+							doReturn()
+						}
+					}
+				}
+				is D2Stm.Set<*> -> {
+					val memSlot = ref.memSlot
+					val offset = ref.offset
+					val size = ref.size
+
+					val foffset = if (offset is D2Expr.ILit) {
+						val valueIndex = value.generate()
+						getFrameItem(Reg64.RDX, valueIndex)
+						restoreArg(Reg64.RDI, memSlot.index)
+						offset.lit * size.bytes
+					} else {
+						val offsetIndex = ref.loadAddress()
+						val valueIndex = value.generate()
+						restoreArg(Reg64.RDI, offsetIndex)
+						restoreArg(Reg64.RDX, valueIndex)
+						0
+					}
+					when (size) {
+						D2Size.BYTE -> writeMem(Reg8.DL, Reg64.RDI, foffset)
+						D2Size.SHORT -> writeMem(Reg16.DX, Reg64.RDI, foffset)
+						D2Size.INT, D2Size.FLOAT -> writeMem(Reg32.EDX, Reg64.RDI, foffset)
+						D2Size.LONG -> TODO("$size")
+					}
+				}
+				is D2Stm.If -> {
+					if (sfalse == null) {
+						// IF
+						val endLabel = Label()
+						generateJumpFalse(cond, endLabel)
+						strue.generate()
+						place(endLabel)
+					} else {
+						// IF+ELSE
+						val elseLabel = Label()
+						val endLabel = Label()
+						generateJumpFalse(cond, elseLabel)
+						strue.generate()
+						generateJumpAlways(endLabel)
+						place(elseLabel)
+						sfalse?.generate()
+						place(endLabel)
+					}
+				}
+				is D2Stm.While -> {
+					val startLabel = Label()
+					val endLabel = Label()
+					place(startLabel)
+					generateJumpFalse(cond, endLabel)
+					body.generate()
+					generateJumpAlways(startLabel)
+					place(endLabel)
+				}
 			}
 		}
-        is D2Stm.Expr -> {
-            expr.generate(Reg64.RAX)
-        }
-		is D2Stm.If -> {
-			if (sfalse == null) {
-				// IF
-				val endLabel = Label()
-				generateJumpFalse(cond, endLabel)
-				strue.generate()
-				place(endLabel)
-			} else {
-				// IF+ELSE
-				val elseLabel = Label()
-				val endLabel = Label()
-				generateJumpFalse(cond, elseLabel)
-				strue.generate()
-				generateJumpAlways(endLabel)
-				place(elseLabel)
-				sfalse?.generate()
-				place(endLabel)
-			}
-		}
-		is D2Stm.While -> {
-			val startLabel = Label()
-			val endLabel = Label()
-			place(startLabel)
-			generateJumpFalse(cond, endLabel)
-			body.generate()
-			generateJumpAlways(startLabel)
-			place(endLabel)
-		}
-		else -> TODO("$this")
 	}
 
 	//companion object {
@@ -109,169 +242,199 @@ class Dynarek2X64Gen(val context: D2Context, val name: String?, val debug: Boole
 	//	val USHR_NAME = D2FuncName("ushr")
 	//}
 
-	fun D2Expr<*>.generate(target: Reg64): Unit {
+	fun D2Expr<*>.generate(): Int {
 		when (this) {
 			is D2Expr.ILit -> {
-                mov(target.to32(), this.lit)
-                //mov(target, this.lit.toLong())
+                mov(Reg32.EAX, this.lit)
             }
-			is D2Expr.FLit -> TODO("$this")
+			is D2Expr.FLit -> {
+				mov(Reg32.EAX, this.lit.toRawBits())
+			}
 			is D2Expr.IBinOp -> {
-				when (this.op) {
-					D2BinOp.SHL, D2BinOp.SHR, D2BinOp.USHR -> {
-						pushPop(Reg64.RCX) {
-							l.generate(target)
-							r.generate(Reg64.RCX)
-							when (this.op) {
-								D2BinOp.SHL -> shl(target.to32(), Reg8.CL)
-								D2BinOp.SHR -> shr(target.to32(), Reg8.CL)
-								D2BinOp.USHR -> ushr(target.to32(), Reg8.CL)
-								else -> TODO()
-							}
-						}
-					}
-					else -> {
-						val temp = tryGetTempReg(except = target)
+				generate(l to Reg64.RAX, r to Reg64.RCX)
 
-						l.generate(target)
-						pushPopIfRequired(temp, target) {
-							requestPreserve(target) {
-								r.generate(temp)
-							}
-							when (this.op) {
-								D2BinOp.ADD -> add(target.to32(), temp.to32())
-								D2BinOp.SUB -> sub(target.to32(), temp.to32())
-								D2BinOp.MUL -> {
-									pushPopIfRequired(Reg64.RAX, target) {
-										pushPopIfRequired(Reg64.RDX, target) {
-											if (target != Reg64.RAX) mov(Reg64.RAX, target)
-											mul(temp.to32())
-											if (target != Reg64.RAX) mov(target, Reg64.RAX)
-										}
-									}
-								}
-								D2BinOp.DIV -> TODO("$this")
-								D2BinOp.REM -> TODO("$this")
-								D2BinOp.SHL -> {
-									shl(target.to32(), temp.to32())
-								}
-								D2BinOp.SHR -> shr(target.to32(), temp.to32())
-								D2BinOp.USHR -> ushr(target.to32(), temp.to32())
-								D2BinOp.AND -> and(target.to32(), temp.to32())
-								D2BinOp.OR -> or(target.to32(), temp.to32())
-								D2BinOp.XOR -> xor(target.to32(), temp.to32())
-							}
-						}
+				when (this.op) {
+					D2IBinOp.ADD -> add(Reg32.EAX, Reg32.ECX)
+					D2IBinOp.SUB -> sub(Reg32.EAX, Reg32.ECX)
+					D2IBinOp.MUL -> imul(Reg32.ECX)
+					D2IBinOp.DIV -> idiv(Reg32.ECX)
+					D2IBinOp.REM -> {
+						idiv(Reg32.ECX)
+						mov(Reg64.RAX, Reg64.RDX)
 					}
+					D2IBinOp.SHL -> shl(Reg32.EAX, Reg8.CL)
+					D2IBinOp.SHR -> shr(Reg32.EAX, Reg8.CL)
+					D2IBinOp.USHR -> ushr(Reg32.EAX, Reg8.CL)
+					D2IBinOp.AND -> and(Reg32.EAX, Reg32.ECX)
+					D2IBinOp.OR -> or(Reg32.EAX, Reg32.ECX)
+					D2IBinOp.XOR -> xor(Reg32.EAX, Reg32.ECX)
 				}
+			}
+			is D2Expr.FBinOp -> {
+				generateXmm(l to RegXmm.XMM0, r to RegXmm.XMM1)
+				when (this.op) {
+					D2FBinOp.ADD -> addss(RegXmm.XMM0, RegXmm.XMM1)
+					D2FBinOp.SUB -> subss(RegXmm.XMM0, RegXmm.XMM1)
+					D2FBinOp.MUL -> mulss(RegXmm.XMM0, RegXmm.XMM1)
+					D2FBinOp.DIV -> divss(RegXmm.XMM0, RegXmm.XMM1)
+					//D2FBinOp.REM -> TODO("frem")
+				}
+				return pushRegisterInFrame(RegXmm.XMM0)
 			}
 			is D2Expr.IComOp -> {
-				val temp = tryGetTempReg(except = target)
+				val label1 = Label()
+				val label2 = Label()
 
-				l.generate(target)
-				pushPopIfRequired(temp, target) {
-					requestPreserve(target) {
-						r.generate(temp)
-					}
-					cmp(target.to32(), temp.to32())
-					val label1 = Label()
-					val label2 = Label()
-
-					when (this.op) {
-						D2CompOp.EQ -> je(label1)
-						D2CompOp.NE -> jne(label1)
-						D2CompOp.LT -> jl(label1)
-						D2CompOp.LE -> jle(label1)
-						D2CompOp.GT -> jg(label1)
-						D2CompOp.GE -> jge(label1)
-					}
-
-                    // @TODO: Use SET-XX instead of jumps: http://faydoc.tripod.com/cpu/setnl.htm
-					mov(target.to32(), 0)
-					jmp(label2)
-					place(label1)
-					mov(target.to32(), 1)
-					place(label2)
-				}
+				generateJump2(this, label1, isTrue = true)
+				mov(Reg32.EAX, 0)
+				jmp(label2)
+				place(label1)
+				mov(Reg32.EAX, 1)
+				place(label2)
 			}
 			is D2Expr.Ref-> {
-				if (size != D2Size.INT) TODO("$size")
-				val baseReg = ABI_ARGS[memSlot.index]
-				if (offset is D2Expr.ILit) {
-					readMem(target.to32(), baseReg, offset.lit * 4)
+				val foffset = if (offset is D2Expr.ILit) {
+					restoreArg(Reg64.RDX, memSlot.index)
+					offset.lit * size.bytes
 				} else {
-					pushPopIfRequired(Reg64.RAX, target) {
-						pushPopIfRequired(Reg64.RBX, target) {
-							offset.generate(target)
-							popRBX()
-							movEax(4)
-							mul(Reg32.EBX)
-							add(Reg64.RAX, baseReg)
-							readMem(target.to32(), Reg64.RAX, 0)
+					this.loadAddress()
+					popRegisterInFrame(Reg64.RDX)
+					0
+				}
+				// @TODO: MOVZX (mov zero extension) http://faydoc.tripod.com/cpu/movzx.htm
+ 				when (size) {
+					D2Size.BYTE -> {
+						mov(Reg32.EAX, 0)
+						readMem(Reg8.AL, Reg64.RDX, foffset)
+					}
+					D2Size.SHORT -> {
+						mov(Reg32.EAX, 0)
+						readMem(Reg16.AX, Reg64.RDX, foffset)
+					}
+					D2Size.INT, D2Size.FLOAT -> readMem(Reg32.EAX, Reg64.RDX, foffset)
+					D2Size.LONG -> TODO("LONG")
+				}
+			}
+			is D2Expr.Invoke<*> -> {
+				val func = context.getFunc(func)
+				subframe {
+					val frameIndices = args.map { it.generate() }
+					val param = ParamsReader(abi)
+					for (n in 0 until args.size) {
+						val frameIndex = frameIndices[n]
+						val type = func.args.getOrElse(0) { D2INT }
+						if (type == D2FLOAT) {
+							getFrameItem(param.getXmm(), frameIndex)
+						} else {
+							getFrameItem(param.getInt(), frameIndex)
 						}
 					}
 				}
+				callAbsolute(func.address)
+				return if (func.rettype == D2FLOAT) {
+					pushRegisterInFrame(RegXmm.XMM0)
+				} else {
+					pushRegisterInFrame(Reg64.RAX)
+				}
 			}
-			is D2Expr.InvokeI -> {
-				for ((index, arg) in args.withIndex()) {
-					arg.generate(ABI_ARGS[index])
-				}
-				pushPopIfRequired(Reg64.RAX, target) {
-					callAbsolute(context.getFunc(func))
-					mov(target, Reg64.RAX)
-				}
+			is D2Expr.External -> {
+				restoreArg(Reg64.RAX, EXT_IDX)
 			}
 			else -> TODO("$this")
 		}
+		return pushRegisterInFrame(Reg64.RAX)
 	}
 
-	fun generateJump(e: D2Expr<*>, label: Label, isTrue: Boolean): Unit {
-		e.generate(Reg64.RAX)
-		cmp(Reg32.EAX, 0)
-		if (isTrue) jne(label) else je(label)
+	class ParamsReader(val abi: X64ABI) {
+		var ipos = 0
+		var fpos = 0
+		fun reset() {
+			ipos = 0
+			fpos = 0
+		}
+		fun getInt(): Reg64 = abi.args[ipos++]
+		fun getXmm(): RegXmm = abi.xmmArgs[ipos++]
+	}
+
+	fun generate(vararg items: Pair<D2Expr<*>, Reg64>) {
+		subframe {
+			val indices = items.map { (expr, _) ->
+				when {
+					expr is D2Expr.ILit -> -1
+					else -> expr.generate()
+				}
+			}
+			for ((it, index) in items.zip(indices)) {
+				val expr = it.first
+				val reg = it.second
+				when {
+					expr is D2Expr.ILit -> mov(reg.to32(), expr.lit)
+					else -> getFrameItem(reg, index)
+				}
+			}
+		}
+	}
+
+	fun generateXmm(vararg items: Pair<D2Expr<*>, RegXmm>) {
+		subframe {
+			val indices = items.map { (expr, _) ->
+				expr.generate()
+			}
+			for ((it, index) in items.zip(indices)) {
+				val expr = it.first
+				val reg = it.second
+				getFrameItem(reg, index)
+			}
+		}
+	}
+
+	fun generateJumpComp(l: D2ExprI, op: D2CompOp, r: D2ExprI, label: Label, isTrue: Boolean) {
+		generate(l to Reg64.RBX, r to Reg64.RCX)
+
+		cmp(Reg32.EBX, Reg32.ECX)
+		when (if (isTrue) op else op.negated) {
+			D2CompOp.EQ -> je(label)
+			D2CompOp.NE -> jne(label)
+			D2CompOp.LT -> jl(label)
+			D2CompOp.LE -> jle(label)
+			D2CompOp.GT -> jg(label)
+			D2CompOp.GE -> jge(label)
+		}
+	}
+
+	fun generateJump2(e: D2Expr.IComOp, label: Label, isTrue: Boolean) {
+		generateJumpComp(e.l, e.op, e.r, label, isTrue)
+	}
+
+	fun generateJump(e: D2Expr<*>, label: Label, isTrue: Boolean) {
+		when (e) {
+			is D2Expr.IComOp -> generateJump2(e, label, isTrue)
+			else -> {
+				e.generate()
+				popRegisterInFrame(Reg64.RAX)
+				cmp(Reg32.EAX, 0)
+				if (isTrue) jne(label) else je(label)
+			}
+		}
 	}
 
 	fun generateJumpFalse(e: D2Expr<*>, label: Label): Unit = generateJump(e, label, false)
 	fun generateJumpTrue(e: D2Expr<*>, label: Label): Unit = generateJump(e, label, true)
 	fun generateJumpAlways(label: Label): Unit = jmp(label)
 
-	val usedRegs = BooleanArray(32)
-
-	private val tempRegs = arrayOf(Reg64.RBX, Reg64.RSI, Reg64.RDI) // @TODO: Must fix high operations with regs
-	//private val tempRegs = arrayOf(X64Reg64.RBX, X64Reg64.RAX)
-
-	fun tryGetTempReg(except: Reg64): Reg64 {
-		for (r in tempRegs) if (r != except && !usedRegs[r.index]) return r
-		for (r in tempRegs) if (r != except) return r
-		return Reg64.RBX
-	}
-
-	inline fun requestPreserve(reg: Reg64, callback: () -> Unit) {
-		val old = usedRegs[reg.index]
-		usedRegs[reg.index] = true
+	inline fun subframe(callback: () -> Unit) {
+		val current = this.frameStackPos
 		try {
 			callback()
 		} finally {
-			usedRegs[reg.index] = old
+			this.frameStackPos = current
 		}
 	}
+}
 
-	inline fun pushPopIfRequired(reg: Reg64, target: Reg64, callback: () -> Unit) {
-		val used = if (reg != target) usedRegs[reg.index] else false
-		if (used) push(reg)
-		try {
-			callback()
-		} finally {
-			if (used) pop(reg)
-		}
-	}
-
-	inline fun pushPop(reg: Reg64, callback: () -> Unit) {
-		push(reg)
-		try {
-			callback()
-		} finally {
-			pop(reg)
-		}
+inline class RegContent(val type: Int) {
+	companion object {
+		fun temp(index: Int) = RegContent(0x0000 + index)
+		fun arg(index: Int) = RegContent(0x1000 + index)
 	}
 }

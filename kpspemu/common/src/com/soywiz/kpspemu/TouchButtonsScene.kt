@@ -48,11 +48,13 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
 
         addButton("home.png", PspCtrlButtons.home, Point(1280 / 2, 0), 1.1, 0.0).apply {
             view.onClick {
+                println("home.onClick")
                 emulator.onHomePress()
             }
         }
         addButton("load.png", PspCtrlButtons.hold, Point(1280 / 2, 0), -0.1, 0.0).apply {
             view.onClick {
+                println("load.onClick")
                 emulator.onLoadPress()
             }
         }
@@ -146,6 +148,9 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
             this.alpha = alphaUp
             this.scale = scale
         })
+        button.view.alpha = alphaUp
+        button.view.onOver { button.view.alpha = alphaDown }
+        button.view.onOut { button.view.alpha = alphaUp }
         button.view.onClick { button.onClick(Unit) }
         buttons += button
         sceneView += button.view

@@ -12,6 +12,7 @@ import com.soywiz.korio.crypto.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.ge.*
+import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {

@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.cpu.dynarec
 
-import com.soywiz.dynarek.*
-import com.soywiz.dynarek.js.*
+import com.soywiz.dynarek2.*
+import com.soywiz.dynarek2.target.js.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.cpu.*
@@ -11,7 +11,6 @@ import com.soywiz.kpspemu.mem.*
 import org.junit.Test
 import java.io.*
 import kotlin.test.*
-
 
 class DynarekMethodBuilderTestJvm {
     @Test
@@ -44,13 +43,14 @@ class DynarekMethodBuilderTestJvm {
         }
 
         val func = mb.generateFunction()
+        val ctx = D2ContextPspEmu()
 
         println("----")
-        println(func.generateJsBody(strict = false))
+        println(func.generateJsBody(ctx, strict = false))
 
         try {
             val state = CpuState("DynarekMethodBuilderTest", GlobalCpuState(Memory()))
-            val ff = func.generateDynarek()
+            val ff = func.generateCpuStateFunction(ctx)
             ff(state)
             assertEquals(0x08900004.hex, state.A0.hex)
             assertEquals(9.hex, state.A1.hex)

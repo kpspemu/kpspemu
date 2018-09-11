@@ -3,39 +3,57 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.dynarek2.*
 import com.soywiz.kmem.*
 
-inline class CpuRegisters(val data: D2MemoryInt)
 
 // @TODO: Free
+
+
 fun CpuRegisters(): CpuRegisters = CpuRegisters(D2MemoryInt(NewD2Memory(512 * 4).mem)).apply { init() }
 
+inline class CpuRegisters(val data: D2MemoryInt)
+
 // 0-32
-inline var CpuRegisters.IR: InstructionRegister
-    get() = InstructionRegister(data[0]);
-    set(value) {
-        data[0] = value.data
-    }
-inline var CpuRegisters.PC: Int get() = data[1]; set(value) = run { data[1] = value }
-inline var CpuRegisters.nPC: Int get() = data[2]; set(value) = run { data[2] = value }
-inline var CpuRegisters.LO: Int get() = data[3]; set(value) = run { data[3] = value }
-inline var CpuRegisters.HI: Int get() = data[4]; set(value) = run { data[4] = value }
-inline var CpuRegisters.IC: Int get() = data[5]; set(value) = run { data[5] = value }
+inline var CpuRegisters.IR: InstructionRegister get() = InstructionRegister(data[RegOff.IR]); set(value) = run { data[RegOff.IR] = value.data }
+inline var CpuRegisters.PC: Int get() = data[RegOff.PC]; set(value) = run { data[RegOff.PC] = value }
+inline var CpuRegisters.nPC: Int get() = data[RegOff.nPC]; set(value) = run { data[RegOff.nPC] = value }
+inline var CpuRegisters.LO: Int get() = data[RegOff.LO]; set(value) = run { data[RegOff.LO] = value }
+inline var CpuRegisters.HI: Int get() = data[RegOff.HI]; set(value) = run { data[RegOff.HI] = value }
+inline var CpuRegisters.IC: Int get() = data[RegOff.IC]; set(value) = run { data[RegOff.IC] = value }
 
 // 32-64
-inline fun CpuRegisters.setGpr(index: Int, value: Int) {
-    if (index != 0) {
-        data[32 + index] = value
-    }
+inline fun CpuRegisters.setGpr(index: Int, value: Int) = run { if (index != 0) data[RegOff.GPR + index] = value }
+inline fun CpuRegisters.getGpr(index: Int) = data[RegOff.GPR + index]
+
+object RegOff {
+    const val IR = 0
+    const val PC = 1
+    const val nPC = 2
+    const val LO = 3
+    const val HI = 4
+    const val HI_LO = LO
+    const val IC = 5
+    const val TEMP0 = 6
+
+    const val GPR = 32 // 32
+    const val FPR = 64 // 32
+    const val VFPR = 128 // 128
+
+    // Aliases
+    const val RA = GPR + 31
+
+    const val FCR_CC = 256 // 32
+
+    fun GPR(index: Int) = GPR + index
+    fun FPR(index: Int) = FPR + index
+    fun FCR_CC(index: Int) = FCR_CC + index
 }
 
-inline fun CpuRegisters.getGpr(index: Int) = data[32 + index]
-
 // 64-96
-inline fun CpuRegisters.setFpr(index: Int, value: Float) = run { if (index != 0) data.setFloat(64 + index, value) }
+inline fun CpuRegisters.setFpr(index: Int, value: Float) = run { if (index != 0) data.setFloat(RegOff.FPR + index, value) }
 
-inline fun CpuRegisters.getFpr(index: Int): Float = data.getFloat(64 + index)
+inline fun CpuRegisters.getFpr(index: Int): Float = data.getFloat(RegOff.FPR + index)
 
-inline fun CpuRegisters.setFprI(index: Int, value: Int) = run { if (index != 0) data[64 + index] = value }
-inline fun CpuRegisters.getFprI(index: Int): Int = data[64 + index]
+inline fun CpuRegisters.setFprI(index: Int, value: Int) = run { if (index != 0) data[RegOff.FPR + index] = value }
+inline fun CpuRegisters.getFprI(index: Int): Int = data[RegOff.FPR + index]
 
 // 96-112
 inline fun CpuRegisters.getVfprC(index: Int): Int = data[96 + index]
@@ -60,42 +78,35 @@ inline fun CpuRegisters.init() {
     setVfprC(14, 0x3F800000)
     setVfprC(15, 0x3F800000)
 
-    setVfprCC(0, 0x00003351)
-    setVfprCC(25, 0)
-    setVfprCC(26, 0)
-    setVfprCC(27, 0)
-    setVfprCC(28, 0)
-    setVfprCC(31, 0x00000e00)
+    setFcrCC(0, 0x00003351)
+    setFcrCC(25, 0)
+    setFcrCC(26, 0)
+    setFcrCC(27, 0)
+    setFcrCC(28, 0)
+    setFcrCC(31, 0x00000e00)
 }
 
 // 128-256
-inline fun CpuRegisters.getVfpr(index: Int): Float = data.getFloat(128 + index)
+inline fun CpuRegisters.getVfpr(index: Int): Float = data.getFloat(RegOff.VFPR + index)
 
-inline fun CpuRegisters.setVfpr(index: Int, value: Float) = data.setFloat(128 + index, value)
-
-// 256-272
-inline fun CpuRegisters.getVfprCC(index: Int): Int = data[256 + index]
-
-inline fun CpuRegisters.setVfprCC(index: Int, value: Int) = run { data[256 + index] = value }
-
+inline fun CpuRegisters.setVfpr(index: Int, value: Float) = data.setFloat(RegOff.VFPR + index, value)
 
 inline var CpuRegisters.VFPR_CC: Int
     get() = getVfprC(CpuState.VFPU_CTRL.CC);
-    set(value) = run {
-        setVfprC(
-            CpuState.VFPU_CTRL.CC,
-            value
-        )
-    }
+    set(value) = run { setVfprC(CpuState.VFPU_CTRL.CC, value) }
 
 inline fun CpuRegisters.VFPR_CC(index: Int) = VFPR_CC.extract(index)
 
-inline var CpuRegisters.fcr0: Int get() = getVfprCC(0); set(value) = run { setVfprCC(0, value) }
-inline var CpuRegisters.fcr25: Int get() = getVfprCC(25); set(value) = run { setVfprCC(25, value) }
-inline var CpuRegisters.fcr26: Int get() = getVfprCC(26); set(value) = run { setVfprCC(26, value) }
-inline var CpuRegisters.fcr27: Int get() = getVfprCC(27); set(value) = run { setVfprCC(27, value) }
-inline var CpuRegisters.fcr28: Int get() = getVfprCC(28); set(value) = run { setVfprCC(28, value) }
-inline var CpuRegisters.fcr31: Int get() = getVfprCC(31); set(value) = run { setVfprCC(31, value) }
+// 256-272
+inline fun CpuRegisters.getFcrCC(index: Int): Int = data[RegOff.FCR_CC + index]
+inline fun CpuRegisters.setFcrCC(index: Int, value: Int) = run { data[RegOff.FCR_CC + index] = value }
+
+inline var CpuRegisters.fcr0: Int get() =  getFcrCC(0); set(value) = setFcrCC(0, value)
+inline var CpuRegisters.fcr25: Int get() = getFcrCC(25); set(value) = setFcrCC(25, value)
+inline var CpuRegisters.fcr26: Int get() = getFcrCC(26); set(value) = setFcrCC(26, value)
+inline var CpuRegisters.fcr27: Int get() = getFcrCC(27); set(value) = setFcrCC(27, value)
+inline var CpuRegisters.fcr28: Int get() = getFcrCC(28); set(value) = setFcrCC(28, value)
+inline var CpuRegisters.fcr31: Int get() = getFcrCC(31); set(value) = setFcrCC(31, value)
 
 //var vpfxs = VfpuSourceTargetPrefix(VFPRC, CpuState.VFPU_CTRL.SPREFIX)
 //var vpfxt = VfpuSourceTargetPrefix(VFPRC, CpuState.VFPU_CTRL.TPREFIX)
