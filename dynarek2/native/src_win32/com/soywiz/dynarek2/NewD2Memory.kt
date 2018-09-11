@@ -10,11 +10,14 @@ actual fun NewD2Memory(size: Int): D2MemoryFreeable {
     return object : D2MemoryFreeable {
         val ptr = VirtualAlloc(
             null,
-            //size.nextAlignedTo(GetLargePageMinimum()).convert(),
             size.convert(),
-            (MEM_COMMIT or MEM_RESERVE or MEM_RESET).convert(), // 0x00001000 | 0x00002000 | 0x00080000 | 0x20000000
+            (MEM_COMMIT or MEM_RESERVE).convert(), // 0x00001000 | 0x00002000
             PAGE_EXECUTE_READWRITE.convert() // 0x40
-        )?.reinterpret<ByteVar>() ?: error("Couldn't reserve memory")
+        )?.reinterpret<ByteVar>() ?: error("Couldn't reserve memory: size=$size, lastError=${GetLastError()}")
+
+        init {
+            memset(ptr, 0, size.convert())
+        }
 
         override val mem: D2Memory = D2Memory(ptr)
         //override val mem: D2Memory = ptr.reinterpret<ByteVar>()
