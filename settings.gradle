@@ -1,3 +1,30 @@
+pluginManagement {
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "kotlin-multiplatform") {
+                useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+        maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }
+        maven { url 'https://plugins.gradle.org/m2/' }
+        jcenter()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'kpspemu-root'
+
+enableFeaturePreview('GRADLE_METADATA')
+
+include ':dynarek2'
+include ':kpspemu'
+include ':korau-atrac3plus'
+
+/*
 rootProject.name = 'kpspemu-root'
 
 enableFeaturePreview('GRADLE_METADATA') // IMPORTANT OR IT WON'T WORK!
@@ -32,3 +59,4 @@ def register(String base) {
 
 register('kpspemu')
 register('dynarek2')
+*/

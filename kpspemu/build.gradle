@@ -1,0 +1,63 @@
+dependencies {
+    commonMainApi "com.soywiz:korge:$korgeVersion"
+    commonMainApi "com.soywiz:krypto:$kryptoVersion"
+
+    commonMainApi project(":dynarek2")
+    commonMainApi project(":korau-atrac3plus")
+}
+
+dependencies {
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion"
+
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
+
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
+}
+
+def dump(obj) {
+    obj.properties.each { println "$it.key : ${it.value.class.name}   ->   $it.value" }
+}
+
+//dump(kotlin.targets.jvm.compilations.main.output)
+
+task run(type: JavaExec, dependsOn: [jvmMainClasses], group: 'application', description: 'Run the application on the JVM') {
+    main = "com.soywiz.kpspemu.MainKt"
+    classpath { [
+            kotlin.targets.jvm.compilations.main.output.allOutputs.files,
+            configurations.jvmRuntimeClasspath,
+    ] }
+    args = []
+}
+
+/*
+
+apply plugin: 'application'
+
+mainClassName = 'com.soywiz.kpspemu.MainKt'
+
+task runApp(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+
+    main = mainClassName
+
+    // arguments to pass to the application
+    workingDir rootProject.rootDir
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": mainClassName)
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+
+
+ */

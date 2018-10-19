@@ -1,0 +1,263 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+buildscript {
+    repositories {
+        mavenLocal()
+        jcenter()
+        maven { url "https://dl.bintray.com/soywiz/soywiz" }
+        maven { url "https://dl.bintray.com/jetbrains/kotlin-native-dependencies" }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-dev' }
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath 'com.moowork.gradle:gradle-node-plugin:1.2.0'
+        classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlinNativeVersion"
+    }
+
+    ext.nativeTargets = ["macos_x64", "linux_x64", "mingw_x64"]
+    ext.libDependencies = [
+            "dynarek2": [
+                    //"com.soywiz:fastinvoke:0.0.1",
+                    //"com.soywiz:korio{SUFFIX}:$korlibsVersion",
+            ],
+            "kpspemu": [
+                    "dynarek2",
+                    //"com.soywiz:dynarek{SUFFIX}:$korlibsVersion",
+                    "com.soywiz:korge{SUFFIX}:$korlibsVersion",
+                    "com.soywiz:korau-atrac3plus{SUFFIX}:$korlibsVersion",
+                    "com.soywiz:krypto{SUFFIX}:$korlibsVersion",
+            ],
+    ]
+    ext.libExecutables = [
+            "kpspemu": true
+    ]
+}
+
+new File(rootProject.rootDir, "kpspemu/common/src/com/soywiz/kpspemu/KpspemuVersion.kt").write(
+        "package com.soywiz.kpspemu\n\nval KPSPEMU_VERSION = \"$version\""
+)
+
+apply plugin: 'com.moowork.node'
+
+//node { download = true }
+
+task installMocha(type: NpmTask) {
+    args = ['install', 'mocha']
+}
+
+allprojects {
+    def isJs = project.name.endsWith("-js")
+    def isJvm = project.name.endsWith("-jvm")
+    def isNative = project.name.endsWith("-native")
+    def isCommon = project.name.endsWith("-common")
+    def isKotlin = isJs || isJvm || isNative || isCommon
+
+    String suffix = ""
+    String jsuffix = ""
+    String projectNameWithoutSuffix = project.name[0..<project.name.lastIndexOf('-')]
+
+    if (isJs) jsuffix = suffix = "-js"
+    if (isJvm) {
+        suffix = "-jvm"; jsuffix = ""
+    }
+    if (isNative) jsuffix = suffix = "-native"
+    if (isCommon) jsuffix = suffix = "-common"
+
+    ext.suffix = suffix
+    ext.jsuffix = jsuffix
+
+    if (suffix != "") {
+        apply plugin: "kotlin-platform$suffix"
+    }
+    if (!isNative) {
+        apply plugin: "java"
+    }
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        maven { url "https://dl.bintray.com/soywiz/soywiz/" }
+        maven { url "https://plugins.gradle.org/m2/" }
+        maven { url "https://dl.bintray.com/jetbrains/kotlin-native-dependencies" }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-dev' }
+        mavenCentral()
+    }
+
+    dependencies {
+        if (isKotlin && !isNative) {
+            compile "org.jetbrains.kotlin:kotlin-stdlib${jsuffix}:$kotlinVersion"
+
+            testCompile "org.jetbrains.kotlin:kotlin-test${jsuffix}:$kotlinVersion"
+            if (isCommon) {
+                testCompile "org.jetbrains.kotlin:kotlin-test-annotations-common:$kotlinVersion"
+            }
+        }
+        if (isJvm) {
+            testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+            testCompile "junit:junit:4.12"
+        }
+
+        if (isKotlin) {
+            //println("----")
+            if (!isCommon) {
+                def expect = ":${projectNameWithoutSuffix}-common"
+                expectedBy project(expect)
+                if (!isNative) {
+                    testImplementation project(expect)
+                }
+                //println("EXP: ${project.name}: ${expect}")
+            }
+
+            for (String dep in libDependencies[projectNameWithoutSuffix]) {
+                String rdep = dep.replace("{SUFFIX}", suffix).replace("{JSUFFIX}", jsuffix)
+                def rdepm
+                if (dep.contains(":")) {
+                    rdepm = rdep
+                } else {
+                    rdepm = findProject(":${rdep}${suffix}")
+                }
+                if (rdepm != null) {
+                    //println("DEP: ${project.name}: ${rdepm}")
+                    if (isNative) {
+                        implementation rdepm
+                    } else {
+                        compile rdepm
+                    }
+                }
+            }
+        }
+
+        sourceSets {
+            if (isKotlin) {
+                main.kotlin.srcDirs += "src"
+                test.kotlin.srcDirs += "test"
+                if (!isNative) {
+                    main.resources.srcDirs += "resources"
+                    test.resources.srcDirs += "testresources"
+                }
+                if (!isCommon && !isNative) {
+                    // @TODO: @BUG: Hack. No common resources are copied
+                    main.resources.srcDirs += ['../common/resources']
+                    test.resources.srcDirs += ['../common/testresources']
+                }
+
+                if (isNative) {
+                    main {
+                        component {
+                            target nativeTargets
+                            if (libExecutables[projectNameWithoutSuffix]) {
+                                outputKinds = [EXECUTABLE]
+                            } else {
+                                outputKinds = [KLIBRARY]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isKotlin && !isNative) {
+            //kotlin.experimental.coroutines 'enable'
+        }
+
+        if (isJs) {
+            [compileKotlin2Js, compileTestKotlin2Js]*.configure {
+                kotlinOptions.moduleKind = "umd"
+                kotlinOptions.sourceMap = true
+            }
+        }
+    }
+
+    if (isJs) {
+        // https://github.com/JetBrains/kotlin-examples/tree/master/gradle/js-tests/mocha
+        // https://github.com/srs/gradle-node-plugin/blob/master/docs/node.md
+        apply plugin: 'com.moowork.node'
+
+        afterEvaluate {
+            task populateNodeModules(type: Copy, dependsOn: compileKotlin2Js) {
+                from compileKotlin2Js.destinationDir
+
+                configurations.testCompile.each {
+                    from zipTree(it.absolutePath).matching { include '*.js' }
+                }
+
+                into "${buildDir}/node_modules"
+            }
+
+            def resourcesFolder = compileTestKotlin2Js.outputFile.parentFile
+
+            task copyTestResources(type: Copy, dependsOn: [populateNodeModules, processResources, processTestResources, compileKotlin2Js, compileTestKotlin2Js]) {
+                // Copy kotlin.js and kotlin-meta.js from jar into web directory
+                configurations.compile.each { File file ->
+                    //println(file.absolutePath)
+                    from(zipTree(file.absolutePath)) {
+                        exclude "**/*.meta.js", "**/*.kjsm"
+                        include { fileTreeElement ->
+                            def path = fileTreeElement.path
+                            path.endsWith(".js") && (path.startsWith("META-INF/resources/") || !path.startsWith("META-INF/"))
+                        }
+                    }
+                }
+
+                from(new File("${buildDir}/resources/main")) {
+                    exclude "**/*.meta.js", "**/*.kjsm"
+                }
+
+                // Copy scripts to web directory
+                from(new File("${buildDir}/classes/main")) {
+                    exclude "**/*.meta.js", "**/*.kjsm"
+                }
+
+                from(new File("${buildDir}/classes/test")) {
+                    exclude "**/*.meta.js", "**/*.kjsm"
+                }
+
+                from(new File("${buildDir}/resources/test")) {
+                    exclude "**/*.meta.js", "**/*.kjsm"
+                }
+
+                includeEmptyDirs = false
+                into resourcesFolder
+            }
+
+            task runMocha(type: NodeTask, dependsOn: [compileTestKotlin2Js, populateNodeModules, copyTestResources, installMocha]) {
+                doFirst {
+                    def k2jsOutputFile = compileTestKotlin2Js.outputFile
+                    File file = (k2jsOutputFile instanceof File) ? k2jsOutputFile : new File("$k2jsOutputFile")
+                    if (file.exists()) {
+                        File fileOut = new File(file.absolutePath + ".fix.js")
+                        def timeout = 20000
+                        fileOut.text = file.text.replaceAll(/(?m)(?s)test\('(.*?)', (false|true), function \(\) \{\s*(.*?);\s*\}\);/) { c ->
+                            String name = c[1]
+                            String disabled = c[2]
+                            String body = c[3]
+                            def rbody = body.startsWith("return") ? body.substring(6) : body
+                            return 'test("' + name + '", ' + disabled + ', function() { this.timeout(' + timeout + '); return (' + rbody + '); });'
+                        }
+                    }
+                }
+                script = rootProject.file('node_modules/mocha/bin/mocha')
+                args = [new File(compileTestKotlin2Js.outputFile.absolutePath + ".fix.js"), "--reporter", "dot"]
+                execOverrides {
+                    //it.ignoreExitValue = true
+                    it.workingDir = resourcesFolder
+                    //it.standardOutput = new FileOutputStream('logs/my.log')
+                }
+            }
+
+            test.dependsOn runMocha
+        }
+    }
+}
+
+apply plugin: 'idea'
+
+idea {
+    module {
+        excludeDirs += [file('psplibdoc'), file('gradle'), file('kpspemu/js/web')]
+    }
+}

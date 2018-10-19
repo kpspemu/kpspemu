@@ -1,3 +1,0 @@
-dependencies {
-    compile "org.ow2.asm:asm:6.2.1"
-}

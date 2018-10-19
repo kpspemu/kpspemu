@@ -2,6 +2,7 @@
 /.gradle
 /build
 /out
+/node_modules
 /classes
 /web
 /ms0
@@ -10,4 +11,4 @@ memdump.bin
 *.iml
 .DS_Store
 ./kpspemu/jvm/generated.class
-
+package-lock.json
