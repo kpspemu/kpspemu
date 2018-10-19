@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu.cpu.dynarec
 
 import com.soywiz.dynarek2.*
-import com.soywiz.dynarek2.target.*
 import com.soywiz.kpspemu.cpu.*
 
 class DynarekMethodBuilder : BaseDynarecMethodBuilder() {

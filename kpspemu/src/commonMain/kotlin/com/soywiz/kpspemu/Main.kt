@@ -50,8 +50,11 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.math.*
 import kotlin.reflect.*
+import com.soywiz.kmem.umod
 
 fun main(args: Array<String>) = Main.main(args)
+
+fun main() = Main.main(arrayOf())
 
 object Main {
     @JvmStatic

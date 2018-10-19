@@ -16,6 +16,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.collections.set
 import kotlin.math.*
+import com.soywiz.kmem.umod
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
 //const val INSTRUCTIONS_PER_STEP = 1_000_000

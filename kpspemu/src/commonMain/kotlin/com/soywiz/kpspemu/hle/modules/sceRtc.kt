@@ -7,6 +7,7 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
+import com.soywiz.kmem.clamp
 
 @Suppress("UNUSED_PARAMETER")
 class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rtc.prx", "sceRTC_Service") {

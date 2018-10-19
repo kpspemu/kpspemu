@@ -1,4 +1,4 @@
-//package com.soywiz.kpspemu.native
+package com.soywiz.kpspemu.native
 
 import com.soywiz.kpspemu.*
 
