@@ -1,6 +1,7 @@
 package com.soywiz.kpspemu.cpu
 
 import com.soywiz.korge.util.*
+import com.soywiz.korio.util.NativeThreadLocal
 import com.soywiz.kpspemu.cpu.dynarec.*
 import com.soywiz.kpspemu.mem.*
 

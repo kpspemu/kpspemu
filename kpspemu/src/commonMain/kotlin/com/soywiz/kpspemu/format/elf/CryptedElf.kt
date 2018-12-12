@@ -54,7 +54,7 @@ object CryptedElf {
         val pti = GetTagInfo(tag) ?: invalidOp("Missing tag ${tag.hex}")
         if (pti.key.size <= 0x10) return -1
 
-        val firstZeroIndex = pti.key.data.indexOfFirst { it.toInt() != 0 }
+        val firstZeroIndex = pti.key.asByteArray().indexOfFirst { it.toInt() != 0 }
         val retsize = ((pbIn + 0xB0).p_u32())[0]
 
 
@@ -270,7 +270,7 @@ object CryptedElf {
     object Keys {
         @Suppress("ArrayInDataClass")
         data class TagInfo(val tag: Int, val skey: ByteArray, val code: Int, val type: Int = 0) {
-            val key = UByteArray(skey)
+            val key = UByteArrayInt(skey)
         }
 
         val g_TagInfo = listOf(

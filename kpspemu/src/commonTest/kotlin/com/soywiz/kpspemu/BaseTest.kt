@@ -4,6 +4,7 @@ import com.soywiz.korge.util.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
+import com.soywiz.korio.util.NativeThreadLocal
 
 open class BaseTest {
     fun pspSuspendTest(callback: suspend Resources.() -> Unit) {

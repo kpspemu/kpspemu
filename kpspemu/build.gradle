@@ -6,19 +6,6 @@ dependencies {
     commonMainApi project(":korau-atrac3plus")
 }
 
-dependencies {
-    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion"
-    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion"
-
-    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
-    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
-    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
-
-    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
-    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
-    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
-}
-
 def dump(obj) {
     obj.properties.each { println "$it.key : ${it.value.class.name}   ->   $it.value" }
 }

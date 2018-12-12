@@ -7,6 +7,7 @@ import com.soywiz.korge.util.*
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.NativeThreadLocal
 import com.soywiz.kpspemu.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap

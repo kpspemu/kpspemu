@@ -1,5 +1,7 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klock.TimeSpan
+import com.soywiz.klock.seconds
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
@@ -489,8 +491,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
         var verticesTriangles: Int = 0,
         var verticesSprites: Int = 0,
 
-        var cpuTime: Int = 0,
-        var renderTime: Int = 0
+        var cpuTime: TimeSpan = 0.seconds,
+        var renderTime: TimeSpan = 0.seconds
     ) {
         fun reset() {
             batches = 0

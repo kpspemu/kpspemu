@@ -1,0 +1,56 @@
+/*
+apply plugin: 'kotlin-platform-js'
+
+sourceSets {
+    main.kotlin.srcDirs += "src"
+    main.resources.srcDirs += "resources"
+    test.kotlin.srcDirs += "test"
+    test.resources.srcDirs += "testresources"
+}
+
+sourceSets {
+    main.resources.srcDirs += ['../common/resources']
+    test.resources.srcDirs += ['../common/testresources']
+}
+
+dependencies {
+    expectedBy project(":kpspemu-common")
+
+    compile "com.soywiz:dynarek-js:$korlibsVersion"
+    compile "com.soywiz:korau-atrac3plus-js:$korlibsVersion"
+    compile "com.soywiz:korge-js:$korlibsVersion"
+    compile "com.soywiz:krypto-js:$korlibsVersion"
+}
+*/
+
+// Cause problems with mocha (but required for browser)
+///*
+compileKotlin2Js {
+    kotlinOptions.outputFile = "${projectDir}/web/kpspemu.js"
+    kotlinOptions.sourceMap = false
+}
+//*/
+
+clean {
+    delete new File("${projectDir}/web")
+}
+
+compileKotlin2Js.doLast {
+    configurations.compile.each { File file ->
+        copy {
+            includeEmptyDirs = false
+
+            from zipTree(file.absolutePath)
+            into "${projectDir}/web"
+            include { fileTreeElement ->
+                def path = fileTreeElement.path
+                (path.endsWith(".js") || path.endsWith(".js.map")) && (path.startsWith("META-INF/resources/") || !path.startsWith("META-INF/"))
+            }
+        }
+    }
+
+    copy {
+        from sourceSets.main.resources.srcDirs
+        into "${projectDir}/web"
+    }
+}

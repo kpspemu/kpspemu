@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.cpu.assembler
 import com.soywiz.korge.util.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.NativeThreadLocal
 import com.soywiz.kpspemu.cpu.*
 import kotlin.collections.set
 

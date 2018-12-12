@@ -2,6 +2,7 @@ package com.soywiz.kpspemu.util
 
 import com.soywiz.klock.*
 
+/*
 fun Klock.currentTimeMicroInt(): Int {
     val millisDouble = currentTimeMillisDouble()
     //val millisInt = millisDouble.toInt()
@@ -16,3 +17,4 @@ fun Klock.currentTimeMicro() = millisecondsToMicroseconds(currentTimeMillis())
 fun Klock.millisecondsToMicroseconds(millis: Long) = millis * 1000L
 fun Klock.millisecondsToMicroseconds(millis: Double) = millis * 1000.0
 fun Klock.millisecondsToMicroseconds(millis: Int) = millis * 1000
+*/

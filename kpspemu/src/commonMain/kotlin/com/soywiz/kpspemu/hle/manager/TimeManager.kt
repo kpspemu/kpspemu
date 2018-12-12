@@ -6,12 +6,12 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.util.*
 
 class TimeManager(override val emulator: Emulator) : WithEmulator {
-    fun getTimeInMillisecondsDouble(): Double = Klock.currentTimeMillisDouble()
-    fun getTimeInMilliseconds(): Long = Klock.currentTimeMillis()
-    fun getTimeInMicroseconds(): Long = Klock.currentTimeMicro()
-    fun getTimeInMicrosecondsDouble(): Double = Klock.currentTimeMicroDouble()
-    fun getTimeInMicrosecondsInt(): Int = Klock.currentTimeMicroInt()
-    fun getTimeInSeconds(): Int = (Klock.currentTimeMillisDouble() / 1000.0).toInt()
+    fun getTimeInMillisecondsDouble(): Double = DateTime.nowUnix()
+    fun getTimeInMilliseconds(): Long = DateTime.nowUnix().toLong()
+    fun getTimeInMicroseconds(): Long = PerformanceCounter.microseconds.toLong()
+    fun getTimeInMicrosecondsDouble(): Double = PerformanceCounter.microseconds
+    fun getTimeInMicrosecondsInt(): Int = PerformanceCounter.microseconds.toInt()
+    fun getTimeInSeconds(): Int = (DateTime.nowUnix() / 1000.0).toInt()
     fun reset() {
     }
 }
@@ -30,7 +30,7 @@ data class ScePspDateTime(
     //val date: DateTime get() = DateTime.createAdjusted(year, month, day, hour, minute, second, microsecond / 1000)
     val date: DateTime get() = DateTime.createClamped(year, month, day, hour, minute, second, microsecond / 1000)
     val microAdjust: Int get() = (microsecond % 1000)
-    val tick: Long get() = EPOCH_TICKS + (date.unix * 1000L) + microAdjust
+    val tick: Long get() = EPOCH_TICKS + (date.unixMillisLong * 1000L) + microAdjust
 
     companion object : Struct<ScePspDateTime>(
         { ScePspDateTime(0L) },
@@ -45,8 +45,8 @@ data class ScePspDateTime(
         val EPOCH_TICKS = 62135596800000000L
         operator fun invoke(date: DateTime, microAdjust: Int = 0): ScePspDateTime {
             return ScePspDateTime(
-                date.year,
-                date.month,
+                date.yearInt,
+                date.month0,
                 date.dayOfMonth,
                 date.hours,
                 date.minutes,

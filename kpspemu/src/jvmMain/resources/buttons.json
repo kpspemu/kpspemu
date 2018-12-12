@@ -1,0 +1,167 @@
+{
+  "sprites": [
+    {
+      "rotated": "0",
+      "x": "454",
+      "margin": "4",
+      "y": "177",
+      "h": "123",
+      "w": "127",
+      "extruded": "0",
+      "name": "circle.png"
+    },
+    {
+      "rotated": "0",
+      "x": "454",
+      "margin": "4",
+      "y": "308",
+      "h": "124",
+      "w": "127",
+      "extruded": "0",
+      "name": "cross.png"
+    },
+    {
+      "rotated": "0",
+      "x": "762",
+      "margin": "4",
+      "y": "4",
+      "h": "126",
+      "w": "103",
+      "extruded": "0",
+      "name": "down.png"
+    },
+    {
+      "rotated": "0",
+      "x": "4",
+      "margin": "4",
+      "y": "249",
+      "h": "109",
+      "w": "197",
+      "extruded": "0",
+      "name": "home.png"
+    },
+    {
+      "rotated": "0",
+      "x": "627",
+      "margin": "4",
+      "y": "267",
+      "h": "104",
+      "w": "126",
+      "extruded": "0",
+      "name": "left.png"
+    },
+    {
+      "rotated": "0",
+      "x": "4",
+      "margin": "4",
+      "y": "366",
+      "h": "109",
+      "w": "197",
+      "extruded": "0",
+      "name": "load.png"
+    },
+    {
+      "rotated": "0",
+      "x": "627",
+      "margin": "4",
+      "y": "379",
+      "h": "104",
+      "w": "126",
+      "extruded": "0",
+      "name": "right.png"
+    },
+    {
+      "rotated": "0",
+      "x": "249",
+      "margin": "4",
+      "y": "4",
+      "h": "109",
+      "w": "197",
+      "extruded": "0",
+      "name": "select.png"
+    },
+    {
+      "rotated": "0",
+      "x": "627",
+      "margin": "4",
+      "y": "4",
+      "h": "123",
+      "w": "127",
+      "extruded": "0",
+      "name": "square.png"
+    },
+    {
+      "rotated": "0",
+      "x": "249",
+      "margin": "4",
+      "y": "121",
+      "h": "109",
+      "w": "197",
+      "extruded": "0",
+      "name": "start.png"
+    },
+    {
+      "rotated": "0",
+      "x": "4",
+      "margin": "4",
+      "y": "4",
+      "h": "237",
+      "w": "237",
+      "extruded": "0",
+      "name": "thumb_bg.png"
+    },
+    {
+      "rotated": "0",
+      "x": "454",
+      "margin": "4",
+      "y": "4",
+      "h": "165",
+      "w": "165",
+      "extruded": "0",
+      "name": "thumb.png"
+    },
+    {
+      "rotated": "0",
+      "x": "627",
+      "margin": "4",
+      "y": "135",
+      "h": "124",
+      "w": "127",
+      "extruded": "0",
+      "name": "triangle.png"
+    },
+    {
+      "rotated": "0",
+      "x": "249",
+      "margin": "4",
+      "y": "238",
+      "h": "110",
+      "w": "197",
+      "extruded": "0",
+      "name": "trigger_l.png"
+    },
+    {
+      "rotated": "0",
+      "x": "249",
+      "margin": "4",
+      "y": "356",
+      "h": "110",
+      "w": "197",
+      "extruded": "0",
+      "name": "trigger_r.png"
+    },
+    {
+      "rotated": "0",
+      "x": "762",
+      "margin": "4",
+      "y": "138",
+      "h": "126",
+      "w": "103",
+      "extruded": "0",
+      "name": "up.png"
+    }
+  ],
+  "width": 1024,
+  "file": "buttons.png",
+  "height": 512
+}

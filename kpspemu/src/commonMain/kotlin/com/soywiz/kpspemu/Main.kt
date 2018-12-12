@@ -233,7 +233,7 @@ class KpspemuMainScene(
             if (!paused || forceSteps > 0) {
                 if (forceSteps > 0) forceSteps--
                 if (running && emulator.running) {
-                    val startTime = Klock.currentTimeMillisDouble()
+                    val startTime = DateTime.now()
                     try {
                         emulator.threadManager.step()
                     } catch (e: Throwable) {
@@ -241,8 +241,8 @@ class KpspemuMainScene(
                         e.printStackTrace()
                         running = false
                     }
-                    val endTime = Klock.currentTimeMillisDouble()
-                    agRenderer.stats.cpuTime = (endTime - startTime).toInt()
+                    val endTime = DateTime.now()
+                    agRenderer.stats.cpuTime = (endTime - startTime)
                 } else {
                     if (!ended) {
                         ended = true
@@ -493,13 +493,13 @@ class KpspemuMainScene(
             override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 480, 272) }
             override fun renderInternal(ctx: RenderContext) {
                 val m = globalMatrix
-                val startTime = Klock.currentTimeMillisDouble()
+                val startTime = DateTime.now()
                 fpsCounter.tick(startTime)
                 //println("displayView.render.Thread: ${KorioNative.currentThreadId}")
                 agRenderer.render(views, ctx, m)
                 agRenderer.renderTexture(views, ctx, m)
-                val endTime = Klock.currentTimeMillisDouble()
-                agRenderer.stats.renderTime = (endTime - startTime).toInt()
+                val endTime = DateTime.now()
+                agRenderer.stats.renderTime = (endTime - startTime)
                 infoText.text = getInfoText()
                 agRenderer.stats.reset()
             }
@@ -640,8 +640,8 @@ class FpsCounter {
     var renderTimeOffset = 0
     var renderCount = 0
 
-    fun tick(time: Double) {
-        renderTimes[renderTimeOffset++ % MAX_SAMPLES] = time
+    fun tick(time: DateTime) {
+        renderTimes[renderTimeOffset++ % MAX_SAMPLES] = time.unixMillis
         if (renderCount < MAX_SAMPLES) renderCount++
     }
 

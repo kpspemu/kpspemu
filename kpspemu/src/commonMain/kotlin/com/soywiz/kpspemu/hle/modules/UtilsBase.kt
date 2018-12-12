@@ -27,7 +27,7 @@ open class UtilsBase(emulator: Emulator, name: String, flags: Int, prx: String, 
     // Time
     fun sceKernelLibcGettimeofday(timevalPtr: Ptr, timezonePtr: Ptr): Int {
         if (timevalPtr.isNotNull) {
-            val totalMicroseconds = Klock.currentTimeMicroDouble()
+            val totalMicroseconds = PerformanceCounter.microseconds
             val totalSeconds = totalMicroseconds / 1_000_000
             val microseconds = totalMicroseconds % 1_000_000
             timevalPtr.sw(0, totalSeconds.toInt())
