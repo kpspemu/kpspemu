@@ -1,7 +1,6 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.klock.TimeSpan
-import com.soywiz.klock.seconds
+import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
@@ -517,8 +516,8 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
             lines += "Triangles: $verticesTriangles ($batchesTriangles)"
             lines += "Sprites: $verticesSprites ($batchesSprites)"
             lines += ""
-            lines += "CpuTime: $cpuTime"
-            lines += "RenderTime: $renderTime"
+            lines += "CpuTime: ${cpuTime.milliseconds}"
+            lines += "RenderTime: ${renderTime.milliseconds}"
             return lines.joinToString("\n")
         }
 

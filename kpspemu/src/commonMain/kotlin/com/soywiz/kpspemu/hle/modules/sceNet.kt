@@ -4,6 +4,7 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceNet(emulator: Emulator) : SceModule(emulator, "sceNet", 0x00010011, "pspnet.prx", "sceNet_Library") {
     fun sceNetGetLocalEtherAddr(cpu: CpuState): Unit = UNIMPLEMENTED(0x0BF0A3AE)
     fun sceNetTerm(cpu: CpuState): Unit = UNIMPLEMENTED(0x281928A9)

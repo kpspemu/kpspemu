@@ -96,7 +96,7 @@ class sceAtrac3plus(emulator: Emulator) :
 
     fun sceAtracGetRemainFrame(atID: Int, remainFramePtr: Ptr32): Int {
         logger.error { "sceAtracGetRemainFrame Not implemented ($atID, $remainFramePtr)" }
-        val id = getAtrac(atID)
+        @Suppress("UNUSED_VARIABLE") val id = getAtrac(atID)
         remainFramePtr.set(-1)
         return 0
     }

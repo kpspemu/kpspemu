@@ -6,74 +6,44 @@ package com.soywiz.korau.format.atrac3plus
  * C to Java conversion by gid15 for the jpcsp project.
  * Java to Kotlin for kpspemu
  */
-object Atrac3plusData2 {
+internal object Atrac3plusData2 {
 	/** VLC tables for wordlen  */
 	internal val atrac3p_wl_huff_code1 = intArrayOf(0, 2, 3)
-
 	internal val atrac3p_wl_huff_bits1 = intArrayOf(1, 2, 2)
-
 	internal val atrac3p_wl_huff_xlat1 = intArrayOf(0, 1, 7)
-
 	internal val atrac3p_wl_huff_code2 = intArrayOf(0, 4, 5, 6, 7)
-
 	internal val atrac3p_wl_huff_bits2 = intArrayOf(1, 3, 3, 3, 3)
-
 	internal val atrac3p_wl_huff_xlat2 = intArrayOf(0, 1, 2, 6, 7)
-
 	internal val atrac3p_wl_huff_code3 = intArrayOf(0, 4, 0xC, 0x1E, 0x1F, 0xD, 0xE, 5)
-
 	internal val atrac3p_wl_huff_bits3 = intArrayOf(1, 3, 4, 5, 5, 4, 4, 3)
-
 	internal val atrac3p_wl_huff_code4 = intArrayOf(0, 4, 0xC, 0xD, 0x1E, 0x1F, 0xE, 5)
-
 	internal val atrac3p_wl_huff_bits4 = intArrayOf(1, 3, 4, 4, 5, 5, 4, 3)
 
 	/** VLC tables for scale factor indexes  */
 	internal val atrac3p_sf_huff_code1 = intArrayOf(0, 2, 3, 4, 5, 0xC, 0xD, 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0x1CE, 0x1CF, 0x1D0, 0x1D1, 0x1D2, 0x1D3, 0x1D4, 0x1D5, 0x1D6, 0x1D7, 0x1D8, 0x1D9, 0x1DA, 0x1DB, 0x1DC, 0x1DD, 0x1DE, 0x1DF, 0x1E0, 0x1E1, 0x1E2, 0x1E3, 0x1E4, 0x1E5, 0x1E6, 0x1E7, 0x1E8, 0x1E9, 0x1EA, 0x1EB, 0x1EC, 0x1ED, 0x1EE, 0x1EF, 0x1F0, 0x1F1, 0x1F2, 0x1F3, 0x1F4, 0x1F5, 0x1F6, 0x1F7, 0x1F8, 0x1F9, 0x1FA, 0x1FB, 0x1FC, 0x1FD, 0x1FE, 0x1FF)
-
 	internal val atrac3p_sf_huff_bits1 = intArrayOf(2, 3, 3, 3, 3, 4, 4, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9)
-
 	internal val atrac3p_sf_huff_xlat1 = intArrayOf(0, 1, 61, 62, 63, 2, 60, 3, 4, 5, 6, 57, 58, 59, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56)
-
 	internal val atrac3p_sf_huff_xlat2 = intArrayOf(0, 1, 2, 62, 63, 3, 61, 4, 5, 6, 57, 58, 59, 60, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56)
-
 	internal val atrac3p_sf_huff_code2 = intArrayOf(0, 4, 0x18, 0x19, 0x70, 0x1CA, 0x1CB, 0x1CC, 0x1CD, 0x1CE, 0x1CF, 0x1D0, 0x1D1, 0x1D2, 0x1D3, 0x1D4, 0x1D5, 0x1D6, 0x1D7, 0x1D8, 0x1D9, 0x1DA, 0x1DB, 0x1DC, 0x1DD, 0x1DE, 0x1DF, 0x1E0, 0x1E1, 0x1E2, 0x1E3, 0x1E4, 0x1E5, 0x1E6, 0x1E7, 0x1E8, 0x1E9, 0x1EA, 0x1EB, 0x1EC, 0x1ED, 0x1EE, 0x1EF, 0x1F0, 0x1F1, 0x1F2, 0x1F3, 0x1F4, 0x1F5, 0x1F6, 0x1F7, 0x1F8, 0x1F9, 0x1FA, 0x1FB, 0x1FC, 0x1FD, 0x1FE, 0x1FF, 0xE4, 0x71, 0x1A, 0x1B, 5)
-
 	internal val atrac3p_sf_huff_bits2 = intArrayOf(1, 3, 5, 5, 7, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8, 7, 5, 5, 3)
-
 	internal val atrac3p_sf_huff_code3 = intArrayOf(0, 2, 3, 0x18, 0x19, 0x70, 0x1CC, 0x1CD, 0x1CE, 0x1CF, 0x1D0, 0x1D1, 0x1D2, 0x1D3, 0x1D4, 0x1D5, 0x1D6, 0x1D7, 0x1D8, 0x1D9, 0x1DA, 0x1DB, 0x1DC, 0x1DD, 0x1DE, 0x1DF, 0x1E0, 0x1E1, 0x1E2, 0x1E3, 0x1E4, 0x1E5, 0x1E6, 0x1E7, 0x1E8, 0x1E9, 0x1EA, 0x1EB, 0x1EC, 0x1ED, 0x1EE, 0x1EF, 0x1F0, 0x1F1, 0x1F2, 0x1F3, 0x1F4, 0x1F5, 0x1F6, 0x1F7, 0x1F8, 0x1F9, 0x1FA, 0x1FB, 0x1FC, 0x1FD, 0x1FE, 0x1FF, 0x71, 0x72, 0x1A, 0x1B, 4, 5)
-
 	internal val atrac3p_sf_huff_bits3 = intArrayOf(2, 3, 3, 5, 5, 7, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7, 7, 5, 5, 3, 3)
-
 	internal val atrac3p_sf_huff_code4 = intArrayOf(0, 2, 3, 4, 5, 0xC, 0xD, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0, 0x3D, 0x3E, 0x3F)
-
 	internal val atrac3p_sf_huff_bits4 = intArrayOf(2, 3, 3, 3, 3, 4, 4, 6, 6, 6, 6, 6, 0, 6, 6, 6)
-
 	internal val atrac3p_sf_huff_xlat4 = intArrayOf(0, 1, 13, 14, 15, 2, 12, 3, 4, 5, 6, 7, 8, 9, 10, 11)
-
 	internal val atrac3p_sf_huff_xlat5 = intArrayOf(0, 1, 2, 14, 15, 3, 13, 4, 5, 6, 7, 9, 8, 10, 11, 12)
-
 	internal val atrac3p_sf_huff_code5 = intArrayOf(0, 4, 0xC, 0x1C, 0x78, 0x79, 0x7A, 0x7B, 0, 0x7C, 0x7D, 0x7E, 0x7F, 0x1D, 0xD, 5)
-
 	internal val atrac3p_sf_huff_bits5 = intArrayOf(1, 3, 4, 5, 7, 7, 7, 7, 0, 7, 7, 7, 7, 5, 4, 3)
-
 	internal val atrac3p_sf_huff_code6 = intArrayOf(0, 2, 3, 0xC, 0x1C, 0x3C, 0x7C, 0x7D, 0, 0x7E, 0x7F, 0x3D, 0x1D, 0xD, 4, 5)
-
 	internal val atrac3p_sf_huff_bits6 = intArrayOf(2, 3, 3, 4, 5, 6, 7, 7, 0, 7, 7, 6, 5, 4, 3, 3)
 
 	/** VLC tables for code table indexes  */
 	internal val atrac3p_ct_huff_code1 = intArrayOf(0, 2, 6, 7)
-
 	internal val atrac3p_ct_huff_bits1 = intArrayOf(1, 2, 3, 3)
-
 	internal val atrac3p_ct_huff_code2 = intArrayOf(0, 2, 3, 4, 5, 6, 0xE, 0xF)
-
 	internal val atrac3p_ct_huff_bits2 = intArrayOf(2, 3, 3, 3, 3, 3, 4, 4)
-
 	internal val atrac3p_ct_huff_xlat1 = intArrayOf(0, 1, 2, 3, 6, 7, 4, 5)
-
 	internal val atrac3p_ct_huff_code3 = intArrayOf(0, 4, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF)
-
 	internal val atrac3p_ct_huff_bits3 = intArrayOf(1, 3, 4, 4, 4, 4, 4, 4)
 
 	/* weights for quantized word lengths */

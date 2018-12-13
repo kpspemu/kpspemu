@@ -233,16 +233,15 @@ class KpspemuMainScene(
             if (!paused || forceSteps > 0) {
                 if (forceSteps > 0) forceSteps--
                 if (running && emulator.running) {
-                    val startTime = DateTime.now()
-                    try {
-                        emulator.threadManager.step()
-                    } catch (e: Throwable) {
-                        println("ERROR at cpuProcess")
-                        e.printStackTrace()
-                        running = false
+                    agRenderer.stats.cpuTime = measureTime {
+                        try {
+                            emulator.threadManager.step()
+                        } catch (e: Throwable) {
+                            println("ERROR at cpuProcess")
+                            e.printStackTrace()
+                            running = false
+                        }
                     }
-                    val endTime = DateTime.now()
-                    agRenderer.stats.cpuTime = (endTime - startTime)
                 } else {
                     if (!ended) {
                         ended = true
@@ -493,13 +492,12 @@ class KpspemuMainScene(
             override fun getLocalBoundsInternal(out: Rectangle): Unit = run { out.setTo(0, 0, 480, 272) }
             override fun renderInternal(ctx: RenderContext) {
                 val m = globalMatrix
-                val startTime = DateTime.now()
-                fpsCounter.tick(startTime)
-                //println("displayView.render.Thread: ${KorioNative.currentThreadId}")
-                agRenderer.render(views, ctx, m)
-                agRenderer.renderTexture(views, ctx, m)
-                val endTime = DateTime.now()
-                agRenderer.stats.renderTime = (endTime - startTime)
+                agRenderer.stats.renderTime = measureTime {
+                    fpsCounter.tick(DateTime.now())
+                    //println("displayView.render.Thread: ${KorioNative.currentThreadId}")
+                    agRenderer.render(views, ctx, m)
+                    agRenderer.renderTexture(views, ctx, m)
+                }
                 infoText.text = getInfoText()
                 agRenderer.stats.reset()
             }

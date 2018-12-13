@@ -4,6 +4,7 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceNetAdhoc(emulator: Emulator) :
     SceModule(emulator, "sceNetAdhoc", 0x00010011, "pspnet_adhoc.prx", "sceNetAdhoc_Library") {
     fun sceNetAdhocGameModeDeleteReplica(cpu: CpuState): Unit = UNIMPLEMENTED(0x0B2228E9)

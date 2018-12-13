@@ -8,6 +8,7 @@ import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceGe_user(emulator: Emulator) : SceModule(emulator, "sceGe_user", 0x40010011, "ge.prx", "sceGE_Manager") {
     fun sceGeEdramGetAddr(): Int = 0x04000000
 

@@ -4,6 +4,7 @@ import com.soywiz.dynarek2.*
 import com.soywiz.kmem.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.kpspemu.util.BitUtils
 import kotlin.math.*
 
 fun D2ContextPspEmu() = D2Context().apply { registerDyna() }
@@ -162,10 +163,10 @@ fun dyna_cvt_w_s(cpu: CpuState, FS: Float): Int {
 }
 
 private inline fun _cu(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
-    if (FS.isNaN() || FT.isNaN()) true else callback()
+        if (FS.isNaN() || FT.isNaN()) true else callback()
 
 private inline fun _co(FS: Float, FT: Float, callback: () -> Boolean): Boolean =
-    if (FS.isNaN() || FT.isNaN()) false else callback()
+        if (FS.isNaN() || FT.isNaN()) false else callback()
 
 fun dyna_c_f_s(FS: Float, FT: Float) = _co(FS, FT) { false }
 fun dyna_c_un_s(FS: Float, FT: Float) = _cu(FS, FT) { false }

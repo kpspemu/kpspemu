@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
 
+@Suppress("UNUSED_PARAMETER")
 class sceNetInet(emulator: Emulator) :
     SceModule(emulator, "sceNetInet", 0x00010011, "pspnet_inet.prx", "sceNetInet_Library") {
     fun sceNetInetSendto(cpu: CpuState): Unit = UNIMPLEMENTED(0x05038FC7)

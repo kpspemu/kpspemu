@@ -14,6 +14,7 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
+import com.soywiz.kpspemu.util.BitUtils
 
 class CpuInterpreter(
     var cpu: CpuState,

@@ -4,10 +4,10 @@ import com.soywiz.korau.format.atrac3plus.Atrac3plusDecoder.Companion.ATRAC3P_SU
 
 /** Sound channel parameters  */
 class Channel(var chNum: Int) {
-	var numCodedVals: Int = 0               ///< number of transmitted quant unit values
+	var numCodedVals: Int = 0     ///< number of transmitted quant unit values
 	var fillMode: Int = 0
 	var splitPoint: Int = 0
-	var tableType: Int = 0                  ///< table type: 0 - tone?, 1- noise?
+	var tableType: Int = 0        ///< table type: 0 - tone?, 1- noise?
 	var quWordlen = IntArray(32)  ///< array of word lengths for each quant unit
 	var quSfIdx = IntArray(32)    ///< array of scale factor indexes for each quant unit
 	var quTabIdx = IntArray(32)   ///< array of code table indexes for each quant unit

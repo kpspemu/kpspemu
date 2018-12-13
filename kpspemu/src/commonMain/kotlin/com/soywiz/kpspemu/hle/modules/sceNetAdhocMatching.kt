@@ -4,6 +4,7 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceNetAdhocMatching(emulator: Emulator) :
     SceModule(emulator, "sceNetAdhocMatching", 0x00010011, "pspnet_adhoc_matching.prx", "sceNetAdhocMatching_Library") {
     fun sceNetAdhocMatchingInit(cpu: CpuState): Unit = UNIMPLEMENTED(0x2A2A1E07)

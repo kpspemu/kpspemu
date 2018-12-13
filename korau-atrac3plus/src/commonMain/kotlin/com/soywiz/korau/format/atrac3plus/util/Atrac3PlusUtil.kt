@@ -71,7 +71,7 @@ object Atrac3PlusUtil {
 		info.inputFileDataOffset = 0
 
 		if (bufferSize < 12) {
-			log.error("Atrac buffer too small %d".format(bufferSize))
+			log.error { "Atrac buffer too small %d".format(bufferSize) }
 			return ERROR_ATRAC_INVALID_SIZE
 		}
 

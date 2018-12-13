@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.cpu.dis.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.manager.*
 
+@Suppress("UNUSED_PARAMETER")
 class LoadExecForUser(emulator: Emulator) :
     SceModule(emulator, "LoadExecForUser", 0x40010011, "loadexec_02g.prx", "sceLoadExec") {
     fun sceKernelExitGame(currentThread: PspThread): Unit {

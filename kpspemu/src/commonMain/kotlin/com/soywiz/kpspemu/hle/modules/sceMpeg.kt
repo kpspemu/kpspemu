@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
 
+@Suppress("UNUSED_PARAMETER")
 class sceMpeg(emulator: Emulator) : SceModule(emulator, "sceMpeg", 0x00010011, "mpeg_vsh.prx", "sceMpegVsh_library") {
     fun sceMpegInit(): Int {
         return -1 // @TODO: 0 when we implement the rest of the API

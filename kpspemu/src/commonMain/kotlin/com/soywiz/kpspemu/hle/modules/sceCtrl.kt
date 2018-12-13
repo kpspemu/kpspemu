@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceCtrl(emulator: Emulator) : SceModule(emulator, "sceCtrl", 0x40010011, "ctrl.prx", "sceController_Service") {
     private fun _sceCtrlPeekBuffer(sceCtrlDataPtr: Ptr, count: Int, positive: Boolean): Int {
         //console.log('sceCtrlPeekBufferPositive');

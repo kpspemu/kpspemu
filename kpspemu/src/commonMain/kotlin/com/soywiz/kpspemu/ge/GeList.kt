@@ -85,11 +85,9 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
             Op.TSYNC -> bb.tsync()
             Op.NOP -> {
                 //println("GE: NOP")
-                Unit
             }
             Op.DUMMY -> {
                 //println("GE: DUMMY")
-                Unit
             }
             Op.JUMP, Op.CALL -> {
                 if (op == Op.CALL) {
@@ -126,8 +124,8 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
         val vr = VertexReader()
         val ucount = max(p.extract8(0), 4) // X
         val vcount = max(p.extract8(8), 4) // Y
-        val divs = state.patch.divs // number of divisions X
-        val divt = state.patch.divt // number of divisions Y
+        @Suppress("UNUSED_VARIABLE") val divs = state.patch.divs // number of divisions X
+        @Suppress("UNUSED_VARIABLE") val divt = state.patch.divt // number of divisions Y
         val useTexture = vt.hasTexture || state.texture.enabled
         val generateUV = useTexture && !vt.hasTexture
 
@@ -204,18 +202,18 @@ class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by g
         bb.addIndices(vertexCount)
     }
 
-    private fun finish(p: Int) {
+    private fun finish(@Suppress("UNUSED_PARAMETER") p: Int) {
         //println("FINISH")
         callbackManager.queueFunction1(callback.finish_func, callback.finish_arg)
         bb.flush()
     }
 
-    private fun signal(p: Int) {
+    private fun signal(@Suppress("UNUSED_PARAMETER") p: Int) {
         //println("SIGNAL")
         callbackManager.queueFunction1(callback.signal_func, callback.signal_arg)
     }
 
-    fun sync(syncType: Int) {
+    fun sync(@Suppress("UNUSED_PARAMETER") syncType: Int) {
         //println("syncType:$syncType")
         run()
     }

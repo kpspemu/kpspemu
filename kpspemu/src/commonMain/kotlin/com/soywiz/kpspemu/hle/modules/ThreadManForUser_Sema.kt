@@ -10,6 +10,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
 
+@Suppress("UNUSED_PARAMETER")
 class ThreadManForUser_Sema(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     class PspSemaphore(
         manager: SemaphoreManager, id: Int, name: String

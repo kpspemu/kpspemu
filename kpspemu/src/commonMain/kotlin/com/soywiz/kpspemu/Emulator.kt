@@ -20,8 +20,8 @@ class Emulator(
     val mem: Memory = Memory(),
     var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) : AsyncDependency {
-    val INITIAL_INTERPRETED = false
-    //val INITIAL_INTERPRETED = true
+    //val INITIAL_INTERPRETED = false
+    val INITIAL_INTERPRETED = true
 
     var interpreted = INITIAL_INTERPRETED
 

@@ -5,6 +5,7 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceHprm(emulator: Emulator) :
     SceModule(emulator, "sceHprm", 0x40010011, "hpremote_02g.prx", "sceHP_Remote_Driver") {
     fun sceHprmPeekCurrentKey(ptr: Ptr): Int {

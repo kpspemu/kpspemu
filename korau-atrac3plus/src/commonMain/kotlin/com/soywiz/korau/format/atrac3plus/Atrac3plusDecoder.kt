@@ -17,29 +17,31 @@ import com.soywiz.korio.stream.SyncStream
 class Atrac3plusDecoder {
 	private var ctx: Context? = null
 
-	val numberOfSamples: Int
-		get() = ATRAC3P_FRAME_SAMPLES
+	val numberOfSamples: Int get() = ATRAC3P_FRAME_SAMPLES
 
+	@Suppress("UNUSED_PARAMETER")
 	fun init(bytesPerFrame: Int, channels: Int, outputChannels: Int, codingMode: Int): Int {
 		ctx = Context()
-		ctx!!.outputChannels = outputChannels
-		ctx!!.dsp = Atrac3plusDsp()
-		for (i in 0 until ctx!!.numChannelBlocks) {
-			ctx!!.channelUnits[i] = ChannelUnit()
-			ctx!!.channelUnits[i]!!.setDsp(ctx!!.dsp!!)
+
+		val ctx = ctx!!
+		ctx.outputChannels = outputChannels
+		ctx.dsp = Atrac3plusDsp()
+		for (i in 0 until ctx.numChannelBlocks) {
+			ctx.channelUnits[i] = ChannelUnit()
+			ctx.channelUnits[i]!!.setDsp(ctx.dsp!!)
 		}
 
 		// initialize IPQF
-		ctx!!.ipqfDctCtx = FFT()
-		ctx!!.ipqfDctCtx!!.mdctInit(5, true, 31.0 / 32768.9)
+		ctx.ipqfDctCtx = FFT()
+		ctx.ipqfDctCtx!!.mdctInit(5, true, 31.0 / 32768.9)
 
-		ctx!!.mdctCtx = FFT()
-		ctx!!.dsp!!.initImdct(ctx!!.mdctCtx!!)
+		ctx.mdctCtx = FFT()
+		ctx.dsp!!.initImdct(ctx.mdctCtx!!)
 
 		Atrac3plusDsp.initWaveSynth()
 
-		ctx!!.gaincCtx = Atrac()
-		ctx!!.gaincCtx!!.initGainCompensation(6, 2)
+		ctx.gaincCtx = Atrac()
+		ctx.gaincCtx!!.initGainCompensation(6, 2)
 
 		return 0
 	}

@@ -31,13 +31,13 @@ class Atrac3plusDsp {
 	}
 
 	fun powerCompensation(ctx: ChannelUnitContext, chIndex: Int, sp: FloatArray, rngIndex: Int, sb: Int) {
-		var rngIndex = rngIndex
+		var rngIdx = rngIndex
 		val pwcsp = FloatArray(ATRAC3P_SUBBAND_SAMPLES)
 		var gcv = 0
 		val swapCh = if (ctx.unitType == CH_UNIT_STEREO && ctx.swapChannels[sb]) 1 else 0
 
-		val channel1 = ctx.channels[chIndex xor swapCh]!!
-		if (channel1!!.powerLevs[subband_to_powgrp[sb]] == ATRAC3P_POWER_COMP_OFF) {
+		val channel1 = ctx.channels[chIndex xor swapCh]
+		if (channel1.powerLevs[subband_to_powgrp[sb]] == ATRAC3P_POWER_COMP_OFF) {
 			return
 		}
 
@@ -45,9 +45,9 @@ class Atrac3plusDsp {
 		run {
 			var i = 0
 			while (i < ATRAC3P_SUBBAND_SAMPLES) {
-				pwcsp[i] = noise_tab[rngIndex and 0x3FF]
+				pwcsp[i] = noise_tab[rngIdx and 0x3FF]
 				i++
-				rngIndex++
+				rngIdx++
 			}
 		}
 
@@ -69,7 +69,7 @@ class Atrac3plusDsp {
 
 		// skip the lowest two quant units (frequencies 0...351 Hz) for subband 0
 		for (qu in subband_to_qu[sb] + (if (sb == 0) 2 else 0) until subband_to_qu[sb + 1]) {
-			val channel = ctx.channels[chIndex]!!
+			val channel = ctx.channels[chIndex]
 			if (channel.quWordlen[qu] <= 0) {
 				continue
 			}
@@ -120,12 +120,12 @@ class Atrac3plusDsp {
 	/**
 	 * Synthesize sine waves according to given parameters.
 	 *
-	 * @param[in]    synthParam   common synthesis parameters
-	 * @param[in]    wavesInfo    parameters for each sine wave
-	 * @param[in]    envelope     envelope data for all waves in a group
-	 * @param[in]    phaseShift   flag indicates 180 degrees phase shift
-	 * @param[in]    regOffset    region offset for trimming envelope data
-	 * @param[out]   out          receives synthesized data
+	 * @param{in}    synthParam   common synthesis parameters
+	 * @param{in}    wavesInfo    parameters for each sine wave
+	 * @param{in}    envelope     envelope data for all waves in a group
+	 * @param{in}    phaseShift   flag indicates 180 degrees phase shift
+	 * @param{in}    regOffset    region offset for trimming envelope data
+	 * @param{out}   out          receives synthesized data
 	 */
 	private fun wavesSynth(synthParams: WaveSynthParams, wavesInfo: WavesData, envelope: WaveEnvelope, phaseShift: Boolean, regOffset: Int, out: FloatArray) {
 		var waveParam = wavesInfo.startIndex
@@ -133,7 +133,7 @@ class Atrac3plusDsp {
 		var wn = 0
 		while (wn < wavesInfo.numWavs) {
 			// amplitude dequantization
-			val waveParam1 = synthParams.waves[waveParam]!!
+			val waveParam1 = synthParams.waves[waveParam]
 			val amp = (amp_sf_tab[waveParam1.ampSf] * if (synthParams.amplitudeMode == 0) (waveParam1.ampIndex + 1) / 15.13f else 1.0f).toDouble()
 
 			val inc = waveParam1.freqIndex
@@ -158,7 +158,7 @@ class Atrac3plusDsp {
 		// fade in with steep Hann window if requested
 		if (envelope.hasStartPoint) {
 			val pos = (envelope.startPos shl 2) - regOffset
-			if (pos > 0 && pos <= 128) {
+			if (pos in 1..128) {
 				out.fill(0f, 0, pos)
 				if (!envelope.hasStopPoint || envelope.startPos != envelope.stopPos) {
 					out[pos + 0] *= hann_window[0]
@@ -172,7 +172,7 @@ class Atrac3plusDsp {
 		// fade out with steep Hann window if requested
 		if (envelope.hasStopPoint) {
 			val pos = (envelope.stopPos + 1 shl 2) - regOffset
-			if (pos > 0 && pos <= 128) {
+			if (pos in 1..128) {
 				out[pos - 4] *= hann_window[96]
 				out[pos - 3] *= hann_window[64]
 				out[pos - 2] *= hann_window[32]
@@ -185,7 +185,7 @@ class Atrac3plusDsp {
 	fun generateTones(ctx: ChannelUnitContext, chNum: Int, sb: Int, out: FloatArray, outOffset: Int) {
 		val wavreg1 = FloatArray(128)
 		val wavreg2 = FloatArray(128)
-		val channel = ctx.channels[chNum]!!
+		val channel = ctx.channels[chNum]
 		val tonesNow = channel.tonesInfoPrev[sb]
 		val tonesNext = channel.tonesInfo[sb]
 
@@ -214,8 +214,8 @@ class Atrac3plusDsp {
 		}
 
 		// is the visible part of the envelope non-zero?
-		val reg1EnvNonzero = if (tonesNow.currEnv.stopPos < 32) false else true
-		val reg2EnvNonzero = if (tonesNext.currEnv.startPos >= 32) false else true
+		val reg1EnvNonzero = tonesNow.currEnv.stopPos >= 32
+		val reg2EnvNonzero = tonesNext.currEnv.startPos < 32
 
 		// synthesize waves for both overlapping regions
 		if (tonesNow.numWavs > 0 && reg1EnvNonzero) {
@@ -293,7 +293,7 @@ class Atrac3plusDsp {
 		/**
 		 * Map quant unit number to its position in the spectrum.
 		 * To get the number of spectral lines in each quant unit do the following:
-		 * num_specs = qu_to_spec_pos[i+1] - qu_to_spec_pos[i]
+		 * num_specs = qu_to_spec_pos[i+1] - qu_to_spec_pos[i+0]
 		 */
 		val ff_atrac3p_qu_to_spec_pos = intArrayOf(0, 16, 32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, 288, 320, 352, 384, 448, 512, 576, 640, 704, 768, 896, 1024, 1152, 1280, 1408, 1536, 1664, 1792, 1920, 2048)
 
@@ -326,9 +326,7 @@ class Atrac3plusDsp {
 		// Second half of the 384-tap IPQF filtering coefficients.
 		internal val ipqf_coeffs2 = arrayOf(floatArrayOf(5.22682e-7f, 9.171448e-7f, 0.0000010897784f, 2.3649704e-7f, -2.7792686e-7f, -5.2588763e-7f, -4.6299544e-7f, 0.000010840992f, -0.000012203576f, -0.000021961965f, -0.000021348773f, -0.000019907106f, -0.000017348082f, -0.000011984052f, -0.0000072701259f, -0.0000062990207f), floatArrayOf(0.0000099198869f, 0.000013131184f, 0.000014789486f, 0.000019841305f, 0.000026534748f, 0.000033864744f, 0.000041577889f, 0.000049787737f, -0.000029687517f, -0.000036340745f, -0.000039477309f, -0.000042927582f, -0.000047133824f, -0.000054267788f, -0.00006174868f, -0.000064147389f), floatArrayOf(0.00011279432f, 0.00014691355f, 0.00018116167f, 0.0002197204f, 0.00025986304f, 0.00030001783f, 0.0003392619f, 0.00036942671f, -0.00042499689f, -0.00045358928f, -0.00048466062f, -0.00051135791f, -0.00053276919f, -0.00054783461f, -0.00055472925f, -0.00055432378f), floatArrayOf(0.00097943726f, 0.001125814f, 0.0012685474f, 0.0014046903f, 0.0015320742f, 0.0016481078f, 0.0017501717f, 0.00183808f, -0.0018990048f, -0.0019450618f, -0.0019653172f, -0.0019593791f, -0.0019252141f, -0.0018608454f, -0.0017651899f, -0.0016376863f), floatArrayOf(0.0042418269f, 0.0045959447f, 0.0049146507f, 0.0051914565f, 0.0054194843f, 0.0055920109f, 0.0057025906f, 0.0057445862f, -0.005714261f, -0.0056034233f, -0.0054091476f, -0.0051268316f, -0.0047529764f, -0.0042847847f, -0.0037203205f, -0.0030586775f), floatArrayOf(0.019670162f, 0.021246184f, 0.022781773f, 0.024265358f, 0.025685543f, 0.027031265f, 0.028291954f, 0.02945766f, -0.030518902f, -0.031467363f, -0.032295227f, -0.032995768f, -0.033563249f, -0.033992987f, -0.034281436f, -0.034426283f), floatArrayOf(-0.018065533f, -0.016444042f, -0.014817309f, -0.013196872f, -0.011593862f, -0.010018963f, -0.0084823566f, -0.0069935122f, 0.0055614738f, 0.0041943151f, 0.0028992873f, 0.001682895f, 0.00055068987f, -0.00049266568f, -0.001443546f, -0.0022995141f), floatArrayOf(-0.0038591374f, -0.0034549395f, -0.0030352892f, -0.0026067684f, -0.0021754825f, -0.0017469483f, -0.001326357f, -0.00091862219f, 0.00052769453f, 0.00015771533f, -0.00018855913f, -0.00050782406f, -0.00079780724f, -0.0010566821f, -0.001283227f, -0.0014771431f), floatArrayOf(-0.00083093712f, -0.00068422867f, -0.00053928449f, -0.00039945057f, -0.00026649953f, -0.00014135583f, -0.000025081157f, 0.000084307925f, -0.00018248901f, -0.00026866337f, -0.00034301577f, -0.00040612387f, -0.00045778f, -0.00049731287f, -0.00052537228f, -0.00054488552f), floatArrayOf(-0.00008079566f, -0.000053397067f, -0.00002610587f, -0.0000016657353f, 0.000018532943f, 0.000035615325f, 0.000049888811f, 0.000056296329f, -0.000058270442f, -0.000062285151f, -0.000070208509f, -0.000074850752f, -0.00007612785f, -0.000073081472f, -0.000068306952f, -0.000064464548f), floatArrayOf(-0.000048585582f, -0.000046043948f, -0.000045337845f, -0.000041575615f, -0.000036968919f, -0.000032302323f, -0.00002780562f, -0.000023530851f, 0.0000018111954f, -5.7168614e-7f, -0.0000015432918f, -0.0000026336629f, -0.0000041712024f, -0.0000079212787f, -0.000010502935f, -0.0000091622824f), floatArrayOf(-0.0000070302972f, -0.0000063894258f, -0.0000046192422f, -0.0000032569742f, -0.0000023108685f, -0.0000014333754f, -6.005389e-7f, 0.000011838618f, 0.000010516783f, 1.2660377e-8f, 3.530856e-8f, 3.226247e-8f, -4.4400572e-8f, -4.2005411e-7f, -8.0604229e-7f, -5.8336207e-7f))
 
-		private fun DEQUANT_PHASE(ph: Int): Int {
-			return ph and 0x1F shl 6
-		}
+		private fun DEQUANT_PHASE(ph: Int): Int = ph and 0x1F shl 6
 
 		fun initWaveSynth() {
 			// generate sine wave table

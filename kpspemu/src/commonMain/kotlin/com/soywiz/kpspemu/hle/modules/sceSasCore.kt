@@ -500,10 +500,10 @@ class sceSasCore(emulator: Emulator) : SceModule(emulator, "sceSasCore", 0x40010
     }
 
     fun getSimpleExponentRate(n: Int): Int {
-        var n = n
-        n = n and 0x7F
-        if (n == 0x7F) return 0
-        val rate = (7 - (n and 0x3) shl 24).ushr(n shr 2)
+        var nn = n
+        nn = nn and 0x7F
+        if (nn == 0x7F) return 0
+        val rate = (7 - (nn and 0x3) shl 24).ushr(nn shr 2)
         return if (rate == 0) 1 else rate
     }
 

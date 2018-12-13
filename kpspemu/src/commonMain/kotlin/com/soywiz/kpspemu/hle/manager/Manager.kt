@@ -37,7 +37,7 @@ open class Resource(
     override val emulator get() = manager.emulator
 
     init {
-        (manager.resourcesById as LinkedHashMap<Int, Resource>).set(id, this)
+        (manager.resourcesById as LinkedHashMap<Int, Resource>)[id] = this
     }
 
     fun free() {

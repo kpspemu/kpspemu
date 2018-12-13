@@ -9,6 +9,7 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
 import kotlin.math.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
     object AudioFormat {
         const val STEREO = 0x00

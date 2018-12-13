@@ -4,6 +4,7 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceNetAdhocctl(emulator: Emulator) :
     SceModule(emulator, "sceNetAdhocctl", 0x00010011, "pspnet_adhocctl.prx", "sceNetAdhocctl_Library") {
     fun sceNetAdhocctlScan(cpu: CpuState): Unit = UNIMPLEMENTED(0x08FFF7A0)

@@ -10,14 +10,17 @@ class CallbackManager(emulator: Emulator) : Manager<PspCallback>("Callback", emu
         super.reset()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun queueFunction1(funcPC: Int, arg1: Int) {
         // @TODO: Implement this!
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun queueCallback(callback: PspCallback, arg2: Int) {
         // @TODO: Implement this!
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun cancelCallback(callback: PspCallback) {
         // @TODO: Implement this!
     }

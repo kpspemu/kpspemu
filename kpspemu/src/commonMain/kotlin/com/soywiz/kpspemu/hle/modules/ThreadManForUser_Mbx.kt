@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
+@Suppress("UNUSED_PARAMETER")
 class ThreadManForUser_Mbx(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     fun sceKernelPollMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0x0D81716A)
     fun sceKernelReceiveMbx(cpu: CpuState): Unit = UNIMPLEMENTED(0x18260574)

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.hle.modules
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 
+@Suppress("UNUSED_PARAMETER")
 class ThreadManForUser_Mutex(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     fun sceKernelTryLockMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0x0DDCD2C9)
     fun sceKernelCreateLwMutex(cpu: CpuState): Unit = UNIMPLEMENTED(0x19CFF145)

@@ -11,6 +11,7 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
+@Suppress("UNUSED_PARAMETER")
 class ThreadManForUser_Vpl(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     companion object {
         const val PSP_VPL_ATTR_FIFO = 0x0000

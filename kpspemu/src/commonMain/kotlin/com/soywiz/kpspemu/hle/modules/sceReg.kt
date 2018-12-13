@@ -6,6 +6,7 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
+@Suppress("UNUSED_PARAMETER")
 class sceReg(emulator: Emulator) : SceModule(emulator, "sceReg", 0x40010011, "registry.prx", "sceRegistry_Service") {
     fun sceRegOpenRegistry(regParamPtr: Ptr, mode: Int, regHandlePtr: Ptr): Int {
         val param = regParamPtr.read(RegParam)

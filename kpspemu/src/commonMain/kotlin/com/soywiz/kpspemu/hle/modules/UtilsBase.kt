@@ -8,6 +8,7 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
+@Suppress("UNUSED_PARAMETER")
 open class UtilsBase(emulator: Emulator, name: String, flags: Int, prx: String, prxName: String) :
     SceModule(emulator, name, flags, prx, prxName) {
     val random = MtRand(0)

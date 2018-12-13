@@ -16,7 +16,7 @@ def dump(obj) {
 
 def mainClassName = "com.soywiz.kpspemu.MainKt"
 
-task run(type: JavaExec, dependsOn: [jvmMainClasses], group: 'application', description: 'Run the application on the JVM') {
+task runJvm(type: JavaExec, dependsOn: [jvmMainClasses], group: 'application', description: 'Run the application on the JVM') {
     main = mainClassName
     classpath { [
             kotlin.targets.jvm.compilations.main.output.allOutputs.files,

@@ -7,6 +7,7 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
+@Suppress("UNUSED_PARAMETER")
 class ThreadManForUser_EventFlags(val tmodule: ThreadManForUser) : SceSubmodule<ThreadManForUser>(tmodule) {
     val eventFlags = ResourceList("EventFlag") { PspEventFlag(it) }
 

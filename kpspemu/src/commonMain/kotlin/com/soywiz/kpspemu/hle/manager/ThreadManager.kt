@@ -347,7 +347,7 @@ class PspThread internal constructor(
         delete()
     }
 
-    fun step(now: Double, trace: Boolean = tracing): Int {
+    fun step(@Suppress("UNUSED_PARAMETER") now: Double, trace: Boolean = tracing): Int {
         //if (name == "update_thread") {
         //	println("Ignoring: Thread.${this.name}")
         //	stop("ignoring")

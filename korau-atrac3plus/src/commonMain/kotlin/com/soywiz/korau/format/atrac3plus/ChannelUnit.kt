@@ -73,7 +73,7 @@ class ChannelUnit {
 
 		ctx.numQuantUnits = br.read(5) + 1
 		if (ctx.numQuantUnits > 28 && ctx.numQuantUnits < 32) {
-			log.error("Invalid number of quantization units: %d".format(ctx.numQuantUnits))
+			log.error { "Invalid number of quantization units: %d".format(ctx.numQuantUnits) }
 			return AT3P_ERROR
 		}
 
@@ -181,8 +181,8 @@ class ChannelUnit {
 	/**
 	 * Add weighting coefficients to the decoded word-length information.
 	 *
-	 * @param[in,out] chan          ptr to the channel parameters
-	 * @param[in]     wtab_idx      index of the table of weights
+	 * @param{in,out} chan          ptr to the channel parameters
+	 * @param{in}     wtab_idx      index of the table of weights
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun addWordlenWeights(chan: Channel, weightIdx: Int): Int {
@@ -202,7 +202,7 @@ class ChannelUnit {
 	/**
 	 * Decode word length for each quantization unit of a channel.
 	 *
-	 * @param[in]     chNum        channel to process
+	 * @param{in}     chNum        channel to process
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun decodeChannelWordlen(chNum: Int): Int {
@@ -266,7 +266,7 @@ class ChannelUnit {
 				}
 
 				if (chNum > 0 && chan.numCodedVals > 0) {
-					val vlcTab = wl_vlc_tabs[br.read(2)]!!
+					val vlcTab = wl_vlc_tabs[br.read(2)]
 					var delta = vlcTab.getVLC2(br)
 					chan.quWordlen[0] = refChan.quWordlen[0] + delta and 7
 
@@ -277,7 +277,7 @@ class ChannelUnit {
 					}
 				} else if (chan.numCodedVals > 0) {
 					val flag = br.readBool()
-					val vlcTab = wl_vlc_tabs[br.read(1)]!!
+					val vlcTab = wl_vlc_tabs[br.read(1)]
 
 					val startVal = br.read(3)
 					unpackVqShape(startVal, atrac3p_wl_shapes[startVal][br.read(4)], chan.quWordlen, chan.numCodedVals)
@@ -312,7 +312,7 @@ class ChannelUnit {
 				}
 
 				if (chan.numCodedVals > 0) {
-					val vlcTab = wl_vlc_tabs[br.read(2)]!!
+					val vlcTab = wl_vlc_tabs[br.read(2)]
 
 					// first coefficient is coded directly
 					chan.quWordlen[0] = br.read(3)
@@ -345,8 +345,8 @@ class ChannelUnit {
 	/**
 	 * Subtract weighting coefficients from decoded scalefactors.
 	 *
-	 * @param[in,out] chan          ptr to the channel parameters
-	 * @param[in]     wtab_idx      index of table of weights
+	 * @param{in,out} chan          ptr to the channel parameters
+	 * @param{in}     wtab_idx      index of table of weights
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun substractSfWeights(chan: Channel, wtabIdx: Int): Int {
@@ -366,7 +366,7 @@ class ChannelUnit {
 	/**
 	 * Decode scale factor indexes for each quant unit of a channel.
 	 *
-	 * @param[in]     chNum        channel to process
+	 * @param{in}     chNum        channel to process
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun decodeChannelSfIdx(chNum: Int): Int {
@@ -383,7 +383,7 @@ class ChannelUnit {
 				chan.quSfIdx[i] = br.read(6)
 			}
 			1 -> if (chNum > 0) {
-				val vlcTab = sf_vlc_tabs[br.read(2)]!!
+				val vlcTab = sf_vlc_tabs[br.read(2)]
 
 				for (i in 0 until ctx.usedQuantUnits) {
 					val delta = vlcTab.getVLC2(br)
@@ -411,7 +411,7 @@ class ChannelUnit {
 					val deltaBits = br.read(3)
 					val minVal = br.read(6)
 					if (numLongVals > ctx.usedQuantUnits || deltaBits == 7) {
-						log.error("SF mode 1: invalid parameters".format())
+						log.error { "SF mode 1: invalid parameters".format() }
 						return AT3P_ERROR
 					}
 
@@ -427,7 +427,7 @@ class ChannelUnit {
 				}
 			}
 			2 -> if (chNum > 0) {
-				val vlcTab = sf_vlc_tabs[br.read(2)]!!
+				val vlcTab = sf_vlc_tabs[br.read(2)]
 
 				var delta = vlcTab.getVLC2(br)
 				chan.quSfIdx[0] = refChan.quSfIdx[0] + delta and 0x3F
@@ -443,7 +443,7 @@ class ChannelUnit {
 				unpackSfVqShape(chan.quSfIdx, ctx.usedQuantUnits)
 
 				for (i in 0 until ctx.usedQuantUnits) {
-					val delta = vlcTab!!.getVLC2(br)
+					val delta = vlcTab.getVLC2(br)
 					chan.quSfIdx[i] = chan.quSfIdx[i] + delta.signExtend(4) and 0x3F
 				}
 			}
@@ -455,10 +455,10 @@ class ChannelUnit {
 			} else {
 				weightIdx = br.read(2)
 				val vlcSel = br.read(2)
-				var vlcTab = sf_vlc_tabs[vlcSel]!!
+				var vlcTab = sf_vlc_tabs[vlcSel]
 
 				if (weightIdx == 3) {
-					vlcTab = sf_vlc_tabs[vlcSel + 4]!!
+					vlcTab = sf_vlc_tabs[vlcSel + 4]
 
 					unpackSfVqShape(chan.quSfIdx, ctx.usedQuantUnits)
 
@@ -538,7 +538,7 @@ class ChannelUnit {
 	/**
 	 * Decode code table indexes for each quant unit of a channel.
 	 *
-	 * @param[in]     chNum        channel to process
+	 * @param{in}     chNum        channel to process
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun decodeChannelCodeTab(chNum: Int): Int {
@@ -570,7 +570,7 @@ class ChannelUnit {
 			}
 			1 // entropy-coded
 			-> {
-				vlcTab = if (ctx.useFullTable) ct_vlc_tabs[1]!! else ct_vlc_tabs[0]!!
+				vlcTab = if (ctx.useFullTable) ct_vlc_tabs[1] else ct_vlc_tabs[0]
 				numVals = numCtValues
 				if (numVals < 0) {
 					return numVals
@@ -588,11 +588,11 @@ class ChannelUnit {
 			-> {
 				val deltaVlc: VLC
 				if (ctx.useFullTable) {
-					vlcTab = ct_vlc_tabs[1]!!
-					deltaVlc = ct_vlc_tabs[2]!!
+					vlcTab = ct_vlc_tabs[1]
+					deltaVlc = ct_vlc_tabs[2]
 				} else {
-					vlcTab = ct_vlc_tabs[0]!!
-					deltaVlc = ct_vlc_tabs[0]!!
+					vlcTab = ct_vlc_tabs[0]
+					deltaVlc = ct_vlc_tabs[0]
 				}
 				var pred = 0
 				numVals = numCtValues
@@ -813,7 +813,7 @@ class ChannelUnit {
 	/**
 	 * Implements coding mode 1 (master) for gain compensation levels.
 	 *
-	 * @param[out]    dst    ptr to the output array
+	 * @param{out}    dst    ptr to the output array
 	 */
 	private fun gaincLevelMode1m(dst: AtracGainInfo) {
 		if (dst.numPoints > 0) {
@@ -829,8 +829,8 @@ class ChannelUnit {
 	/**
 	 * Implements coding mode 3 (slave) for gain compensation levels.
 	 *
-	 * @param[out]   dst   ptr to the output array
-	 * @param[in]    ref   ptr to the reference channel
+	 * @param{out}   dst   ptr to the output array
+	 * @param{in}    ref   ptr to the reference channel
 	 */
 	private fun gaincLevelMode3s(dst: AtracGainInfo, ref: AtracGainInfo) {
 		for (i in 0 until dst.numPoints) {
@@ -841,8 +841,8 @@ class ChannelUnit {
 	/**
 	 * Decode level code for each gain control point.
 	 *
-	 * @param[in]     ch_num          channel to process
-	 * @param[in]     coded_subbands  number of subbands to process
+	 * @param{in}     ch_num          channel to process
+	 * @param{in}     coded_subbands  number of subbands to process
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun decodeGaincLevels(chNum: Int, codedSubbands: Int): Int {
@@ -918,8 +918,8 @@ class ChannelUnit {
 	/**
 	 * Implements coding mode 0 for gain compensation locations.
 	 *
-	 * @param[out]    dst    ptr to the output array
-	 * @param[in]     pos    position of the value to be processed
+	 * @param{out}    dst    ptr to the output array
+	 * @param{in}     pos    position of the value to be processed
 	 */
 	private fun gaincLocMode0(dst: AtracGainInfo, pos: Int) {
 		if (pos == 0 || dst.locCode[pos - 1] < 15) {
@@ -935,7 +935,7 @@ class ChannelUnit {
 	/**
 	 * Implements coding mode 1 for gain compensation locations.
 	 *
-	 * @param[out]    dst    ptr to the output array
+	 * @param{out}    dst    ptr to the output array
 	 */
 	private fun gaincLocMode1(dst: AtracGainInfo) {
 		if (dst.numPoints > 0) {
@@ -954,8 +954,8 @@ class ChannelUnit {
 	/**
 	 * Decode location code for each gain control point.
 	 *
-	 * @param[in]     chNum          channel to process
-	 * @param[in]     codedSubbands  number of subbands to process
+	 * @param{in}     chNum          channel to process
+	 * @param{in}     codedSubbands  number of subbands to process
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
 	private fun decodeGaincLocCodes(chNum: Int, codedSubbands: Int): Int {
@@ -999,7 +999,7 @@ class ChannelUnit {
 								}
 							}
 						} else { // descending curve
-							val tab = if (moreThanRef) gain_vlc_tabs[7]!! else gain_vlc_tabs[10]!!
+							val tab = if (moreThanRef) gain_vlc_tabs[7] else gain_vlc_tabs[10]
 							delta = tab.getVLC2(br)
 							if (moreThanRef) {
 								dst.locCode[i] = dst.locCode[i - 1] + delta
@@ -1051,7 +1051,7 @@ class ChannelUnit {
 						val moreThanRef = i >= chan.gainData[sb - 1].numPoints
 						// Select VLC table according to curve direction and
 						// presence of prediction
-						val tab = gain_vlc_tabs[(if (dst.levCode[i] > dst.levCode[i - 1]) 2 else 0) + (if (moreThanRef) 1 else 0) + 6]!!
+						val tab = gain_vlc_tabs[(if (dst.levCode[i] > dst.levCode[i - 1]) 2 else 0) + (if (moreThanRef) 1 else 0) + 6]
 						delta = tab.getVLC2(br)
 						if (moreThanRef) {
 							dst.locCode[i] = dst.locCode[i - 1] + delta
@@ -1088,7 +1088,7 @@ class ChannelUnit {
 			val dst = chan.gainData[sb]
 			for (i in 0 until chan.gainData[sb].numPoints) {
 				if (dst.locCode[i] < 0 || dst.locCode[i] > 31 || i > 0 && dst.locCode[i] <= dst.locCode[i - 1]) {
-					log.error("Invalid gain location: ch=%d, sb=%d, pos=%d, val=%d".format(chNum, sb, i, dst.locCode[i]))
+					log.error { "Invalid gain location: ch=%d, sb=%d, pos=%d, val=%d".format(chNum, sb, i, dst.locCode[i]) }
 					return AT3P_ERROR
 				}
 			}
@@ -1147,8 +1147,8 @@ class ChannelUnit {
 	/**
 	 * Decode envelope for all tones of a channel.
 	 *
-	 * @param[in]     chNum           channel to process
-	 * @param[in]     bandHasTones    ptr to an array of per-band-flags:
+	 * @param{in}     chNum           channel to process
+	 * @param{in}     bandHasTones    ptr to an array of per-band-flags:
 	 * 1 - tone data present
 	 */
 	private fun decodeTonesEnvelope(chNum: Int, bandHasTones: BooleanArray) {
@@ -1178,8 +1178,8 @@ class ChannelUnit {
 	/**
 	 * Decode number of tones for each subband of a channel.
 	 *
-	 * @param[in]     chNum           channel to process
-	 * @param[in]     bandHasTones    ptr to an array of per-band-flags:
+	 * @param{in}     chNum           channel to process
+	 * @param{in}     bandHasTones    ptr to an array of per-band-flags:
 	 * 1 - tone data present
 	 * @return result code: 0 = OK, otherwise - error code
 	 */
@@ -1221,7 +1221,7 @@ class ChannelUnit {
 		for (sb in 0 until ctx.wavesInfo.numToneBands) {
 			if (bandHasTones[sb]) {
 				if (ctx.wavesInfo.tonesIndex + dst[sb].numWavs > 48) {
-					log.error("Too many tones: %d (max. 48)".format(ctx.wavesInfo.tonesIndex + dst[sb].numWavs))
+					log.error { "Too many tones: %d (max. 48)".format(ctx.wavesInfo.tonesIndex + dst[sb].numWavs) }
 					return AT3P_ERROR
 				}
 				dst[sb].startIndex = ctx.wavesInfo.tonesIndex
@@ -1235,8 +1235,8 @@ class ChannelUnit {
 	/**
 	 * Decode frequency information for each subband of a channel.
 	 *
-	 * @param[in]     chNum           channel to process
-	 * @param[in]     bandHasTones    ptr to an array of per-band-flags:
+	 * @param{in}     chNum           channel to process
+	 * @param{in}     bandHasTones    ptr to an array of per-band-flags:
 	 * 1 - tone data present
 	 */
 	private fun decodeTonesFrequency(chNum: Int, bandHasTones: BooleanArray) {
@@ -1252,19 +1252,19 @@ class ChannelUnit {
 				val direction = if (dst[sb].numWavs > 1) br.readBool() else false
 				if (direction) { // packed numbers in descending order
 					if (dst[sb].numWavs > 0) {
-						ctx.wavesInfo.waves[iwav + dst[sb].numWavs - 1]!!.freqIndex = br.read(10)
+						ctx.wavesInfo.waves[iwav + dst[sb].numWavs - 1].freqIndex = br.read(10)
 					}
 					for (i in dst[sb].numWavs - 2 downTo 0) {
-						val nbits = avLog2(ctx.wavesInfo.waves[iwav + i + 1]!!.freqIndex) + 1
-						ctx.wavesInfo.waves[iwav + i]!!.freqIndex = br.read(nbits)
+						val nbits = avLog2(ctx.wavesInfo.waves[iwav + i + 1].freqIndex) + 1
+						ctx.wavesInfo.waves[iwav + i].freqIndex = br.read(nbits)
 					}
 				} else { // packed numbers in ascending order
 					for (i in 0 until dst[sb].numWavs) {
-						if (i == 0 || ctx.wavesInfo.waves[iwav + i - 1]!!.freqIndex < 512) {
-							ctx.wavesInfo.waves[iwav + i]!!.freqIndex = br.read(10)
+						if (i == 0 || ctx.wavesInfo.waves[iwav + i - 1].freqIndex < 512) {
+							ctx.wavesInfo.waves[iwav + i].freqIndex = br.read(10)
 						} else {
-							val nbits = avLog2(1023 - ctx.wavesInfo.waves[iwav + i - 1]!!.freqIndex) + 1
-							ctx.wavesInfo.waves[iwav + i]!!.freqIndex = br.read(nbits) + 1024 - (1 shl nbits)
+							val nbits = avLog2(1023 - ctx.wavesInfo.waves[iwav + i - 1].freqIndex) + 1
+							ctx.wavesInfo.waves[iwav + i].freqIndex = br.read(nbits) + 1024 - (1 shl nbits)
 						}
 					}
 				}
@@ -1277,10 +1277,10 @@ class ChannelUnit {
 				val iwav = ref[sb].startIndex
 				val owav = dst[sb].startIndex
 				for (i in 0 until dst[sb].numWavs) {
-					var delta = tone_vlc_tabs[6]!!.getVLC2(br)
+					var delta = tone_vlc_tabs[6].getVLC2(br)
 					delta = delta.signExtend(8)
-					val pred = if (i < ref[sb].numWavs) ctx.wavesInfo.waves[iwav + i]!!.freqIndex else if (ref[sb].numWavs > 0) ctx.wavesInfo.waves[iwav + ref[sb].numWavs - 1]!!.freqIndex else 0
-					ctx.wavesInfo.waves[owav + i]!!.freqIndex = pred + delta and 0x3FF
+					val pred = if (i < ref[sb].numWavs) ctx.wavesInfo.waves[iwav + i].freqIndex else if (ref[sb].numWavs > 0) ctx.wavesInfo.waves[iwav + ref[sb].numWavs - 1].freqIndex else 0
+					ctx.wavesInfo.waves[owav + i].freqIndex = pred + delta and 0x3FF
 				}
 			}
 		}
@@ -1289,8 +1289,8 @@ class ChannelUnit {
 	/**
 	 * Decode amplitude information for each subband of a channel.
 	 *
-	 * @param[in]     chNum           channel to process
-	 * @param[in]     bandHasTones    ptr to an array of per-band-flags:
+	 * @param{in}     chNum           channel to process
+	 * @param{in}     bandHasTones    ptr to an array of per-band-flags:
 	 * 1 - tone data present
 	 */
 	private fun decodeTonesAmplitude(chNum: Int, bandHasTones: BooleanArray) {
@@ -1309,7 +1309,7 @@ class ChannelUnit {
 					var fi = 0
 					var maxdiff = 1024
 					for (i in 0 until ref[sb].numWavs) {
-						val diff = abs(ctx.wavesInfo.waves[wsrc + j]!!.freqIndex - ctx.wavesInfo.waves[wref + i]!!.freqIndex)
+						val diff = abs(ctx.wavesInfo.waves[wsrc + j].freqIndex - ctx.wavesInfo.waves[wref + i].freqIndex)
 						if (diff < maxdiff) {
 							maxdiff = diff
 							fi = i
@@ -1337,10 +1337,10 @@ class ChannelUnit {
 				}
 				if (ctx.wavesInfo.amplitudeMode != 0) {
 					for (i in 0 until dst[sb].numWavs) {
-						ctx.wavesInfo.waves[dst[sb].startIndex + i]!!.ampSf = br.read(6)
+						ctx.wavesInfo.waves[dst[sb].startIndex + i].ampSf = br.read(6)
 					}
 				} else {
-					ctx.wavesInfo.waves[dst[sb].startIndex]!!.ampSf = br.read(6)
+					ctx.wavesInfo.waves[dst[sb].startIndex].ampSf = br.read(6)
 				}
 			}
 			1 // min + VLC delta
@@ -1350,10 +1350,10 @@ class ChannelUnit {
 				}
 				if (ctx.wavesInfo.amplitudeMode != 0) {
 					for (i in 0 until dst[sb].numWavs) {
-						ctx.wavesInfo.waves[dst[sb].startIndex + i]!!.ampSf = tone_vlc_tabs[3]!!.getVLC2(br) + 20
+						ctx.wavesInfo.waves[dst[sb].startIndex + i].ampSf = tone_vlc_tabs[3].getVLC2(br) + 20
 					}
 				} else {
-					ctx.wavesInfo.waves[dst[sb].startIndex]!!.ampSf = tone_vlc_tabs[4]!!.getVLC2(br) + 24
+					ctx.wavesInfo.waves[dst[sb].startIndex].ampSf = tone_vlc_tabs[4].getVLC2(br) + 24
 				}
 			}
 			2 // VLC module delta to master (slave only)
@@ -1362,10 +1362,10 @@ class ChannelUnit {
 					continue
 				}
 				for (i in 0 until dst[sb].numWavs) {
-					var delta = tone_vlc_tabs[5]!!.getVLC2(br)
+					var delta = tone_vlc_tabs[5].getVLC2(br)
 					delta = delta.signExtend(5)
-					val pred = if (refwaves[dst[sb].startIndex + i] >= 0) ctx.wavesInfo.waves[refwaves[dst[sb].startIndex + i]]!!.ampSf else 34
-					ctx.wavesInfo.waves[dst[sb].startIndex + i]!!.ampSf = pred + delta and 0x3F
+					val pred = if (refwaves[dst[sb].startIndex + i] >= 0) ctx.wavesInfo.waves[refwaves[dst[sb].startIndex + i]].ampSf else 34
+					ctx.wavesInfo.waves[dst[sb].startIndex + i].ampSf = pred + delta and 0x3F
 				}
 			}
 			3 // clone master (slave only)
@@ -1374,7 +1374,7 @@ class ChannelUnit {
 					continue
 				}
 				for (i in 0 until dst[sb].numWavs) {
-					ctx.wavesInfo.waves[dst[sb].startIndex + i]!!.ampSf = if (refwaves[dst[sb].startIndex + i] >= 0) ctx.wavesInfo.waves[refwaves[dst[sb].startIndex + i]]!!.ampSf else 32
+					ctx.wavesInfo.waves[dst[sb].startIndex + i].ampSf = if (refwaves[dst[sb].startIndex + i] >= 0) ctx.wavesInfo.waves[refwaves[dst[sb].startIndex + i]].ampSf else 32
 				}
 			}
 		}
@@ -1396,7 +1396,7 @@ class ChannelUnit {
 			}
 			val wparam = dst[sb].startIndex
 			for (i in 0 until dst[sb].numWavs) {
-				ctx.wavesInfo.waves[wparam + i]!!.phaseIndex = br.read(5)
+				ctx.wavesInfo.waves[wparam + i].phaseIndex = br.read(5)
 			}
 		}
 	}
@@ -1419,12 +1419,12 @@ class ChannelUnit {
 		}
 
 		for (i in ctx.wavesInfo.waves.indices) {
-			ctx.wavesInfo.waves[i]!!.clear()
+			ctx.wavesInfo.waves[i].clear()
 		}
 
 		ctx.wavesInfo.amplitudeMode = br.read1()
 		if (ctx.wavesInfo.amplitudeMode == 0) {
-			log.error("GHA amplitude mode 0")
+			log.error { "GHA amplitude mode 0" }
 			return AT3P_ERROR
 		}
 
@@ -1434,7 +1434,7 @@ class ChannelUnit {
 			getSubbandFlags(ctx.wavesInfo.toneSharing, ctx.wavesInfo.numToneBands)
 			getSubbandFlags(ctx.wavesInfo.toneMaster, ctx.wavesInfo.numToneBands)
 			if (getSubbandFlags(ctx.wavesInfo.phaseShift, ctx.wavesInfo.numToneBands)) {
-				log.warn("GHA Phase shifting")
+				log.warn { "GHA Phase shifting" }
 			}
 		}
 
