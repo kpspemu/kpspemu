@@ -8,3 +8,5 @@ object Klock {
         return DateTime.nowUnix().toLong()
     }
 }
+
+typealias TimeDistance = DateTimeSpan

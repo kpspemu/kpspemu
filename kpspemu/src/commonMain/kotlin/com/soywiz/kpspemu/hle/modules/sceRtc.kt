@@ -14,7 +14,7 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
     fun sceRtcGetCurrentTick(ptr: Ptr): Int = 0.apply { ptr.sdw(0, timeManager.getTimeInMicroseconds()) }
     fun sceRtcGetTickResolution(): Int = 1000000
     fun sceRtcGetDayOfWeek(year: Int, month: Int, day: Int): Int = DateTime(year, month, day).dayOfWeekInt
-    fun sceRtcGetDaysInMonth(year: Int, month: Int): Int = Month.days(month, year)
+    fun sceRtcGetDaysInMonth(year: Int, month: Int): Int = YearMonth(year, month).days
     fun sceRtcSetTick(datePtr: PtrStruct<ScePspDateTime>, ticksPtr: Ptr64): Int {
         datePtr.set(ScePspDateTime(ticksPtr.get()))
         return 0
@@ -26,12 +26,12 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
     }
 
     fun sceRtcGetCurrentClock(date: PtrStruct<ScePspDateTime>, timezone: Int): Int {
-        date.set(ScePspDateTime(DateTime.now().addOffset(timezone.clamp(-600000, +600000))))
+        date.set(ScePspDateTime(DateTime.now().toOffset(timezone.clamp(-600000, +600000).milliseconds)))
         return 0
     }
 
     fun sceRtcGetCurrentClockLocalTime(date: PtrStruct<ScePspDateTime>): Int {
-        date.set(ScePspDateTime(DateTime.now().toLocal()))
+        date.set(ScePspDateTime(DateTime.now().local))
         return 0
     }
 
@@ -59,14 +59,14 @@ class sceRtc(emulator: Emulator) : SceModule(emulator, "sceRtc", 0x40010011, "rt
     private fun _sceRtcTickAddTimeDist(dst: Ptr64, src: Ptr64, distance: TimeDistance): Int {
         val srcDate = ScePspDateTime(src.get())
         val newDate = srcDate.date + distance
-        dst.set(ScePspDateTime(newDate, srcDate.microAdjust).tick)
+        dst.set(ScePspDateTime(newDate.local, srcDate.microAdjust).tick)
         return 0
     }
 
-    fun sceRtcTickAddDays(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, count.days)
-    fun sceRtcTickAddWeeks(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, (count * 7).days)
-    fun sceRtcTickAddMonths(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, count.months)
-    fun sceRtcTickAddYears(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, count.years)
+    fun sceRtcTickAddDays(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, 0.months + count.days)
+    fun sceRtcTickAddWeeks(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, 0.months + (count * 7).days)
+    fun sceRtcTickAddMonths(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, count.months + 0.days)
+    fun sceRtcTickAddYears(dst: Ptr64, src: Ptr64, count: Int): Int = _sceRtcTickAddTimeDist(dst, src, count.years + 0.days)
 
     fun sceRtcCompareTick(tick1: Ptr64, tick2: Ptr64): Int {
         return tick1.get().compareTo(tick2.get())

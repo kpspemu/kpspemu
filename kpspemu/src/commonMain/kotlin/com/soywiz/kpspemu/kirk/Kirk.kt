@@ -7,6 +7,8 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.util.*
 import com.soywiz.krypto.*
+import com.soywiz.korio.error.invalidOp as invalidOp2
+import com.soywiz.korio.lang.invalidOp as invalidOp1
 
 object Kirk {
     fun hleUtilsBufferCopyWithRange(
@@ -52,7 +54,7 @@ object Kirk {
     fun kirk_CMD1(output: SyncStream, input: SyncStream) {
         //console.log(input.sliceWithLength(0, 128).readAllBytes());
         val header = input.sliceStart().read(AES128CMACHeader)
-        if (header.Mode != KirkMode.Cmd1) throw invalidOp("Kirk mode != Cmd1")
+        if (header.Mode != KirkMode.Cmd1) throw invalidOp1("Kirk mode != Cmd1")
         val Keys = AES.decryptAes128Cbc(input.sliceStart().readBytes(32), KirkKeys.kirk1_key)
         val KeyAes = Keys.copyOfRange(0, 16)
         var KeyCmac = Keys.copyOfRange(16, 32)
@@ -70,11 +72,11 @@ object Kirk {
     fun kirk_CMD12(output: SyncStream): Unit = TODO()
 
     fun kirk_CMD11(output: SyncStream, input: SyncStream): Unit {
-        if (input.length == 0L) invalidOp
+        if (input.length == 0L) invalidOp2
         val headerDataSize = input.sliceStart().readS32_le()
-        if (headerDataSize == 0) invalidOp
+        if (headerDataSize == 0) invalidOp2
         val data = input.sliceStart(4L).readBytes(headerDataSize)
-        val hash = SHA1.hash(data)
+        val hash = data.hash(SHA1)
         output.writeBytes(hash)
     }
 
@@ -86,12 +88,12 @@ object Kirk {
         if (header.mode != KirkMode.DecryptCbc) {
             throw Error("Kirk Invalid mode '" + header.mode + "'")
         }
-        if (header.data_size == 0) invalidOp("Kirk data size == 0")
+        if (header.data_size == 0) invalidOp1("Kirk data size == 0")
         return AES.decryptAes128Cbc(input.readAll(), getKirk7Key(header.keyseed))
         //return AES.decryptAes128Cbc(input.readBytes(header.data_size), kirk_4_7_get_key(header.keyseed))
     }
 
-    fun getKirk7Key(key_type: Int): ByteArray = KirkKeys.kirk7_keys[key_type] ?: invalidOp("Unsupported key $key_type")
+    fun getKirk7Key(key_type: Int): ByteArray = KirkKeys.kirk7_keys[key_type] ?: invalidOp1("Unsupported key $key_type")
 
     enum class KirkMode(override val id: Int) : IdEnum {
         Invalid0(0), Cmd1(1), Cmd2(2), Cmd3(3), EncryptCbc(4), DecryptCbc(5);

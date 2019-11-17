@@ -30,7 +30,7 @@ data class ScePspDateTime(
     //val date: DateTime get() = DateTime.createAdjusted(year, month, day, hour, minute, second, microsecond / 1000)
     val date: DateTime get() = DateTime.createClamped(year, month, day, hour, minute, second, microsecond / 1000)
     val microAdjust: Int get() = (microsecond % 1000)
-    val tick: Long get() = EPOCH_TICKS + (date.unix * 1000L) + microAdjust
+    val tick: Long get() = EPOCH_TICKS + (date.unixMillisLong * 1000L) + microAdjust
 
     companion object : Struct<ScePspDateTime>(
         { ScePspDateTime(0L) },
@@ -43,10 +43,10 @@ data class ScePspDateTime(
         ScePspDateTime::microsecond AS INT32
     ) {
         val EPOCH_TICKS = 62135596800000000L
-        operator fun invoke(date: DateTime, microAdjust: Int = 0): ScePspDateTime {
+        operator fun invoke(date: DateTimeTz, microAdjust: Int = 0): ScePspDateTime {
             return ScePspDateTime(
-                date.year,
-                date.month,
+                date.yearInt,
+                date.month1,
                 date.dayOfMonth,
                 date.hours,
                 date.minutes,
@@ -57,7 +57,7 @@ data class ScePspDateTime(
 
         operator fun invoke(ticks: Long): ScePspDateTime {
             val epochAdjust = ticks - EPOCH_TICKS
-            return ScePspDateTime(DateTime.fromUnix(epochAdjust / 1000), microAdjust = (epochAdjust % 1000).toInt())
+            return ScePspDateTime(DateTime.fromUnix(epochAdjust / 1000).local, microAdjust = (epochAdjust % 1000).toInt())
         }
     }
 
