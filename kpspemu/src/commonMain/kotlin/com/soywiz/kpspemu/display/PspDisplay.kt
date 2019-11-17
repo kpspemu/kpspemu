@@ -60,7 +60,7 @@ class PspDisplay(override val emulator: Emulator) : WithEmulator {
                 val stride = 512 * color.bytesPerPixel
 
                 for (n in 0 until 272) {
-                    color.decode(temp, n * stride, bmpData, bmp.width * n, bmp.width)
+                    color.decode(temp, (n * stride).toInt(), bmpData, bmp.width * n, bmp.width)
                 }
             }
         }

@@ -3,6 +3,7 @@ package com.soywiz.kpspemu.format
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.lang.invalidOp as invalidOp1
 
 class Psf {
     data class DataType(val id: Int) {
@@ -79,7 +80,7 @@ class Psf {
     fun load(stream: SyncStream) {
         val header = HeaderStruct.read(stream)
         this.header = header
-        if (header.magic != 0x46535000) invalidOp("Not a PSF file")
+        if (header.magic != 0x46535000) invalidOp1("Not a PSF file")
         val entries = (0 until header.numberOfPairs).map { EntryStruct.read(stream) }
         val entriesByName = LinkedHashMap<String, Any?>()
 
@@ -95,7 +96,7 @@ class Psf {
                 DataType.BINARY -> entry.value = valueStream.readSlice(0)
                 DataType.INT -> entry.value = valueStream.readS32_le()
                 DataType.TEXT -> entry.value = valueStream.readStringz(UTF8)
-                else -> invalidOp("Unknown dataType: ${entry.dataType}")
+                else -> invalidOp1("Unknown dataType: ${entry.dataType}")
             }
 
             entriesByName[entry.key] = entry.value

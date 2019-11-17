@@ -15,6 +15,11 @@ import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 
+fun Bitmap32.setAlpha2(value: Int) {
+    for (n in 0 until this.data.size) this.data[n] = RGBA(this.data[n].rgb, value)
+}
+
+
 class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : WithEmulator by emulatorContainer {
     enum class RenderMode { AUTO, NORMAL, DIRECT }
 
@@ -123,7 +128,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
             if (display.rawDisplay) {
                 display.decodeToBitmap32(display.bmp)
-                display.bmp.setAlpha(0xFF)
+                display.bmp.setAlpha2(0xFF)
                 sceneTex.update(display.bmp)
             }
             actualTexture = sceneTex

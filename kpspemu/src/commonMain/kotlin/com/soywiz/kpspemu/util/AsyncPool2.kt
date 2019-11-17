@@ -1,7 +1,7 @@
 package com.soywiz.kpspemu.util
 
 import com.soywiz.korio.async.*
-import kotlinx.atomicfu.*
+//import kotlinx.atomicfu.*
 
 interface Resetable {
     fun reset(): Unit
@@ -11,6 +11,7 @@ interface PoolItem : Resetable {
     val id: Int
 }
 
+/*
 class AsyncPool2<T : PoolItem>(val maxItems: Int = Int.MAX_VALUE, var initId: Int = 0, val create: suspend (Int) -> T) {
     var createdItems = atomic(0)
     private val freedItem = ProduceConsumer<T>()
@@ -44,3 +45,4 @@ class AsyncPool2<T : PoolItem>(val maxItems: Int = Int.MAX_VALUE, var initId: In
         allocatedItems.remove(item.id)
     }
 }
+s*/

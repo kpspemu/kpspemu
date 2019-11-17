@@ -60,7 +60,7 @@ class Cso private constructor() {
     val blockCache = CacheMap<Int, ByteArray>(CACHED_BLOCKS)
 
     suspend fun readUncompressedBlockCached(block: Int): ByteArray {
-        return blockCache.entries.getOrPut(block) {
+        return blockCache.getOrPut(block) {
             readUncompressedBlock(block)
         }
     }

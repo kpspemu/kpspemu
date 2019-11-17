@@ -43,6 +43,9 @@ data class ScePspDateTime(
         ScePspDateTime::microsecond AS INT32
     ) {
         val EPOCH_TICKS = 62135596800000000L
+        operator fun invoke(date: DateTime, microAdjust: Int = 0): ScePspDateTime {
+            return ScePspDateTime(date.local, microAdjust)
+        }
         operator fun invoke(date: DateTimeTz, microAdjust: Int = 0): ScePspDateTime {
             return ScePspDateTime(
                 date.yearInt,

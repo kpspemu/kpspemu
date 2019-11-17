@@ -16,6 +16,7 @@ import com.soywiz.kpspemu.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.math.*
+import com.soywiz.korio.lang.invalidOp as invalidOp1
 
 @Suppress("UNUSED_PARAMETER")
 class IoFileMgrForUser(emulator: Emulator) :
@@ -128,7 +129,7 @@ class IoFileMgrForUser(emulator: Emulator) :
             SeekType.Cur -> stream.position + offset
             SeekType.End -> stream.size() + offset
             SeekType.Tell -> stream.position
-            else -> invalidOp("Invalid sceIoLseek32")
+            else -> invalidOp1("Invalid sceIoLseek32")
         }
         return stream.position
     }

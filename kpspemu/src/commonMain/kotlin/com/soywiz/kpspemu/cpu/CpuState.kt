@@ -2,14 +2,15 @@ package com.soywiz.kpspemu.cpu
 
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
-import com.soywiz.korge.util.*
+import com.soywiz.korge.util.NativeThreadLocal
 import com.soywiz.korio.crypto.*
-import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.korio.error.invalidOp as invalidOp1
+import com.soywiz.korma.math.isAlmostZero as isAlmostZero1
 
 abstract class EmulatorControlFlowException : Exception()
 
@@ -194,16 +195,16 @@ class CpuState(
     var fcr31_25_7: Int set(value) = run { fcr31 = fcr31.insert(value, 25, 7) }; get() = fcr31.extract(25, 7)
 
     val registers = CpuRegisters()
-    var r0:  Int; set(value) = run { registers.r0 = value }; get() = registers.r0
-    var r1:  Int; set(value) = run { registers.r1 = value }; get() = registers.r1
-    var r2:  Int; set(value) = run { registers.r2 =  value }; get() = registers.r2
-    var r3:  Int; set(value) = run { registers.r3 =  value }; get() = registers.r3
-    var r4:  Int; set(value) = run { registers.r4 =  value }; get() = registers.r4
-    var r5:  Int; set(value) = run { registers.r5 =  value }; get() = registers.r5
-    var r6:  Int; set(value) = run { registers.r6 =  value }; get() = registers.r6
-    var r7:  Int; set(value) = run { registers.r7 =  value }; get() = registers.r7
-    var r8:  Int; set(value) = run { registers.r8 =  value }; get() = registers.r8
-    var r9:  Int; set(value) = run { registers.r9 =  value }; get() = registers.r9
+    var r0: Int; set(value) = run { registers.r0 = value }; get() = registers.r0
+    var r1: Int; set(value) = run { registers.r1 = value }; get() = registers.r1
+    var r2: Int; set(value) = run { registers.r2 = value }; get() = registers.r2
+    var r3: Int; set(value) = run { registers.r3 = value }; get() = registers.r3
+    var r4: Int; set(value) = run { registers.r4 = value }; get() = registers.r4
+    var r5: Int; set(value) = run { registers.r5 = value }; get() = registers.r5
+    var r6: Int; set(value) = run { registers.r6 = value }; get() = registers.r6
+    var r7: Int; set(value) = run { registers.r7 = value }; get() = registers.r7
+    var r8: Int; set(value) = run { registers.r8 = value }; get() = registers.r8
+    var r9: Int; set(value) = run { registers.r9 = value }; get() = registers.r9
     var r10: Int; set(value) = run { registers.r10 = value }; get() = registers.r10
     var r11: Int; set(value) = run { registers.r11 = value }; get() = registers.r11
     var r12: Int; set(value) = run { registers.r12 = value }; get() = registers.r12
@@ -333,7 +334,7 @@ class CpuState(
     }
 
     val summary: String
-    //get() = "REGS($id)[" + (0 until 32).map { "r%d=%d".format(it, getGpr(it)) }.joinToString(", ") + "]"
+        //get() = "REGS($id)[" + (0 until 32).map { "r%d=%d".format(it, getGpr(it)) }.joinToString(", ") + "]"
         get() = "REGS($name:$id)[" + (0 until 32).map {
             "r%d=0x%08X".format(
                 it,
@@ -364,7 +365,6 @@ class CpuState(
         const val RCX7 = 15
         const val MAX = 16
     }
-
 
     object VCondition {
         const val FL = 0
@@ -437,7 +437,7 @@ class CpuState(
     fun fsub(RS: Float, RT: Float): Float = RS pspSub RT
     fun fmul(RS: Float, RT: Float): Float {
         val res = RS * RT
-        return if (fcr31_fs && res.isAlmostZero()) 0f else res
+        return if (fcr31_fs && res.isAlmostZero1()) 0f else res
     }
 
     fun fdiv(RS: Float, RT: Float): Float = RS / RT
@@ -533,7 +533,7 @@ class VfpuSourceTargetPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC
                     1 -> if (sourceAbsolute) 1f / 3f else 1f
                     2 -> if (sourceAbsolute) 1f / 4f else 2f
                     3 -> if (sourceAbsolute) 1f / 6f else 1f / 2f
-                    else -> invalidOp
+                    else -> invalidOp1
                 }
             } else {
                 if (sourceAbsolute) temp[sourceIndex].pspAbs else temp[sourceIndex]
@@ -558,7 +558,6 @@ class VfpuDestinationPrefix(array: IntArray, arrayIndex: Int) : VfpuPrefix(0xDC0
             else -> value
         }
     }
-
 }
 
 /*

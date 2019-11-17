@@ -33,9 +33,6 @@ import com.soywiz.korio.util.*
 import com.soywiz.korma.*
 import com.soywiz.korma.geom.*
 import com.soywiz.korma.geom.Rectangle
-import com.soywiz.korui.event.*
-import com.soywiz.korui.input.*
-import com.soywiz.korui.ui.*
 import com.soywiz.kpspemu.ctrl.*
 import com.soywiz.kpspemu.display.*
 import com.soywiz.kpspemu.format.*
@@ -53,14 +50,16 @@ import kotlin.reflect.*
 import com.soywiz.kmem.umod
 import com.soywiz.korev.*
 import kotlinx.coroutines.channels.*
+import kotlin.jvm.*
+import com.soywiz.korio.error.invalidOp as invalidOp1
 
-fun main(args: Array<String>) = Main.main(args)
+suspend fun main(args: Array<String>) = Main.main(args)
 
-fun main() = Main.main(arrayOf())
+suspend fun main() = Main.main(arrayOf())
 
 object Main {
     @JvmStatic
-    fun main(args: Array<String>) {
+    suspend fun main(args: Array<String>) {
         val injector = AsyncInjector()
             .mapSingleton { Emulator(coroutineContext) }
             .mapSingleton { PromptConfigurator(get(), get()) }
@@ -453,7 +452,9 @@ class KpspemuMainScene(
             x = 8.0
             y = 272.0 - 20.0 * 5
         }.onClick {
-            promptConfigurator.prompt()
+            launchImmediately {
+                promptConfigurator.prompt()
+            }
         }
 
         val interpretedButton = views.simpleButton("", font = hudFont).apply {
@@ -545,6 +546,8 @@ class KpspemuMainScene(
         sceneView.onKeyDown { updateKey(it.key, true) }
         sceneView.onKeyUp { updateKey(it.key, false) }
 
+        // Not available anymore
+        /*
         cancellables += injector.getOrNull(Frame::class)?.onDropFiles(
             enter = {
                 dropContainer.visible = true
@@ -564,6 +567,7 @@ class KpspemuMainScene(
                 }
             }
         ) ?: Closeable { }
+        */
 
         KPspEmuNative.initialization()
         if (OS.isBrowserJs) {
@@ -691,7 +695,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
                 emulator.deviceManager.mount("umd0:", container)
             }
             else -> {
-                val ngameName = PathInfo(gameName).basename
+                val ngameName = PathInfo(gameName).baseName
                 val PSP_GAME_folder = "PSP/GAME/$ngameName"
                 val ms_PSP_GAME_folder = "ms0:/$PSP_GAME_folder"
                 emulator.deviceManager.ms[PSP_GAME_folder].mkdirsSafe()
@@ -725,7 +729,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
             val decryptedFile = tempVfs["BOOT.BIN.decrypted"]
             encryptedFile.writeBytes(encryptedData)
             decryptedFile.writeBytes(decryptedData)
-            invalidOp("Error decrypting file. Written to: ${decryptedFile.absolutePath} & ${encryptedFile.absolutePath}")
+            invalidOp1("Error decrypting file. Written to: ${decryptedFile.absolutePath} & ${encryptedFile.absolutePath}")
         }
         //LocalVfs("c:/temp/decryptedData.bin").write(decryptedData)
         stream = decryptedData.openAsync()
@@ -791,7 +795,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
             }
         }
 
-        if (afile == null) invalidOp("Can't find any suitable executable inside $format")
+        if (afile == null) invalidOp1("Can't find any suitable executable inside $format")
 
         for (icon0 in listOf(container["PSP_GAME/ICON0.PNG"])) {
             if (icon0.exists()) {
@@ -815,7 +819,7 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
             }
         }
 
-        stream = afile.open()
+        stream = afile!!.open()
     }
 
     suspend fun loadExecutableAndStart(): PspElf {
@@ -832,12 +836,12 @@ class EmulatorLoader(val emulator: Emulator, var file: VfsFile, val loadProcess:
         while (true) {
             if (stream.size() < 0x10) {
                 logger.warn { " - Layer(${stream.size()}): Format ???" }
-                invalidOp("Layer is too small")
+                invalidOp1("Layer is too small")
             }
-            format = stream.detectPspFormat(layerName) ?: invalidOp("Unsupported file format '$file'")
+            format = stream.detectPspFormat(layerName) ?: invalidOp1("Unsupported file format '$file'")
             steps++
             if (steps >= 10) {
-                invalidOp("Too much containers!")
+                invalidOp1("Too much containers!")
             }
             logger.warn { " - Layer(${stream.size()}): Format $format" }
             when (format) {

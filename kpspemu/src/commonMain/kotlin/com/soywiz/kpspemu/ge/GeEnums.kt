@@ -205,7 +205,8 @@ object ClearBufferSet {
     val FastClear = 16
 }
 
-object PspRGB_565 : ColorFormat16(), ColorFormatBase by ColorFormatBase.Mixin(
+object PspRGB_565 : ColorFormat16, ColorFormat by ColorFormat.Mixin(
+    bpp = 16,
     rOffset = 0, rSize = 5,
     gOffset = 5, gSize = 6,
     bOffset = 11, bSize = 5,
@@ -214,7 +215,8 @@ object PspRGB_565 : ColorFormat16(), ColorFormatBase by ColorFormatBase.Mixin(
     override fun getA(v: Int): Int = 0xFF
 }
 
-object PspRGBA_5551 : ColorFormat16(), ColorFormatBase by ColorFormatBase.Mixin(
+object PspRGBA_5551 : ColorFormat16, ColorFormat by ColorFormat.Mixin(
+    bpp = 16,
     rOffset = 0, rSize = 5,
     gOffset = 5, gSize = 5,
     bOffset = 10, bSize = 5,

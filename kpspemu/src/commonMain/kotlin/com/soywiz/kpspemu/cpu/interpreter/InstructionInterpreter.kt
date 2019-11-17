@@ -15,6 +15,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
 import com.soywiz.korma.math.isAlmostZero
+import com.soywiz.korio.error.invalidOp as invalidOp1
 
 class CpuInterpreter(
     var cpu: CpuState,
@@ -617,7 +618,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 1 -> vs.x - vs.y
                 2 -> vs.z + vs.w
                 3 -> vs.z - vs.w
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -629,7 +630,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 1 -> vs.y + vs.w
                 2 -> vs.x - vs.z
                 3 -> vs.y - vs.w
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -641,7 +642,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 1 -> max(vs.x, vs.y)
                 2 -> min(vs.z, vs.w)
                 3 -> max(vs.z, vs.w)
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -654,7 +655,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                     1 -> min(y, z)
                     2 -> max(y, z)
                     3 -> max(x, w)
-                    else -> invalidOp
+                    else -> invalidOp1
                 }
             }
         }
@@ -667,7 +668,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 1 -> min(vs.x, vs.y)
                 2 -> max(vs.z, vs.w)
                 3 -> min(vs.z, vs.w)
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -679,7 +680,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 1 -> max(vs.y, vs.z)
                 2 -> min(vs.y, vs.z)
                 3 -> min(vs.x, vs.w)
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -702,7 +703,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 0 -> vs.y * vt.z
                 1 -> vs.z * vt.x
                 2 -> vs.x * vt.y
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -713,7 +714,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 0 -> +vs.y * vt.z - vs.z * vt.y
                 1 -> +vs.z * vt.x - vs.x * vt.z
                 2 -> +vs.x * vt.y - vs.y * vt.x
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -725,7 +726,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
                 1 -> -vs.x * vt.z + vs.y * vt.w + vs.z * vt.x + vs.w * vt.y
                 2 -> +vs.x * vt.y - vs.y * vt.x + vs.z * vt.w + vs.w * vt.z
                 3 -> -vs.x * vt.x - vs.y * vt.y - vs.z * vt.z + vs.w * vt.w
-                else -> invalidOp
+                else -> invalidOp1
             }
         }
     }
@@ -942,7 +943,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
             2 -> (matrixReg ushr 5) and 2
             3 -> (matrixReg ushr 6) and 1
             4 -> (matrixReg ushr 5) and 2
-            else -> invalidOp
+            else -> invalidOp1
         }
 
         for (i in 0 until side) {
@@ -1014,7 +1015,7 @@ class InstructionInterpreter(val s: CpuState) : InstructionEvaluator<CpuState>()
             2 -> row = (vectorReg ushr 5) and 2
             3 -> row = (vectorReg ushr 6) and 1
             4 -> row = (vectorReg ushr 5) and 2
-            else -> invalidOp
+            else -> invalidOp1
         }
 
         for (i in 0 until length) {

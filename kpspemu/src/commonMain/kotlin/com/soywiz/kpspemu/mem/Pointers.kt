@@ -6,6 +6,7 @@ import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.korio.error.invalidOp as invalidOp1
 
 data class PtrArray(val ptr: Ptr, val size: Int) {
     val addr: Int get() = ptr.addr
@@ -144,9 +145,9 @@ fun Ptr.readStringz(charset: Charset = UTF8): String {
         val c = this.lb(n++)
         if (c == 0) break
         out.append(c.toByte())
-        if (out.size >= 0x1000) invalidOp("String is too big!")
+        if (out.size >= 0x1000) invalidOp1("String is too big!")
     }
-    return out.toString(charset)
+    return out.toByteArray().toString(charset)
 }
 
 fun Ptr.writeStringz(str: String, charset: Charset = UTF8): Unit {

@@ -13,6 +13,7 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.coroutines.*
+import com.soywiz.korio.lang.invalidOp as invalidOp1
 
 class RegisterReader {
     var pos: Int = 4
@@ -59,7 +60,7 @@ abstract class BaseSceModule {
 
     fun getByNidOrNull(nid: Int): NativeFunction? = mmodule.functions[nid]
     fun getByNid(nid: Int): NativeFunction =
-        getByNidOrNull(nid) ?: invalidOp("Can't find NID 0x%08X in %s".format(nid, name))
+        getByNidOrNull(nid) ?: invalidOp1("Can't find NID 0x%08X in %s".format(nid, name))
 
     fun UNIMPLEMENTED(nid: Int): Nothing {
         val func = getByNid(nid)
@@ -84,7 +85,7 @@ abstract class SceModule(
     override val mmodule get() = this
     inline fun <reified T : SceModule> getModuleOrNull(): T? = emulator.moduleManager.modulesByClass[T::class] as? T?
     inline fun <reified T : SceModule> getModule(): T =
-        getModuleOrNull<T>() ?: invalidOp("Expected to get module ${T::class.portableSimpleName}")
+        getModuleOrNull<T>() ?: invalidOp1("Expected to get module ${T::class.portableSimpleName}")
 
     val loggerSuspend = Logger("SceModuleSuspend").apply {
         //level = LogLevel.TRACE

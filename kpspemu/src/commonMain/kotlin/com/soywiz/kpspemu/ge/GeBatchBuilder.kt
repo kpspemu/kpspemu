@@ -15,7 +15,7 @@ class GeBatchBuilder(val ge: Ge) {
     var vertexSize: Int = 0
 
     val vertexBuffer = ByteArray(0x40000 * 16)
-    val vertexBufferMem = KmlNativeBuffer.wrap(vertexBuffer)
+    val vertexBufferMem = MemBufferWrap(vertexBuffer)
     val vertexBufferI8 = vertexBufferMem.i8
     val vertexBufferI16 = vertexBufferMem.i16
     val vertexBufferI32 = vertexBufferMem.i32
@@ -316,7 +316,7 @@ class GeBatchBuilder(val ge: Ge) {
         if (hasWeights) vtype.weight = NumericEnum.FLOAT
         val stateData = ge.state.data.copyOf()
         val vertexData = ByteArray(vertices.size * 4 * 16)
-        val fmem = KmlNativeBuffer.wrap(vertexData)
+        val fmem = MemBufferWrap(vertexData)
         val ii = fmem.i32
         val ff = fmem.f32
         var vpos = 0

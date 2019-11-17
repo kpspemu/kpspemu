@@ -9,6 +9,35 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
 import kotlin.math.*
 
+class MyAudioStream(hz: Int, nchannels: Int = 2) : AudioStream(hz, nchannels) {
+    val deque = AudioSamplesDeque(nchannels)
+    var closed = false
+
+    override suspend fun read(out: AudioSamples, offset: Int, length: Int): Int {
+        if (closed) return -1
+
+        val result = deque.read(out, offset, length)
+
+        if (result <= 0) {
+            close()
+        }
+        //println("   AudioStream.read -> result=$result")
+        return result
+    }
+
+    override fun close() {
+        closed = true
+    }
+
+    fun stop() {
+        close()
+    }
+
+    fun addSamples(data: ShortArray) {
+        deque.writeInterleaved(data, 0)
+    }
+}
+
 class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011, "popsman.prx", "scePops_Manager") {
     object AudioFormat {
         const val STEREO = 0x00
@@ -18,7 +47,7 @@ class sceAudio(emulator: Emulator) : SceModule(emulator, "sceAudio", 0x40010011,
     class AudioChannel(val id: Int) {
         var reserved: Boolean = false
         var streamInitialized = false
-        val stream by lazy { streamInitialized = true; NativeAudioStream(44100) }
+        val stream by lazy { streamInitialized = true; MyAudioStream(44100) }
         var audioFormat: Int = 0
         var line = ShortArray(0)
         var lineEx = ShortArray(0)

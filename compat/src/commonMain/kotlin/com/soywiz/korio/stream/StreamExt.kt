@@ -50,3 +50,8 @@ fun ByteArray.readS32_le(o: Int) = this.readS32LE(o)
 fun ByteArray.readS32_be(o: Int) = this.readS32BE(o)
 
 fun ByteArray.write32_le(o: Int, v: Int) = this.write32LE(o, v)
+
+suspend fun AsyncStream.readS16_le() = readS16LE()
+suspend fun AsyncStream.readS32_le() = readS32LE()
+suspend fun AsyncStream.readS64_le() = readS64LE()
+suspend fun AsyncStream.readIntArray_le(count: Int) = readIntArrayLE(count)

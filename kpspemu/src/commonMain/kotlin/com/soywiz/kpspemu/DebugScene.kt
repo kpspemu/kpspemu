@@ -112,7 +112,9 @@ class DebugScene(
             x = 96.0
             y = 0.0
             onClick {
-                askGoto()
+                launchImmediately {
+                    askGoto()
+                }
             }
         }
         sceneView += views.simpleButton("TOGGLE", width = 48, height = 8, font = font).apply {
@@ -176,7 +178,9 @@ class DebugScene(
             onOver { bgcolor = BG_OVER }
             onOut { bgcolor = BG_OUT }
             onClick {
-                this@GprView.onGprClick(this@GprView)
+                launchImmediately(views.coroutineContext) {
+                    this@GprView.onGprClick(this@GprView)
+                }
             }
         }
 
@@ -301,7 +305,9 @@ class DebugScene(
             onOver { over = true }
             onOut { over = false }
             onClick {
-                onLineClick(Unit)
+                launchImmediately(emulator.coroutineContext) {
+                    onLineClick(Unit)
+                }
             }
         }
 
@@ -368,7 +374,9 @@ class DebugScene(
             onOver { over = true }
             onOut { over = false }
             onClick {
-                onLineClick(Unit)
+                launchImmediately(emulator.coroutineContext) {
+                    onLineClick(Unit)
+                }
             }
             this@ThreadView += this
         }

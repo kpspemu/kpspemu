@@ -7,10 +7,11 @@ import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import kotlin.random.*
 
 open class UtilsBase(emulator: Emulator, name: String, flags: Int, prx: String, prxName: String) :
     SceModule(emulator, name, flags, prx, prxName) {
-    val random = MtRand(0)
+    val random = Random(0)
 
     fun sceKernelUtilsMt19937Init(ctx: Ptr, seed: Int): Int {
         println("Not implemented UtilsForUser.sceKernelUtilsMt19937Init")

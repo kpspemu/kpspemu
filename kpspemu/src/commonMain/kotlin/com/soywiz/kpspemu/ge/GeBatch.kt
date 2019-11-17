@@ -2,8 +2,10 @@ package com.soywiz.kpspemu.ge
 
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korma.*
+import com.soywiz.korma.geom.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
+import com.soywiz.kpspemu.util.*
 
 data class GeBatchData(
     val state: IntArray,
@@ -98,13 +100,13 @@ class GeBatch {
             transform.setTransform(
                 0.0, 0.0,
                 1.0 / mipmap.bufferWidth.toDouble(), 1.0 / mipmap.textureHeight.toDouble(),
-                0.0, 0.0, 0.0
+                0.0.degrees, 0.0, 0.0
             )
         } else {
             transform.setTransform(
                 state.texture.offsetU.toDouble(), state.texture.offsetV.toDouble(),
                 state.texture.scaleU.toDouble(), state.texture.scaleV.toDouble(),
-                0.0, 0.0, 0.0
+                0.0.degrees, 0.0, 0.0
             )
         }
 

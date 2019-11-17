@@ -45,6 +45,15 @@ fun dyna_multu_LO(RS: Int, RT: Int): Int = umul32_64_lo(RS, RT)
 fun dyna_mult_HI(RS: Int, RT: Int): Int = imul32_64_hi(RS, RT)
 fun dyna_multu_HI(RS: Int, RT: Int): Int = umul32_64_hi(RS, RT)
 
+fun imul32_64(a: Int, b: Int, out: IntArray) {
+    out[0] = imul32_64_lo(a, b)
+    out[1] = imul32_64_hi(a, b)
+}
+
+fun umul32_64(a: Int, b: Int, out: IntArray) {
+    out[0] = umul32_64_lo(a, b)
+    out[1] = umul32_64_hi(a, b)
+}
 
 fun imul32_64_lo(a: Int, b: Int): Int {
     if (a == 0) return 0

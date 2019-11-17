@@ -17,6 +17,7 @@ import com.soywiz.kpspemu.util.*
 import kotlin.collections.set
 import kotlin.math.*
 import com.soywiz.kmem.umod
+import com.soywiz.korio.error.invalidOp as invalidOp1
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
 //const val INSTRUCTIONS_PER_STEP = 1_000_000
@@ -150,7 +151,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             }
             if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
             if (now - start >= 16.0) {
-                coroutineContext.delayMs(0)
+                coroutineContext.delay(0.milliseconds)
                 break // Rest a bit
             }
         } while (currentThread != null)
@@ -423,7 +424,7 @@ class PspThread internal constructor(
 }
 
 var CpuState._thread: PspThread? by Extra.Property { null }
-val CpuState.thread: PspThread get() = _thread ?: invalidOp("CpuState doesn't have a thread attached")
+val CpuState.thread: PspThread get() = _thread ?: invalidOp1("CpuState doesn't have a thread attached")
 
 data class PspEventFlag(override val id: Int) : ResourceItem {
     var name: String = ""

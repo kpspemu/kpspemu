@@ -9,4 +9,4 @@ expect object KPspEmuNative {
     val documentLocationHash: String
 }
 
-val CurrentVfs by lazy { LocalVfs(KPspEmuNative.getCurrentDirectory()) }
+val CurrentVfs by lazy { localVfs(KPspEmuNative.getCurrentDirectory()) }
