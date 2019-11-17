@@ -12,3 +12,4 @@ memdump.bin
 .DS_Store
 ./kpspemu/jvm/generated.class
 package-lock.json
+/korau-atrac3plus/build/

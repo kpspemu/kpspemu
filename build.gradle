@@ -1,12 +1,13 @@
 plugins {
-    id 'kotlin-multiplatform' version '1.3.0-rc-190'
+    id 'org.jetbrains.kotlin.multiplatform' version '1.3.60'
     id 'com.moowork.node' version '1.2.0'
 }
 
 allprojects {
     repositories {
         mavenLocal()
-        maven { url "https://dl.bintray.com/soywiz/soywiz" }
+        //maven { url "https://dl.bintray.com/soywiz/soywiz" }
+        maven { url "https://dl.bintray.com/korlibs/korlibs" }
         maven { url "https://dl.bintray.com/kotlin/kotlin-eap" }
         jcenter()
         mavenCentral()
@@ -25,7 +26,7 @@ subprojects {
             //fromPreset(presets.iosArm64, 'iosArm64')
             fromPreset(presets.macosX64, 'macosX64') {
                 if (project.name == 'kpspemu') {
-                    compilations.main.outputKinds('EXECUTABLE')
+                    //compilations.main.outputKinds('EXECUTABLE')
                 }
             }
             //fromPreset(presets.linuxX64, 'linuxX64') {
@@ -35,7 +36,7 @@ subprojects {
             //}
             fromPreset(presets.mingwX64, 'mingwX64') {
                 if (project.name == 'kpspemu') {
-                    compilations.main.outputKinds('EXECUTABLE')
+                    //compilations.main.outputKinds('EXECUTABLE')
                 }
             }
             fromPreset(presets.jvm, 'jvm')

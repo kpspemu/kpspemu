@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.korev.*
 import com.soywiz.korge.atlas.*
 import com.soywiz.korge.component.*
 import com.soywiz.korge.input.*
@@ -95,7 +96,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
         sceneView.addEventListener<GamePadConnectionEvent> {
             updateTouch()
         }
-        sceneView.addEventListener<ResizedEvent> {
+        sceneView.addEventListener<ReshapeEvent> {
             //println("resized:" + views.input.isTouchDevice)
             updateTouch()
         }
@@ -177,30 +178,32 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
                 this.alpha = 0.2
             }
             bg.apply {
-                onDragStart {
-                    thumbTouchId = it.id
-                    //println("START")
-                    bg.alpha = alphaDown
-                    thumb.alpha = alphaDown
-                }
-                onDragMove {
-                    //println("Moving: $it")
-                    val angle = atan2(it.delta.x, it.delta.y)
+                launchImmediately {
+                    onDragStart {
+                        thumbTouchId = it.id
+                        //println("START")
+                        bg.alpha = alphaDown
+                        thumb.alpha = alphaDown
+                    }
+                    onDragMove {
+                        //println("Moving: $it")
+                        val angle = atan2(it.delta.x, it.delta.y)
 
-                    val magnitude = min(32.0, it.delta.length)
+                        val magnitude = min(32.0, it.delta.length)
 
-                    thumb.x = sin(angle) * magnitude
-                    thumb.y = cos(angle) * magnitude
-                    controller.updateAnalog(sin(angle).toFloat(), cos(angle).toFloat())
-                }
-                onDragEnd {
-                    thumbTouchId = thumbTouchIdNone
-                    //println("END")
-                    thumb.x = 0.0
-                    thumb.y = 0.0
-                    bg.alpha = alphaUp
-                    thumb.alpha = alphaUp
-                    controller.updateAnalog(0f, 0f)
+                        thumb.x = sin(angle) * magnitude
+                        thumb.y = cos(angle) * magnitude
+                        controller.updateAnalog(sin(angle).toFloat(), cos(angle).toFloat())
+                    }
+                    onDragEnd {
+                        thumbTouchId = thumbTouchIdNone
+                        //println("END")
+                        thumb.x = 0.0
+                        thumb.y = 0.0
+                        bg.alpha = alphaUp
+                        thumb.alpha = alphaUp
+                        controller.updateAnalog(0f, 0f)
+                    }
                 }
             }
         }

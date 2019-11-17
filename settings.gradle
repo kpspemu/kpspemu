@@ -20,6 +20,7 @@ rootProject.name = 'kpspemu-root'
 
 enableFeaturePreview('GRADLE_METADATA')
 
+include ':compat'
 include ':dynarek2'
 include ':kpspemu'
 include ':korau-atrac3plus'

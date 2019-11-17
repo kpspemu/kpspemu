@@ -1,27 +1,3 @@
-/*
-apply plugin: 'kotlin-platform-jvm'
-sourceSets {
-    main.kotlin.srcDirs += "src"
-    main.resources.srcDirs += "resources"
-    test.kotlin.srcDirs += "test"
-    test.resources.srcDirs += "testresources"
-}
-
-sourceSets {
-    main.resources.srcDirs += ['../common/resources']
-    test.resources.srcDirs += ['../common/testresources']
-}
-
-dependencies {
-    expectedBy project(":kpspemu-common")
-
-    compile "com.soywiz:dynarek-jvm:$korlibsVersion"
-    compile "com.soywiz:korau-atrac3plus-jvm:$korlibsVersion"
-    compile "com.soywiz:korge-jvm:$korlibsVersion"
-    compile "com.soywiz:krypto-jvm:$korlibsVersion"
-}
-*/
-
 apply plugin: 'application'
 
 mainClassName = 'com.soywiz.kpspemu.MainKt'

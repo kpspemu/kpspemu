@@ -1,7 +1,8 @@
 dependencies {
-    commonMainApi "com.soywiz:korge:$korgeVersion"
-    commonMainApi "com.soywiz:krypto:$kryptoVersion"
+    commonMainApi "com.soywiz.korlibs.korge:korge:$korgeVersion"
+    commonMainApi "com.soywiz.korlibs.krypto:krypto:$kryptoVersion"
 
+    commonMainApi project(":compat")
     commonMainApi project(":dynarek2")
     commonMainApi project(":korau-atrac3plus")
 }
@@ -54,8 +55,8 @@ task copyNativeResources(dependsOn: [copyNativeResourcesDebug, copyNativeResourc
 }
 
 afterEvaluate {
-    linkDebugExecutableMacosX64.finalizedBy(copyNativeResourcesDebug)
-    linkReleaseExecutableMacosX64.finalizedBy(copyNativeResourcesRelease)
+    //linkDebugExecutableMacosX64.finalizedBy(copyNativeResourcesDebug)
+    //linkReleaseExecutableMacosX64.finalizedBy(copyNativeResourcesRelease)
 }
 
 
