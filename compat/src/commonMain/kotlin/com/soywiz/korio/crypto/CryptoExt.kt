@@ -2,6 +2,8 @@ package com.soywiz.korio.crypto
 
 import com.soywiz.korio.util.encoding.*
 
+typealias Hex = com.soywiz.korio.util.encoding.Hex
+
 val ByteArray.hex get() = Hex.encodeLower(this)
 val Int.hex: String get() = "0x$shex"
 val Int.shex: String

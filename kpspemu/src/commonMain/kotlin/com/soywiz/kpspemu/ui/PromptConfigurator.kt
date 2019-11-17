@@ -8,6 +8,7 @@ import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.native.*
 import kotlinx.coroutines.*
+import com.soywiz.korio.error.invalidOp as invalidOp1
 
 class PromptConfigurator(
     private val browser: Browser,
@@ -30,7 +31,7 @@ class PromptConfigurator(
             if (action in actions) {
                 actions[action]!!()
             } else {
-                invalidOp("Unknown action $action : Supported actions: ${actions.keys}")
+                invalidOp1("Unknown action $action : Supported actions: ${actions.keys}")
             }
         } catch (e: CancellationException) {
             // Do nothing
@@ -50,7 +51,7 @@ class PromptConfigurator(
         val supportedStorages = listOf("local", "dropbox")
         val storageConfig = emulator.configManager.storage
         val storage = browser.prompt("Select storage engine ($supportedStorages)", storageConfig.get())
-        if (storage !in supportedStorages) invalidOp("Invalid storage type '$storage' (must be )")
+        if (storage !in supportedStorages) invalidOp1("Invalid storage type '$storage' (must be )")
         storageConfig.set(storage)
     }
 
