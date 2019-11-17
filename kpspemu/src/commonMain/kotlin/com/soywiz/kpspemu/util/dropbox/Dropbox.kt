@@ -15,6 +15,7 @@ import com.soywiz.kpspemu.util.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.math.*
+import com.soywiz.korio.error.invalidOp
 
 // @TODO: Move to korio-ext-dropbox
 class Dropbox(val bearer: String, val http: HttpClient = createHttpClient()) {

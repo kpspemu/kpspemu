@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.util
 
-class DyAccess(val obj: Any?) : Iterable<DyAccess> {
+inline class DyAccess(val obj: Any?) : Iterable<DyAccess> {
     operator fun get(key: Int): DyAccess {
         return when (obj) {
             is List<*> -> obj[key]

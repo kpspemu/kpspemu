@@ -6,6 +6,7 @@ import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 import kotlin.math.*
 import kotlin.reflect.*
+import com.soywiz.korio.error.invalidOp
 
 interface ExprNode {
     @Suppress("UNCHECKED_CAST")
@@ -457,7 +458,7 @@ object Dynamic2 {
     fun toNumber(it: Any?): Number = when (it) {
         null -> 0.0
         is Number -> it
-        else -> Dynamic.toNumber(it.toString())
+        else -> it.toString().toDoubleOrNull() ?: 0.0
     }
 
     fun toInt(it: Any?): Int = when (it) {

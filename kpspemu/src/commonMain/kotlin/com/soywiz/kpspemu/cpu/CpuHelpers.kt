@@ -115,7 +115,7 @@ fun dyna_fsub(RS: Float, RT: Float): Float = RS pspSub RT
 
 fun dyna_fmul(cpu: CpuState, RS: Float, RT: Float): Float {
     val res = RS * RT
-    return if (cpu.fcr31_fs && res.isAlmostZero()) 0f else res
+    return if (cpu.fcr31_fs && res.isAlmostZero2()) 0f else res
 }
 
 fun dyna_fdiv(RS: Float, RT: Float): Float = RS / RT

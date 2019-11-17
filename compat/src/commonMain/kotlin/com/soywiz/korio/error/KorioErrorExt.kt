@@ -1,5 +1,4 @@
 package com.soywiz.korio.error
 
-interface IdEnum {
-    val id: Int
-}
+//val invalidOp: Nothing get() = com.soywiz.korio.lang.invalidOp
+fun invalidOp(str: String): Nothing = com.soywiz.korio.lang.invalidOp(str)
