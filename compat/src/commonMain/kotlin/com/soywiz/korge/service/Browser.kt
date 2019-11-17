@@ -1,18 +1,18 @@
 package com.soywiz.korge.service
 
-import com.soywiz.korinject.*
+import com.soywiz.korgw.*
 import com.soywiz.korio.file.*
 
-class Browser(val injector: AsyncInjector) {
-    fun alert(msg: String) {
-        TODO()
+class Browser(val gameWindow: GameWindow) {
+    suspend fun alert(msg: String) {
+        return gameWindow.alert(msg)
     }
 
-    fun prompt(title: String, message: String): String {
-        TODO()
+    suspend fun prompt(message: String, title: String): String {
+        return gameWindow.prompt(message, title)
     }
 
-    fun openFile(): VfsFile {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    suspend fun openFile(): VfsFile {
+        return gameWindow.openFileDialog().first()
     }
 }

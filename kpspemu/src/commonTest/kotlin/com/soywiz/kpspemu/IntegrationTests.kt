@@ -152,7 +152,8 @@ class IntegrationTests : BaseTest() {
             emulator.threadManager.trace("user_main", trace = true)
             Logger.defaultLevel = Logger.Level.TRACE
         } else {
-            Logger.setLevel("ElfPsp", Logger.Level.ERROR)
+            Logger.defaultLevel = Logger.Level.ERROR
+            //Logger.setLevel("ElfPsp", Logger.Level.ERROR)
         }
 
         var generatedError: Throwable? = null

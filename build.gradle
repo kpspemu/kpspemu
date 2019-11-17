@@ -21,6 +21,7 @@ subprojects {
 
     kotlin {
         targets {
+            /*
             //fromPreset(presets.iosX64, 'iosX64')
             //fromPreset(presets.iosArm32, 'iosArm32')
             //fromPreset(presets.iosArm64, 'iosArm64')
@@ -39,6 +40,7 @@ subprojects {
                     //compilations.main.outputKinds('EXECUTABLE')
                 }
             }
+             */
             fromPreset(presets.jvm, 'jvm')
             fromPreset(presets.js, 'js') {
                 compilations.main {
@@ -55,12 +57,13 @@ subprojects {
         }
         sourceSets {
             nonNativeCommonMain
-            nativeCommonMain
-            nativeCommonTest
-            nativePosixMain
+            //nativeCommonMain
+            //nativeCommonTest
+            //nativePosixMain
             configure([jvmMain, jsMain]) {
                 dependsOn nonNativeCommonMain
             }
+            /*
             mingwX64Main {
                 dependsOn nativeCommonMain
             }
@@ -76,6 +79,7 @@ subprojects {
             configure([macosX64Test]) {
                 dependsOn nativeCommonTest
             }
+             */
         }
     }
 
