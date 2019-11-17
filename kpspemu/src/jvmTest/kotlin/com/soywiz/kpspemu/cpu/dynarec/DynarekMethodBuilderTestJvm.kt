@@ -4,6 +4,7 @@ import com.soywiz.dynarek2.*
 import com.soywiz.dynarek2.target.js.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.crypto.*
+import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.assembler.*
 import com.soywiz.kpspemu.cpu.dis.*
