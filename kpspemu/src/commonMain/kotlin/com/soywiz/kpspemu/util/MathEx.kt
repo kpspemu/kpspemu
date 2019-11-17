@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.util
 
-import com.soywiz.korma.geom.triangle.Constants.PI_2
 import kotlin.math.*
 
 fun cosv1(value: Float): Float = cos(value * PI * 0.5).toFloat()
@@ -13,7 +12,7 @@ fun sinv1(value: Float): Float {
         2f -> -0f
         1f -> 1f
         3f -> -1f
-        else -> sin((PI_2 * angle)).toFloat()
+        else -> sin((PI / 2 * angle)).toFloat()
     }
 }
 

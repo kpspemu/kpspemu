@@ -1,5 +1,7 @@
 package com.soywiz.korio.stream
 
+import com.soywiz.kmem.*
+
 fun SyncStream.readS16_le() = readS16LE()
 fun SyncStream.readS16_be() = readS16BE()
 fun SyncStream.readU16_le() = readU16LE()
@@ -44,3 +46,7 @@ fun SyncStream.writeCharArray_be(v: CharArray) = writeCharArrayBE(v)
 fun SyncStream.writeIntArray_le(v: IntArray) = writeIntArrayLE(v)
 fun SyncStream.writeIntArray_be(v: IntArray) = writeIntArrayBE(v)
 
+fun ByteArray.readS32_le(o: Int) = this.readS32LE(o)
+fun ByteArray.readS32_be(o: Int) = this.readS32BE(o)
+
+fun ByteArray.write32_le(o: Int, v: Int) = this.write32LE(o, v)

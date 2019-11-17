@@ -26,7 +26,7 @@ private fun VfsFile.interceptPsp(): VfsFile {
     }, base.path)
 }
 
-suspend fun PspIsoVfs(file: VfsFile): VfsFile = ISO.openVfs(file.open(VfsOpenMode.READ)).interceptPsp()
-suspend fun PspIsoVfs(s: AsyncStream): VfsFile = ISO.openVfs(s).interceptPsp()
+suspend fun PspIsoVfs(file: VfsFile): VfsFile = ISO.openVfs(file.open(VfsOpenMode.READ), true).interceptPsp()
+suspend fun PspIsoVfs(s: AsyncStream): VfsFile = ISO.openVfs(s, true).interceptPsp()
 suspend fun AsyncStream.openAsPspIso(): VfsFile = PspIsoVfs(this)
 suspend fun VfsFile.openAsPspIso() = PspIsoVfs(this)
