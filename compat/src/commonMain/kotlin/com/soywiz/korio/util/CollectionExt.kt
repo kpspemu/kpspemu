@@ -7,3 +7,11 @@ public inline fun <T, R> Iterable<T>.firstNotNullOrNull(predicate: (T) -> R?): R
     }
     return null
 }
+
+inline fun <T, R> Iterable<T>.reduceAcumulate(initial: R, callback: (prev: R, item: T) -> R): R {
+    var value = initial
+    for (it in this) {
+        value = callback(value, it)
+    }
+    return value
+}

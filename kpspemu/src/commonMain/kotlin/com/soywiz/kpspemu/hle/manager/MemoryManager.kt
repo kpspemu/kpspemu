@@ -4,9 +4,11 @@ package com.soywiz.kpspemu.hle.manager
 
 import com.soywiz.kds.*
 import com.soywiz.korge.util.*
+import com.soywiz.korge.util.NativeThreadLocal
 import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
@@ -21,6 +23,7 @@ import kotlin.collections.maxBy
 import kotlin.collections.set
 import kotlin.collections.sortedBy
 import kotlin.collections.toMap
+import com.soywiz.korio.lang.invalidOp as invalidOp1
 
 class MemoryManager(val emulator: Emulator) {
     val memoryPartitionsUid: MutableMap<Int, MemoryPartition> = LinkedHashMap<Int, MemoryPartition>()
@@ -66,7 +69,7 @@ enum class MemoryAnchor(val id: Int) {
 
     companion object {
         val BY_ID = values().map { it.id to it }.toMap()
-        operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp("Can't find index $index in class")
+        operator fun invoke(index: Int) = BY_ID[index] ?: invalidOp1("Can't find index $index in class")
     }
 }
 

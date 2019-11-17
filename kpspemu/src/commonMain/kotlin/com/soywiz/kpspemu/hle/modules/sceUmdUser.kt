@@ -54,7 +54,7 @@ class sceUmdUser(emulator: Emulator) : SceModule(emulator, "sceUmdUser", 0x40010
     suspend fun _sceUmdWaitDriveStatTimeout(stat: Int, timeout: Int): Int {
         try {
             //println("_sceUmdWaitDriveStatTimeout: ${stat.toStringUnsigned(2)} - ${status.toStringUnsigned(2)} - $timeout")
-            withOptTimeout(if (timeout < 0) null else timeout.toLong() / 1000, "_sceUmdWaitDriveStat") {
+            emulator.coroutineContext.withOptTimeout(if (timeout < 0) null else timeout.toLong() / 1000, "_sceUmdWaitDriveStat") {
                 statusEvent.waitAllBits(stat)
             }
             return 0

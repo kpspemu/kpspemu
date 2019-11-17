@@ -14,6 +14,7 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
 import kotlin.math.*
 
 @Suppress("UNUSED_PARAMETER")
