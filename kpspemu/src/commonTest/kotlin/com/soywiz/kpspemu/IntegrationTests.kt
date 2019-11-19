@@ -128,7 +128,9 @@ class IntegrationTests : BaseTest() {
         elf: SyncStream,
         expected: String,
         ignores: List<String>,
-        mode: Mode = Mode.Interpreted,
+        //mode: Mode = Mode.Interpreted,
+        mode: Mode = Mode.Dynarek,
+        timeout: TimeSpan = 10.seconds,
         processor: (String) -> String = { it }
     ) {
         val emulator = Emulator(coroutineContext)
@@ -160,13 +162,15 @@ class IntegrationTests : BaseTest() {
 
         try {
             //println("[1]")
-            while (emulator.running) {
-                //println("[2] : ${emulator.running}")
-                emulator.threadManager.step() // UPDATE THIS
-                delay(10.milliseconds)
-                //println("[3]")
-                if (TRACE) {
-                    for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
+            withTimeout(timeout) {
+                while (emulator.running) {
+                    //println("[2] : ${emulator.running}")
+                    emulator.threadManager.step() // UPDATE THIS
+                    delay(1.milliseconds)
+                    //println("[3]")
+                    if (TRACE) {
+                        for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
+                    }
                 }
             }
         } catch (e: Throwable) {

@@ -124,8 +124,8 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
         //coroutineContext.sleep(0)
     }
 
-    suspend fun step() {
-        val start: Double = timeManager.getTimeInMicrosecondsDouble()
+    fun step() {
+        val start: Double = timeManager.getTimeInMillisecondsDouble()
 
         if (emulator.globalTrace) {
             println("-----")
@@ -136,7 +136,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
         }
 
         do {
-            val now: Double = timeManager.getTimeInMicrosecondsDouble()
+            val now: Double = timeManager.getTimeInMillisecondsDouble()
             if (currentThread == null) currentThread = getFirstThread()
             if (currentThread?.running == false) {
                 println("WAIT! Trying to execute a sleeping thread!")
@@ -150,8 +150,9 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
                 break
             }
             if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
-            if (now - start >= 16.0) {
-                coroutineContext.delay(0.milliseconds)
+            val elapsed = now - start
+            if (elapsed >= 16.0) {
+                //coroutineContext.delay(1.milliseconds)
                 break // Rest a bit
             }
         } while (currentThread != null)
