@@ -20,6 +20,7 @@ open class BaseTest {
         private var initialized = false
         lateinit var pspautotests: VfsFile
         lateinit var rootTestResources: VfsFile
+        //val rootTestResources: VfsFile = resourcesVfs
 
         suspend fun initOnce() {
             if (!initialized) {
@@ -38,7 +39,7 @@ open class BaseTest {
                     //println("localCurrentDirVfs[rootPath]=${localCurrentDirVfs[rootPath]}")
                     val root = localCurrentDirVfs[rootPath].jail()
                     pspautotests = root["pspautotests"]
-                    rootTestResources = root["kpspemu/common/testresources"]
+                    rootTestResources = root["kpspemu/src/commonTest/resources"]
                     if (pspautotests.exists()) {
                         return
                     }
