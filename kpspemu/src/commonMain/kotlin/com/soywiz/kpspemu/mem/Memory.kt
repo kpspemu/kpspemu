@@ -46,6 +46,8 @@ data class MemorySegment(val name: String, val range: IntRange) {
     operator fun contains(index: Int) = range.contains(index and MEMORY_MASK)
 }
 
+val cachedMemory by lazy { NewD2Memory(0x10000000).mem }
+fun CachedMemory(): Memory = cachedMemory
 fun Memory(): Memory = NewD2Memory(0x10000000).mem
 
 fun Memory.readBytes(srcPos: Int, count: Int): ByteArray = ByteArray(count).apply { read(srcPos, this, 0, count) }
@@ -160,7 +162,22 @@ fun Memory.getPointerStream(address: Int, size: Int): SyncStream = openSync().sl
 fun Memory.getPointerStream(address: Int): SyncStream = openSync().sliceStart(address.toLong())
 fun Memory.readStringzOrNull(offset: Int): String? = if (offset != 0) readStringz(offset) else null
 
-fun Memory.readStringz(offset: Int): String = openSync().sliceStart(offset.toLong()).readStringz()
+//fun Memory.readStringz(offset: Int): String = openSync().sliceStart(offset.toLong()).readStringz()
+fun Memory.strlenz(offset: Int): Int {
+    val idx = this.index(offset)
+    for (n in 0 until Int.MAX_VALUE) {
+        val c = get8(idx + n)
+        if (c == 0) return n
+    }
+    return -1
+}
+
+// @TODO: UTF-8
+fun Memory.readStringz(offset: Int): String {
+    val len = strlenz(offset)
+    val idx = this.index(offset)
+    return String(CharArray(len) { get8(idx + it).toChar() })
+}
 
 fun Memory.copy(srcPos: Int, dstPos: Int, size: Int) = run {
     val srcOffset = index(srcPos)

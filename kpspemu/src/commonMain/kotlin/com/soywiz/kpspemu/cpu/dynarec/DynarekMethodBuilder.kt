@@ -157,8 +157,6 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun blez(i: Int, s: InstructionInfo) = s.branch { RS LE 0.lit }
     override fun bgtz(i: Int, s: InstructionInfo) = s.branch { RS GT 0.lit }
     override fun bgez(i: Int, s: InstructionInfo) = s.branch { RS GE 0.lit }
-    //override fun bgezal(i: Int, s: InstructionInfo) = s.branch { RA = _nPC + 4; RS ge 0.lit }
-    //override fun bltzal(i: Int, s: InstructionInfo) = s.branch { RA = _nPC + 4; RS lt 0.lit }
 
     override fun beql(i: Int, s: InstructionInfo) = s.branchLikely { RS EQ RT }
     override fun bnel(i: Int, s: InstructionInfo) = s.branchLikely { RS NE RT }
@@ -166,8 +164,12 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
     override fun blezl(i: Int, s: InstructionInfo) = s.branchLikely { RS LE 0.lit }
     override fun bgtzl(i: Int, s: InstructionInfo) = s.branchLikely { RS GT 0.lit }
     override fun bgezl(i: Int, s: InstructionInfo) = s.branchLikely { RS GE 0.lit }
-    //override fun bgezall(i: Int, s: InstructionInfo) = s.branchLikely { RA = _nPC + 4; RS ge 0.lit }
-    //override fun bltzall(i: Int, s: InstructionInfo) = s.branchLikely { RA = _nPC + 4; RS lt 0.lit }
+
+    // @TODO: This is probably wrong!!
+    override fun bgezal(i: Int, s: InstructionInfo) = s.branch { RA = _nPC + 4.lit; RS GE 0.lit }
+    override fun bltzal(i: Int, s: InstructionInfo) = s.branch { RA = _nPC + 4.lit; RS LT 0.lit }
+    override fun bgezall(i: Int, s: InstructionInfo) = s.branchLikely { RA = _nPC + 4.lit; RS GE 0.lit }
+    override fun bltzall(i: Int, s: InstructionInfo) = s.branchLikely { RA = _nPC + 4.lit; RS LT 0.lit }
 
     //override fun bc1f(i: Int, s: InstructionInfo) = s.branch { CpuState::f_get_fcr31_cc_not.invoke(p0) }
     //override fun bc1t(i: Int, s: InstructionInfo) = s.branch { CpuState::f_get_fcr31_cc.invoke(p0) }

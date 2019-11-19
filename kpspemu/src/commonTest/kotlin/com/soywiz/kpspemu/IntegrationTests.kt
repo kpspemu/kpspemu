@@ -12,6 +12,7 @@ import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.hle.modules.*
+import com.soywiz.kpspemu.mem.*
 import kotlin.coroutines.*
 import kotlin.test.*
 
@@ -31,7 +32,12 @@ class IntegrationTests : BaseTest() {
     enum class Mode { Interpreted, Dynarek }
 
     @Test
-    fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
+    fun testCpuAlu() {
+        //for (n in 0 until 1000) {
+        for (n in 0 until 1) {
+            testFile("cpu/cpu_alu/cpu_alu")
+        }
+    }
 
     //@Test
     //fun testCpuAluDynarek() = testFile("cpu/cpu_alu/cpu_alu", mode = Mode.Dynarek)
@@ -49,12 +55,17 @@ class IntegrationTests : BaseTest() {
     fun testLsu() = testFile("cpu/lsu/lsu")
 
     @Test
-    fun testFpu() = testFile(
-        "cpu/fpu/fpu", ignores = listOf(
-            "mul.s 0.296558 * 62.000000, CAST_1 = 18.38657^",
-            "mul.s 0.296558 * 62.000000, FLOOR_3 = 18.38657^"
-        )
-    )
+    fun testFpu() {
+        //for (n in 0 until 1000) {
+        for (n in 0 until 1) {
+            testFile(
+                "cpu/fpu/fpu", ignores = listOf(
+                    "mul.s 0.296558 * 62.000000, CAST_1 = 18.38657^",
+                    "mul.s 0.296558 * 62.000000, FLOOR_3 = 18.38657^"
+                )
+            )
+        }
+    }
 
     @Test
     fun testFcr() = testFile(
@@ -141,7 +152,7 @@ class IntegrationTests : BaseTest() {
         timeout: TimeSpan = DEFAULT_TIMEOUT,
         processor: (String) -> String = { it }
     ) {
-        val emulator = Emulator(coroutineContext)
+        val emulator = Emulator(coroutineContext, mem = CachedMemory())
 
         emulator.interpreted = (mode == Mode.Interpreted)
         emulator.display.exposeDisplay = false
