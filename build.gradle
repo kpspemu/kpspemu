@@ -1,12 +1,10 @@
 plugins {
     id 'org.jetbrains.kotlin.multiplatform' version '1.3.60'
-    id 'com.moowork.node' version '1.2.0'
 }
 
 allprojects {
     repositories {
         mavenLocal()
-        //maven { url "https://dl.bintray.com/soywiz/soywiz" }
         maven { url "https://dl.bintray.com/korlibs/korlibs" }
         maven { url "https://dl.bintray.com/kotlin/kotlin-eap" }
         jcenter()
@@ -17,44 +15,18 @@ allprojects {
 
 subprojects {
     apply plugin: 'kotlin-multiplatform'
-    apply plugin: 'com.moowork.node'
 
     kotlin {
-        targets {
-            /*
-            //fromPreset(presets.iosX64, 'iosX64')
-            //fromPreset(presets.iosArm32, 'iosArm32')
-            //fromPreset(presets.iosArm64, 'iosArm64')
-            fromPreset(presets.macosX64, 'macosX64') {
-                if (project.name == 'kpspemu') {
-                    //compilations.main.outputKinds('EXECUTABLE')
-                }
-            }
-            //fromPreset(presets.linuxX64, 'linuxX64') {
-            //  if (project.name == 'kpspemu') {
-            //      compilations.main.outputKinds('EXECUTABLE')
-            //  }
-            //}
-            fromPreset(presets.mingwX64, 'mingwX64') {
-                if (project.name == 'kpspemu') {
-                    //compilations.main.outputKinds('EXECUTABLE')
-                }
-            }
-             */
-            fromPreset(presets.jvm, 'jvm')
-            fromPreset(presets.js, 'js') {
-                compilations.main {
-                    configure([compileKotlinJs, compileTestKotlinJs]) {
-                        kotlinOptions {
-                            languageVersion = "1.3"
-                            sourceMap = true
-                            metaInfo = true
-                            moduleKind = "umd"
-                        }
+        js() {
+            browser {
+                testTask {
+                    useKarma {
+                        useChromeHeadless()
                     }
                 }
             }
         }
+        jvm()
         sourceSets {
             nonNativeCommonMain
             //nativeCommonMain
@@ -62,6 +34,27 @@ subprojects {
             //nativePosixMain
             configure([jvmMain, jsMain]) {
                 dependsOn nonNativeCommonMain
+            }
+            commonMain {
+                dependencies {
+                    implementation kotlin('stdlib-common')
+                }
+            }
+            commonTest {
+                dependencies {
+                    implementation kotlin('test-common')
+                    implementation kotlin('test-annotations-common')
+                }
+            }
+            jsMain {
+                dependencies {
+                    implementation kotlin('stdlib-js')
+                }
+            }
+            jsTest {
+                dependencies {
+                    implementation kotlin('test-js')
+                }
             }
             /*
             mingwX64Main {
@@ -96,43 +89,6 @@ subprojects {
         jvmTestImplementation "org.jetbrains.kotlin:kotlin-test-junit"
     }
 
-    // Javascript test configuration
-    node {
-        version = '8.11.4'
-        download = true
-        nodeModulesDir = file("$buildDir/yarn")
-    }
-
-    def jsCompilations = kotlin.targets.js.compilations
-    task addYarnDeps(type: YarnTask) {
-        doFirst {
-            mkdir "$buildDir/yarn"
-        }
-        args = ["add", "mocha@5.2.0"]
-    }
-
-    task populateNodeModules {
-        doLast {
-            copy {
-                from "$buildDir/yarn/node_modules"
-                from jsCompilations.main.output.allOutputs
-                jsCompilations.test.runtimeDependencyFiles.each {
-                    if (it.exists() && !it.isDirectory()) {
-                        from zipTree(it.absolutePath).matching { include '*.js' }
-                    }
-                }
-                into "$buildDir/node_modules"
-            }
-        }
-    }
-
-    task runMocha(type: NodeTask, dependsOn: [jsCompilations.test.compileKotlinTaskName, addYarnDeps, populateNodeModules]) {
-        script = file("$buildDir/node_modules/mocha/bin/mocha")
-        args = [relativePath("${jsCompilations.test.output.classesDirs.first()}/${project.name}_test.js")]
-    }
-
-    jsTest.dependsOn runMocha
-
     // Fix for https://github.com/srs/gradle-node-plugin/issues/301
     repositories.whenObjectAdded {
         if (it instanceof IvyArtifactRepository) {
@@ -163,8 +119,8 @@ subprojects {
         pom.withXml {
             def root = it.asNode()
             root.appendNode('name', project.name)
-            root.appendNode('description', 'Multiplatform Game Engine written in Kotlin (JVM, JS, Native and COMMON)')
-            root.appendNode('url', 'https://github.com/korlibs/korge')
+            root.appendNode('description', 'PSP Emulator written in Kotlin')
+            root.appendNode('url', 'https://github.com/kpspsemu/kpspsemu')
             root.children().last() + pomBaseData
         }
     }

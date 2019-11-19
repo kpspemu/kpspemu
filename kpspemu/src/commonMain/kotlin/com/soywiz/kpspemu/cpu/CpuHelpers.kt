@@ -5,6 +5,7 @@ import com.soywiz.kmem.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
+import com.soywiz.korma.math.isAlmostZero as isAlmostZero1
 
 fun D2ContextPspEmu() = D2Context().apply { registerDyna() }
 
@@ -124,7 +125,7 @@ fun dyna_fsub(RS: Float, RT: Float): Float = RS pspSub RT
 
 fun dyna_fmul(cpu: CpuState, RS: Float, RT: Float): Float {
     val res = RS * RT
-    return if (cpu.fcr31_fs && res.isAlmostZero2()) 0f else res
+    return if (cpu.fcr31_fs && res.isAlmostZero1()) 0f else res
 }
 
 fun dyna_fdiv(RS: Float, RT: Float): Float = RS / RT

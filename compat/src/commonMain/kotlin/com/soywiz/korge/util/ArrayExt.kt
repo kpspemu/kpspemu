@@ -8,6 +8,6 @@ fun <T> MutableList<T>.splice(index: Int, count: Int, vararg values: T) {
     }
     for (value in values) this.add(value)
     for (n in index + count until temp.size) {
-        this.add(temp[index + count + n])
+        this.add(temp[n])
     }
 }

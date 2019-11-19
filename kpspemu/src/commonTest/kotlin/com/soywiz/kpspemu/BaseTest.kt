@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.klock.*
 import com.soywiz.korge.util.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
@@ -7,7 +8,11 @@ import com.soywiz.korio.file.std.*
 
 open class BaseTest {
     fun pspSuspendTest(callback: suspend Resources.() -> Unit) {
-        suspendTest { callback(Resources.apply { initOnce() }) }
+        suspendTest {
+            withTimeout(20.seconds) {
+                callback(Resources.apply { initOnce() })
+            }
+        }
     }
 
     @NativeThreadLocal
