@@ -17,6 +17,7 @@ import com.soywiz.kpspemu.util.*
 import kotlin.collections.set
 import kotlin.math.*
 import com.soywiz.kmem.umod
+import kotlinx.coroutines.channels.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
 
 //const val INSTRUCTIONS_PER_STEP = 500_000
@@ -68,6 +69,8 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
     val totalThreads: Int get() = resourcesById.size
     val aliveThreadCount: Int get() = resourcesById.values.count { it.running || it.waiting }
     val onThreadChanged = Signal<PspThread>()
+    val onThreadChangedChannel = Channel<PspThread>().broadcast()
+    val waitThreadChanged = onThreadChangedChannel.openSubscription()
     var currentThread: PspThread? = null
 
     override fun reset() {
@@ -125,6 +128,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             logger.trace { "NOT FILLING: $stack" }
         }
         threadManager.onThreadChanged(thread)
+        threadManager.onThreadChangedChannel.offer(thread)
         return thread
     }
 
@@ -174,7 +178,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
 
     suspend fun waitThreadChange() {
         //println("[1]")
-        onThreadChanged.waitOne(16.milliseconds)
+        /*
+        kotlinx.coroutines.withTimeout(16L) {
+            waitThreadChanged.receive()
+        }
+         */
+        delay(1.milliseconds)
+        //onThreadChanged.waitOne()
         //println("[2]")
         //coroutineContext.sleep(0)
     }
@@ -391,6 +401,7 @@ class PspThread internal constructor(
             logger.warn { "Deleting Thread: $name" }
         }
         threadManager.onThreadChanged(this)
+        threadManager.onThreadChangedChannel.offer(this)
     }
 
     fun updateTrace() {
