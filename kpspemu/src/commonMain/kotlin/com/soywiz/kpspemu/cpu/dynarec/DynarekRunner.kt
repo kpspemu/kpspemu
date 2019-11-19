@@ -139,7 +139,7 @@ class MethodCache(private val mem: Memory) {
             dm.dispatch(pc, mem.lw(pc))
             pc += 4
             icount++
-            if (icount >= 10000) error("Function too big!")
+            if (icount >= 10_000) error("Function too big!")
         } while (!dm.reachedFlow)
         val func = dm.generateFunction()
         val ff = CpuStateFunctionCtx(mem, func, address, icount)

@@ -163,7 +163,7 @@ class ThreadManForUser_Thread(val tmodule: ThreadManForUser) : SceSubmodule<Thre
 
     fun sceKernelChangeThreadPriority(id: Int, priority: Int): Int {
         val thread = thread(id)
-        thread.priority = priority
+        thread.threadManager.setThreadPriority(thread, priority)
         return 0
     }
 

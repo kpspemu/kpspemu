@@ -16,6 +16,7 @@ class ModuleManager(val emulator: Emulator) {
     }
 
     fun getByName(name: String): SceModule = modules[name] ?: invalidOp("Can't find module '$name'")
+    inline fun <reified T : SceModule> get(): SceModule = modulesByClass[T::class] ?: invalidOp("Can't find module '${T::class}'")
 
     fun reset() {
         for (module in modules.values) {

@@ -48,6 +48,7 @@ val Class<*>.internalName2: String
             when (this) {
                 java.lang.Void.TYPE -> "V"
                 java.lang.Integer.TYPE -> "I"
+                java.lang.Long.TYPE -> "J"
                 java.lang.Float.TYPE -> "F"
                 java.lang.Boolean.TYPE -> "Z"
                 else -> TODO("Unknown primitive $this")

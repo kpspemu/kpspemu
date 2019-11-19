@@ -7,7 +7,7 @@ import com.soywiz.kpspemu.hle.modules.InterruptManager
 
 fun Emulator.registerNativeModules() = moduleManager.registerNativeModules()
 
-fun ModuleManager.registerNativeModules() {
+fun ModuleManager.registerNativeModules() = this.apply {
     register(LoadExecForUser(emulator))
     register(ThreadManForUser(emulator))
     register(SysMemUserForUser(emulator))

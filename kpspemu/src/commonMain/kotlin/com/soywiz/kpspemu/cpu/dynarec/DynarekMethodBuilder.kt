@@ -59,10 +59,10 @@ class DynarekMethodBuilder : BaseDynarecMethodBuilder() {
         HI = ::dyna_multu_HI.invoke(RS, RT)
     }
 
-    override fun madd(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_madd.invoke(RS, RT) }
-    override fun maddu(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_maddu.invoke(RS, RT) }
-    override fun msub(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_msub.invoke(RS, RT) }
-    override fun msubu(i: Int, s: InstructionInfo) = s { HI_LO = ::dyna_msubu.invoke(RS, RT) }
+    override fun madd(i: Int, s: InstructionInfo) = s { STM(::dyna_madd.invoke(EXTERNAL, RS, RT)) }
+    override fun maddu(i: Int, s: InstructionInfo) = s { STM(::dyna_maddu.invoke(EXTERNAL, RS, RT)) }
+    override fun msub(i: Int, s: InstructionInfo) = s { STM(::dyna_msub.invoke(EXTERNAL, RS, RT)) }
+    override fun msubu(i: Int, s: InstructionInfo) = s { STM(::dyna_msubu.invoke(EXTERNAL, RS, RT)) }
 
     override fun mflo(i: Int, s: InstructionInfo) = s { RD = LO }
     override fun mfhi(i: Int, s: InstructionInfo) = s { RD = HI }

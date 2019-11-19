@@ -135,6 +135,7 @@ sealed class D2Expr<T>(val type: D2TYPE<T>) {
     class LLit(val lit: Long) : L()
     class FLit(val lit: Float) : F()
 
+    class LBinOp(val l: D2ExprL, val op: D2IBinOp, val r: D2ExprL) : L()
     class IBinOp(val l: D2ExprI, val op: D2IBinOp, val r: D2ExprI) : I()
     class FBinOp(val l: D2ExprF, val op: D2FBinOp, val r: D2ExprF) : F()
 

@@ -5,19 +5,18 @@ import com.soywiz.kpspemu.*
 
 class ResourceNotFoundException(msg: String) : Exception(msg)
 
-open class Manager<T : Resource>(val name: String, override val emulator: Emulator, val initialId: Int = 0) :
-    WithEmulator {
+open class Manager<T : Resource>(val name: String, override val emulator: Emulator, val initialId: Int = 0) : WithEmulator {
     internal var lastId: Int = initialId
     internal var freeIds = Pool { lastId++ }
     internal val resourcesById = LinkedHashMap<Int, T>()
     val resourcesCount: Int get() = resourcesById.size
 
-    fun put(item: T): T = item.apply { resourcesById[item.id] = item }
+    open fun put(item: T): T = item.apply { resourcesById[item.id] = item }
     internal fun allocId(): Int = freeIds.alloc()
     fun tryGetByName(name: String): T? = resourcesById.values.firstOrNull { it.name == name }
     fun tryGetById(id: Int): T? = resourcesById[id]
     fun getById(id: Int) = tryGetById(id) ?: throw ResourceNotFoundException("Can't find element $id in $name")
-    fun freeById(id: Int) {
+    open fun freeById(id: Int) {
         freeIds.free(id)
         resourcesById.remove(id)
     }

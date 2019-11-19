@@ -10,6 +10,8 @@ import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.format.elf.*
 import com.soywiz.kpspemu.hle.*
+import com.soywiz.kpspemu.hle.manager.*
+import com.soywiz.kpspemu.hle.modules.*
 import kotlin.coroutines.*
 import kotlin.test.*
 
@@ -19,6 +21,11 @@ class IntegrationTests : BaseTest() {
     //val TRACE = true
     //val TRACE1 = true
 
+    //val DEFAULT_MODE = Mode.Dynarek
+    val DEFAULT_MODE = Mode.Interpreted
+    val DEFAULT_TIMEOUT = 30.seconds
+
+
     //@Test fun testDmac() = testFile("dmac/dmactest")
 
     enum class Mode { Interpreted, Dynarek }
@@ -26,8 +33,8 @@ class IntegrationTests : BaseTest() {
     @Test
     fun testCpuAlu() = testFile("cpu/cpu_alu/cpu_alu")
 
-    @Test
-    fun testCpuAluDynarek() = testFile("cpu/cpu_alu/cpu_alu", mode = Mode.Dynarek)
+    //@Test
+    //fun testCpuAluDynarek() = testFile("cpu/cpu_alu/cpu_alu", mode = Mode.Dynarek)
 
     @Test
     fun testCpuBranch() = testFile("cpu/cpu_alu/cpu_branch")
@@ -112,14 +119,16 @@ class IntegrationTests : BaseTest() {
     fun testFile(
         name: String,
         ignores: List<String> = listOf(),
-        mode: Mode = Mode.Interpreted,
+        mode: Mode = DEFAULT_MODE,
+        timeout: TimeSpan = DEFAULT_TIMEOUT,
         processor: (String) -> String = { it }
-    ) = pspSuspendTest {
+    ) = pspSuspendTest(timeout) {
         testFile(
             elf = pspautotests["$name.prx"].readAsSyncStream(),
             expected = pspautotests["$name.expected"].readString(),
             ignores = ignores,
             mode = mode,
+            timeout = timeout,
             processor = processor
         )
     }
@@ -128,12 +137,12 @@ class IntegrationTests : BaseTest() {
         elf: SyncStream,
         expected: String,
         ignores: List<String>,
-        //mode: Mode = Mode.Interpreted,
-        mode: Mode = Mode.Dynarek,
-        timeout: TimeSpan = 10.seconds,
+        mode: Mode = DEFAULT_MODE,
+        timeout: TimeSpan = DEFAULT_TIMEOUT,
         processor: (String) -> String = { it }
     ) {
         val emulator = Emulator(coroutineContext)
+
         emulator.interpreted = (mode == Mode.Interpreted)
         emulator.display.exposeDisplay = false
         emulator.registerNativeModules()
@@ -160,18 +169,26 @@ class IntegrationTests : BaseTest() {
 
         var generatedError: Throwable? = null
 
+        //emulator.moduleManager.registerNativeModules().get<ThreadManForUser>().logger.setLevel(Logger.Level.TRACE)
+
         try {
             //println("[1]")
             withTimeout(timeout) {
                 while (emulator.running) {
                     //println("[2] : ${emulator.running}")
-                    emulator.threadManager.step() // UPDATE THIS
-                    delay(1.milliseconds)
-                    //println("[3]")
+                    val res = emulator.threadManager.step() // UPDATE THIS
+                    delay(16.milliseconds)
+
+                    if (res == ThreadManager.StepResult.NO_THREAD) {
+                        println("res == ThreadManager.StepResult.NO_THREAD")
+                        emulator.threadManager.dump()
+                    }
+                    //if (res == ThreadManager.StepResult.NO_THREAD) break
                     if (TRACE) {
                         for (thread in emulator.threadManager.threads) println("PC: ${thread.state.PC.hex} : ${(thread.state.PC - info.baseAddress).hex}")
                     }
                 }
+                println("emulator.running: ${emulator.running}")
             }
         } catch (e: Throwable) {
             Console.error("Partial output generated:")

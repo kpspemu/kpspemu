@@ -115,10 +115,11 @@ fun umul32_64_hi(a: Int, b: Int): Int {
     return ((c48 and 0xFFFF) shl 16) or (c32 and 0xFFFF)
 }
 
-fun dyna_madd(RS: Int, RT: Int): Long = RS.toLong() * RT.toLong()
-fun dyna_maddu(RS: Int, RT: Int): Long = RS.unsigned * RT.unsigned
-fun dyna_msub(RS: Int, RT: Int): Long = RS.toLong() * RT.toLong()
-fun dyna_msubu(RS: Int, RT: Int): Long = RS.unsigned * RT.unsigned
+
+fun dyna_madd(state: CpuState, RS: Int, RT: Int): Int = 0.also { state.HI_LO += RS.toLong() * RT.toLong() }
+fun dyna_maddu(state: CpuState, RS: Int, RT: Int): Int = 0.also { state.HI_LO += RS.unsigned * RT.unsigned }
+fun dyna_msub(state: CpuState, RS: Int, RT: Int): Int = 0.also { state.HI_LO -= RS.toLong() * RT.toLong() }
+fun dyna_msubu(state: CpuState, RS: Int, RT: Int): Int = 0.also { state.HI_LO -= RS.unsigned * RT.unsigned }
 
 fun dyna_fadd(RS: Float, RT: Float): Float = RS pspAdd RT
 fun dyna_fsub(RS: Float, RT: Float): Float = RS pspSub RT

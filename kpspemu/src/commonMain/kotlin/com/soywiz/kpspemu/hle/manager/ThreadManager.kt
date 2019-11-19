@@ -28,10 +28,40 @@ const val INSTRUCTIONS_PER_STEP = 5_000_000
 //const val INSTRUCTIONS_PER_STEP = 100_000_000
 
 
+class ThreadsWithPriority(val priority: Int) : Comparable<ThreadsWithPriority> {
+    val threads = arrayListOf<PspThread>()
+
+    var currentIndex = 0
+    val runningThreads get() = threads.count { it.running }
+
+    fun next(): PspThread? = when {
+        threads.isNotEmpty() -> threads[currentIndex++ % threads.size]
+        else -> null
+    }
+
+    fun nextRunning(): PspThread? {
+        for (n in 0 until threads.size) {
+            val n = next()
+            if (n != null && n.running) return n
+        }
+        return null
+    }
+
+    override fun compareTo(other: ThreadsWithPriority): Int {
+        return this.priority.compareTo(other.priority)
+    }
+
+    override fun toString(): String = "ThreadsWithPriority(priority=$priority)"
+}
+
 class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator) {
     val logger = Logger("ThreadManager").apply {
         //level = LogLevel.TRACE
     }
+    val prioritiesByValue = LinkedHashMap<Int, ThreadsWithPriority>()
+    val priorities = PriorityQueue<ThreadsWithPriority>()
+    val currentPriorities = PriorityQueue<ThreadsWithPriority>()
+
     val threads get() = resourcesById.values
     val waitingThreads: Int get() = resourcesById.count { it.value.waiting }
     val activeThreads: Int get() = resourcesById.count { it.value.running }
@@ -43,6 +73,25 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
     override fun reset() {
         super.reset()
         currentThread = null
+    }
+
+    fun setThreadPriority(thread: PspThread, priority: Int) {
+        if (thread.priority == priority) return
+
+        val oldThreadsWithPriority = thread.threadsWithPriority
+        if (oldThreadsWithPriority != null) {
+            oldThreadsWithPriority.threads.remove(thread)
+            if (oldThreadsWithPriority.threads.isEmpty()) {
+                prioritiesByValue.remove(oldThreadsWithPriority.priority)
+                priorities.remove(oldThreadsWithPriority)
+            }
+        }
+
+        val newThreadsWithPriority = prioritiesByValue.getOrPut(priority) {
+            ThreadsWithPriority(priority).also { priorities.add(it) }
+        }
+        thread.threadsWithPriority = newThreadsWithPriority
+        newThreadsWithPriority.threads.add(thread)
     }
 
     fun create(
@@ -97,8 +146,14 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
     fun getActiveThreadsWithPriority(priority: Int): List<PspThread> =
         threads.filter { it.running && it.priority == priority }
 
-    fun getFirstThread(): PspThread? =
-        getActiveThreadPriorities().firstOrNull()?.let { getActiveThreadsWithPriority(it) }?.firstOrNull()
+    val lowestThreadPriority get() = threads.minBy { it.priority }?.priority ?: 0
+
+    fun getFirstThread(): PspThread? {
+        for (thread in threads) {
+            if (thread.priority == lowestThreadPriority) return thread
+        }
+        return null
+    }
 
     fun getNextPriority(priority: Int): Int? {
         return getActiveThreadPriorities().firstOrNull { it > priority }
@@ -124,8 +179,12 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
         //coroutineContext.sleep(0)
     }
 
-    fun step() {
-        val start: Double = timeManager.getTimeInMillisecondsDouble()
+    enum class StepResult {
+        NO_THREAD, BREAKPOINT, TIMEOUT
+    }
+
+    fun step(): StepResult {
+        val start = DateTime.now()
 
         if (emulator.globalTrace) {
             println("-----")
@@ -135,27 +194,38 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             println("-----")
         }
 
-        do {
-            val now: Double = timeManager.getTimeInMillisecondsDouble()
-            if (currentThread == null) currentThread = getFirstThread()
-            if (currentThread?.running == false) {
-                println("WAIT! Trying to execute a sleeping thread!")
-                currentThread = computeNextThread(currentThread)
+        currentPriorities.clear()
+        currentPriorities.addAll(priorities)
+
+        //Console.error("ThreadManager.STEP")
+
+        while (currentPriorities.isNotEmpty()) {
+            val threads = currentPriorities.removeHead()
+            //println("threads: $threads")
+            while (true) {
+                val now = DateTime.now()
+                val current = threads.nextRunning() ?: break
+                //println("    Running Thread.STEP: $current")
+                if (emulator.globalTrace) println("Current thread: ${current.name}")
+                try {
+                    current.step(now.unixMillisDouble)
+                } catch (e: BreakpointException) {
+                    //Console.error("StepResult.BREAKPOINT: $e")
+                    return StepResult.BREAKPOINT
+                }
+                if (emulator.globalTrace) println("Next thread: ${current.name}")
+
+                val elapsed = now - start
+                if (elapsed >= 16.milliseconds) {
+                    //coroutineContext.delay(1.milliseconds)
+                    Console.error("StepResult.TIMEOUT: $elapsed")
+                    return StepResult.TIMEOUT
+                }
             }
-            if (emulator.globalTrace) println("Current thread: ${currentThread?.name}")
-            try {
-                currentThread?.step(now)
-                currentThread = computeNextThread(currentThread)
-            } catch (e: BreakpointException) {
-                break
-            }
-            if (emulator.globalTrace) println("Next thread: ${currentThread?.name}")
-            val elapsed = now - start
-            if (elapsed >= 16.0) {
-                //coroutineContext.delay(1.milliseconds)
-                break // Rest a bit
-            }
-        } while (currentThread != null)
+        }
+
+        dump()
+        return StepResult.NO_THREAD
     }
 
     val availablePriorities: List<Int> get() = resourcesById.values.filter { it.running }.map { it.priority }.distinct().sorted()
@@ -217,6 +287,13 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
         // @TODO:
     }
 
+    fun dump() {
+        println("ThreadManager.dump:")
+        for (thread in threads) {
+            println(" - $thread")
+        }
+    }
+
     val summary: String
         get() = "[" + threads.map { "'${it.name}'#${it.id} P${it.priority} : ${it.phase}" }.joinToString(", ") + "]"
 }
@@ -242,6 +319,8 @@ class PspThread internal constructor(
     var attributes: Int,
     val optionPtr: Ptr
 ) : Resource(threadManager, id, name), WithEmulator {
+    var threadsWithPriority: ThreadsWithPriority? = null
+
     var preemptionCount: Int = 0
     val totalExecutedInstructions: Long get() = state.totalExecuted
     val onEnd = Signal<Unit>()
@@ -253,6 +332,10 @@ class PspThread internal constructor(
         RUNNING,
         WAITING,
         DELETED
+    }
+
+    override fun toString(): String {
+        return "PspThread(id=$id, name='$name', phase=$phase, status=$status, priority=$priority, waitObject=$waitObject, waitInfo=$waitInfo)"
     }
 
     val status: Int
@@ -268,11 +351,14 @@ class PspThread internal constructor(
     var waitObject: WaitObject? = null
     var waitInfo: Any? = null
     var exitStatus: Int = 0
-
     var phase: Phase = Phase.STOPPED
+        set(value) = run { field = value }
+
+    val priority: Int get() = threadsWithPriority?.priority ?: Int.MAX_VALUE
+
     val running: Boolean get() = phase == Phase.RUNNING
     val waiting: Boolean get() = waitObject != null
-    var priority: Int = initPriority
+
     override val emulator get() = manager.emulator
     val state = CpuState("state.thread.$name", emulator.globalCpuState, emulator.syscalls).apply {
         _thread = this@PspThread
@@ -288,6 +374,23 @@ class PspThread internal constructor(
 
     init {
         updateTrace()
+        setThreadProps(Phase.STOPPED)
+        threadManager.setThreadPriority(this, initPriority)
+    }
+
+    fun setThreadProps(phase: Phase, waitObject: WaitObject? = this.waitObject, waitInfo: Any? = this.waitInfo, acceptingCallbacks: Boolean = this.acceptingCallbacks) {
+        this.phase = phase
+        this.waitObject = waitObject
+        this.waitInfo = waitInfo
+        this.acceptingCallbacks = acceptingCallbacks
+        if (phase == Phase.STOPPED) {
+            onEnd(Unit)
+        }
+        if (phase == Phase.DELETED) {
+            manager.freeById(id)
+            logger.warn { "Deleting Thread: $name" }
+        }
+        threadManager.onThreadChanged(this)
     }
 
     fun updateTrace() {
@@ -317,31 +420,23 @@ class PspThread internal constructor(
 
     fun start() {
         resume()
-        threadManager.onThreadChanged(this)
     }
 
     fun resume() {
-        phase = Phase.RUNNING
-        waitObject = null
-        waitInfo = null
-        acceptingCallbacks = false
-        threadManager.onThreadChanged(this)
+        setThreadProps(phase = Phase.RUNNING, waitObject = null, waitInfo = null, acceptingCallbacks = false)
     }
 
     fun stop(reason: String = "generic") {
         if (phase != Phase.STOPPED) {
             logger.warn { "Stopping Thread: $name : reason=$reason" }
-            phase = Phase.STOPPED
-            onEnd(Unit)
+            setThreadProps(phase = Phase.STOPPED)
         }
         //threadManager.onThreadChanged(this)
     }
 
     fun delete() {
         stop()
-        phase = Phase.DELETED
-        manager.freeById(id)
-        logger.warn { "Deleting Thread: $name" }
+        setThreadProps(phase = Phase.DELETED)
     }
 
     fun exitAndKill() {
@@ -389,9 +484,7 @@ class PspThread internal constructor(
     }
 
     fun markWaiting(wait: WaitObject, cb: Boolean) {
-        this.waitObject = wait
-        this.phase = Phase.WAITING
-        this.acceptingCallbacks = cb
+        setThreadProps(phase = Phase.WAITING, waitObject = wait, acceptingCallbacks = cb)
     }
 
     fun suspend(wait: WaitObject, cb: Boolean) {

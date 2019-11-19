@@ -14,6 +14,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.coroutines.*
 import com.soywiz.korio.lang.invalidOp as invalidOp1
+import kotlin.coroutines.intrinsics.*
 
 class RegisterReader {
     var pos: Int = 4
@@ -222,34 +223,44 @@ abstract class SceModule(
 
             loggerSuspend.trace { "Suspend $name (${threadManager.summary}) : ${rcpu.summary}" }
             val mfunction: suspend (RegisterReader) -> T = { function(it, rcpu) }
-            var completed = false
-            mfunction.startCoroutine(this, object : Continuation<T> {
-                override val context: CoroutineContext = coroutineContext
+            try {
+                val result = mfunction.startCoroutineUninterceptedOrReturn(this, object : Continuation<T> {
+                    override val context: CoroutineContext = coroutineContext
 
-                override fun resumeWith(result: Result<T>) {
-                    if (result.isSuccess) {
-                        val value = result.getOrThrow()
-                        resumeHandler(rcpu, thread, value)
-                        completed = true
-                        rthread.resume()
-                        loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
-                    } else {
-                        val e = result.exceptionOrNull()!!
-                        if (e is SceKernelException) {
-                            resume(convertErrorToT(e.errorCode))
+                    override fun resumeWith(result: Result<T>) {
+                        if (result.isSuccess) {
+                            val value = result.getOrThrow()
+                            resumeHandler(rcpu, thread, value)
+                            rthread.resume()
+                            loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
                         } else {
-                            println("ERROR at registerFunctionSuspendT.resumeWithException")
-                            e.printStackTrace()
-                            throw e
+                            val e = result.exceptionOrNull()!!
+                            if (e is SceKernelException) {
+                                resume(convertErrorToT(e.errorCode))
+                            } else {
+                                println("ERROR at registerFunctionSuspendT.resumeWithException")
+                                e.printStackTrace()
+                                throw e
+                            }
                         }
                     }
-                }
-            })
+                })
 
-            if (!completed) {
-                rthread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
-                if (rthread.tracing) println("  [S] Calling $name")
-                threadManager.suspendReturnVoid()
+                if (result == COROUTINE_SUSPENDED) {
+                    rthread.markWaiting(WaitObject.COROUTINE(fullName), cb = cb)
+                    if (rthread.tracing) println("  [S] Calling $name")
+                    threadManager.suspendReturnVoid()
+                } else {
+                    resumeHandler(rthread.state, rthread, result as T)
+                }
+            } catch (e: Throwable) {
+                if (e is SceKernelException) {
+                    resumeHandler(rthread.state, rthread, convertErrorToT(e.errorCode))
+                } else {
+                    println("ERROR at registerFunctionSuspendT.resumeWithException")
+                    e.printStackTrace()
+                    throw e
+                }
             }
         }
     }

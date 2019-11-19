@@ -190,6 +190,23 @@ class JvmGenerator {
                     D2IBinOp.XOR -> visitInsn(Opcodes.IXOR)
                 }
             }
+            is D2Expr.LBinOp -> {
+                generate(e.l)
+                generate(e.r)
+                when (e.op) {
+                    D2IBinOp.ADD -> visitInsn(Opcodes.LADD)
+                    D2IBinOp.SUB -> visitInsn(Opcodes.LSUB)
+                    D2IBinOp.MUL -> visitInsn(Opcodes.LMUL)
+                    D2IBinOp.DIV -> visitInsn(Opcodes.LDIV)
+                    D2IBinOp.REM -> visitInsn(Opcodes.LREM)
+                    D2IBinOp.SHL -> visitInsn(Opcodes.LSHL)
+                    D2IBinOp.SHR -> visitInsn(Opcodes.LSHR)
+                    D2IBinOp.USHR -> visitInsn(Opcodes.LUSHR)
+                    D2IBinOp.OR -> visitInsn(Opcodes.LOR)
+                    D2IBinOp.AND -> visitInsn(Opcodes.LAND)
+                    D2IBinOp.XOR -> visitInsn(Opcodes.LXOR)
+                }
+            }
             is D2Expr.FBinOp -> {
                 generate(e.l)
                 generate(e.r)

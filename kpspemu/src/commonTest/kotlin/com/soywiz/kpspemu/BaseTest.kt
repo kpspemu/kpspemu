@@ -7,9 +7,9 @@ import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
 
 open class BaseTest {
-    fun pspSuspendTest(callback: suspend Resources.() -> Unit) {
+    fun pspSuspendTest(timeout: TimeSpan = 30.seconds, callback: suspend Resources.() -> Unit) {
         suspendTest {
-            withTimeout(20.seconds) {
+            withTimeout(timeout) {
                 callback(Resources.apply { initOnce() })
             }
         }
