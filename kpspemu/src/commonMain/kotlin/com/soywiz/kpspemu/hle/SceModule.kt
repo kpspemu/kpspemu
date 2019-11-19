@@ -235,12 +235,16 @@ abstract class SceModule(
                             loggerSuspend.trace { "Resumed $name with value: $value (${threadManager.summary}) : ${rcpu.summary}" }
                         } else {
                             val e = result.exceptionOrNull()!!
-                            if (e is SceKernelException) {
-                                resume(convertErrorToT(e.errorCode))
-                            } else {
-                                println("ERROR at registerFunctionSuspendT.resumeWithException")
-                                e.printStackTrace()
-                                throw e
+                            when (e) {
+                                is SceKernelException -> {
+                                    resumeHandler(rcpu, thread, convertErrorToT(e.errorCode))
+                                    rthread.resume()
+                                }
+                                else -> {
+                                    println("ERROR at registerFunctionSuspendT.resumeWithException")
+                                    e.printStackTrace()
+                                    throw e
+                                }
                             }
                         }
                     }
@@ -253,14 +257,14 @@ abstract class SceModule(
                 } else {
                     resumeHandler(rthread.state, rthread, result as T)
                 }
+            } catch (e: SceKernelException) {
+                resumeHandler(rthread.state, rthread, convertErrorToT(e.errorCode))
+            } catch (e: CpuBreakException) {
+                throw e
             } catch (e: Throwable) {
-                if (e is SceKernelException) {
-                    resumeHandler(rthread.state, rthread, convertErrorToT(e.errorCode))
-                } else {
-                    println("ERROR at registerFunctionSuspendT.resumeWithException")
-                    e.printStackTrace()
-                    throw e
-                }
+                println("ERROR at registerFunctionSuspendT.resumeWithException")
+                e.printStackTrace()
+                throw e
             }
         }
     }

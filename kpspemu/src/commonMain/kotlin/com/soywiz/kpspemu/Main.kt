@@ -49,6 +49,7 @@ import kotlin.math.*
 import kotlin.reflect.*
 import com.soywiz.kmem.umod
 import com.soywiz.korev.*
+import com.soywiz.korgw.*
 import kotlinx.coroutines.channels.*
 import kotlin.jvm.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
@@ -59,17 +60,7 @@ suspend fun main() = Main.main(arrayOf())
 
 object Main {
     @JvmStatic
-    suspend fun main(args: Array<String>) {
-        val injector = AsyncInjector()
-            .mapSingleton { Emulator(coroutineContext) }
-            .mapSingleton { PromptConfigurator(get(), get()) }
-            .mapPrototype { KpspemuMainScene(get(), get(), get(), get()) }
-            .mapPrototype { DebugScene(get(), get()) }
-            .mapPrototype { TouchButtonsScene(get()) }
-            .mapSingleton { Browser(get()) }
-
-        Korge(Korge.Config(KpspemuModule, injector = injector))
-    }
+    suspend fun main(args: Array<String>) = Korge(Korge.Config(KpspemuModule))
 }
 
 object KpspemuModule : Module() {
@@ -82,6 +73,16 @@ object KpspemuModule : Module() {
     override val size: SizeInt get() = SizeInt(480, 272)
     override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
     //override val targetFps = PspDisplay.VERTICAL_SYNC_HZ // @TODO: Bad performance!
+
+    override suspend fun AsyncInjector.configure() {
+        this.mapSingleton { Emulator(get<GameWindow>().coroutineDispatcher) }
+            .mapSingleton { PromptConfigurator(get(), get()) }
+            .mapPrototype { KpspemuMainScene(get(), get(), get(), get()) }
+            .mapPrototype { DebugScene(get(), get()) }
+            .mapPrototype { TouchButtonsScene(get()) }
+            .mapSingleton { Browser(get()) }
+
+    }
 }
 
 abstract class SceneWithProcess : Scene() {
@@ -286,7 +287,9 @@ class KpspemuMainScene(
         launchImmediately(coroutineContext) {
             val file = browser.openFile()
             launchImmediately { hudClose() }
-            createEmulatorWithExe(file)
+            if (file != null) {
+                createEmulatorWithExe(file)
+            }
         }
     }
 
@@ -295,7 +298,7 @@ class KpspemuMainScene(
     fun keyPressed(key: Key): Boolean = keys.getOrElse(key) { false }
 
     private fun updateKey(key: Key, pressed: Boolean) {
-        //println("updateKey: $keyCode, $pressed")
+        //println("updateKey: $key, $pressed")
         keys[key] = pressed
         when (key) {
             Key.ENTER -> controller.updateButton(PspCtrlButtons.start, pressed)
@@ -543,8 +546,12 @@ class KpspemuMainScene(
             }
         }
         //sceneView.onKeyTyped { println(it.keyCode) }
-        sceneView.onKeyDown { updateKey(it.key, true) }
-        sceneView.onKeyUp { updateKey(it.key, false) }
+        sceneView.onKeyDown {
+            updateKey(it.key, true)
+        }
+        sceneView.onKeyUp {
+            updateKey(it.key, false)
+        }
 
         // Not available anymore
         /*

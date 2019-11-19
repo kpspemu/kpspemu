@@ -13,3 +13,4 @@ memdump.bin
 ./kpspemu/jvm/generated.class
 package-lock.json
 /korau-atrac3plus/build/
+/hs_err_pid*.log

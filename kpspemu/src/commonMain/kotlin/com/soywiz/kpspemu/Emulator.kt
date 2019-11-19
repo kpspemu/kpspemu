@@ -14,14 +14,14 @@ import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import kotlin.coroutines.*
 
-class Emulator(
+class Emulator constructor(
     val coroutineContext: CoroutineContext,
     val syscalls: SyscallManager = SyscallManager(),
     val mem: Memory = Memory(),
     var gpuRenderer: GpuRenderer = DummyGpuRenderer()
 ) : AsyncDependency {
-    val INITIAL_INTERPRETED = false
-    //val INITIAL_INTERPRETED = true
+    //val INITIAL_INTERPRETED = false
+    val INITIAL_INTERPRETED = true
 
     var interpreted = INITIAL_INTERPRETED
 

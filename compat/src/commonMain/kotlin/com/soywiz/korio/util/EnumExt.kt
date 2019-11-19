@@ -20,6 +20,7 @@ interface IdEnum {
             for (v in values) valuesById[v.id] = v
         }
 
+        @Suppress("UNCHECKED_CAST")
         operator fun invoke(id: Int): T = valuesById.getOrElse(id) { defaultValue } as T
     }
 }

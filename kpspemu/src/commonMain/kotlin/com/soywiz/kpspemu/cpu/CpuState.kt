@@ -40,9 +40,13 @@ data class CpuBreakException(val id: Int) : EmulatorControlFlowException() {
     }
 }
 
-private val CpuBreakExceptionWait = CpuBreakException(CpuBreakException.THREAD_WAIT)
-private val CpuBreakExceptionThreadExitKill = CpuBreakException(CpuBreakException.THREAD_EXIT_KILL)
-private val CpuBreakExceptionInterruptReturn = CpuBreakException(CpuBreakException.INTERRUPT_RETURN)
+//private val CpuBreakExceptionWait = CpuBreakException(CpuBreakException.THREAD_WAIT)
+//private val CpuBreakExceptionThreadExitKill = CpuBreakException(CpuBreakException.THREAD_EXIT_KILL)
+//private val CpuBreakExceptionInterruptReturn = CpuBreakException(CpuBreakException.INTERRUPT_RETURN)
+
+private val CpuBreakExceptionWait get() = CpuBreakException(CpuBreakException.THREAD_WAIT)
+private val CpuBreakExceptionThreadExitKill get() = CpuBreakException(CpuBreakException.THREAD_EXIT_KILL)
+private val CpuBreakExceptionInterruptReturn get() = CpuBreakException(CpuBreakException.INTERRUPT_RETURN)
 
 fun CpuBreakExceptionCached(id: Int): CpuBreakException {
     // JS Can't throw cached exceptions

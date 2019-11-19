@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu
 
-import com.soywiz.korge.bitmapfont.*
 import com.soywiz.korge.html.*
 import com.soywiz.korge.input.*
 import com.soywiz.korge.scene.*

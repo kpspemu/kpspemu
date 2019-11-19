@@ -224,7 +224,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             }
         }
 
-        dump()
+        //dump()
         return StepResult.NO_THREAD
     }
 
@@ -512,6 +512,9 @@ class PspThread internal constructor(
 
     suspend fun sleepSecondsIfRequired(seconds: Double) {
         if (seconds > 0.0) sleepMicro((seconds * 1_000_000).toInt())
+    }
+
+    fun cpuBreakException(e: CpuBreakException) {
     }
 
     var tracing: Boolean = false
