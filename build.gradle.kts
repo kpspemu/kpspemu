@@ -35,3 +35,11 @@ korge {
     //targetAndroidIndirect() // targetAndroidDirect()
     //targetAndroidDirect()
 }
+
+
+dependencies {
+    //commonMainApi "com.soywiz:korio:$korioVersion"
+    //commonMainApi "com.soywiz:korma:$kormaVersion"
+
+    add("jvmMainApi", "org.ow2.asm:asm:6.2.1")
+}
