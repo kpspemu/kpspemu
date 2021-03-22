@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu.format
 
+import com.soywiz.korio.file.std.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.*
 import kotlin.test.*
@@ -7,8 +8,8 @@ import kotlin.test.*
 class CsoTest : BaseTest() {
     @Test
     fun name() = pspSuspendTest {
-        val csoFile = rootTestResources["cube.cso"]
-        val isoFile = rootTestResources["cube.iso"]
+        val csoFile = resourcesVfs["cube.cso"]
+        val isoFile = resourcesVfs["cube.iso"]
         val cso = Cso(csoFile.open())
         //println(cso)
         //println(cso.readCompressedBlock(0).toList())
