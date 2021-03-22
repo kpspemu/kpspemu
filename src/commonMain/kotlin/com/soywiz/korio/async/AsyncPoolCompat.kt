@@ -2,7 +2,7 @@ package com.soywiz.korio.async
 
 import kotlinx.coroutines.channels.*
 
-class AsyncPool<T>(val maxItems: Int = Int.MAX_VALUE, val create: suspend () -> T) {
+class AsyncPoolCompat<T>(val maxItems: Int = Int.MAX_VALUE, val create: suspend () -> T) {
     var createdItems = 0
     private val freedItem = Channel<T>(maxItems)
 

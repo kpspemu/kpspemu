@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.compat.*
 import com.soywiz.korev.*
 import com.soywiz.korge.component.*
 import com.soywiz.korge.input.*
@@ -20,7 +21,7 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
     override suspend fun Container.sceneInit() {
         val sceneView = this
         //atlas = rootLocalVfs["buttons.json"].readAtlas2(views)
-        atlas = resourcesVfs["buttons.json"].readAtlas()
+        atlas = resourcesVfs["buttons.json"].readAtlas2()
 
         sceneView.scale = 480.0 / 1280.0
 

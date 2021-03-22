@@ -1,6 +1,6 @@
 package com.soywiz.korio.async
 
-class AsyncSemaphore {
+class AsyncSemaphoreCompat {
     private var available = 0
     private val signal = Signal<Unit>()
 

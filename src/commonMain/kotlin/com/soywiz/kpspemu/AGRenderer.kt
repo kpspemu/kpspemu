@@ -110,7 +110,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
                 //mem.read(display.fixedAddress(), tempBmp.data)
                 for (n in 0 until 272) {
                     //mem.write(display.fixedAddress() + n * 512 * 4, tempBmp.data, tempBmp.width * (271 - n), tempBmp.width)
-                    mem.read(display.fixedAddress() + n * 512 * 4, tempBmp.data.array, tempBmp.width * n, tempBmp.width)
+                    mem.read(display.fixedAddress() + n * 512 * 4, tempBmp.data.ints, tempBmp.width * n, tempBmp.width)
                 }
                 ag.renderToBitmap(tempBmp) {
                     ag.drawBitmap(tempBmp)
@@ -119,7 +119,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
                 for (n in 0 until 272) {
                     mem.write(
                         display.fixedAddress() + n * 512 * 4,
-                        tempBmp.data.array,
+                        tempBmp.data.ints,
                         tempBmp.width * (271 - n),
                         tempBmp.width
                     )
