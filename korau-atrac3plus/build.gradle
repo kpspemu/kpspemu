@@ -1,4 +1,0 @@
-dependencies {
-    commonMainApi project(":compat")
-    commonMainApi "com.soywiz.korlibs.korge:korge:$korgeVersion"
-}
