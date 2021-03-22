@@ -1,11 +1,11 @@
 package com.soywiz.kpspemu
 
 import com.soywiz.korev.*
-import com.soywiz.korge.atlas.*
 import com.soywiz.korge.component.*
 import com.soywiz.korge.input.*
 import com.soywiz.korge.scene.*
 import com.soywiz.korge.view.*
+import com.soywiz.korim.atlas.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korma.geom.*
@@ -15,16 +15,16 @@ import kotlin.math.*
 
 class TouchButtonsScene(val emulator: Emulator) : Scene() {
     val controller get() = emulator.controller
-    lateinit var atlas: Atlas2
+    lateinit var atlas: Atlas
 
     override suspend fun Container.sceneInit() {
         val sceneView = this
         //atlas = rootLocalVfs["buttons.json"].readAtlas2(views)
-        atlas = resourcesVfs["buttons.json"].readAtlas2(views)
+        atlas = resourcesVfs["buttons.json"].readAtlas()
 
         sceneView.scale = 480.0 / 1280.0
 
-        val buttonsPos = Point(1100, 720 / 2.0)
+        val buttonsPos = Point(1100, 720 / 2)
         val dpadPos = Point(170, 300)
         val pseparation = 0.15
         val bseparation = 0.2
@@ -72,7 +72,8 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
             fun View.testAnyTouch(): Boolean {
                 for (touch in views.input.activeTouches) {
                     if (touch.id == thumbTouchId) continue // Ignore the thumb touch
-                    if (hitTest(touch.current) != null) return true
+                    //if (hitTest(touch.current) != null) return true
+                    println("Missing hitTest(touch.current)")
                 }
                 return false
             }
@@ -93,10 +94,11 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
         })
 
         updateTouch()
-        sceneView.addEventListener<GamePadConnectionEvent> {
-            updateTouch()
+        sceneView.gamepad {
+            connected { updateTouch() }
+            disconnected { updateTouch() }
         }
-        sceneView.addEventListener<ReshapeEvent> {
+        sceneView.onStageResized { width, height ->
             //println("resized:" + views.input.isTouchDevice)
             updateTouch()
         }
@@ -179,30 +181,32 @@ class TouchButtonsScene(val emulator: Emulator) : Scene() {
             }
             bg.apply {
                 launchImmediately {
-                    onDragStart {
-                        thumbTouchId = it.id
-                        //println("START")
-                        bg.alpha = alphaDown
-                        thumb.alpha = alphaDown
-                    }
-                    onDragMove {
-                        //println("Moving: $it")
-                        val angle = atan2(it.delta.x, it.delta.y)
+                    onMouseDrag {
+                        if (it.start){
+                            //thumbTouchId = it.id
+                            thumbTouchId = 0
+                            //println("START")
+                            bg.alpha = alphaDown
+                            thumb.alpha = alphaDown
+                        } else if (it.end) {
+                            thumbTouchId = thumbTouchIdNone
+                            //println("END")
+                            thumb.x = 0.0
+                            thumb.y = 0.0
+                            bg.alpha = alphaUp
+                            thumb.alpha = alphaUp
+                            controller.updateAnalog(0f, 0f)
+                        } else {
+                            //println("Moving: $it")
+                            it.dx
+                            val angle = atan2(it.dx, it.dy)
 
-                        val magnitude = min(32.0, it.delta.length)
+                            val magnitude = min(32.0, hypot(it.dx, it.dy))
 
-                        thumb.x = sin(angle) * magnitude
-                        thumb.y = cos(angle) * magnitude
-                        controller.updateAnalog(sin(angle).toFloat(), cos(angle).toFloat())
-                    }
-                    onDragEnd {
-                        thumbTouchId = thumbTouchIdNone
-                        //println("END")
-                        thumb.x = 0.0
-                        thumb.y = 0.0
-                        bg.alpha = alphaUp
-                        thumb.alpha = alphaUp
-                        controller.updateAnalog(0f, 0f)
+                            thumb.x = sin(angle) * magnitude
+                            thumb.y = cos(angle) * magnitude
+                            controller.updateAnalog(sin(angle).toFloat(), cos(angle).toFloat())
+                        }
                     }
                 }
             }

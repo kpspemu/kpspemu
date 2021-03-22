@@ -8,12 +8,12 @@ import com.soywiz.korge.render.*
 import com.soywiz.korge.view.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.ge.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 
 fun Bitmap32.setAlpha2(value: Int) {
     for (n in 0 until this.data.size) this.data[n] = RGBA(this.data[n].rgb, value)
@@ -91,14 +91,14 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
                     renderBuffer = ag.createRenderBuffer()
                     geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH), 0, HH, WW, 0)
                     //geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH))
-                    renderBuffer!!.setSize(WW * renderScale.toInt(), HH * renderScale.toInt())
+                    renderBuffer!!.setSize(0, 0, WW * renderScale.toInt(), HH * renderScale.toInt())
                     ag.setRenderBufferTemporally(renderBuffer!!) {
                         ag.clear(Colors.BLACK)
                     }
                 }
 
                 val rb = renderBuffer!!
-                rb.setSize(WW * renderScale.toInt(), HH * renderScale.toInt())
+                rb.setSize(0, 0, WW * renderScale.toInt(), HH * renderScale.toInt())
                 ag.setRenderBufferTemporally(rb) {
                     //ag.clear() // @TODO: Is this required?
                     renderBatches(views, ctx, scale = renderScale)

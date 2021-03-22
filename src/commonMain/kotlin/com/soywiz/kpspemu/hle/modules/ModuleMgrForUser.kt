@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.mem.*
+import com.soywiz.krypto.encoding.*
 
 @Suppress("MemberVisibilityCanPrivate", "UNUSED_PARAMETER")
 class ModuleMgrForUser(emulator: Emulator) :

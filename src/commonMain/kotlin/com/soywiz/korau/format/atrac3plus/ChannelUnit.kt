@@ -73,7 +73,7 @@ class ChannelUnit {
 
 		ctx.numQuantUnits = br.read(5) + 1
 		if (ctx.numQuantUnits > 28 && ctx.numQuantUnits < 32) {
-			log.error("Invalid number of quantization units: %d".format(ctx.numQuantUnits))
+			log.error { "Invalid number of quantization units: %d".format(ctx.numQuantUnits) }
 			return AT3P_ERROR
 		}
 
@@ -411,7 +411,7 @@ class ChannelUnit {
 					val deltaBits = br.read(3)
 					val minVal = br.read(6)
 					if (numLongVals > ctx.usedQuantUnits || deltaBits == 7) {
-						log.error("SF mode 1: invalid parameters".format())
+						log.error { "SF mode 1: invalid parameters".format() }
 						return AT3P_ERROR
 					}
 
@@ -1088,7 +1088,7 @@ class ChannelUnit {
 			val dst = chan.gainData[sb]
 			for (i in 0 until chan.gainData[sb].numPoints) {
 				if (dst.locCode[i] < 0 || dst.locCode[i] > 31 || i > 0 && dst.locCode[i] <= dst.locCode[i - 1]) {
-					log.error("Invalid gain location: ch=%d, sb=%d, pos=%d, val=%d".format(chNum, sb, i, dst.locCode[i]))
+					log.error { "Invalid gain location: ch=%d, sb=%d, pos=%d, val=%d".format(chNum, sb, i, dst.locCode[i]) }
 					return AT3P_ERROR
 				}
 			}
@@ -1221,7 +1221,7 @@ class ChannelUnit {
 		for (sb in 0 until ctx.wavesInfo.numToneBands) {
 			if (bandHasTones[sb]) {
 				if (ctx.wavesInfo.tonesIndex + dst[sb].numWavs > 48) {
-					log.error("Too many tones: %d (max. 48)".format(ctx.wavesInfo.tonesIndex + dst[sb].numWavs))
+					log.error { "Too many tones: %d (max. 48)".format(ctx.wavesInfo.tonesIndex + dst[sb].numWavs) }
 					return AT3P_ERROR
 				}
 				dst[sb].startIndex = ctx.wavesInfo.tonesIndex
@@ -1424,7 +1424,7 @@ class ChannelUnit {
 
 		ctx.wavesInfo.amplitudeMode = br.read1()
 		if (ctx.wavesInfo.amplitudeMode == 0) {
-			log.error("GHA amplitude mode 0")
+			log.error { "GHA amplitude mode 0" }
 			return AT3P_ERROR
 		}
 
@@ -1434,7 +1434,7 @@ class ChannelUnit {
 			getSubbandFlags(ctx.wavesInfo.toneSharing, ctx.wavesInfo.numToneBands)
 			getSubbandFlags(ctx.wavesInfo.toneMaster, ctx.wavesInfo.numToneBands)
 			if (getSubbandFlags(ctx.wavesInfo.phaseShift, ctx.wavesInfo.numToneBands)) {
-				log.warn("GHA Phase shifting")
+				log.warn { "GHA Phase shifting" }
 			}
 		}
 

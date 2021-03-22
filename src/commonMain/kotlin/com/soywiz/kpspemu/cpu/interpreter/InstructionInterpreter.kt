@@ -3,7 +3,6 @@ package com.soywiz.kpspemu.cpu.interpreter
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korim.color.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korma.math.*
@@ -15,6 +14,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
 import kotlin.math.*
 import com.soywiz.korma.math.isAlmostZero
+import com.soywiz.krypto.encoding.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
 
 class CpuInterpreter(

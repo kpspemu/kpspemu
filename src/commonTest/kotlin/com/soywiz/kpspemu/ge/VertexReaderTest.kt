@@ -1,8 +1,8 @@
 package com.soywiz.kpspemu.ge
 
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.*
+import com.soywiz.krypto.encoding.*
 import kotlin.test.*
 
 class VertexReaderTest : BaseTest() {

@@ -3,7 +3,6 @@ package com.soywiz.kpspemu
 import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
@@ -13,6 +12,7 @@ import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.hle.modules.*
 import com.soywiz.kpspemu.mem.*
+import com.soywiz.krypto.encoding.*
 import kotlin.coroutines.*
 import kotlin.test.*
 

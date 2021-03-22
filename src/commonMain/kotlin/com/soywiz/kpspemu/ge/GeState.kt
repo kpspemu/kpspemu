@@ -5,12 +5,12 @@ package com.soywiz.kpspemu.ge
 import com.soywiz.kmem.*
 import com.soywiz.korge.util.*
 import com.soywiz.korim.color.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korma.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 
 
 fun bool1(p: Int): Boolean = p != 0

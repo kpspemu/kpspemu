@@ -8,7 +8,6 @@ import com.soywiz.korge.view.*
 import com.soywiz.korim.color.*
 import com.soywiz.korim.font.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.cpu.dis.*
@@ -17,6 +16,7 @@ import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.ui.*
 import com.soywiz.kpspemu.util.*
 import com.soywiz.kpspemu.util.expr.*
+import com.soywiz.krypto.encoding.*
 import kotlin.reflect.*
 
 /**
@@ -62,23 +62,25 @@ class DebugScene(
 
         sceneView += SolidRect(480, 272, RGBA(0xFF, 0xFF, 0xFF, 0xAF))
 
-        sceneView.onKeyDown {
-            when (it.keyCode) {
-                PspEmuKeys.F2 -> sceneView.visible = !sceneView.visible // F2
-                else -> if (sceneView.visible) when (it.keyCode) {
-                    PspEmuKeys.E -> askEval() // E
-                    PspEmuKeys.G -> askGoto() // G
-                    PspEmuKeys.UP -> moveUp() // UP
-                    PspEmuKeys.DOWN -> moveDown() // DOWN
-                    PspEmuKeys.PGUP -> moveUp(16) // PGUP
-                    PspEmuKeys.PGDOWN -> moveDown(16) // PGDOWN
-                    PspEmuKeys.T -> toggle() // T
-                    PspEmuKeys.F3 -> toggle() // F3
-                    else -> println("onKeyDown: ${it.keyCode}")
+        sceneView.keys {
+            down {
+                when (it.keyCode) {
+                    PspEmuKeys.F2 -> sceneView.visible = !sceneView.visible // F2
+                    else -> if (sceneView.visible) when (it.keyCode) {
+                        PspEmuKeys.E -> askEval() // E
+                        PspEmuKeys.G -> askGoto() // G
+                        PspEmuKeys.UP -> moveUp() // UP
+                        PspEmuKeys.DOWN -> moveDown() // DOWN
+                        PspEmuKeys.PGUP -> moveUp(16) // PGUP
+                        PspEmuKeys.PGDOWN -> moveDown(16) // PGDOWN
+                        PspEmuKeys.T -> toggle() // T
+                        PspEmuKeys.F3 -> toggle() // F3
+                        else -> println("onKeyDown: ${it.keyCode}")
+                    }
                 }
             }
         }
-        font = getDebugBmpFontOnce()
+        font = debugBmpFont
 
         sceneView += SolidRect(480, 272, Colors.BLUE.withA(0x5F)).apply {
             mouseEnabled = false
@@ -124,7 +126,7 @@ class DebugScene(
             }
         }
 
-        sceneView.addUpdatable {
+        sceneView.addUpdater {
             if (sceneView.visible) {
                 val thread = emulator.threadManager.threads.firstOrNull()
                 val cpu = thread?.state ?: CpuState.dummy
@@ -165,13 +167,13 @@ class DebugScene(
         val onGprClick = AsyncSignal<GprView>()
 
         val black = Colors.BLACK
-        val text = text("", font = font).apply {
+        val text = textOld("", font = font).apply {
             filtering = false
             x = 0.0
             // Exception in thread "AWT-EventQueue-0" java.lang.ClassCastException: java.lang.Integer cannot be cast to com.soywiz.korim.color.RGBA
             //	at com.soywiz.kpspemu.DebugScene$GprView.<init>(DebugScene.kt:169)
             //	at com.soywiz.kpspemu.DebugScene$GprListView.<init>(DebugScene.kt:194)
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = black)
+            format = Html.Format(face = font, size = 8, color = black)
             autoSize = true
             bgcolor = BG_OUT
             onOver { bgcolor = BG_OVER }
@@ -236,7 +238,7 @@ class DebugScene(
     class HexdumpLineView(val emulator: Emulator, views: Views, val lineNumber: Int, val font: BitmapFont) :
         Container() {
         val black = Colors.BLACK
-        val text = text("-", font = font).apply {
+        val text = textOld("-", font = font).apply {
             filtering = false
             x = 0.0
             y = (lineNumber * 8).toDouble()
@@ -245,7 +247,7 @@ class DebugScene(
             //	at com.soywiz.kpspemu.DebugScene$HexdumpLineView.<init>(DebugScene.kt:240)
             //	at com.soywiz.kpspemu.DebugScene$HexdumpView.<init>(DebugScene.kt:258)
             //format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = black)
+            format = Html.Format(face = font, size = 8, color = black)
         }
 
         fun update(addr: Int, mem: Memory, state: CpuState) {
@@ -290,7 +292,7 @@ class DebugScene(
         var over = false
 
         val black = Colors.BLACK
-        val text = text("-", font = font).apply {
+        val text = textOld("-", font = font).apply {
             this@DissasemblerLineView += this
             filtering = false
             x = 0.0
@@ -300,7 +302,7 @@ class DebugScene(
             //	at com.soywiz.kpspemu.DebugScene$DissasemblerLineView.<init>(DebugScene.kt:290)
             //	at com.soywiz.kpspemu.DebugScene$DissasemblerView.<init>(DebugScene.kt:322)
             //format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = black)
+            format = Html.Format(face = font, size = 8, color = black)
             onOver { over = true }
             onOut { over = false }
             onClick {
@@ -366,9 +368,9 @@ class DebugScene(
         val onLineClick = AsyncSignal<Unit>()
         var over = false
 
-        val text = Text().apply {
+        val text = TextOld().apply {
             autoSize = true
-            format = Html.Format(face = Html.FontFace.Bitmap(font), size = 8, color = Colors.BLACK)
+            format = Html.Format(face = font, size = 8, color = Colors.BLACK)
             filtering = false
             onOver { over = true }
             onOut { over = false }

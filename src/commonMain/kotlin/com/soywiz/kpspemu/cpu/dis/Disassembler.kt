@@ -1,10 +1,10 @@
 package com.soywiz.kpspemu.cpu.dis
 
 import com.soywiz.klogger.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.mem.*
+import com.soywiz.krypto.encoding.*
 
 interface NameProvider {
     fun getName(addr: Int): String?
@@ -79,7 +79,7 @@ fun Memory.disasmMacro(pc: Int, nameProvider: NameProvider = DummyNameProvider):
 }
 
 fun Memory.getPrintInstructionAt(address: Int, nameProvider: NameProvider = DummyNameProvider): String =
-    address.hex + " : " + disasmMacro(address, nameProvider)
+    "${address.hex} : ${disasmMacro(address, nameProvider)}"
 
 fun Memory.printInstructionAt(address: Int, nameProvider: NameProvider = DummyNameProvider) =
     Console.error(getPrintInstructionAt(address, nameProvider))

@@ -5,11 +5,11 @@ package com.soywiz.kpspemu.hle.manager
 import com.soywiz.kds.*
 import com.soywiz.korge.util.*
 import com.soywiz.korge.util.NativeThreadLocal
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
+import com.soywiz.krypto.encoding.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 import kotlin.collections.MutableMap

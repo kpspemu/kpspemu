@@ -1,12 +1,12 @@
 package com.soywiz.kpspemu.hle.modules
 
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.cpu.*
 import com.soywiz.kpspemu.hle.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 
 @Suppress("UNUSED_PARAMETER")
 class SysMemUserForUser(emulator: Emulator) :

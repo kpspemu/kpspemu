@@ -15,7 +15,7 @@ class DeviceManager(val emulator: Emulator) {
     )
     val dummy = MemoryVfs()
 
-    val root = MountableVfsSync {
+    val root = MountableVfsSyncNew {
     }
 
     val mountable = root.vfs as MountableSync

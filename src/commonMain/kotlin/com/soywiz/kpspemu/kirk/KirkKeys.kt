@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.kirk
 
-import com.soywiz.korio.crypto.*
+import com.soywiz.krypto.encoding.*
 
 @Suppress("unused")
 object KirkKeys {

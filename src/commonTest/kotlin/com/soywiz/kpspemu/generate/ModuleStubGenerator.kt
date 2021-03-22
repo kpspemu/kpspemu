@@ -1,13 +1,13 @@
 package com.soywiz.kpspemu.generate
 
 import com.soywiz.korio.async.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.serialization.xml.*
 import com.soywiz.korio.util.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.hle.psplibdoc.*
+import com.soywiz.krypto.encoding.*
 import kotlin.test.*
 
 class ModuleStubGenerator : BaseTest() {

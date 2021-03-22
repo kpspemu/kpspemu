@@ -6,7 +6,7 @@ class ElfDwarf {
     val logger = Logger("ElfDwarf")
 
     fun parseElfLoader(elfLoader: Elf): Unit {
-        logger.info("ElfDwarfLoader.parseElfLoader: Not implemented")
+        logger.info { "ElfDwarfLoader.parseElfLoader: Not implemented" }
     }
 
     fun getSymbolAt(address: Int): Unit {

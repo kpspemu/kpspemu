@@ -3,7 +3,6 @@ package com.soywiz.kpspemu.hle
 import com.soywiz.kds.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
@@ -12,6 +11,7 @@ import com.soywiz.kpspemu.hle.error.*
 import com.soywiz.kpspemu.hle.manager.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 import kotlin.coroutines.*
 import com.soywiz.korio.lang.invalidOp as invalidOp1
 import kotlin.coroutines.intrinsics.*

@@ -1,11 +1,12 @@
 package com.soywiz.kpspemu.ui
 
 import com.soywiz.korge.input.*
+import com.soywiz.korge.scene.*
 import com.soywiz.korge.view.*
 import com.soywiz.korim.color.*
 import com.soywiz.korim.font.*
 
-fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = Fonts.defaultFont): View {
+fun Views.simpleButton(text: String, width: Int = 80, height: Int = 18, font: BitmapFont = debugBmpFont): View {
     val colorOver = RGBA(0xA0, 0xA0, 0xA0, 0xFF)
     val colorOut = RGBA(0x90, 0x90, 0x90, 0xFF)
 

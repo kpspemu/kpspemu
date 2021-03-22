@@ -1,6 +1,6 @@
 package com.soywiz.kpspemu.embedded
 
-import com.soywiz.korio.util.encoding.*
+import com.soywiz.krypto.encoding.*
 
 object Samples {
     val MINIFIRE_ELF = Base64.decode(

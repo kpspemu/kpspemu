@@ -1,11 +1,11 @@
 package com.soywiz.kpspemu.mem
 
 import com.soywiz.kmem.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
 
 data class PtrArray(val ptr: Ptr, val size: Int) {

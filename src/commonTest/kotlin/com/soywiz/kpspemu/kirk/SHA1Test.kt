@@ -1,6 +1,5 @@
 package com.soywiz.kpspemu.kirk
 
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
 import com.soywiz.krypto.*

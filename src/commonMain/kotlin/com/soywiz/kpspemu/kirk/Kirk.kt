@@ -77,7 +77,7 @@ object Kirk {
         if (headerDataSize == 0) invalidOp2
         val data = input.sliceStart(4L).readBytes(headerDataSize)
         val hash = data.hash(SHA1)
-        output.writeBytes(hash)
+        output.writeBytes(hash.bytes)
     }
 
     fun kirk_CMD4(output: SyncStream, input: SyncStream): Unit = TODO()

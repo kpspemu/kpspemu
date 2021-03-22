@@ -11,7 +11,7 @@ import java.io.File
 
 object ExampleDecoder {
 	@JvmStatic fun main(args: Array<String>) {
-		val fileName = "c:\\temp\\bgm01.at3"
+		val fileName = "c:\\temp\\bgm012.at3"
 		val s = File(fileName).readBytes().openSync()
 		val info = Atrac3PlusUtil.AtracFileInfo()
 		Atrac3PlusUtil.analyzeRiffFile(s, 0, s.length.toInt(), info)
@@ -30,15 +30,14 @@ object ExampleDecoder {
 			}
 		}
 
-		// 744 * 2
-		var ipos = 1652
+		var ipos = info.inputFileDataOffset
 		while (true) {
 			val res = decoder.decode(mem, ipos, s.length.toInt(), out)
-			println(res)
+			println("res: $res")
 			if (res <= 0) break
 			ipos += info.atracBytesPerFrame
 		}
-		File("c:/temp/temp.bin").writeBytes(out.toByteArray())
+		File("c:/temp/kpspemu.atrac3plus.raw").writeBytes(out.toByteArray())
 	}
 
 }

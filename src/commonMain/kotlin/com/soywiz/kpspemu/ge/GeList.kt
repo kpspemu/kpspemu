@@ -3,10 +3,10 @@ package com.soywiz.kpspemu.ge
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.kpspemu.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 import kotlin.math.*
 
 class GeList(val ge: Ge, override val id: Int) : ResourceItem, WithEmulator by ge {

@@ -16,6 +16,7 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.*
 import kotlin.math.*
 import com.soywiz.korio.error.invalidOp
+import kotlinx.coroutines.flow.*
 
 // @TODO: Move to korio-ext-dropbox
 class Dropbox(val bearer: String, val http: HttpClient = createHttpClient()) {
@@ -190,12 +191,14 @@ class DropboxVfs(val dropbox: Dropbox) : Vfs() {
         } else {
             createNonExistsStat(path)
         }
+
+
     }
 
-    suspend override fun list(path: String): SuspendingSequence<VfsFile> {
+    override suspend fun listSimple(path: String): List<VfsFile> {
         val npath = path.normalizePath()
         val names = pathCache.getOrPut(npath) { dropbox.listFolder(path).map { "$path/${it.name}" } }
-        return names.map { file(it) }.toAsync()
+        return names.map { file(it) }
     }
 
     suspend override fun mkdir(path: String, attributes: List<Attribute>): Boolean {

@@ -4,7 +4,7 @@ import com.soywiz.klogger.*
 import com.soywiz.korio.*
 import com.soywiz.korio.file.*
 
-fun MountableVfsSync(callback: MountableSync.() -> Unit): VfsFile {
+fun MountableVfsSyncNew(callback: MountableSync.() -> Unit): VfsFile {
     val logger = Logger("MountableVfsSync")
 
     val mount = object : Vfs.Proxy(), MountableSync {

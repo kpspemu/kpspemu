@@ -5,7 +5,6 @@ import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 import com.soywiz.kpspemu.*
@@ -17,6 +16,7 @@ import com.soywiz.kpspemu.util.*
 import kotlin.collections.set
 import kotlin.math.*
 import com.soywiz.kmem.umod
+import com.soywiz.krypto.encoding.*
 import kotlinx.coroutines.channels.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
 

@@ -1,5 +1,6 @@
 package com.soywiz.kpspemu
 
+import com.soywiz.compat.*
 import com.soywiz.klock.*
 import com.soywiz.klogger.*
 import com.soywiz.kmem.*
@@ -23,7 +24,6 @@ import com.soywiz.korim.vector.*
 import com.soywiz.korinject.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.error.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
@@ -50,7 +50,10 @@ import kotlin.reflect.*
 import com.soywiz.kmem.umod
 import com.soywiz.korev.*
 import com.soywiz.korgw.*
+import com.soywiz.korim.text.*
+import com.soywiz.krypto.encoding.*
 import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.flow.*
 import kotlin.jvm.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
 
@@ -69,7 +72,7 @@ object KpspemuModule : Module() {
     override val clearEachFrame: Boolean = true
     override val mainScene: KClass<out Scene> = KpspemuMainScene::class
     override val title: String = "kpspemu - ${Kpspemu.VERSION}"
-    override val iconImage: Context2d.SizedDrawable? = com.soywiz.korim.vector.format.SVG(KpspemuAssets.LOGO)
+    override val iconImage: SizedDrawable? = com.soywiz.korim.vector.format.SVG(KpspemuAssets.LOGO)
     override val size: SizeInt get() = SizeInt(480, 272)
     override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
     //override val targetFps = PspDisplay.VERTICAL_SYNC_HZ // @TODO: Bad performance!
@@ -255,7 +258,7 @@ class KpspemuMainScene(
                 }
                 emulator.threadManager.waitThreadChange()
             } else {
-                sleep(MS_10)
+                delay(MS_10)
             }
         }
     }
@@ -268,7 +271,7 @@ class KpspemuMainScene(
             accumulatedMs = toWait - toWaitInt
             controller.startFrame(timeManager.getTimeInMicrosecondsInt())
             emulator.interruptManager.dispatchVsync()
-            sceneView.sleep(toWaitInt.milliseconds)
+            sceneView.delay(toWaitInt.milliseconds)
             controller.endFrame()
         }
     }
@@ -279,7 +282,7 @@ class KpspemuMainScene(
             //hudFont = getDebugBmpFontOnce()
         } catch (e: Throwable) {
             //e.printStackTrace()
-            hudFont = getDebugBmpFontOnce()
+            hudFont = debugBmpFont
         }
     }
 
@@ -521,9 +524,9 @@ class KpspemuMainScene(
         val dropContainer = Container().apply {
             visible = false
             this += SolidRect(1024, 1024, RGBA(0xA0, 0xA0, 0xA0, 0x7F))
-            this += Text("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
+            this += TextOld("Drop ZIP, ISO, PBP or ELF files here...", font = hudFont).apply {
                 //format = Html.Format(format, align = Html.Alignment.MIDDLE_CENTER)
-                format = Html.Format(format, align = Html.Alignment.LEFT)
+                format = Html.Format(format, align = TextAlignment.LEFT)
                 x = 480.0 * 0.5
                 y = 272.0 * 0.5
             }
@@ -546,11 +549,14 @@ class KpspemuMainScene(
             }
         }
         //sceneView.onKeyTyped { println(it.keyCode) }
-        sceneView.onKeyDown {
-            updateKey(it.key, true)
-        }
-        sceneView.onKeyUp {
-            updateKey(it.key, false)
+
+        sceneView.keys {
+            down {
+                updateKey(it.key, true)
+            }
+            up {
+                updateKey(it.key, false)
+            }
         }
 
         // Not available anymore
@@ -587,19 +593,19 @@ class KpspemuMainScene(
             }
         }
 
-        sceneView.addEventListener<GamePadButtonEvent> { e ->
-            val gamepad = e.gamepad
-            val button = e.button
-            val value = e.value
-            if (gamepadButtonsStatus[button.index] != value) {
-                gamepadButtonsStatus[button.index] = value
-                val pspButton = buttonMapping[button]
-                if (pspButton != null) {
-                    emulator.controller.updateButton(pspButton, value >= 0.5)
-                }
-                when (button) {
-                    GameButton.LX -> emulator.controller.currentFrame.lx = (((value + 1.0) / 2.0) * 255.0).toInt()
-                    GameButton.LY -> emulator.controller.currentFrame.ly = (((-value + 1.0) / 2.0) * 255.0).toInt()
+        sceneView.gamepad {
+            button { playerId, pressed, button, value ->
+                val gamepad = playerId
+                if (gamepadButtonsStatus[button.index] != value) {
+                    gamepadButtonsStatus[button.index] = value
+                    val pspButton = buttonMapping[button]
+                    if (pspButton != null) {
+                        emulator.controller.updateButton(pspButton, value >= 0.5)
+                    }
+                    when (button) {
+                        GameButton.LX -> emulator.controller.currentFrame.lx = (((value + 1.0) / 2.0) * 255.0).toInt()
+                        GameButton.LY -> emulator.controller.currentFrame.ly = (((-value + 1.0) / 2.0) * 255.0).toInt()
+                    }
                 }
             }
         }

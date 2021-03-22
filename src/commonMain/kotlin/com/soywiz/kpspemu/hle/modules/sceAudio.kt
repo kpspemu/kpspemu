@@ -25,6 +25,10 @@ class MyAudioStream(hz: Int, nchannels: Int = 2) : AudioStream(hz, nchannels) {
         return result
     }
 
+    override suspend fun clone(): AudioStream {
+        return MyAudioStream(rate, channels)
+    }
+
     override fun close() {
         closed = true
     }

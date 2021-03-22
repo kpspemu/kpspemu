@@ -3,12 +3,12 @@ package com.soywiz.kpspemu.cpu
 import com.soywiz.kds.*
 import com.soywiz.kmem.*
 import com.soywiz.korge.util.NativeThreadLocal
-import com.soywiz.korio.crypto.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 import com.soywiz.korma.math.*
 import com.soywiz.kpspemu.mem.*
 import com.soywiz.kpspemu.util.*
+import com.soywiz.krypto.encoding.*
 import com.soywiz.korio.error.invalidOp as invalidOp1
 import com.soywiz.korma.math.isAlmostZero as isAlmostZero1
 

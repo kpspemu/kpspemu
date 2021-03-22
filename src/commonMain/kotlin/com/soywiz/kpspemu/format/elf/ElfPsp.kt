@@ -220,7 +220,7 @@ class PspElf private constructor(
         for (programHeader in this.elf.programHeaders) {
             when (programHeader.type) {
                 ElfProgramHeaderType.Reloc1 -> {
-                    logger.info("SKIPPING Elf.ProgramHeader.TypeEnum.Reloc1!")
+                    logger.info { "SKIPPING Elf.ProgramHeader.TypeEnum.Reloc1!" }
                 }
                 ElfProgramHeaderType.Reloc2 -> {
                     throw Exception("Not implemented")
@@ -235,8 +235,8 @@ class PspElf private constructor(
 
             when (sectionHeader.type) {
                 ElfSectionHeaderType.Relocation -> {
-                    logger.error("sectionHeader: $sectionHeader")
-                    logger.error("Not implemented ElfSectionHeaderType.Relocation")
+                    logger.error { "sectionHeader: $sectionHeader" }
+                    logger.error { "Not implemented ElfSectionHeaderType.Relocation" }
                 }
 
                 ElfSectionHeaderType.PrxRelocation -> {
@@ -317,7 +317,7 @@ class PspElf private constructor(
         //var loadAddress = this.elfLoader.programHeaders[0].psysicalAddress;
         val loadAddress = this.baseAddress
 
-        logger.info("PspElfLoader: needsRelocate=%s, loadAddress=%08X".format(needsRelocate, loadAddress))
+        logger.info { "PspElfLoader: needsRelocate=%s, loadAddress=%08X".format(needsRelocate, loadAddress) }
         //console.log(moduleInfo);
 
         for (programHeader in this.elf.programHeaders.filter { it.type == ElfProgramHeaderType.Load }) {
@@ -331,19 +331,19 @@ class PspElf private constructor(
             this.memory.memset(memOffset + fileSize, 0, memSize - fileSize)
 
             //this.getSectionHeaderMemoryStream
-            logger.info("Program Header: " + "%08X:%08X, %08X:%08X".format(fileOffset, fileSize, memOffset, memSize))
+            logger.info { "Program Header: " + "%08X:%08X, %08X:%08X".format(fileOffset, fileSize, memOffset, memSize) }
         }
 
         for (sectionHeader in this.elf.sectionHeaders.filter { it.flags hasFlag ElfSectionHeaderFlags.Allocate }) {
             val low = loadAddress + sectionHeader.address
 
-            logger.info(
+            logger.info {
                 "Section Header: %s LOW:%08X, SIZE:%08X".format(
                     sectionHeader.toString(),
                     low,
                     sectionHeader.size
                 )
-            )
+            }
 
             //console.log(sectionHeader);
             when (sectionHeader.type) {
@@ -369,7 +369,7 @@ class PspElf private constructor(
 
     private fun updateModuleImports() {
         val moduleInfo = this.moduleInfo
-        logger.info("updateModuleImports.moduleInfo: $moduleInfo")
+        logger.info { "updateModuleImports.moduleInfo: $moduleInfo" }
         val importsBytesSize = moduleInfo.importsEnd - moduleInfo.importsStart
         val importsStream = this.memory.openSync().slice(moduleInfo.importsStart until moduleInfo.importsEnd)
         val importsCount = importsBytesSize / ElfPspModuleImport.SIZE
@@ -378,13 +378,13 @@ class PspElf private constructor(
             _import.name = this.memory.readStringz(_import.nameOffset)
             val imported = this.updateModuleFunctions(_import)
             this.updateModuleVars(_import)
-            logger.info("Imported: ${imported.name} ${imported.registeredNativeFunctions.map { it.name }}")
+            logger.info { "Imported: ${imported.name} ${imported.registeredNativeFunctions.map { it.name }}" }
         }
         //console.log(imports);
     }
 
     private fun updateModuleFunctions(moduleImport: ElfPspModuleImport): Res1 {
-        logger.info("Import module: ${moduleImport.name}")
+        logger.info { "Import module: ${moduleImport.name}" }
         val _module = this.moduleManager.getByName(moduleImport.name)
         val nidsStream = this.memory.openSync().sliceWithSize(moduleImport.nidAddress, moduleImport.functionCount * 4)
         val callStream = this.memory.openSync().sliceWithSize(moduleImport.callAddress, moduleImport.functionCount * 8)
@@ -403,8 +403,8 @@ class PspElf private constructor(
                     since = 150,
                     syscall = -1,
                     function = { state ->
-                        logger.error("$_module")
-                        logger.error("updateModuleFunctions: Not implemented '${nfunc?.name}'")
+                        logger.error { "$_module" }
+                        logger.error { "updateModuleFunctions: Not implemented '${nfunc?.name}'" }
                         Debugger.enterDebugger()
                         throw Error("updateModuleFunctions: Not implemented '${nfunc?.name}'")
                     }
@@ -431,7 +431,7 @@ class PspElf private constructor(
         }
 
         if (unknownFunctions.size > 0) {
-            logger.warn("Can't find functions: " + unknownFunctions)
+            logger.warn { "Can't find functions: " + unknownFunctions }
         }
 
         return Res1(name = moduleImport.name, registeredNativeFunctions = registeredNativeFunctions)
