@@ -43,3 +43,8 @@ dependencies {
 
     add("jvmMainApi", "org.ow2.asm:asm:6.2.1")
 }
+
+tasks.getByName("jvmTest", Test::class) {
+    minHeapSize = "1g"
+    maxHeapSize = "2g"
+}
