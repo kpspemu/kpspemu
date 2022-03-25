@@ -16,7 +16,7 @@ class AsyncPoolCompat<T>(val maxItems: Int = Int.MAX_VALUE, val create: suspend 
     }
 
     fun free(item: T) {
-        freedItem.offer(item)
+        freedItem.trySend(item)
     }
 
     suspend inline fun <TR> alloc(callback: suspend (T) -> TR): TR {

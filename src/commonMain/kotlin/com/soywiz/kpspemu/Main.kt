@@ -71,15 +71,16 @@ object KpspemuModule : Module() {
 
     override val clearEachFrame: Boolean = true
     override val mainScene: KClass<out Scene> = KpspemuMainScene::class
+    //override val mainScene: KClass<out Scene> = EmptyScene::class
     override val title: String = "kpspemu - ${Kpspemu.VERSION}"
-    override val iconImage: SizedDrawable? = com.soywiz.korim.vector.format.SVG(KpspemuAssets.LOGO)
+    //override val iconImage: SizedDrawable? = com.soywiz.korim.vector.format.SVG(KpspemuAssets.LOGO)
     override val size: SizeInt get() = SizeInt(480, 272)
     override val windowSize: SizeInt get() = SizeInt(480 * 2, 272 * 2)
     //override val targetFps = PspDisplay.VERTICAL_SYNC_HZ // @TODO: Bad performance!
 
     override suspend fun AsyncInjector.configure() {
         this.mapSingleton { Emulator(get<GameWindow>().coroutineDispatcher) }
-            .mapSingleton { PromptConfigurator(get(), get()) }
+            .mapSingleton { PromptConfigurator(get(), get(), get()) }
             .mapPrototype { KpspemuMainScene(get(), get(), get(), get()) }
             .mapPrototype { DebugScene(get(), get()) }
             .mapPrototype { TouchButtonsScene(get()) }
@@ -282,13 +283,14 @@ class KpspemuMainScene(
             //hudFont = getDebugBmpFontOnce()
         } catch (e: Throwable) {
             //e.printStackTrace()
-            hudFont = debugBmpFont
+            hudFont = views.debugBmpFont
         }
     }
 
     private fun requestUserLoadFile() {
         launchImmediately(coroutineContext) {
-            val file = browser.openFile()
+            val file = views.gameWindow.openFileDialog().firstOrNull()
+            //val file = browser.openFile()
             launchImmediately { hudClose() }
             if (file != null) {
                 createEmulatorWithExe(file)

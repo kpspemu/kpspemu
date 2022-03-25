@@ -80,7 +80,7 @@ class DebugScene(
                 }
             }
         }
-        font = debugBmpFont
+        font = views.debugBmpFont
 
         sceneView += SolidRect(480, 272, Colors.BLUE.withA(0x5F)).apply {
             mouseEnabled = false

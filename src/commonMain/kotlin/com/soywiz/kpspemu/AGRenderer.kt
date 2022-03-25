@@ -89,7 +89,7 @@ class AGRenderer(val emulatorContainer: WithEmulator, val sceneTex: Texture) : W
 
                 if (renderBuffer == null) {
                     renderBuffer = ag.createRenderBuffer()
-                    geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH), 0, HH, WW, 0)
+                    geTexture = Texture(TextureBase(renderBuffer!!.tex, WW, HH), 0, HH, WW, 0)
                     //geTexture = Texture(Texture.Base(renderBuffer!!.tex, WW, HH))
                     renderBuffer!!.setSize(0, 0, WW * renderScale.toInt(), HH * renderScale.toInt())
                     ag.setRenderBufferTemporally(renderBuffer!!) {

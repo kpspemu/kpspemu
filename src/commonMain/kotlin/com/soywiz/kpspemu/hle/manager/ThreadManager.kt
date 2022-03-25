@@ -128,7 +128,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
             logger.trace { "NOT FILLING: $stack" }
         }
         threadManager.onThreadChanged(thread)
-        threadManager.onThreadChangedChannel.offer(thread)
+        threadManager.onThreadChangedChannel.trySend(thread)
         return thread
     }
 
@@ -150,7 +150,7 @@ class ThreadManager(emulator: Emulator) : Manager<PspThread>("Thread", emulator)
     fun getActiveThreadsWithPriority(priority: Int): List<PspThread> =
         threads.filter { it.running && it.priority == priority }
 
-    val lowestThreadPriority get() = threads.minBy { it.priority }?.priority ?: 0
+    val lowestThreadPriority get() = threads.minByOrNull { it.priority }?.priority ?: 0
 
     fun getFirstThread(): PspThread? {
         for (thread in threads) {
@@ -401,7 +401,7 @@ class PspThread internal constructor(
             logger.warn { "Deleting Thread: $name" }
         }
         threadManager.onThreadChanged(this)
-        threadManager.onThreadChangedChannel.offer(this)
+        threadManager.onThreadChangedChannel.trySend(this)
     }
 
     fun updateTrace() {

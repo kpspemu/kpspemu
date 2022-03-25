@@ -60,7 +60,9 @@ object Kirk {
         var KeyCmac = Keys.copyOfRange(16, 32)
         val PaddedDataSize = header.DataSize.nextAlignedTo(16)
         val PaddedData = ByteArray(PaddedDataSize)
-        input.sliceStart().skip(header.DataOffset + AES128CMACHeader.size).read(PaddedData)
+        input.sliceStart()
+            .also { it.skip(header.DataOffset + AES128CMACHeader.size) }
+            .read(PaddedData)
         val Output = AES.decryptAes128Cbc(PaddedData, KeyAes)
         output.write(Output, 0, header.DataSize)
     }

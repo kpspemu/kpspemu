@@ -183,7 +183,7 @@ open class INT32_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T>, BaseEnu
     override fun read(s: SyncStream): T = invoke(s.readS32_le())
 
     private val defaultValue: T = values.first()
-    private val MAX_ID = values.map { it.id }.max() ?: 0
+    private val MAX_ID = values.map { it.id }.maxOrNull() ?: 0
     private val valuesById = Array<Any>(MAX_ID + 1) { defaultValue }
 
     init {
@@ -200,7 +200,7 @@ open class UINT8_ENUM<T : IdEnum>(val values: Array<T>) : StructType<T>, BaseEnu
     override fun read(s: SyncStream): T = invoke(s.readU8())
 
     private val defaultValue: T = values.first()
-    private val MAX_ID = values.map { it.id }.max() ?: 0
+    private val MAX_ID = values.map { it.id }.maxOrNull() ?: 0
     private val valuesById = Array<Any>(MAX_ID + 1) { defaultValue }
 
     init {

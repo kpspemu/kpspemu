@@ -29,7 +29,7 @@ korge {
 // To selectively enable targets
 
     targetJvm()
-    //targetJs()
+    targetJs()
     //targetDesktop()
     //targetIos()
     //targetAndroidIndirect() // targetAndroidDirect()
@@ -42,6 +42,7 @@ dependencies {
     //commonMainApi "com.soywiz:korma:$kormaVersion"
 
     add("jvmMainApi", "org.ow2.asm:asm:6.2.1")
+    //add("jvmTestApi", "org.jetbrains.kotlin:kotlin-test-junit:1.6.10")
 }
 
 tasks.getByName("jvmTest", Test::class) {

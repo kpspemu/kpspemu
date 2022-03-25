@@ -13,7 +13,7 @@ interface IdEnum {
 
     open class SmallCompanion<T : IdEnum>(val values: Array<T>) {
         private val defaultValue: T = values.first()
-        private val MAX_ID = values.map { it.id }.max() ?: 0
+        private val MAX_ID = values.map { it.id }.maxOrNull() ?: 0
         private val valuesById = Array<Any>(MAX_ID + 1) { defaultValue }
 
         init {

@@ -292,7 +292,7 @@ data class MemoryPartition(
     fun getTotalFreeMemory(): Long =
         this.nonAllocatedPartitions.reduceAcumulate(ZERO) { prev, item -> item.size + prev }
 
-    fun getMaxContiguousFreeMemory(): Long = this.nonAllocatedPartitions.maxBy { it.size }?.size ?: ZERO
+    fun getMaxContiguousFreeMemory(): Long = this.nonAllocatedPartitions.maxByOrNull { it.size }?.size ?: ZERO
 
     fun getTotalFreeMemoryInt(): Int = this.getTotalFreeMemory().toInt()
     fun getMaxContiguousFreeMemoryInt(): Int = this.getMaxContiguousFreeMemory().toInt()
