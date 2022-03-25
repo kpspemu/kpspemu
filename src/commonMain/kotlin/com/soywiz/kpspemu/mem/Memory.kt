@@ -176,7 +176,7 @@ fun Memory.strlenz(offset: Int): Int {
 fun Memory.readStringz(offset: Int): String {
     val len = strlenz(offset)
     val idx = this.index(offset)
-    return String(CharArray(len) { get8(idx + it).toChar() })
+    return CharArray(len) { get8(idx + it).toChar() }.concatToString()
 }
 
 fun Memory.copy(srcPos: Int, dstPos: Int, size: Int) = run {

@@ -1,7 +1,10 @@
 package com.soywiz.kpspemu.native
 
 import com.soywiz.korio.*
-import kotlin.browser.*
+import kotlinx.browser.*
+import org.w3c.dom.*
+
+public external val navigator: dynamic
 
 actual object KPspEmuNative {
     actual fun getCurrentDirectory(): String = "."
